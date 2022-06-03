@@ -695,7 +695,7 @@ export class ProjectorScatterPlotAdapter {
       unselectedColor = SPRITE_IMAGE_COLOR_UNSELECTED;
       noSelectionColor = SPRITE_IMAGE_COLOR_NO_SELECTION;
     }
-    console.log('isFilter', window.isFilter)
+
     // Give all points the unselected color.
     {
       const n = ds.points.length;
@@ -703,6 +703,13 @@ export class ProjectorScatterPlotAdapter {
       if (selectedPointCount > 0 && !renderInTriangle && !window.isFilter) {
         let c = new THREE.Color(unselectedColor);
         for (let i = 0; i < n; ++i) {
+          let point = ds.points[i]
+          if (point.metadata[this.labelPointAccessor]) {
+            let hoverText = point.metadata[this.labelPointAccessor].toString();
+            if (hoverText == 'background') {
+              c = new THREE.Color(point.color)
+            }
+          }
           colors[dst++] = c.r;
           colors[dst++] = c.g;
           colors[dst++] = c.b;
