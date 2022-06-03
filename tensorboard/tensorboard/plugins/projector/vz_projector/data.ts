@@ -823,7 +823,7 @@ export class DataSet {
         fetch("http://" + this.DVIServer + "/al_train", {
           method: 'POST',
           body: JSON.stringify({
-            "iteration": iteration,
+            "iteration": this.tSNEIteration,
             "newIndices": newIndices,
             "content_path": this.DVIsubjectModelPath,
           }),
