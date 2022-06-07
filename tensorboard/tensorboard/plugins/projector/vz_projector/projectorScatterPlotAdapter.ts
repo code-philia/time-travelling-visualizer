@@ -47,6 +47,7 @@ const LABEL_STROKE_COLOR_NEIGHBOR = 0xffffff;
 const POINT_COLOR_UNSELECTED = 0xe3e3e3;
 const POINT_COLOR_NO_SELECTION = 0x7575d9;
 const POINT_COLOR_SELECTED = 0xfa6666;
+const POINT_COLOR_UNLABELED = 16776960;
 const POINT_COLOR_HOVER = 0x760b4f;
 
 const POINT_SCALE_DEFAULT = 1.0;
@@ -786,6 +787,7 @@ export class ProjectorScatterPlotAdapter {
         }
       }
     }
+
     if (window.isFilter) {
       let dst = 0;
       const c = new THREE.Color(POINT_COLOR_SELECTED);
@@ -815,12 +817,20 @@ export class ProjectorScatterPlotAdapter {
       }
       // return colors
     }
+
     // Color the hover point.
     if (hoverPointIndex != null
       && (!window.hiddenBackground
         || (window.hiddenBackground
           && ds.points[hoverPointIndex].metadata[this.labelPointAccessor].toString() !== 'background'))) {
-      const c = new THREE.Color(POINT_COLOR_HOVER);
+      let c = new THREE.Color(POINT_COLOR_HOVER);
+      if (window.properties) {
+        if (window.properties[window.iteration].length) {
+          if (window.properties[window.iteration][hoverPointIndex] === 0) {
+            c = new THREE.Color(POINT_COLOR_UNLABELED);
+          }
+        }
+      }
       let dst = hoverPointIndex * 3;
       colors[dst++] = c.r;
       colors[dst++] = c.g;
@@ -840,6 +850,11 @@ export class ProjectorScatterPlotAdapter {
     return labels;
   }
   private getLabelText(ds: DataSet, i: number, accessor: string): string {
+    if (window.properties && window.properties[window.iteration]?.length) {
+      if (window.properties[window.iteration][i] === 0) {
+        return ds.points[i]?.metadata[accessor] !== undefined ? `(unlabeled)${ds.points[i]?.metadata[accessor]}` : `unlabeled`
+      }
+    }
     return ds.points[i]?.metadata[accessor] !== undefined
       ? (ds.points[i]?.metadata[accessor] !== "background" ? String(ds.points[i]?.metadata[accessor]) : "")
       : `Unknown #${i}`;
