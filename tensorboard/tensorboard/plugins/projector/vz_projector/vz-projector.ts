@@ -16,8 +16,9 @@ declare global {
   interface Window {
     hiddenBackground: boolean | false,
     DVIDataList: any,
-    lineGeomertryList:any,
-    iteration:number,
+    lineGeomertryList: any,
+    iteration: number,
+    properties: any,
     isFilter: boolean | false
   }
 }
@@ -148,10 +149,10 @@ class Projector
   private analyticsLogger: AnalyticsLogger;
   private backgroundPoints: any;
 
-  private goDownBtn:any;
-  private goUpBtn:any;
-  private goLeftBtn:any;
-  private goRightBtn:any;
+  private goDownBtn: any;
+  private goUpBtn: any;
+  private goLeftBtn: any;
+  private goRightBtn: any;
 
   private timer: any;
 
@@ -326,13 +327,13 @@ class Projector
   registerSelectionChangedListener(listener: SelectionChangedListener) {
     this.selectionChangedListeners.push(listener);
   }
-  filterDataset(pointIndices: number[],filter?:boolean) {
+  filterDataset(pointIndices: number[], filter?: boolean) {
     const selectionSize = this.selectedPointIndices.length;
     /*
     if (this.dataSetBeforeFilter == null) {
       this.dataSetBeforeFilter = this.dataSet;
     }*/
-    console.log('pointIndices',pointIndices)
+    console.log('pointIndices', pointIndices)
     this.dataSet.setDVIFilteredData(pointIndices);
     // this.setCurrentDataSet(this.dataSet.getSubset(pointIndices));
     this.dataSetFilterIndices = pointIndices;
@@ -353,10 +354,10 @@ class Projector
     this.dataSetBeforeFilter = null;*/
     // setDVIfilter all data
     let total = this.dataSet.DVIValidPointNumber[this.dataSet.tSNEIteration]
-    if(num) {
+    if (num) {
       total = num
     }
-    
+
     var indices: number[];
     indices = [];
     for (let i = 0; i < total; i++) {
@@ -484,12 +485,12 @@ class Projector
       this.selectedPointIndices = updatedSelectedPointIndices; // update selection
       if (this.selectedPointIndices.length > 0) {
         // at least one selected point
-        if(this.selectedPointIndices.length == 1){
+        if (this.selectedPointIndices.length == 1) {
           this.metadataCard.updateMetadata(
             // show metadata for first selected point
             this.dataSet.points[this.selectedPointIndices[0]].metadata
           );
-        }else{
+        } else {
           this.metadataCard.updateMetadata(null);
         }
       } else {
@@ -512,14 +513,14 @@ class Projector
             index: newSelectedPointIndices[0],
             dist: 0
           };
-          if(window.isAnimatating !== true) {
-            this.dataSet.getSpriteImage(this.selectedPointIndices[0], (imgData: any) => {
-              let src = 'data:image/png;base64,' + imgData.imgUrl
-              this.metadataCard.updateMetadata(
-                this.dataSet.points[newSelectedPointIndices[0]].metadata, src
-              );
-            })
-          }
+        if (window.isAnimatating !== true) {
+          this.dataSet.getSpriteImage(this.selectedPointIndices[0], (imgData: any) => {
+            let src = 'data:image/png;base64,' + imgData.imgUrl
+            this.metadataCard.updateMetadata(
+              this.dataSet.points[newSelectedPointIndices[0]].metadata, src
+            );
+          })
+        }
       } else {
         this.metadataCard.updateMetadata(null);
       }
@@ -717,20 +718,20 @@ class Projector
       this.projectorScatterPlotAdapter.setTriangleMode((triangleModeBtn as any).active)
     })
 
-    this.goDownBtn.addEventListener('click',(e)=>{
+    this.goDownBtn.addEventListener('click', (e) => {
       // this.scattor
       this.projectorScatterPlotAdapter.scatterPlot.goDown()
     })
 
-    this.goUpBtn.addEventListener('click',(e) =>{
+    this.goUpBtn.addEventListener('click', (e) => {
       this.projectorScatterPlotAdapter.scatterPlot.goUp()
     })
 
-    this.goLeftBtn.addEventListener('click',(e) =>{
+    this.goLeftBtn.addEventListener('click', (e) => {
       this.projectorScatterPlotAdapter.scatterPlot.goLeft()
     })
 
-    this.goRightBtn.addEventListener('click',(e) =>{
+    this.goRightBtn.addEventListener('click', (e) => {
       this.projectorScatterPlotAdapter.scatterPlot.goRight()
     })
 
@@ -750,8 +751,10 @@ class Projector
       (cameraPosition: THREE.Vector3, cameraTarget: THREE.Vector3) =>
         this.bookmarkPanel.clearStateSelection()
     );
-    this.registerHoverListener((hoverIndex: number) =>
+    this.registerHoverListener((hoverIndex: number) => {
       this.onHover(hoverIndex)
+    }
+
     );
     this.registerProjectionChangedListener((projection: Projection) =>
       this.onProjectionChanged(projection)
@@ -770,6 +773,7 @@ class Projector
       const point = this.dataSet.points[hoverIndex];
       if (point.metadata[this.selectedLabelOption]) {
         hoverText = point.metadata[this.selectedLabelOption].toString();
+     
       }
     }
     if (this.selectedPointIndices.length === 0) {
@@ -889,8 +893,8 @@ class Projector
     this.notifySelectionChanged(state.selectedPoints);
   }
 
-  retrainBySelections(iteration:number,newSel:number[]){
-    this.projectionsPanel.retrainBySelections(iteration,newSel)
+  retrainBySelections(iteration: number, newSel: number[]) {
+    this.projectionsPanel.retrainBySelections(iteration, newSel)
   }
 
 
@@ -955,7 +959,7 @@ class Projector
     });
   }
 
-  queryByAL(iteration: number,strategy:string,budget:number,
+  queryByAL(iteration: number, strategy: string, budget: number,
     callback: (indices: any) => void) {
     const msgId = logging.setModalMessage('Querying...');
     let headers = new Headers();
@@ -965,8 +969,8 @@ class Projector
       method: 'POST',
       body: JSON.stringify({
         "iteration": iteration,
-        "strategy":strategy,
-        "budget":budget,
+        "strategy": strategy,
+        "budget": budget,
         "content_path": this.dataSet.DVIsubjectModelPath,
       }),
       headers: headers,
