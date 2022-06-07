@@ -23,7 +23,7 @@ import { template } from './vz-projector-inspector-panel.html';
 import './vz-projector-input';
 import { dist2color, normalizeDist } from './projectorScatterPlotAdapter';
 import { ProjectorEventContext } from './projectorEventContext';
-import { ScatterPlot,MouseMode } from './scatterPlot';
+import { ScatterPlot, MouseMode } from './scatterPlot';
 
 
 import { ProjectorScatterPlotAdapter } from './projectorScatterPlotAdapter';
@@ -46,11 +46,11 @@ type SpriteMetadata = {
 @customElement('vz-projector-inspector-panel')
 class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   static readonly template = template;
-  
-  @property({type : String})
-  selectedStratergy:string;
 
-  @property({ type: Number})
+  @property({ type: String })
+  selectedStratergy: string;
+
+  @property({ type: Number })
   budget: number
 
   @property({ type: String })
@@ -76,6 +76,9 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
   @property({ type: Number })
   confidenceThresholdTo: number
+
+  @property({ type: Boolean })
+  hiddenUnlabeled: false
 
   @property({ type: Number })
   epochFrom: number
@@ -113,7 +116,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   private searchBox: any; // ProjectorInput; type omitted b/c LegacyElement
 
   private queryByStrategtBtn: HTMLButtonElement;
-  private boundingSelectionBtn :HTMLButtonElement;
+  private boundingSelectionBtn: HTMLButtonElement;
   private isAlSelecting: boolean;
   private trainBySelBtn: HTMLButtonElement;
 
@@ -192,6 +195,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     this.epochFrom = 1
     this.epochTo = 1
     this.showTrace = false
+    this.hiddenUnlabeled = false
 
     this.budget = 1000
   }
@@ -288,9 +292,34 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     this.updateNeighborsList();
   }
 
+  @observe('hiddenUnlabeled')
+  _refreshClassiftPoints() {
+    let indicates = []
+    if (this.hiddenUnlabeled) {
+      console.log('hidden')
+     
+      if (window.properties) {
+        if (window.properties[window.iteration].length) {
+          for (let i = 0; i < window.properties[window.iteration].length; ++i) {
+            if (window.properties[window.iteration][i] === 0) {
+              indicates.push(i)
+            }
+          }
+        }
+      }
+      console.log('indicates',indicates)
+      this.projector.filterDataset(indicates)
+    } else {
+      for (let i = 0; i < 60000; ++i) {
+          indicates.push(i)
+      }
+      this.projector?.filterDataset(indicates)
+    }
+    
+  }
+
   @observe('showTrace')
   _refreshScatterplot() {
-    console.log('trace', this.showTrace)
     if (this.showTrace) {
       this.projectorEventContext?.renderInTraceLine(true, this.epochFrom, this.epochTo)
     } else {
@@ -557,14 +586,14 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     }
     self.showTab('normal');
 
-    this.boundingSelectionBtn.onclick = (e:any)=>{
+    this.boundingSelectionBtn.onclick = (e: any) => {
 
       this.isAlSelecting = !this.isAlSelecting
-      if(this.isAlSelecting){
+      if (this.isAlSelecting) {
         this.boundingSelectionBtn.classList.add('actived')
         this.projectorEventContext.setMouseMode(MouseMode.AREA_SELECT)
         // this.projectorScatterPlotAdapter.scatterPlot.setMouseMode(MouseMode.AREA_SELECT);
-      }else{
+      } else {
         this.boundingSelectionBtn.classList.remove('actived')
         this.projectorEventContext.setMouseMode(MouseMode.CAMERA_AND_CLICK_SELECT);
       }
@@ -591,9 +620,9 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     }
 
     this.trainBySelBtn.onclick = () => {
-      console.log(this.projector.iteration,this.selectedPointIndices)
-      this.projector.retrainBySelections(this.projector.iteration,this.selectedPointIndices)
-    //  this.projectionsPanel.reTrainBySel(this.projector.iteration,this.selectedPointIndices)
+      console.log(this.projector.iteration, this.selectedPointIndices)
+      this.projector.retrainBySelections(this.projector.iteration, this.selectedPointIndices)
+      //  this.projectionsPanel.reTrainBySel(this.projector.iteration,this.selectedPointIndices)
     }
     this.distFunc = vector.cosDist;
     const eucDist = this.$$('.distance a.euclidean') as HTMLLinkElement;
@@ -766,7 +795,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       this.selectinMessage.innerText = "0 seleted.";
     }
     this.sentButton.onclick = () => {
-      console.log(this.selectedPointIndices,this.boundingBoxSelection)
+      console.log(this.selectedPointIndices, this.boundingBoxSelection)
       // this.projector.saveDVISelection(this.boundingBoxSelection, (msg: string) => {
       //   this.selectinMessage.innerText = msg;
       //   logging.setWarnMessage(msg, null);
