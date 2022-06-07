@@ -488,7 +488,7 @@ export class DataSet {
           const ip_address = data.DVIServerIP + ":" + data.DVIServerPort;
           this.DVIServer = ip_address;
 
-
+          window.iteration = iteration
           fetch("http://" + this.DVIServer + "/updateProjection", {
             method: 'POST',
             body: JSON.stringify({
@@ -499,6 +499,7 @@ export class DataSet {
             mode: 'cors'
           }).then(response => response.json()).then(data => {
             const result = data.result;
+            
             const grid_index = data.grid_index;
             const grid_color = data.grid_color;
 
@@ -525,6 +526,10 @@ export class DataSet {
             const evaluation = data.evaluation;
             this.DVIEvaluation[iteration] = evaluation;
             const inv_acc = data.inv_acc_list || [];
+            if(!window.properties){
+              window.properties = []
+            }
+            window.properties[iteration] = data.properties;
 
             // const is_uncertainty_diversity_tot_exist = data.uncertainty_diversity_tot?.is_exist;
             // this.is_uncertainty_diversity_tot_exist[iteration] = is_uncertainty_diversity_tot_exist;
@@ -713,6 +718,7 @@ export class DataSet {
             }
             this.DVIDataList[iteration] = this.points
             window.DVIDataList = this.DVIDataList
+
             stepCallback(this.tSNEIteration, evaluation, new_selection, filterIndices, this.tSNETotalIter);
           }).catch(error => {
             console.log(error);
