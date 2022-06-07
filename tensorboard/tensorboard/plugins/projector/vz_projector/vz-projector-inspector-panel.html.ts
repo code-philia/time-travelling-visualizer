@@ -393,6 +393,11 @@ export const template = html`
     <button style="width: 140px;" class="train-by-selection search-button search">Train By Selections</button>
     </div>
   </div>
+  <div>
+  <paper-toggle-button id="classify-points-toggle" checked="{{hiddenUnlabeled}}">
+    hidden labeled data
+  </paper-toggle-button>
+  </div>
 
   <div class="buttons">
     <button class="button reset-filter">Show All Data</button>
