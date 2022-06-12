@@ -18,7 +18,7 @@ import { customElement, observe, property } from '@polymer/decorators';
 import { LegacyElementMixin } from '../../../components/polymer/legacy_element_mixin';
 import '../../../components/polymer/irons_and_papers';
 
-import { DistanceFunction, SpriteAndMetadataInfo, State } from './data';
+import { DistanceFunction, SpriteAndMetadataInfo, State, DataSet } from './data';
 import { template } from './vz-projector-inspector-panel.html';
 import './vz-projector-input';
 import { dist2color, normalizeDist } from './projectorScatterPlotAdapter';
@@ -33,7 +33,7 @@ import * as vector from './vector';
 import * as util from './util';
 import * as logging from './logging';
 
-const LIMIT_RESULTS = 100;
+const LIMIT_RESULTS = 10000;
 const DEFAULT_NEIGHBORS = 100;
 
 type SpriteMetadata = {
@@ -46,6 +46,8 @@ type SpriteMetadata = {
 @customElement('vz-projector-inspector-panel')
 class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   static readonly template = template;
+
+  dataSet: DataSet;
 
   @property({ type: String })
   selectedStratergy: string;
@@ -174,7 +176,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     this.resetButton = this.$$('.reset') as HTMLButtonElement;
     this.sentButton = this.$$('.sent') as HTMLButtonElement;
     this.showButton = this.$$('.show') as HTMLButtonElement;
-    this.selectinMessage = this.$$('.boundingBoxSelection') as HTMLElement;
+    // this.selectinMessage = this.$$('.boundingBoxSelection') as HTMLElement;
     this.trainBySelBtn = this.$$('.train-by-selection') as HTMLButtonElement
     this.projectionsPanel = this.$['projections-panel'] as any; // ProjectionsPanel
 
@@ -189,7 +191,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     this.filterIndices = [];
     this.boundingBoxSelection = [];
     this.currentBoundingBoxSelection = [];
-    this.selectinMessage.innerText = "0 seleted.";
+    // this.selectinMessage.innerText = "0 seleted.";
     this.confidenceThresholdFrom = 0
     this.confidenceThresholdTo = 1
     this.epochFrom = 1
@@ -297,7 +299,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     let indicates = []
     if (this.hiddenUnlabeled) {
       console.log('hidden')
-     
+
       if (window.properties) {
         if (window.properties[window.iteration].length) {
           for (let i = 0; i < window.properties[window.iteration].length; ++i) {
@@ -307,15 +309,15 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
           }
         }
       }
-      console.log('indicates',indicates)
+      console.log('indicates', indicates)
       this.projector.filterDataset(indicates)
     } else {
       for (let i = 0; i < 60000; ++i) {
-          indicates.push(i)
+        indicates.push(i)
       }
       this.projector?.filterDataset(indicates)
     }
-    
+
   }
 
   @observe('showTrace')
@@ -406,7 +408,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       (this.$$(lastContext) as HTMLDivElement).style.display = null;
     }
   }
-  private updateSearchResults(indices: number[]) {
+  private async updateSearchResults(indices: number[]) {
     const container = this.$$('.matches-list') as HTMLDivElement;
     const list = container.querySelector('.list') as HTMLDivElement;
     list.textContent = '';
@@ -418,6 +420,17 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     this.limitMessage.style.display =
       indices.length <= LIMIT_RESULTS ? 'none' : null;
     indices = indices.slice(0, LIMIT_RESULTS);
+    // const msgId = logging.setModalMessage('Fetching sprite image...');
+
+    let DVIServer = '';
+    let headers = new Headers();
+    headers.append('Content-Type', 'application/json');
+    headers.append('Accept', 'application/json');
+    await fetch("standalone_projector_config.json", { method: 'GET' })
+      .then(response => response.json())
+      .then(data => { DVIServer = data.DVIServerIP + ":" + data.DVIServerPort; })
+    window.recommendIndices = []
+    window.checkboxDom = []
     for (let i = 0; i < indices.length; i++) {
       const index = indices[i];
       const row = document.createElement('div');
@@ -433,9 +446,57 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       rowLink.onmouseleave = () => {
         this.projectorEventContext.notifyHoverOverPoint(null);
       };
-      rowLink.onclick = () => {
-        this.projectorEventContext.notifySelectionChanged([index]);
-      };
+      // rowLink.onclick = () => {
+      //   this.projectorEventContext.notifySelectionChanged([index]);
+      // };
+
+
+      
+      await fetch(`http://${DVIServer}/sprite?index=${indices[i]}&path=${'/Users/zhangyifan/Downloads/toy_model/resnet18_cifar10'}`, {
+        method: 'GET',
+        mode: 'cors'
+      }).then(response => response.json()).then(data => {
+        console.log("response", data);
+        let img = document.createElement('img');
+        let input = document.createElement('input');
+        input.type ='checkbox'
+        input.setAttribute('id',`resCheckbox${indices[i]}`)
+        img.src = 'data:image/png;base64,' + data.imgUrl;
+        rowLink.onmouseenter = () => {
+          this.projectorEventContext.updateMetaDataByIndices(indices[i],img.src)
+          this.projectorEventContext.notifyHoverOverPoint(index);
+        };
+        rowLink.onmouseleave = () => {
+          this.projectorEventContext.updateMetaDataByIndices(-1,'')
+          this.projectorEventContext.notifyHoverOverPoint(null);
+        };
+        if(!window.checkboxDom){
+          window.checkboxDom = []
+        }
+        window.checkboxDom[indices[i]] = input
+        input.addEventListener('change',(e)=>{
+          console.log('e',indices[i],e,input.checked)
+          if(input.checked){
+            window.customSelection.push(indices[i])
+            this.projectorEventContext.refresh()
+          }else{
+            let index = window.customSelection.indexOf(indices[i])
+            window.customSelection.splice(index,1)
+            this.projectorEventContext.refresh()
+          }
+          this.projectorEventContext.notifyHoverOverPoint(indices[i]);
+        })
+        row.appendChild(input);
+        row.appendChild(img);
+        // logging.setModalMessage(null, msgId);
+      }).catch(error => {
+        console.log("error", error);
+      });
+
+
+      row.className = 'row-img';
+      
+     
       row.appendChild(rowLink);
       list.appendChild(row);
     }
@@ -590,10 +651,12 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
       this.isAlSelecting = !this.isAlSelecting
       if (this.isAlSelecting) {
+        window.isAdjustingSel = true
         this.boundingSelectionBtn.classList.add('actived')
         this.projectorEventContext.setMouseMode(MouseMode.AREA_SELECT)
         // this.projectorScatterPlotAdapter.scatterPlot.setMouseMode(MouseMode.AREA_SELECT);
       } else {
+        window.isAdjustingSel = false
         this.boundingSelectionBtn.classList.remove('actived')
         this.projectorEventContext.setMouseMode(MouseMode.CAMERA_AND_CLICK_SELECT);
       }
@@ -612,8 +675,8 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             } else {
               this.searchBox.message = `${this.queryIndices.length} matches.`;
             }
-            // console.log('this.queryIndices',this.queryIndices)
-            this.projectorEventContext.notifySelectionChanged(this.queryIndices);
+
+            this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isALQuery');
           }
         }
       );
@@ -738,6 +801,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       this.searchBox.setValue("", false);
     };
     this.clearSelectionButton.onclick = () => {
+      window.customSelection = []
       this.updateFilterButtons(0)
       projector.adjustSelectionAndHover([]);
       this.queryIndices = [];
@@ -788,11 +852,11 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
           this.boundingBoxSelection.push(this.currentBoundingBoxSelection[i]);
         }
       }
-      this.selectinMessage.innerText = String(this.boundingBoxSelection.length) + " seleted.";
+      // this.selectinMessage.innerText = String(this.boundingBoxSelection.length) + " seleted.";
     }
     this.resetButton.onclick = () => {
       this.boundingBoxSelection = [];
-      this.selectinMessage.innerText = "0 seleted.";
+      // this.selectinMessage.innerText = "0 seleted.";
     }
     this.sentButton.onclick = () => {
       console.log(this.selectedPointIndices, this.boundingBoxSelection)
@@ -835,6 +899,19 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   }
   updateBoundingBoxSelection(indices: number[]) {
     this.currentBoundingBoxSelection = indices;
+    if (!window.customSelection) {
+      window.customSelection = []
+    }
+    for (let i = 0; i < this.currentBoundingBoxSelection.length; i++) {
+      if (window.customSelection.indexOf(this.currentBoundingBoxSelection[i]) < 0) {
+        window.customSelection.push(this.currentBoundingBoxSelection[i]);
+      } else {
+        let index = window.customSelection.indexOf(this.currentBoundingBoxSelection[i])
+        window.customSelection.splice(index, 1)
+      }
+    }
+    console.log('bobob', this.boundingBoxSelection, window.customSelection)
+    // window.customSelection = this.currentBoundingBoxSelection
   }
   private updateNumNN() {
     if (this.selectedPointIndices != null) {

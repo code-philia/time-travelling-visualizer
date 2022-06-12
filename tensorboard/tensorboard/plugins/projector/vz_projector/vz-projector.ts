@@ -19,7 +19,13 @@ declare global {
     lineGeomertryList: any,
     iteration: number,
     properties: any,
-    isFilter: boolean | false
+    isFilter: boolean | false,
+    customSelection: any,
+    checkboxDom:any,
+    isAdjustingSel: boolean | false,
+    scene: any,
+    renderer: any,
+    recommendIndices: any
   }
 }
 
@@ -407,10 +413,55 @@ class Projector
   renderInTraceLine(inTrace: boolean, from: number, to: number) {
     this.projectorScatterPlotAdapter.setRenderInTraceLine(inTrace, from, to)
   }
+
+  refresh() {
+    this.projectorScatterPlotAdapter.scatterPlot.render()
+  }
   /**
    * Used by clients to indicate that a selection has occurred.
    */
-  notifySelectionChanged(newSelectedPointIndices: number[], selectMode?: boolean) {
+  notifySelectionChanged(newSelectedPointIndices: number[], selectMode?: boolean, selectionType?: string) {
+    // if (selectionType === 'isALQuery') {
+    //   window.recommendIndices = []
+    //   console.log('this.queryIndices', newSelectedPointIndices)
+    //   if (newSelectedPointIndices.length) {
+    //     for (let i = 0; i < newSelectedPointIndices.length; i++) {
+    //       this.dataSet.getSpriteImage(newSelectedPointIndices[i], (imgData: any) => {
+    //         let src = 'data:image/png;base64,' + imgData.imgUrl
+    //         window.recommendIndices[i] = {
+    //           src:src
+    //         }
+    //       })
+    //     }
+    //   }
+    // }
+    if (selectionType === 'boundingbox' && window.isAdjustingSel) {
+      if (!window.customSelection) {
+        window.customSelection = []
+      }
+      for (let i = 0; i < newSelectedPointIndices.length; i++) {
+        let check:any = window.checkboxDom[newSelectedPointIndices[i]]
+        if (window.customSelection.indexOf(newSelectedPointIndices[i]) < 0) {
+          window.customSelection.push(newSelectedPointIndices[i]);
+
+
+          console.log('check',check)
+          if(check) {
+            check.checked = true
+          }
+
+        } else {
+          let index = window.customSelection.indexOf(newSelectedPointIndices[i])
+          window.customSelection.splice(index, 1)
+          console.log('uncheck',check)
+          if(check) {
+            check.checked = false
+          }
+        }
+      }
+      return
+    }
+
     let neighbors: knn.NearestEntry[] = [];
     if (
       this.editMode && // point selection toggle in existing selection
@@ -529,6 +580,15 @@ class Projector
       l(this.selectedPointIndices, neighbors)
     );
   }
+  updateMetaDataByIndices(indices:number,src:string){
+    if(indices === -1){
+      this.metadataCard.updateMetadata(null);
+      return
+    }
+    this.metadataCard.updateMetadata(
+      this.dataSet.points[indices].metadata, src
+    );
+  }
   /**
    * Registers a listener to be called any time the mouse hovers over a point.
    */
@@ -553,6 +613,7 @@ class Projector
   notifyDistanceMetricChanged(distMetric: DistanceFunction) {
     this.distanceMetricChangedListeners.forEach((l) => l(distMetric));
   }
+
   @observe('dataProto')
   _dataProtoChanged(dataProtoString: string) {
     let dataProto = dataProtoString
@@ -691,9 +752,11 @@ class Projector
           let hoverText = point.metadata[this.selectedLabelOption].toString();
           if (hoverText == 'background') {
             if ((hiddenBackground as any).active) {
+              // window.scene.remove(window.backgroundMesh)
               point.color = '#ffffff'
             } else {
               point.color = point.DVI_color[1]
+              // window.scene.add(window.backgroundMesh)
             }
           }
         }
@@ -773,7 +836,7 @@ class Projector
       const point = this.dataSet.points[hoverIndex];
       if (point.metadata[this.selectedLabelOption]) {
         hoverText = point.metadata[this.selectedLabelOption].toString();
-     
+
       }
     }
     if (this.selectedPointIndices.length === 0) {

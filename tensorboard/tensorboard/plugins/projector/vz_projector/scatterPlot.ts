@@ -27,6 +27,12 @@ import {
 } from './scatterPlotRectangleSelector';
 const BACKGROUND_COLOR = 0xffffff;
 
+declare global {
+  interface Window {
+    backgroundMesh: any
+  }
+}
+
 /**
  * The length of the cube (diameter of the circumscribing sphere) where all the
  * points live.
@@ -107,8 +113,13 @@ export class ScatterPlot {
     private container: HTMLElement,
     private projectorEventContext: ProjectorEventContext
   ) {
-    this.getLayoutValues();
+
+    // 1,创建场景对象
     this.scene = new THREE.Scene();
+    this.addbackgroundImg('')
+
+    this.getLayoutValues();
+    // this.scene = new THREE.Scene();
     this.renderer = new THREE.WebGLRenderer({
       alpha: true,
       premultipliedAlpha: false,
@@ -116,6 +127,9 @@ export class ScatterPlot {
     });
     this.renderer.setClearColor(BACKGROUND_COLOR, 1);
     this.container.appendChild(this.renderer.domElement);
+    // console.log(this.renderer.domElement)
+    // this.renderer.domElement.styl
+
     this.light = new THREE.PointLight(16772287, 1, 0);
     this.scene.add(this.light);
     this.setDimensions(3);
@@ -126,9 +140,43 @@ export class ScatterPlot {
       (boundingBox: ScatterBoundingBox) => this.selectBoundingBox(boundingBox)
     );
     this.addInteractionListeners();
+    window.scene = this.scene;
+    window.renderer = this.renderer
+  }
+
+  addbackgroundImg(imgUrl: string) {
+    //移除上一个画布
+    if (window.backgroundMesh) {
+      this.scene.remove(window.backgroundMesh)
+    }
+    if(!imgUrl){
+      return
+    }
+    // 2，使用canvas画图作为纹理贴图
+    // 先使用canvas画图
+    let canvas = document.createElement('canvas');
+    canvas.width = 150;
+    canvas.height = 150;
+    var ctx = canvas.getContext("2d");
+    var img = new Image();
+    img.src = imgUrl;
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0, 150, 150);
+      let texture = new THREE.CanvasTexture(canvas);
+      // texture.needsUpdate = true; // 不设置needsUpdate为true的话，可能纹理贴图不刷新
+      var plane_geometry = new THREE.PlaneGeometry(2, 2);
+      var material = new THREE.MeshPhongMaterial({
+        // color:0x11ff22,
+        map: texture,
+        side: THREE.DoubleSide
+      });
+      window.backgroundMesh = new THREE.Mesh(plane_geometry, material);
+      this.scene.add(window.backgroundMesh);
+    }
   }
   private addInteractionListeners() {
-    
+
     this.container.addEventListener('mousemove', this.onMouseMove.bind(this));
     this.container.addEventListener('mousedown', this.onMouseDown.bind(this));
     this.container.addEventListener('mouseup', this.onMouseUp.bind(this));
@@ -495,7 +543,7 @@ export class ScatterPlot {
         validIndices.push(pointIndices[i]);
       }
     }
-    this.projectorEventContext.notifySelectionChanged(validIndices, true);
+    this.projectorEventContext.notifySelectionChanged(validIndices, true,'boundingbox');
   }
   private setNearestPointToMouse(e: MouseEvent) {
     if (this.pickingTexture == null) {

@@ -133,7 +133,13 @@ export const template = html`
   .label {
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
+    max-height: 32px;
+    margin-left: 4px;
+  }
+  .row-img{
+    display:flex;
+    margin-bottom: 8px;
+    align-items: center;
   }
 
   .nn-list .value,
@@ -219,11 +225,24 @@ export const template = html`
     justify-content: space-between;
     align-items: center;
     border-bottom: 1px solid #ccc;
+    position: absolute;
+    background: #fff;
+    bottom: 0;
+    z-index: 99;
+    width: 280px;
+    height: 60px;
   }
 
   #metadata-container {
     background: rgb(241 241 241);
     padding: 10px;
+    position: absolute;
+    bottom: 20px;
+    overflow-y: scroll;
+    height: 210px;
+    max-height: 50vh;
+    background: #f5f5f5;
+    margin-left: -20px;
   }
 
   .neighbor-image-controls {
@@ -276,7 +295,13 @@ export const template = html`
   }
 
   .matches-list {
-    padding: 0 20px;
+    padding: 0px;
+    margin-top: 10px;
+    border-top: 1px solid #ccc;
+  }
+  .matches-list-title{
+    line-height: 30px;
+    font-weight: 600;
   }
 
   .matches-list .row {
@@ -309,6 +334,10 @@ export const template = html`
   .results {
     display: flex;
     flex-direction: column;
+  }
+  .results .list{
+    max-height: calc(100vh - 610px);
+    overflow: auto;
   }
 
   .results,
@@ -411,7 +440,8 @@ export const template = html`
       <paper-icon-button icon="[[collapseIcon]]" on-tap="_toggleMetadataContainer">
       </paper-icon-button>
     </div>
-    <iron-collapse id="metadata-container" opened>
+    <iron-collapse id="metadata-container">
+      <div>Dynamic Point Setting</div>
       <div class="confidence-threshold">
         <div class="threshold-container">
           <paper-input value="{{epochFrom}}" label="epoch from:">
@@ -438,7 +468,7 @@ export const template = html`
     <button class="boundingbox-button reset">reset</button>
     <button class="boundingbox-button sent">sent</button>
     <button class="boundingbox-button show">show</button>
-    <p>Current <span class="boundingBoxSelection">NA</span></p>
+    <!-- <p>Current <span class="boundingBoxSelection">NA</span></p> -->
   </div>
 
 
@@ -496,6 +526,7 @@ export const template = html`
       <div class="metadata-list"></div>
     </div>
     <div class="matches-list" style="display: none">
+     <div class="matches-list-title">Query Result List:</div>
       <div class="list"></div>
       <div class="limit-msg">Showing only the first 100 results...</div>
     </div>

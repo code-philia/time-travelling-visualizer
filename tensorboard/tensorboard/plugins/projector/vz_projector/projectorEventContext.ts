@@ -39,10 +39,12 @@ export interface ProjectorEventContext {
    * Notify the selection system that a client has changed the selected point
    * set.
    */
-  notifySelectionChanged(newSelectedPointIndices: number[], selectMode?:boolean);
+  notifySelectionChanged(newSelectedPointIndices: number[], selectMode?:boolean, selectionType?:string);
 
   setDynamicNoisy(epochFrom: number, epochTo: number);
   setDynamicStop();
+  refresh();
+  updateMetaDataByIndices(indicate:number,src:string);
 
   renderInTraceLine(inTrace: boolean, from: number, to: number);
   setMouseMode(mode:any);

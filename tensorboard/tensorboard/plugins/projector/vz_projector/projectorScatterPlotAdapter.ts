@@ -66,6 +66,7 @@ const TIR_COLOR_SELECTED = 0xfa6666;
 
 const SPRITE_IMAGE_COLOR_UNSELECTED = 0xffffff;
 const SPRITE_IMAGE_COLOR_NO_SELECTION = 0xffffff;
+const POINT_CUSTOM_SELECTED = 3329330
 
 const HIDDEN_BACKGROUND_COLOR = 0xffffff
 
@@ -474,6 +475,46 @@ export class ProjectorScatterPlotAdapter {
         ++dst;
       }
     }
+    {
+      if(window.properties && window.iteration) {
+        const n = window.properties[window.iteration]?.length;
+        console.log('nnncangge',n)
+        const fillRgb = styleRgbFromHexColor(POINT_COLOR_UNLABELED);
+        const strokeRgb = styleRgbFromHexColor(POINT_COLOR_UNLABELED);
+        // if (window.properties) {
+        //   if (window.properties[window.iteration].length) {
+        //     if (window.properties[window.iteration][hoverPointIndex] === 0) {
+        //       c = new THREE.Color(POINT_COLOR_UNLABELED);
+        //     }
+        //   }
+        // }
+        for (let i = 0; i < n; ++i) {
+          const labelIndex = window.properties[window.iteration][i];
+          labelStrings.push(
+            this.getLabelText(ds, labelIndex, this.labelPointAccessor)
+          );
+          visibleLabels[dst] = labelIndex;
+          scale[dst] = LABEL_SCALE_LARGE;
+          opacityFlags[dst] = n === 1 ? 0 : 1;
+          packRgbIntoUint8Array(
+            fillColors,
+            dst,
+            fillRgb[0],
+            fillRgb[1],
+            fillRgb[2]
+          );
+          packRgbIntoUint8Array(
+            strokeColors,
+            dst,
+            strokeRgb[0],
+            strokeRgb[1],
+            strokeRgb[2]
+          );
+          ++dst;
+        }
+      }
+     
+    }
     // Neighbors
     {
       const n = neighborCount;
@@ -818,6 +859,20 @@ export class ProjectorScatterPlotAdapter {
       // return colors
     }
 
+    if(window.customSelection?.length && window.isAdjustingSel){
+      const n = ds.points.length;
+      let c = new THREE.Color(POINT_CUSTOM_SELECTED);
+      for (let i = 0; i < n; i++) {
+        if (window.customSelection.indexOf(i)>=0) {
+          let dst = i * 3
+            colors[dst++] = c.r;
+            colors[dst++] = c.g;
+            colors[dst++] = c.b;
+        }
+      }
+     
+    }
+
     // Color the hover point.
     if (hoverPointIndex != null
       && (!window.hiddenBackground
@@ -850,6 +905,11 @@ export class ProjectorScatterPlotAdapter {
     return labels;
   }
   private getLabelText(ds: DataSet, i: number, accessor: string): string {
+    if(window.customSelection?.length && window.isAdjustingSel){
+      if (window.customSelection.indexOf(i)>=0) {
+        return ds.points[i]?.metadata[accessor] !== undefined ? `(custom selected)${ds.points[i]?.metadata[accessor]}` : `custom selected`
+      }
+    }
     if (window.properties && window.properties[window.iteration]?.length) {
       if (window.properties[window.iteration][i] === 0) {
         return ds.points[i]?.metadata[accessor] !== undefined ? `(unlabeled)${ds.points[i]?.metadata[accessor]}` : `unlabeled`
