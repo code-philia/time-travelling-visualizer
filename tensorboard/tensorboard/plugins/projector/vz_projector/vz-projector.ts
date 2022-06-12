@@ -416,6 +416,7 @@ class Projector
 
   refresh() {
     this.projectorScatterPlotAdapter.scatterPlot.render()
+    this.metadataCard.updateCustomList(this.dataSet.points)
   }
   /**
    * Used by clients to indicate that a selection has occurred.
@@ -459,6 +460,7 @@ class Projector
           }
         }
       }
+      this.metadataCard.updateCustomList(this.dataSet.points)
       return
     }
 

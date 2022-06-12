@@ -476,6 +476,9 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         window.checkboxDom[indices[i]] = input
         input.addEventListener('change',(e)=>{
           console.log('e',indices[i],e,input.checked)
+          if(!window.customSelection){
+            window.customSelection = []
+          }
           if(input.checked){
             window.customSelection.push(indices[i])
             this.projectorEventContext.refresh()

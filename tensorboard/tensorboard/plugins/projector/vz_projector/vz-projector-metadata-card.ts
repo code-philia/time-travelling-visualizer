@@ -73,6 +73,12 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
         margin-left: 10px;
         padding-bottom: 10px;
       }
+      .custom-list-header{
+        line-height: 30px;
+        font-weight: 600;
+        border-top: 1px solid #ccc;
+        margin-bottom: 10px;
+      }
 
       .metadata-value {
         word-wrap: anywhere; /* Firefox only -- word-wrap DNE in Chrome. anywhere DNE in Chrome */
@@ -89,10 +95,13 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
           >
           </paper-icon-button>
         </div>
+        <template is="dom-if" if="[[showImg]]">
         <div id="header">
           <div id="metadata-label">[[label]]</div>
         </div>
+        </template>
         <iron-collapse id="metadata-container" opened>
+        <template is="dom-if" if="[[showImg]]">
           <div id="metadata-table">
             <template is="dom-repeat" items="[[metadata]]">
               <div class="metadata-row">
@@ -101,9 +110,20 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
               </div>
             </template>
           </div>
-          <div class="img-container">
+          <div class="img-container" if="[[showImg]]">
           <img id="metaImg" height="100px"/>
           </div>
+        </template>
+          <div class="custom-list-header">custom selected list | [[selectedNum]]</div>
+          <div style="max-height: calc(100vh - 380px);overflow: auto; padding: 0 10px;">
+          <template is="dom-repeat" items="[[customMetadata]]">
+          <div class="metadata-row">
+            <img src="[[item.src]]" />
+            <div class="metadata-key">[[item.key]]</div>
+            <div class="metadata-value">[[item.value]]</div>
+          </div>
+          </div>
+        </template>
         </iron-collapse>
       </div>
     </template>
@@ -111,6 +131,12 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
 
   @property({type: Boolean})
   hasMetadata: boolean = false;
+
+  @property({type: Boolean})
+  showImg: boolean = false;
+
+  @property({type: Number})
+  selectedNum: Number = 0;
 
   @property({type: Boolean})
   isCollapsed: boolean = false;
@@ -122,6 +148,12 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
   metadata: Array<{
     key: string;
     value: string;
+  }>;
+  @property({type: Array})
+  customMetadata: Array<{
+    key: string;
+    value: string;
+    src?:string;
   }>;
 
   @property({type: String})
@@ -139,7 +171,9 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
   }
   updateMetadata(pointMetadata?: PointMetadata, src?:string) {
     this.pointMetadata = pointMetadata;
-    this.hasMetadata = pointMetadata != null;
+    this.showImg = pointMetadata != null
+    console.log('this.showImg',this.showImg)
+    this.hasMetadata = pointMetadata != null || window.customSelection?.length;
     if (pointMetadata) {
       let metadata = [];
       for (let metadataKey in pointMetadata) {
@@ -162,6 +196,38 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
         }
       },100)
     }
+  }
+
+  async updateCustomList(points){
+    this.hasMetadata = window.customSelection?.length;
+    this.selectedNum = window.customSelection?.length
+    console.log('909090')
+    let metadata = [];
+    let DVIServer = '';
+    let headers = new Headers();
+    headers.append('Content-Type', 'application/json');
+    headers.append('Accept', 'application/json');
+    await fetch("standalone_projector_config.json", { method: 'GET' })
+      .then(response => response.json())
+      .then(data => { DVIServer = data.DVIServerIP + ":" + data.DVIServerPort; })
+    if (window.customSelection) {
+      for (let i = 0; i < window.customSelection.length; i++) {
+        await fetch(`http://${DVIServer}/sprite?index=${window.customSelection[i]}&path=${'/Users/zhangyifan/Downloads/toy_model/resnet18_cifar10'}`, {
+          method: 'GET',
+          mode: 'cors'
+        }).then(response => response.json()).then(data => {
+          console.log("response", data);
+          let src = 'data:image/png;base64,' + data.imgUrl;
+          metadata.push({ key: window.customSelection[i], value: points[window.customSelection[i]].metadata.label , src: src });
+
+          // logging.setModalMessage(null, msgId);
+        }).catch(error => {
+          console.log("error", error);
+        });
+      }
+    }
+    console.log('metadata',metadata)
+    this.customMetadata = metadata;
   }
   setLabelOption(labelOption: string) {
     this.labelOption = labelOption;
