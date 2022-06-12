@@ -805,6 +805,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     };
     this.clearSelectionButton.onclick = () => {
       window.customSelection = []
+      this.projectorEventContext.refresh()
       this.updateFilterButtons(0)
       projector.adjustSelectionAndHover([]);
       this.queryIndices = [];

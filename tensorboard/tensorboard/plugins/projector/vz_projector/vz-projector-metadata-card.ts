@@ -199,6 +199,9 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
   }
 
   async updateCustomList(points){
+    if(!window.customSelection || window.customSelection.length === 0){
+      this.customMetadata = []
+    }
     this.hasMetadata = window.customSelection?.length;
     this.selectedNum = window.customSelection?.length
     console.log('909090')
