@@ -186,7 +186,6 @@ def al_train():
     NEW_ITERATION = iteration + 1
     timevis.vis_train(NEW_ITERATION, **config)
 
-
     # update iteration projection
     embedding_2d, grid, decision_view, label_color_list, label_list, _, training_data_index, \
     testing_data_index, eval_new, prediction_list, selected_points, properties = update_epoch_projection(timevis, NEW_ITERATION, dict())
@@ -199,6 +198,26 @@ def al_train():
                                   'prediction_list': prediction_list,
                                   "selectedPoints":selected_points.tolist(),
                                   "properties":properties.tolist()}), 200)
+
+@app.route('/al_suggest_similar', methods=["POST"])
+@cross_origin()
+def al_suggest_similar():
+    data = request.get_json()
+    CONTENT_PATH = os.path.normpath(data['content_path'])
+    indices = data["selectIndices"]
+    iteration = data["iteration"]
+    k = data["k"]
+    sys.path.append(CONTENT_PATH)
+    from config import config
+
+    timevis = initialize_backend(CONTENT_PATH, iteration)
+
+    # nearest neighbors
+    # TODO
+    indices = timevis.al_find_similar(iteration, k).tolist()
+
+    sys.path.remove(CONTENT_PATH)
+    return make_response(jsonify({"similarIndices": indices}), 200)
 
 if __name__ == "__main__":
     with open('config.json', 'r') as f:

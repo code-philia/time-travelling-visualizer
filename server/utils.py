@@ -90,6 +90,7 @@ def initialize_backend(CONTENT_PATH, EPOCH):
     recon_loss_fn = ReconstructionLoss(beta=1.0)
     criterion = SingleVisLoss(umap_loss_fn, recon_loss_fn, lambd=LAMBDA)
 
+    # optimizer = torch.optim.Adam(model.parameters(), lr=.1, weight_decay=5e-4)
     optimizer = torch.optim.Adam(model.parameters(), lr=.01, weight_decay=1e-5)
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=4, gamma=.1)
 
@@ -139,31 +140,33 @@ def update_epoch_projection(timevis, EPOCH, predicates):
     training_data_index = list(range(training_data_number))
     testing_data_index = list(range(training_data_number, training_data_number + testing_data_number))
 
-    grid, decision_view = timevis.vis.get_epoch_decision_view(EPOCH, timevis.hyperparameters["VISUALIZATION"]["RESOLUTION"])
-
-    grid = grid.reshape((-1, 2)).tolist()
-    decision_view = decision_view * 255
-    decision_view = decision_view.reshape((-1, 3)).astype(int).tolist()
+    # return the image of background
+    x_min, y_min, x_max, y_max, b_fig = timevis.vis.get_background(EPOCH, timevis.hyperparameters["VISUALIZATION"]["RESOLUTION"])
+    grid = (x_min, y_min, x_max, y_max)
+    # grid, decision_view = timevis.vis.get_epoch_decision_view(EPOCH, timevis.hyperparameters["VISUALIZATION"]["RESOLUTION"])
+    # grid = grid.reshape((-1, 2)).tolist()
+    # decision_view = decision_view * 255
+    # decision_view = decision_view.reshape((-1, 3)).astype(int).tolist()
 
     color = timevis.vis.get_standard_classes_color() * 255
     color = color.astype(int).tolist()
 
     # TODO fix its structure
     file_name = timevis.hyperparameters["VISUALIZATION"]["EVALUATION_NAME"]
-    evaluation = timevis.evaluator.get_eval(file_name=file_name)
+    # evaluation = timevis.evaluator.get_eval(file_name=file_name)
     eval_new = dict()
-    eval_new["nn_train_15"] = evaluation["15"]['nn_train'][str(EPOCH)]
-    eval_new['nn_test_15'] = evaluation["15"]['nn_test'][str(EPOCH)]
-    eval_new['bound_train_15'] = evaluation["15"]['b_train'][str(EPOCH)]
-    eval_new['bound_test_15'] = evaluation["15"]['b_test'][str(EPOCH)]
-    eval_new['ppr_train'] = evaluation["ppr_train"][str(EPOCH)]
-    eval_new['ppr_test'] = evaluation["ppr_test"][str(EPOCH)]
-    # eval_new["nn_train_15"] = 1
-    # eval_new['nn_test_15'] = 1
-    # eval_new['bound_train_15'] = 1
-    # eval_new['bound_test_15'] = 1
-    # eval_new['ppr_train'] = 1
-    # eval_new['ppr_test'] = 1
+    # eval_new["nn_train_15"] = evaluation["15"]['nn_train'][str(EPOCH)]
+    # eval_new['nn_test_15'] = evaluation["15"]['nn_test'][str(EPOCH)]
+    # eval_new['bound_train_15'] = evaluation["15"]['b_train'][str(EPOCH)]
+    # eval_new['bound_test_15'] = evaluation["15"]['b_test'][str(EPOCH)]
+    # eval_new['ppr_train'] = evaluation["ppr_train"][str(EPOCH)]
+    # eval_new['ppr_test'] = evaluation["ppr_test"][str(EPOCH)]
+    eval_new["nn_train_15"] = 1
+    eval_new['nn_test_15'] = 1
+    eval_new['bound_train_15'] = 1
+    eval_new['bound_test_15'] = 1
+    eval_new['ppr_train'] = 1
+    eval_new['ppr_test'] = 1
 
     label_color_list = []
     label_list = []
@@ -200,4 +203,4 @@ def update_epoch_projection(timevis, EPOCH, predicates):
     ulb = np.setdiff1d(training_data_index, lb)
     properties[ulb] = 1
     
-    return embedding_2d, grid, decision_view, label_color_list, label_list, max_iter, training_data_index, testing_data_index, eval_new, prediction_list, selected_points, properties
+    return embedding_2d, grid, b_fig, label_color_list, label_list, max_iter, training_data_index, testing_data_index, eval_new, prediction_list, selected_points, properties
