@@ -810,6 +810,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             }
 
             this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isALQuery');
+            
           }
         }
       );
@@ -835,6 +836,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             console.log('indices',indices)
 
             this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isALQuery');
+            this.projectorScatterPlotAdapter.setTriangleMode(true)
           }
         }
       );
@@ -1000,7 +1002,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
               this.searchBox.message = `${this.queryIndices.length} matches.`;
             }
             // console.log('this.queryIndices',this.queryIndices)
-            this.projectorEventContext.notifySelectionChanged(this.queryIndices);
+            this.projectorEventContext.notifySelectionChanged(this.queryIndices,false,'normal');
           }
         }
       );
