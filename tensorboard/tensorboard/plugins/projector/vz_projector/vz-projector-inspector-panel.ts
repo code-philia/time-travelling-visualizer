@@ -364,15 +364,12 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         window.nowShowIndicates = indicates
         // this.projector.filterDataset(window.nowShowIndicates)
       } else {
-        ///隐藏unlabeled
-        console.log('隐藏unlabelded')
         for (let i = 0; i < window.properties[window.iteration].length; i++) {
           if (window.properties[window.iteration][i] !== 1 && window.nowShowIndicates.indexOf(i) !== -1) {
             indicates.push(i)
           }
         } 
         window.nowShowIndicates = indicates
-        console.log('iii',indicates)
       }
       this.projector.filterDataset(window.nowShowIndicates)
     }
@@ -1007,28 +1004,26 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         }
       );
     }
-    this.addButton.onclick = () => {
-      for (let i = 0; i < this.currentBoundingBoxSelection.length; i++) {
-        if (this.boundingBoxSelection.indexOf(this.currentBoundingBoxSelection[i]) < 0) {
-          this.boundingBoxSelection.push(this.currentBoundingBoxSelection[i]);
-        }
-      }
-      // this.selectinMessage.innerText = String(this.boundingBoxSelection.length) + " seleted.";
-    }
-    this.resetButton.onclick = () => {
-      this.boundingBoxSelection = [];
-      // this.selectinMessage.innerText = "0 seleted.";
-    }
-    this.sentButton.onclick = () => {
-      console.log(this.selectedPointIndices, this.boundingBoxSelection)
+    // this.addButton.onclick = () => {
+    //   for (let i = 0; i < this.currentBoundingBoxSelection.length; i++) {
+    //     if (this.boundingBoxSelection.indexOf(this.currentBoundingBoxSelection[i]) < 0) {
+    //       this.boundingBoxSelection.push(this.currentBoundingBoxSelection[i]);
+    //     }
+    //   }
+    // }
+    // this.resetButton.onclick = () => {
+    //   this.boundingBoxSelection = [];
+    // }
+    //this.sentButton.onclick = () => {
+      //console.log(this.selectedPointIndices, this.boundingBoxSelection)
       // this.projector.saveDVISelection(this.boundingBoxSelection, (msg: string) => {
       //   this.selectinMessage.innerText = msg;
       //   logging.setWarnMessage(msg, null);
       // });
-    }
-    this.showButton.onclick = () => {
-      this.projectorEventContext.notifySelectionChanged(this.boundingBoxSelection, true);
-    }
+    //}
+    // this.showButton.onclick = () => {
+    //   this.projectorEventContext.notifySelectionChanged(this.boundingBoxSelection, true);
+    // }
   }
   public showTab(id: string) {
     this.currentFilterType = id;

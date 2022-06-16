@@ -479,13 +479,12 @@ export const template = html`
       </div>
     </iron-collapse>
   </div>
-  <div>
+  <!--<div>
     <button class="boundingbox-button add">add</button>
     <button class="boundingbox-button reset">reset</button>
     <button class="boundingbox-button sent">sent</button>
     <button class="boundingbox-button show">show</button>
-    <!-- <p>Current <span class="boundingBoxSelection">NA</span></p> -->
-  </div>
+  </div> -->
 
 
 
