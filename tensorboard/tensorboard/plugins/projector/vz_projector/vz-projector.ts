@@ -289,7 +289,6 @@ class Projector
       this.setCurrentDataSet(null);
       // this.projectorScatterPlotAdapter
     }
-    console.log('909090909upppppp',window.sceneBackgroundImg)
   }
   metadataEdit(metadataColumn: string, metadataLabel: string) {
     this.selectedPointIndices.forEach(

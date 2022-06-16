@@ -118,7 +118,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
           <div class="custom-list-header">custom selected list | [[selectedNum]]</div>
           <div style="max-height: calc(100vh - 380px);overflow: auto; padding: 0 10px;">
           <template is="dom-repeat" items="[[customMetadata]]">
-          <div class="metadata-row">
+          <div class="metadata-row" id=[[item.key]]>
             <img src="[[item.src]]" />
             <div class="metadata-key">[[item.key]]</div>
             <div class="metadata-value">[[item.value]]</div>
@@ -216,7 +216,6 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
     }
     this.hasMetadata = window.customSelection?.length;
     this.selectedNum = window.customSelection?.length
-    console.log('909090')
     let metadata = [];
     let DVIServer = '';
     let headers = new Headers();
@@ -231,11 +230,8 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
           method: 'GET',
           mode: 'cors'
         }).then(response => response.json()).then(data => {
-          console.log("response", data);
           let src = 'data:image/png;base64,' + data.imgUrl;
           metadata.push({ key: window.customSelection[i], value: points[window.customSelection[i]].metadata.label, src: src });
-
-          // logging.setModalMessage(null, msgId);
         }).catch(error => {
           console.log("error", error);
         });
@@ -250,19 +246,13 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
   addBtnListener() {
     const container = this.$$('#metadata-container') as any
     let btns = container.querySelectorAll('.metadata-remove')
-    let rows = container.querySelectorAll('.metadata-row')
-    console.log('ananna', container, btns, btns.length,rows)
     for (let i = 0; i < btns.length; i++) {
-
       let btn = btns[i];
-      let row = rows[i]
       btn.addEventListener('click', () => {
-        console.log('window.customSelection[i]', window.customSelection[i])
         window.customSelection.splice(i, 1)
-        console.log('rows', rows)
-        console.log('row', row)
-        row.parentNode.removeChild(row)
-        container.removeChild(row)
+        this.customMetadata.splice(i,1)
+        console.log('window.customSelection',window.customSelection,this.customMetadata)
+        btn.parentNode.parentNode.removeChild(btn.parentNode)
       })
     }
   }
