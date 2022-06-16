@@ -200,7 +200,6 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
       //img
       setTimeout(() => {
         this.resultImg = this.$$('#metaImg') as HTMLAnchorElement;
-        console.log('outtt', src, this.resultImg)
         if (src?.length) {
           this.resultImg?.setAttribute("style", "display:block;")
           this.resultImg?.setAttribute('src', src)

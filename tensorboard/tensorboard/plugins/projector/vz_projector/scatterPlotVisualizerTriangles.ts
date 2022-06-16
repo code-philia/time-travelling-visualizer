@@ -301,7 +301,7 @@ export class scatterPlotVisualizerTriangles implements ScatterPlotVisualizer {
         positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 2, left, top);
 
       } else if (window.unLabelData.indexOf(Math.floor(i / 2)) !== -1 || window.unLabelData.indexOf(Math.floor(i / 2) + 1) !== -1) {
-        console.log('9090900unlabel',i,window.unLabelData)
+        console.log('unlabel:',i,window.unLabelData)
         positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 0, left, left);
         positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 1, -left, left);
         positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 2, 0, top / 5);

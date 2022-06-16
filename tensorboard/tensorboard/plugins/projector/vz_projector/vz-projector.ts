@@ -337,6 +337,9 @@ class Projector
   setSelectedTensor(run: string, tensorInfo: EmbeddingInfo) {
     this.bookmarkPanel.setSelectedTensor(run, tensorInfo, this.dataProvider);
   }
+  updateBackgroundImg(){
+    this.projectorScatterPlotAdapter.updateBackground()
+  }
   /**
    * Registers a listener to be called any time the selected point set changes.
    */
@@ -881,6 +884,8 @@ class Projector
   }
   onProjectionChanged(projection?: Projection) {
     this.dataPanel.projectionChanged(projection);
+    this.updateBackgroundImg()
+    this.projectorScatterPlotAdapter.render();
   }
   setProjection(projection: Projection) {
     this.projection = projection;

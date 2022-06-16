@@ -274,13 +274,17 @@ export class ProjectorScatterPlotAdapter {
       ds,
       projectionComponents
     );
-    console.log('this.projection', this.projection, window.iteration,window.sceneBackgroundImg)
-    this.scatterPlot.addbackgroundImg('data:image/png;base64,'+ window.sceneBackgroundImg[window.iteration])
     this.scatterPlot.setPointPositions(newPositions, this.projection == null ? 0 : this.projection.dataSet.DVICurrentRealDataNumber);
     if (!window.worldSpacePointPositions) {
       window.worldSpacePointPositions = []
     }
     window.worldSpacePointPositions[window.iteration] = newPositions
+  }
+  updateBackground(){
+    console.log('update bg img', this.projection, window.iteration,window.sceneBackgroundImg)
+    if(window.sceneBackgroundImg && window.sceneBackgroundImg[window.iteration]){
+      this.scatterPlot.addbackgroundImg('data:image/png;base64,'+ window.sceneBackgroundImg[window.iteration])
+    }
   }
   updateScatterPlotAttributes(isFilter?: boolean) {
     if (this.projection == null) {
@@ -479,7 +483,6 @@ export class ProjectorScatterPlotAdapter {
     {
       if(window.properties && window.iteration) {
         const n = window.properties[window.iteration]?.length;
-        console.log('nnncangge',n)
         const fillRgb = styleRgbFromHexColor(POINT_COLOR_UNLABELED);
         const strokeRgb = styleRgbFromHexColor(POINT_COLOR_UNLABELED);
         // if (window.properties) {
