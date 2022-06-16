@@ -416,16 +416,32 @@ export const template = html`
       </paper-dropdown-menu>
       <paper-input value="{{budget}}" label="budget"></paper-input>
     </div>
-    <button class="query-by-stratergy search-button search">Query Sample By Stratergy</button>
+    <div style="display:flex;">
+      <button style="width: 120px;" class="query-by-stratergy search-button search">Query By AL</button>
+      <button style="width: 140px;" class="query-suggestion search-button search">Get Suggestion</button>
+    </div>
     <div style="display:flex;">
     <button style="width: 120px;" class="bounding-selection search-button search">Adjust Selections</button>
     <button style="width: 140px;" class="train-by-selection search-button search">Train By Selections</button>
     </div>
   </div>
-  <div>
-  <paper-toggle-button id="classify-points-toggle" checked="{{hiddenUnlabeled}}">
-    hidden labeled data
+  <div style="display:flex;width: 280px;justify-content: space-around;margin-bottom: 10px;">
+  <paper-checkbox id="label-points-toggle" checked="{{showlabeled}}">
+  labeled
+  </paper-checkbox>
+  <paper-checkbox id="unlabel-points-toggle" checked="{{showUnlabeled}}">
+  unlabeled
+  </paper-checkbox>
+  </paper-checkbox>
+  <paper-checkbox id="testing-points-toggle" checked="{{showTesting}}">
+  testing
+  </paper-checkbox>
+ <!-- <paper-toggle-button id="classify-points-toggle" checked="{{hiddenLabeled}}">
+    hidden labeled
   </paper-toggle-button>
+  <paper-toggle-button id="classify-points-toggle" checked="{{hiddenTesting}}">
+  hidden testing
+  </paper-toggle-button> -->
   </div>
 
   <div class="buttons">

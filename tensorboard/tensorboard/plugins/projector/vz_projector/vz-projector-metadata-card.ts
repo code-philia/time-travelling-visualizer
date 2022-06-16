@@ -12,13 +12,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
-import {PolymerElement, html} from '@polymer/polymer';
-import {customElement, property} from '@polymer/decorators';
+import { PolymerElement, html } from '@polymer/polymer';
+import { customElement, observe, property } from '@polymer/decorators';
 
-import {LegacyElementMixin} from '../../../components/polymer/legacy_element_mixin';
+import { LegacyElementMixin } from '../../../components/polymer/legacy_element_mixin';
 import '../../../components/polymer/irons_and_papers';
 
-import {PointMetadata} from './data';
+import { PointMetadata } from './data';
+import { ProjectorEventContext } from './projectorEventContext';
 
 @customElement('vz-projector-metadata-card')
 class MetadataCard extends LegacyElementMixin(PolymerElement) {
@@ -121,6 +122,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
             <img src="[[item.src]]" />
             <div class="metadata-key">[[item.key]]</div>
             <div class="metadata-value">[[item.value]]</div>
+            <button class="metadata-remove" onclick="currentRemove=[[item.key]]">remove</button>
           </div>
           </div>
         </template>
@@ -129,50 +131,61 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
     </template>
   `;
 
-  @property({type: Boolean})
+  @property({ type: Boolean })
   hasMetadata: boolean = false;
 
-  @property({type: Boolean})
+  @property({ type: Boolean })
   showImg: boolean = false;
 
-  @property({type: Number})
+  @property({ type: Number })
   selectedNum: Number = 0;
 
-  @property({type: Boolean})
+  @property({ type: Boolean })
   isCollapsed: boolean = false;
 
-  @property({type: String})
+  @property({ type: String })
   collapseIcon: string = 'expand-less';
 
-  @property({type: Array})
+  @property({ type: Array })
   metadata: Array<{
     key: string;
     value: string;
   }>;
-  @property({type: Array})
+  @property({ type: Array })
   customMetadata: Array<{
     key: string;
     value: string;
-    src?:string;
+    src?: string;
   }>;
 
-  @property({type: String})
+  @property({ type: Number })
+  currentRemove: Number = null
+
+  @property({ type: String })
   label: string;
 
   private labelOption: string;
   private pointMetadata: PointMetadata;
   private resultImg: HTMLElement;
-  
+
+
   /** Handles toggle of metadata-container. */
   _toggleMetadataContainer() {
     (this.$$('#metadata-container') as any).toggle();
     this.isCollapsed = !this.isCollapsed;
     this.set('collapseIcon', this.isCollapsed ? 'expand-more' : 'expand-less');
   }
-  updateMetadata(pointMetadata?: PointMetadata, src?:string) {
+
+  @observe('currentRemove')
+  _remove() {
+    console.log('111', this.currentRemove)
+  }
+
+
+  updateMetadata(pointMetadata?: PointMetadata, src?: string) {
     this.pointMetadata = pointMetadata;
     this.showImg = pointMetadata != null
-    console.log('this.showImg',this.showImg)
+
     this.hasMetadata = pointMetadata != null || window.customSelection?.length;
     if (pointMetadata) {
       let metadata = [];
@@ -180,26 +193,26 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
         if (!pointMetadata.hasOwnProperty(metadataKey)) {
           continue;
         }
-        metadata.push({key: metadataKey, value: pointMetadata[metadataKey]});
+        metadata.push({ key: metadataKey, value: pointMetadata[metadataKey] });
       }
       this.metadata = metadata;
       this.label = '' + this.pointMetadata[this.labelOption];
       //img
-      setTimeout(()=>{
+      setTimeout(() => {
         this.resultImg = this.$$('#metaImg') as HTMLAnchorElement;
-        console.log('outtt',src,this.resultImg)
-        if(src?.length){
-          this.resultImg?.setAttribute("style","display:block;")
-          this.resultImg?.setAttribute('src',src)
-        } else{
-          this.resultImg?.setAttribute("style","display:none;")
+        console.log('outtt', src, this.resultImg)
+        if (src?.length) {
+          this.resultImg?.setAttribute("style", "display:block;")
+          this.resultImg?.setAttribute('src', src)
+        } else {
+          this.resultImg?.setAttribute("style", "display:none;")
         }
-      },100)
+      }, 100)
     }
   }
 
-  async updateCustomList(points){
-    if(!window.customSelection || window.customSelection.length === 0){
+  async updateCustomList(points) {
+    if (!window.customSelection || window.customSelection.length === 0) {
       this.customMetadata = []
     }
     this.hasMetadata = window.customSelection?.length;
@@ -221,7 +234,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
         }).then(response => response.json()).then(data => {
           console.log("response", data);
           let src = 'data:image/png;base64,' + data.imgUrl;
-          metadata.push({ key: window.customSelection[i], value: points[window.customSelection[i]].metadata.label , src: src });
+          metadata.push({ key: window.customSelection[i], value: points[window.customSelection[i]].metadata.label, src: src });
 
           // logging.setModalMessage(null, msgId);
         }).catch(error => {
@@ -229,8 +242,30 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
         });
       }
     }
-    console.log('metadata',metadata)
     this.customMetadata = metadata;
+
+    setTimeout(() => {
+      this.addBtnListener()
+    }, 3000)
+  }
+  addBtnListener() {
+    const container = this.$$('#metadata-container') as any
+    let btns = container.querySelectorAll('.metadata-remove')
+    let rows = container.querySelectorAll('.metadata-row')
+    console.log('ananna', container, btns, btns.length,rows)
+    for (let i = 0; i < btns.length; i++) {
+
+      let btn = btns[i];
+      let row = rows[i]
+      btn.addEventListener('click', () => {
+        console.log('window.customSelection[i]', window.customSelection[i])
+        window.customSelection.splice(i, 1)
+        console.log('rows', rows)
+        console.log('row', row)
+        row.parentNode.removeChild(row)
+        container.removeChild(row)
+      })
+    }
   }
   setLabelOption(labelOption: string) {
     this.labelOption = labelOption;

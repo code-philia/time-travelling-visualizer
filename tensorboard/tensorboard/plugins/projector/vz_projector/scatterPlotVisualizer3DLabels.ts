@@ -232,13 +232,16 @@ export class ScatterPlotVisualizer3DLabels implements ScatterPlotVisualizer {
         let left = leftOffset / scale;
         let top = FONT_SIZE / scale;
         // First triangle
-        positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 0, left, 0);
-        positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 1, right, 0);
-        positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 2, left, top);
-        // Second triangle
-        positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 3, left, top);
-        positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 4, right, 0);
-        positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 5, right, top);
+        if(window.unLabelData.indexOf(i) !== -1){
+          positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 0, left, 0);
+          positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 1, right, 0);
+          positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 2, left, top);
+          // Second triangle
+          positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 3, left, top);
+          positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 4, right, 0);
+          positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 5, right, top);
+        }
+     
         // Set UVs based on letter.
         let uLeft = this.glyphTexture.offsets[letterCode];
         let uRight = this.glyphTexture.offsets[letterCode] + letterWidth;

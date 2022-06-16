@@ -80,7 +80,10 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   confidenceThresholdTo: number
 
   @property({ type: Boolean })
-  hiddenUnlabeled: false
+  hiddenLabeled: false
+
+  @property({ type: Boolean })
+  hiddenTesting: false
 
   @property({ type: Number })
   epochFrom: number
@@ -106,6 +109,15 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   @property({ type: String })
   collapseIcon: string = 'expand-less';
 
+  @property({ type: Boolean })
+  showlabeled: boolean = true;
+
+  @property({ type: Boolean })
+  showUnlabeled: boolean = true;
+
+  @property({ type: Boolean })
+  showTesting: boolean = true;
+
   distFunc: DistanceFunction;
 
   public scatterPlot: ScatterPlot;
@@ -118,6 +130,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   private searchBox: any; // ProjectorInput; type omitted b/c LegacyElement
 
   private queryByStrategtBtn: HTMLButtonElement;
+  private queryByCustom: HTMLButtonElement;
   private boundingSelectionBtn: HTMLButtonElement;
   private isAlSelecting: boolean;
   private trainBySelBtn: HTMLButtonElement;
@@ -161,6 +174,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     this.currentFilterType = 'normal'
 
     this.queryByStrategtBtn = this.$$('.query-by-stratergy') as HTMLButtonElement;
+    this.queryByCustom = this.$$('.query-suggestion') as HTMLButtonElement;
     this.boundingSelectionBtn = this.$$('.bounding-selection') as HTMLButtonElement;
 
     this.resetFilterButton = this.$$('.reset-filter') as HTMLButtonElement;
@@ -197,7 +211,12 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     this.epochFrom = 1
     this.epochTo = 1
     this.showTrace = false
-    this.hiddenUnlabeled = false
+    this.hiddenLabeled = false
+    this.hiddenTesting = false
+
+    this.showlabeled = true
+    this.showUnlabeled = true
+    this.showTesting = true
 
     this.budget = 1000
   }
@@ -294,16 +313,128 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     this.updateNeighborsList();
   }
 
-  @observe('hiddenUnlabeled')
+  @observe('hiddenLabeled')
   _refreshClassiftPoints() {
-    let indicates = []
-    if (this.hiddenUnlabeled) {
-      console.log('hidden')
+    this.update()
+  }
 
+  @observe('hiddenTesting')
+  _refreshTestPoints() {
+    this.update()
+  }
+
+  @observe('showlabeled')
+  _labeledChanged() {
+    let indicates = []
+    if (window.nowShowIndicates) {
+      if (this.showlabeled) {
+        for (let i = 0; i < window.properties[window.iteration].length; i++) {
+          let indicate = window.properties[window.iteration][i]
+          if (indicate === 0 || window.nowShowIndicates.indexOf(i) !== -1) {
+            indicates.push(i)
+          }
+        } 
+        window.nowShowIndicates = indicates
+        // this.projector.filterDataset(window.nowShowIndicates)
+      } else {
+        ///隐藏labeled
+        for (let i = 0; i < window.properties[window.iteration].length; i++) {
+          if (window.properties[window.iteration][i] !== 0 && window.nowShowIndicates.indexOf(i) !== -1) {
+            indicates.push(i)
+          }
+        } 
+        window.nowShowIndicates = indicates
+      }
+      this.projector.filterDataset(window.nowShowIndicates)
+    }
+  }
+
+  @observe('showUnlabeled')
+  _unLabelChanged() {
+    let indicates = []
+    if (window.nowShowIndicates) {
+      console.log('显示unlabeled')
+      if (this.showUnlabeled) {
+        for (let i = 0; i < window.properties[window.iteration].length; i++) {
+          let indicate = window.properties[window.iteration][i]
+          if (indicate === 1 || window.nowShowIndicates.indexOf(i) !== -1) {
+            indicates.push(i)
+          }
+        } 
+        window.nowShowIndicates = indicates
+        // this.projector.filterDataset(window.nowShowIndicates)
+      } else {
+        ///隐藏unlabeled
+        console.log('隐藏unlabelded')
+        for (let i = 0; i < window.properties[window.iteration].length; i++) {
+          if (window.properties[window.iteration][i] !== 1 && window.nowShowIndicates.indexOf(i) !== -1) {
+            indicates.push(i)
+          }
+        } 
+        window.nowShowIndicates = indicates
+        console.log('iii',indicates)
+      }
+      this.projector.filterDataset(window.nowShowIndicates)
+    }
+  }
+
+  @observe('showTesting')
+  _testingChanged() {
+    let indicates = []
+    if (window.nowShowIndicates) {
+      if (this.showTesting) {
+        for (let i = 0; i < window.properties[window.iteration].length; i++) {
+          let indicate = window.properties[window.iteration][i]
+          if (indicate === 2 || window.nowShowIndicates.indexOf(i) !== -1) {
+            indicates.push(i)
+          }
+        } 
+        window.nowShowIndicates = indicates
+        // this.projector.filterDataset(window.nowShowIndicates)
+      } else {
+        ///隐藏labeled
+        for (let i = 0; i < window.properties[window.iteration].length; i++) {
+          if (window.properties[window.iteration][i] !== 2 && window.nowShowIndicates.indexOf(i) !== -1) {
+            indicates.push(i)
+          }
+        } 
+        window.nowShowIndicates = indicates
+      }
+      this.projector.filterDataset(window.nowShowIndicates)
+    }
+  }
+
+  update() {
+    let indicates = []
+    if (this.hiddenLabeled && this.hiddenTesting) {
       if (window.properties) {
         if (window.properties[window.iteration].length) {
           for (let i = 0; i < window.properties[window.iteration].length; ++i) {
             if (window.properties[window.iteration][i] === 0) {
+              indicates.push(i)
+            }
+          }
+        }
+      }
+      console.log('indicates', indicates)
+      this.projector.filterDataset(indicates)
+    } else if (!this.hiddenLabeled && this.hiddenTesting) {
+      if (window.properties) {
+        if (window.properties[window.iteration].length) {
+          for (let i = 0; i < window.properties[window.iteration].length; ++i) {
+            if (window.properties[window.iteration][i] !== 2) {
+              indicates.push(i)
+            }
+          }
+        }
+      }
+      console.log('indicates', indicates)
+      this.projector.filterDataset(indicates)
+    } else if (this.hiddenLabeled && !this.hiddenTesting) {
+      if (window.properties) {
+        if (window.properties[window.iteration].length) {
+          for (let i = 0; i < window.properties[window.iteration].length; ++i) {
+            if (window.properties[window.iteration][i] !== 0) {
               indicates.push(i)
             }
           }
@@ -317,7 +448,6 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       }
       this.projector?.filterDataset(indicates)
     }
-
   }
 
   @observe('showTrace')
@@ -451,7 +581,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       // };
 
 
-      
+
       await fetch(`http://${DVIServer}/sprite?index=${indices[i]}&path=${'/Users/zhangyifan/Downloads/toy_model/resnet18_cifar10'}`, {
         method: 'GET',
         mode: 'cors'
@@ -459,32 +589,32 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         console.log("response", data);
         let img = document.createElement('img');
         let input = document.createElement('input');
-        input.type ='checkbox'
-        input.setAttribute('id',`resCheckbox${indices[i]}`)
+        input.type = 'checkbox'
+        input.setAttribute('id', `resCheckbox${indices[i]}`)
         img.src = 'data:image/png;base64,' + data.imgUrl;
         rowLink.onmouseenter = () => {
-          this.projectorEventContext.updateMetaDataByIndices(indices[i],img.src)
+          this.projectorEventContext.updateMetaDataByIndices(indices[i], img.src)
           this.projectorEventContext.notifyHoverOverPoint(index);
         };
         rowLink.onmouseleave = () => {
-          this.projectorEventContext.updateMetaDataByIndices(-1,'')
+          this.projectorEventContext.updateMetaDataByIndices(-1, '')
           this.projectorEventContext.notifyHoverOverPoint(null);
         };
-        if(!window.checkboxDom){
+        if (!window.checkboxDom) {
           window.checkboxDom = []
         }
         window.checkboxDom[indices[i]] = input
-        input.addEventListener('change',(e)=>{
-          console.log('e',indices[i],e,input.checked)
-          if(!window.customSelection){
+        input.addEventListener('change', (e) => {
+          console.log('e', indices[i], e, input.checked)
+          if (!window.customSelection) {
             window.customSelection = []
           }
-          if(input.checked){
+          if (input.checked) {
             window.customSelection.push(indices[i])
             this.projectorEventContext.refresh()
-          }else{
+          } else {
             let index = window.customSelection.indexOf(indices[i])
-            window.customSelection.splice(index,1)
+            window.customSelection.splice(index, 1)
             this.projectorEventContext.refresh()
           }
           this.projectorEventContext.notifyHoverOverPoint(indices[i]);
@@ -498,8 +628,8 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
 
       row.className = 'row-img';
-      
-     
+
+
       row.appendChild(rowLink);
       list.appendChild(row);
     }
@@ -585,7 +715,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       labelElement.innerText = this.getLabelFromIndex(neighbor.index);
       const valueElement = document.createElement('div');
       valueElement.className = 'value';
-      valueElement.innerText = this.projector.dataSet.points[neighbor.index].current_inv_acc.toFixed(3);
+      valueElement.innerText = this.projector.dataSet.points[neighbor.index]?.current_inv_acc?.toFixed(3);
       labelValueElement.appendChild(labelElement);
       labelValueElement.appendChild(valueElement);
       const barElement = document.createElement('div');
@@ -678,6 +808,31 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             } else {
               this.searchBox.message = `${this.queryIndices.length} matches.`;
             }
+
+            this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isALQuery');
+          }
+        }
+      );
+    }
+
+    this.queryByCustom.onclick = () => {
+      console.log('90909111')
+      if(!window.customSelection){
+        window.customSelection = []
+      }
+      projector.querySuggestion(
+        this.projector.iteration,
+        window.customSelection,
+        200,
+        (indices: any) => {
+          if (indices != null) {
+            this.queryIndices = indices;
+            if (this.queryIndices.length == 0) {
+              this.searchBox.message = '0 matches.';
+            } else {
+              this.searchBox.message = `${this.queryIndices.length} matches.`;
+            }
+            console.log('indices',indices)
 
             this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isALQuery');
           }

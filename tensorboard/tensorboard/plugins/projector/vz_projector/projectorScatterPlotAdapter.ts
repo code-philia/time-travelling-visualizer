@@ -274,7 +274,8 @@ export class ProjectorScatterPlotAdapter {
       ds,
       projectionComponents
     );
-    console.log('this.projection', this.projection, window.iteration)
+    console.log('this.projection', this.projection, window.iteration,window.sceneBackgroundImg)
+    this.scatterPlot.addbackgroundImg('data:image/png;base64,'+ window.sceneBackgroundImg[window.iteration])
     this.scatterPlot.setPointPositions(newPositions, this.projection == null ? 0 : this.projection.dataSet.DVICurrentRealDataNumber);
     if (!window.worldSpacePointPositions) {
       window.worldSpacePointPositions = []
@@ -881,7 +882,7 @@ export class ProjectorScatterPlotAdapter {
       let c = new THREE.Color(POINT_COLOR_HOVER);
       if (window.properties) {
         if (window.properties[window.iteration].length) {
-          if (window.properties[window.iteration][hoverPointIndex] === 0) {
+          if (window.properties[window.iteration][hoverPointIndex] === 1) {
             c = new THREE.Color(POINT_COLOR_UNLABELED);
           }
         }
@@ -911,7 +912,7 @@ export class ProjectorScatterPlotAdapter {
       }
     }
     if (window.properties && window.properties[window.iteration]?.length) {
-      if (window.properties[window.iteration][i] === 0) {
+      if (window.properties[window.iteration][i] === 1) {
         return ds.points[i]?.metadata[accessor] !== undefined ? `(unlabeled)${ds.points[i]?.metadata[accessor]}` : `unlabeled`
       }
     }
@@ -941,6 +942,9 @@ export class ProjectorScatterPlotAdapter {
     this.canvasLabelsVisualizer = null;
     this.spriteVisualizer = null;
     this.polylineVisualizer = null;
+    this.triangles = new scatterPlotVisualizerTriangles();
+    this.triangles.setSelectedPoint(this.selectedPointIndices);
+    this.spriteVisualizer = new ScatterPlotVisualizerSprites();
     if (inLabels3DMode) {
       this.labels3DVisualizer = new ScatterPlotVisualizer3DLabels();
       this.labels3DVisualizer.setLabelStrings(
@@ -949,6 +953,11 @@ export class ProjectorScatterPlotAdapter {
     } else if (renderInTriangle) {
       this.triangles = new scatterPlotVisualizerTriangles();
       this.triangles.setSelectedPoint(this.selectedPointIndices);
+      this.spriteVisualizer = new ScatterPlotVisualizerSprites();
+    
+      // this.triangles.setLabelStrings(
+      //   this.generate3DLabelsArray(ds, this.labelPointAccessor)
+      // );
     } else if (this.renderInTraceLine) {
       this.traceLine = new scatterPlotVisualizerTraceLine()
       this.traceLine.setEpoches(this.traceLineEpoch)

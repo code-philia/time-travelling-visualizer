@@ -499,9 +499,13 @@ export class DataSet {
             mode: 'cors'
           }).then(response => response.json()).then(data => {
             const result = data.result;
-            
-            const grid_index = data.grid_index;
-            const grid_color = data.grid_color;
+
+            const grid_index = [[data.grid_index[0],data.grid_index[1]],[data.grid_index[2],data.grid_index[3]]];
+            const grid_color = [ [137, 120, 117],[136, 119, 116],[136, 118, 115],[135, 117, 114]];
+            if(!window.sceneBackgroundImg){
+              window.sceneBackgroundImg = []
+            }
+            window.sceneBackgroundImg[window.iteration] = data.grid_color
 
             const label_color_list = data.label_color_list;
             const label_list = data.label_list;
@@ -526,10 +530,26 @@ export class DataSet {
             const evaluation = data.evaluation;
             this.DVIEvaluation[iteration] = evaluation;
             const inv_acc = data.inv_acc_list || [];
-            if(!window.properties){
+            if (!window.properties) {
               window.properties = []
             }
             window.properties[iteration] = data.properties;
+
+            window.unLabelData = []
+            window.testingData = []
+            window.labeledData = []
+            window.nowShowIndicates = []
+            
+            for (let i = 0; i < data.properties.length; i++) {
+              if (data.properties[i] === 1) {
+                window.unLabelData.push(i)
+              }else if(data.properties[i] === 2){
+                window.testingData.push(i)
+              }else{
+                window.labeledData.push(i)
+              }
+              window.nowShowIndicates.push(i)
+            }
 
             // const is_uncertainty_diversity_tot_exist = data.uncertainty_diversity_tot?.is_exist;
             // this.is_uncertainty_diversity_tot_exist[iteration] = is_uncertainty_diversity_tot_exist;
@@ -838,8 +858,9 @@ export class DataSet {
         }).then(response => response.json()).then(data => {
           iteration++
           const result = data.result;
-          const grid_index = data.grid_index;
-          const grid_color = data.grid_color;
+          const grid_index = [[data.grid_index[0],data.grid_index[1]],[data.grid_index[2],data.grid_index[3]]];
+          const grid_color = [ [137, 120, 117],[136, 119, 116],[136, 118, 115],[135, 117, 114]];
+          window.sceneBackgroundImg[window.iteration] = data.grid_color
 
           const label_color_list = data.label_color_list;
           const label_list = data.label_list;

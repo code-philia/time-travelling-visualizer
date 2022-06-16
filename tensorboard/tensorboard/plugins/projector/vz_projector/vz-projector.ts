@@ -21,11 +21,16 @@ declare global {
     properties: any,
     isFilter: boolean | false,
     customSelection: any,
-    checkboxDom:any,
+    checkboxDom: any,
     isAdjustingSel: boolean | false,
     scene: any,
     renderer: any,
-    recommendIndices: any
+    recommendIndices: any,
+    unLabelData: any,
+    testingData:any,
+    labeledData:any,
+    nowShowIndicates:any,
+    sceneBackgroundImg:any
   }
 }
 
@@ -160,6 +165,8 @@ class Projector
   private goLeftBtn: any;
   private goRightBtn: any;
 
+  private helpBtn: any;
+
   private timer: any;
 
   async ready() {
@@ -197,6 +204,7 @@ class Projector
     this.goUpBtn = this.$$('#cavasGoUp') as HTMLElement;
     this.goLeftBtn = this.$$('#cavasGoLeft') as HTMLElement;
     this.goRightBtn = this.$$('#cavasGoRight') as HTMLElement;
+    this.helpBtn = this.$$('#help-3d-icon') as HTMLElement;
     this.inspectorPanel.initialize(this, this as ProjectorEventContext);
     this.projectionsPanel.initialize(this);
     this.bookmarkPanel.initialize(this, this as ProjectorEventContext);
@@ -279,7 +287,9 @@ class Projector
       this.dataPanel.metadataChanged(spriteAndMetadata, metadataFile);
     } else {
       this.setCurrentDataSet(null);
+      // this.projectorScatterPlotAdapter
     }
+    console.log('909090909upppppp',window.sceneBackgroundImg)
   }
   metadataEdit(metadataColumn: string, metadataLabel: string) {
     this.selectedPointIndices.forEach(
@@ -380,7 +390,6 @@ class Projector
   setDynamicNoisy(epochFrom, epochTo) {
     let current = epochFrom
     this.timer = setInterval(() => {
-      console.log('eee1233', epochFrom, epochTo, 'current:', current, this.dataSet.points, this.dataSet.points[80000], this.dataSet.points[80000].DVI_projections[current][0])
       this.inspectorPanel.updateCurrentPlayEpoch(current)
       window.iteration = current;
       for (let i = 0; i < this.dataSet.points.length; i++) {
@@ -415,8 +424,9 @@ class Projector
   }
 
   refresh() {
-    this.projectorScatterPlotAdapter.scatterPlot.render()
+    // this.projectorScatterPlotAdapter.scatterPlot.render()
     this.metadataCard.updateCustomList(this.dataSet.points)
+    this.projectorScatterPlotAdapter.scatterPlot.render()
   }
   /**
    * Used by clients to indicate that a selection has occurred.
@@ -441,21 +451,21 @@ class Projector
         window.customSelection = []
       }
       for (let i = 0; i < newSelectedPointIndices.length; i++) {
-        let check:any = window.checkboxDom[newSelectedPointIndices[i]]
+        let check: any = window.checkboxDom[newSelectedPointIndices[i]]
         if (window.customSelection.indexOf(newSelectedPointIndices[i]) < 0) {
           window.customSelection.push(newSelectedPointIndices[i]);
 
 
-          console.log('check',check)
-          if(check) {
+          console.log('check', check)
+          if (check) {
             check.checked = true
           }
 
         } else {
           let index = window.customSelection.indexOf(newSelectedPointIndices[i])
           window.customSelection.splice(index, 1)
-          console.log('uncheck',check)
-          if(check) {
+          console.log('uncheck', check)
+          if (check) {
             check.checked = false
           }
         }
@@ -582,8 +592,8 @@ class Projector
       l(this.selectedPointIndices, neighbors)
     );
   }
-  updateMetaDataByIndices(indices:number,src:string){
-    if(indices === -1){
+  updateMetaDataByIndices(indices: number, src: string) {
+    if (indices === -1) {
       this.metadataCard.updateMetadata(null);
       return
     }
@@ -727,6 +737,10 @@ class Projector
   }
   private setupUIControls() {
     // View controls
+    this.helpBtn.addEventListener('click', () => {
+      // console.log('help')
+        (this.$.help3dDialog as any).open();
+    })
     this.$$('#reset-zoom').addEventListener('click', () => {
       this.projectorScatterPlotAdapter.scatterPlot.resetZoom();
       this.projectorScatterPlotAdapter.scatterPlot.startOrbitAnimation();
@@ -763,6 +777,7 @@ class Projector
           }
         }
       }
+      window.scene.children[2].visible = (hiddenBackground as any).active
       this.projectorScatterPlotAdapter.scatterPlot.render()
       // this.projectorScatterPlotAdapter.scatterPlot.hiddenBackground(
       //   (hiddenBackground as any).active,
@@ -1049,6 +1064,34 @@ class Projector
       callback(null);
     });
   }
+
+  querySuggestion(iteration: number,  indices: number[], k:number,
+    callback: (indices: any) => void) {
+    const msgId = logging.setModalMessage('Querying...');
+    let headers = new Headers();
+    headers.append('Content-Type', 'application/json');
+    headers.append('Accept', 'application/json');
+    fetch(`http://${this.DVIServer}/al_suggest_similar`, {
+      method: 'POST',
+      body: JSON.stringify({
+        "iteration": iteration,
+        "selectIndices": indices,
+        "k":k,
+        "content_path": this.dataSet.DVIsubjectModelPath,
+      }),
+      headers: headers,
+      mode: 'cors'
+    }).then(response => response.json()).then(data => {
+      const indices = data.similarIndices;
+      logging.setModalMessage(null, msgId);
+      callback(indices);
+    }).catch(error => {
+      logging.setErrorMessage('querying for indices');
+      callback(null);
+    });
+  }
+
+
   saveDVISelection(indices: number[], callback: (msg: string) => void) {
     let headers = new Headers();
     headers.append('Content-Type', 'application/json');

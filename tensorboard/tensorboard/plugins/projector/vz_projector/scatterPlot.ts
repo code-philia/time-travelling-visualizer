@@ -116,8 +116,13 @@ export class ScatterPlot {
 
     // 1,创建场景对象
     this.scene = new THREE.Scene();
-    this.addbackgroundImg('')
-
+    if(!window.sceneBackgroundImg){
+      window.sceneBackgroundImg = []
+    }
+    console.log('window.sceneBackgroundImg1234567',window.sceneBackgroundImg[window.iteration])
+    if(window.sceneBackgroundImg[window.iteration]){
+      this.addbackgroundImg('data:image/png;base64,' + window.sceneBackgroundImg[window.iteration])
+    }
     this.getLayoutValues();
     // this.scene = new THREE.Scene();
     this.renderer = new THREE.WebGLRenderer({
@@ -130,7 +135,7 @@ export class ScatterPlot {
     // console.log(this.renderer.domElement)
     // this.renderer.domElement.styl
 
-    this.light = new THREE.PointLight(16772287, 1, 0);
+    this.light = new THREE.PointLight(0xffffff);
     this.scene.add(this.light);
     this.setDimensions(3);
     this.recreateCamera(this.makeDefaultCameraDef(this.dimensionality));
@@ -155,14 +160,14 @@ export class ScatterPlot {
     // 2，使用canvas画图作为纹理贴图
     // 先使用canvas画图
     let canvas = document.createElement('canvas');
-    canvas.width = 150;
-    canvas.height = 150;
+    canvas.width = 200;
+    canvas.height = 200;
     var ctx = canvas.getContext("2d");
     var img = new Image();
     img.src = imgUrl;
     img.crossOrigin = "anonymous";
     img.onload = () => {
-      ctx.drawImage(img, 0, 0, 150, 150);
+      ctx.drawImage(img, 0, 0, 200, 200);
       let texture = new THREE.CanvasTexture(canvas);
       // texture.needsUpdate = true; // 不设置needsUpdate为true的话，可能纹理贴图不刷新
       var plane_geometry = new THREE.PlaneGeometry(2, 2);
@@ -360,6 +365,7 @@ export class ScatterPlot {
     this.isDragSequence = false;
     this.render();
   }
+  
   private onMouseDown(e: MouseEvent) {
     this.isDragSequence = false;
     this.mouseIsDown = true;
@@ -665,7 +671,7 @@ export class ScatterPlot {
   /** Adds a visualizer to the set, will start dispatching events to it */
   addVisualizer(visualizer: ScatterPlotVisualizer) {
     if (this.scene) {
-      visualizer.setScene(this.scene);
+      visualizer?.setScene(this.scene);
     }
     visualizer.onResize(this.width, this.height);
     visualizer.onPointPositionsChanged(this.worldSpacePointPositions);
