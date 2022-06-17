@@ -28,7 +28,7 @@ from singleVis.edge_dataset import DataHandler
 from singleVis.eval.evaluator import Evaluator
 from singleVis.spatial_edge_constructor import SingleEpochSpatialEdgeConstructor
 
-active_learning_path = "/home/xianglin/projects/git_space/ActiveLearning"
+active_learning_path = "../../ActiveLearning"
 sys.path.append(active_learning_path)
 
 
