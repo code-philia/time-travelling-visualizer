@@ -356,15 +356,15 @@ export class ScatterPlot {
       return;
     }
     // Only call event handlers if the click originated from the scatter plot.
-    // if (!this.isDragSequence && notify) {
-    //   let selection = this.nearestPoint != null ? [this.nearestPoint] : [];
-    //   if (this.nearestPoint >= this.realDataNumber) {
-    //     selection = [];
-    //   }
-    //   this.projectorEventContext.notifySelectionChanged(selection);
-    // }
-    // this.isDragSequence = false;
-    // this.render();
+    if (!this.isDragSequence && notify) {
+      let selection = this.nearestPoint != null ? [this.nearestPoint] : [];
+      if (this.nearestPoint >= this.realDataNumber) {
+        selection = [];
+      }
+      this.projectorEventContext.notifySelectionChanged(selection);
+    }
+    this.isDragSequence = false;
+    this.render();
   }
   
   private onMouseDown(e: MouseEvent) {

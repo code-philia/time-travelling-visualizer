@@ -55,6 +55,9 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   @property({ type: Number })
   budget: number
 
+  @property({ type: Number })
+  suggestKNum: number
+
   @property({ type: String })
   selectedMetadataField: string;
 
@@ -219,6 +222,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     this.showTesting = true
 
     this.budget = 1000
+    this.suggestKNum = 10
   }
   initialize(projector: any, projectorEventContext: ProjectorEventContext) {
     this.projector = projector;
@@ -556,7 +560,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     await fetch("standalone_projector_config.json", { method: 'GET' })
       .then(response => response.json())
       .then(data => { DVIServer = data.DVIServerIP + ":" + data.DVIServerPort; })
-    window.recommendIndices = []
+    window.suggestionIndicates = []
     window.checkboxDom = []
     for (let i = 0; i < indices.length; i++) {
       const index = indices[i];
@@ -583,7 +587,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         method: 'GET',
         mode: 'cors'
       }).then(response => response.json()).then(data => {
-        console.log("response", data);
+        // console.log("response", data);
         let img = document.createElement('img');
         let input = document.createElement('input');
         input.type = 'checkbox'
@@ -821,7 +825,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       projector.querySuggestion(
         this.projector.iteration,
         window.customSelection,
-        200,
+        Number(this.suggestKNum),
         (indices: any) => {
           if (indices != null) {
             this.queryIndices = indices;
@@ -832,7 +836,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             }
             console.log('indices',indices)
 
-            this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isALQuery');
+            this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isSuggestion');
             this.projectorScatterPlotAdapter.setTriangleMode(true)
           }
         }
