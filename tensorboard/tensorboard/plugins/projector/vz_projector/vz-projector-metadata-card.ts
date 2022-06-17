@@ -237,6 +237,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
         });
       }
     }
+    window.customMetadata = metadata
     this.customMetadata = metadata;
 
     setTimeout(() => {

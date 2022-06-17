@@ -22,6 +22,7 @@ const FONT_SIZE = 80;
 const ONE_OVER_FONT_SIZE = 1 / FONT_SIZE;
 const LABEL_SCALE = 2.2; // at 1:1 texel/pixel ratio
 const LABEL_COLOR = 'black';
+const CUSTOM_COLOR = 'green';
 const LABEL_BACKGROUND = 'white';
 const MAX_CANVAS_DIMENSION = 8192;
 const NUM_GLYPHS = 256;

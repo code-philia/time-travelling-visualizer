@@ -30,7 +30,8 @@ declare global {
     testingData:any,
     labeledData:any,
     nowShowIndicates:any,
-    sceneBackgroundImg:any
+    sceneBackgroundImg:any,
+    customMetadata:any
   }
 }
 
@@ -480,6 +481,8 @@ class Projector
         }
       }
       this.metadataCard.updateCustomList(this.dataSet.points)
+      this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
+      this.projectorScatterPlotAdapter.render()
       return
     }
 

@@ -37,7 +37,7 @@ import * as vector from './vector';
 const LABEL_FONT_SIZE = 10;
 const LABEL_SCALE_DEFAULT = 1.0;
 const LABEL_SCALE_LARGE = 2;
-const LABEL_FILL_COLOR_SELECTED = 0x000000;
+const LABEL_FILL_COLOR_SELECTED = 65280;
 const LABEL_FILL_COLOR_HOVER = 0x000000;
 const LABEL_FILL_COLOR_NEIGHBOR = 0x000000;
 const LABEL_STROKE_COLOR_SELECTED = 0xffffff;
@@ -171,6 +171,9 @@ export class ProjectorScatterPlotAdapter {
     this.updateScatterPlotAttributes();
     this.scatterPlot.render();
   }
+  updateTriangle() {
+    this.triangles.createTriangles()
+  }
   setDataSet(dataSet: DataSet) {
     if (this.projection != null) {
       // TODO(@charlesnicholson): setDataSet needs to go away, the projection is the
@@ -196,7 +199,7 @@ export class ProjectorScatterPlotAdapter {
     if (metadata.spriteImage == null || metadata.spriteMetadata == null) {
       return;
     }
-    return;
+    // return;
     const n = dataSet.points.length;
     const spriteIndices = new Float32Array(n);
     for (let i = 0; i < n; ++i) {
@@ -412,7 +415,8 @@ export class ProjectorScatterPlotAdapter {
       return null;
     }
     const selectedPointCount =
-      selectedPointIndices == null ? 0 : selectedPointIndices.length;
+      selectedPointIndices == null ? 0 : window.customSelection?.length;
+    // const customSeletedCount = null ? 0 : window.customSelection?.length
     const neighborCount =
       neighborsOfFirstPoint == null ? 0 : neighborsOfFirstPoint.length;
     const n =
@@ -457,7 +461,7 @@ export class ProjectorScatterPlotAdapter {
       const fillRgb = styleRgbFromHexColor(LABEL_FILL_COLOR_SELECTED);
       const strokeRgb = styleRgbFromHexColor(LABEL_STROKE_COLOR_SELECTED);
       for (let i = 0; i < n; ++i) {
-        const labelIndex = selectedPointIndices[i];
+        const labelIndex = window.customSelection[i];
         labelStrings.push(
           this.getLabelText(ds, labelIndex, this.labelPointAccessor)
         );
@@ -570,6 +574,9 @@ export class ProjectorScatterPlotAdapter {
     }
     const scale = new Float32Array(ds.points.length);
     scale.fill(POINT_SCALE_DEFAULT);
+    if(!window.customSelection){
+      window.customSelection = []
+    }
     const selectedPointCount =
       selectedPointIndices == null ? 0 : selectedPointIndices.length;
     const neighborCount =
@@ -912,7 +919,7 @@ export class ProjectorScatterPlotAdapter {
   private getLabelText(ds: DataSet, i: number, accessor: string): string {
     if(window.customSelection?.length && window.isAdjustingSel){
       if (window.customSelection.indexOf(i)>=0) {
-        return ds.points[i]?.metadata[accessor] !== undefined ? `(custom selected)${ds.points[i]?.metadata[accessor]}` : `custom selected`
+        return ds.points[i]?.metadata[accessor] !== undefined ? `✅ ${ds.points[i]?.metadata[accessor]}` : `selected`
       }
     }
     if (window.properties && window.properties[window.iteration]?.length) {
@@ -946,8 +953,8 @@ export class ProjectorScatterPlotAdapter {
     this.canvasLabelsVisualizer = null;
     this.spriteVisualizer = null;
     this.polylineVisualizer = null;
-    this.triangles = new scatterPlotVisualizerTriangles();
-    this.triangles.setSelectedPoint(this.selectedPointIndices);
+    // this.triangles = new scatterPlotVisualizerTriangles();
+    // this.triangles.setSelectedPoint(this.selectedPointIndices);
     this.spriteVisualizer = new ScatterPlotVisualizerSprites();
     if (inLabels3DMode) {
       this.labels3DVisualizer = new ScatterPlotVisualizer3DLabels();
@@ -955,10 +962,13 @@ export class ProjectorScatterPlotAdapter {
         this.generate3DLabelsArray(ds, this.labelPointAccessor)
       );
     } else if (renderInTriangle) {
+
+      scatterPlot.addVisualizer(this.spriteVisualizer);
       this.triangles = new scatterPlotVisualizerTriangles();
       this.triangles.setSelectedPoint(this.selectedPointIndices);
-      this.spriteVisualizer = new ScatterPlotVisualizerSprites();
-    
+      this.canvasLabelsVisualizer = new ScatterPlotVisualizerCanvasLabels(
+        this.scatterPlotContainer
+      );    
       // this.triangles.setLabelStrings(
       //   this.generate3DLabelsArray(ds, this.labelPointAccessor)
       // );
@@ -973,6 +983,8 @@ export class ProjectorScatterPlotAdapter {
       this.canvasLabelsVisualizer = new ScatterPlotVisualizerCanvasLabels(
         this.scatterPlotContainer
       );
+      this.triangles = new scatterPlotVisualizerTriangles();
+      this.triangles.setSelectedPoint(this.selectedPointIndices);
     }
     this.polylineVisualizer = new ScatterPlotVisualizerPolylines();
     this.setDataSet(ds);
