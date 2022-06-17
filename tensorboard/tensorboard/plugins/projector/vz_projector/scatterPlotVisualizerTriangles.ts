@@ -222,8 +222,8 @@ export class scatterPlotVisualizerTriangles implements ScatterPlotVisualizer {
       window.customSelection.sort(func)
       console.log('cuscus',window.customSelection);
     }
-    if (!window.unLabelData) {
-      window.unLabelData = []
+    if (!this.unLabelDataIndexList) {
+      this.unLabelDataIndexList = []
     }
     window.selectedList = this.selectedIndexList
     if (this.worldSpacePointPositions == null) {
@@ -265,7 +265,7 @@ export class scatterPlotVisualizerTriangles implements ScatterPlotVisualizer {
     this.geometry.addAttribute('color', colors);
     let lettersSoFar = 0;
     console.log('selectedIndexList', this.selectedIndexList, this.glyphTexture)
-    for (let i = 0; i < pointCount; i++) {
+    for (let i = 0; i < pointCount * 2; i++) {
       let leftOffset = 0;
       leftOffset += this.glyphTexture.lengths[105];
       // Determine length of word in pixels.
@@ -300,14 +300,14 @@ export class scatterPlotVisualizerTriangles implements ScatterPlotVisualizer {
         positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 1, triRight, 20 / scale);
         positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 2, left, top);
 
-      } else if (window.unLabelData.indexOf(Math.floor(i / 2)) !== -1 || window.unLabelData.indexOf(Math.floor(i / 2) + 1) !== -1) {
-        console.log('unlabel:',i,window.unLabelData)
+      } else if (this.unLabelDataIndexList.indexOf(Math.floor(i / 2)) !== -1) {
         positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 0, left, left);
         positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 1, -left, left);
-        positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 2, 0, top / 5);
+        positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 2, 0, top / 4);
         positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 0, left, left);
         positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 1, -left, left);
-        positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 2, 0, top / 5);
+        positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 2, 0, top / 4);
+
         // positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 3, left, 0);
         // positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 4, triRight / 2, 0);
         // positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 5, triRight / 4, top / 4);
@@ -317,12 +317,12 @@ export class scatterPlotVisualizerTriangles implements ScatterPlotVisualizer {
         // positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 2, left, top / 4);
       } else if (window.testingData.indexOf(Math.floor(i / 2)) !== -1) {
         //juxing
-        // positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 0, left / 2, left / 2);
-        // positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 1, -left / 2, left / 2);
-        // positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 2, left / 2, -left / 2);
-        // positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 3, left / 2, -left / 2);
-        // positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 4, -left / 2, left / 2);
-        // positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 5, -left / 2, -left / 2);
+        positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 0, left / 2, left / 2);
+        positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 1, -left / 2, left / 2);
+        positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 2, left / 2, -left / 2);
+        positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 3, left / 2, -left / 2);
+        positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 4, -left / 2, left / 2);
+        positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 5, -left / 2, -left / 2);
       }
       // if (this.selectedIndexList.length == 1 && this.selectedIndexList.indexOf(Math.floor(i / 2)) !== -1) {
       //   console.log('reset')

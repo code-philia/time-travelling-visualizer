@@ -134,6 +134,7 @@ export class ProjectorScatterPlotAdapter {
         if (this.renderInTriangle) {
           if (this.triangles) {
             this.triangles.setSelectedPoint(this.selectedPointIndices);
+            this.triangles.setUnLabeledIndex(window.unLabelData);
           }
         }
         if (this.renderInTraceLine) {

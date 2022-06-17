@@ -25,7 +25,7 @@ declare global {
     isAdjustingSel: boolean | false,
     scene: any,
     renderer: any,
-    recommendIndices: any,
+    suggestionIndicates: any,
     unLabelData: any,
     testingData:any,
     labeledData:any,
@@ -434,20 +434,27 @@ class Projector
    * Used by clients to indicate that a selection has occurred.
    */
   notifySelectionChanged(newSelectedPointIndices: number[], selectMode?: boolean, selectionType?: string) {
-    // if (selectionType === 'isALQuery') {
-    //   window.recommendIndices = []
-    //   console.log('this.queryIndices', newSelectedPointIndices)
-    //   if (newSelectedPointIndices.length) {
-    //     for (let i = 0; i < newSelectedPointIndices.length; i++) {
-    //       this.dataSet.getSpriteImage(newSelectedPointIndices[i], (imgData: any) => {
-    //         let src = 'data:image/png;base64,' + imgData.imgUrl
-    //         window.recommendIndices[i] = {
-    //           src:src
-    //         }
-    //       })
-    //     }
-    //   }
-    // }
+    if (selectionType === 'isSuggestion' || selectionType === 'isALQuery' || selectionType === 'normal') {
+      console.log('99999999999')
+       window.customSelection =[]
+       this.metadataCard.updateCustomList(this.dataSet.points)
+    }
+    if (selectionType === 'isSuggestion') {
+      window.suggestionIndicates = []
+      // console.log('this.queryIndices', newSelectedPointIndices)
+      if (newSelectedPointIndices.length) {
+        for (let i = 0; i < newSelectedPointIndices.length; i++) {
+          this.dataSet.getSpriteImage(newSelectedPointIndices[i], (imgData: any) => {
+            let src = 'data:image/png;base64,' + imgData.imgUrl
+            window.suggestionIndicates[i] = {
+              src:src,
+              index:newSelectedPointIndices[i]
+            }
+          })
+        }
+      }
+      // return
+    }
     if (selectionType === 'boundingbox' && window.isAdjustingSel) {
       if (!window.customSelection) {
         window.customSelection = []
@@ -1090,7 +1097,7 @@ class Projector
       logging.setModalMessage(null, msgId);
       callback(indices);
     }).catch(error => {
-      logging.setErrorMessage('querying for indices');
+      // logging.setErrorMessage('querying for indices');
       callback(null);
     });
   }
