@@ -142,7 +142,10 @@ def update_epoch_projection(timevis, EPOCH, predicates):
 
     # return the image of background
     x_min, y_min, x_max, y_max, b_fig = timevis.vis.get_background(EPOCH, timevis.hyperparameters["VISUALIZATION"]["RESOLUTION"])
-    grid = (x_min, y_min, x_max, y_max)
+    grid = [x_min, y_min, x_max, y_max]
+    # formating
+    grid = [float(i) for i in grid]
+    b_fig = str(b_fig, encoding='utf-8')
     # grid, decision_view = timevis.vis.get_epoch_decision_view(EPOCH, timevis.hyperparameters["VISUALIZATION"]["RESOLUTION"])
     # grid = grid.reshape((-1, 2)).tolist()
     # decision_view = decision_view * 255
@@ -198,7 +201,7 @@ def update_epoch_projection(timevis, EPOCH, predicates):
             tmp = np.arange(training_data_number + testing_data_number)
         selected_points = np.intersect1d(selected_points, tmp)
     
-    properties = np.concatenate((np.zeros(training_data_number, dtype="int").astype("int"), 2*np.ones(testing_data_number, dtype="int")), axis=0)
+    properties = np.concatenate((np.zeros(training_data_number, dtype=np.int16), 2*np.ones(testing_data_number, dtype=np.int16)), axis=0)
     lb = timevis.get_epoch_index(EPOCH)
     ulb = np.setdiff1d(training_data_index, lb)
     properties[ulb] = 1
