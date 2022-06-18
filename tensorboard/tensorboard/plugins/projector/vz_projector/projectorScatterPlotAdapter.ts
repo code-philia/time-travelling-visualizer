@@ -38,8 +38,10 @@ const LABEL_FONT_SIZE = 10;
 const LABEL_SCALE_DEFAULT = 1.0;
 const LABEL_SCALE_LARGE = 2;
 const LABEL_FILL_COLOR_CHECKED = 65280;
+const LABEL_STROKE_COLOR_CHECKED = 65280;
 
 const LABEL_FILL_COLOR_SELECTED = 16744192;
+
 
 const LABEL_FILL_COLOR_HOVER = 16776960;
 const LABEL_FILL_COLOR_NEIGHBOR = 0x000000;
@@ -415,15 +417,15 @@ export class ProjectorScatterPlotAdapter {
     if (ds == null) {
       return null;
     }
-    if(!window.customSelection){
+    if (!window.customSelection) {
       window.customSelection = []
     }
     let tempArr = []
     const selectedPointCount =
-    selectedPointIndices == null ? 0 : window.queryResPointIndices?.length;
-    for(let i=0;i<selectedPointCount;i++){
+      selectedPointIndices == null ? 0 : window.queryResPointIndices?.length;
+    for (let i = 0; i < selectedPointCount; i++) {
       let indicate = window.queryResPointIndices[i]
-      if(window.customSelection.indexOf(indicate) === -1){
+      if (window.customSelection.indexOf(indicate) === -1) {
         tempArr.push(indicate)
       }
     }
@@ -433,7 +435,7 @@ export class ProjectorScatterPlotAdapter {
     const neighborCount =
       neighborsOfFirstPoint == null ? 0 : neighborsOfFirstPoint.length;
     const n =
-    tempLength + customSelectionCount + neighborCount + (hoverPointIndex != null ? 1 : 0);
+      tempLength + customSelectionCount + neighborCount + (hoverPointIndex != null ? 1 : 0);
     const visibleLabels = new Uint32Array(n);
     const scale = new Float32Array(n);
     const opacityFlags = new Int8Array(n);
@@ -472,7 +474,7 @@ export class ProjectorScatterPlotAdapter {
     {
       const n = customSelectionCount;
       const fillRgb = styleRgbFromHexColor(LABEL_FILL_COLOR_CHECKED);
-      const strokeRgb = styleRgbFromHexColor(LABEL_STROKE_COLOR_SELECTED);
+      const strokeRgb = styleRgbFromHexColor(LABEL_STROKE_COLOR_CHECKED);
       for (let i = 0; i < n; ++i) {
         const labelIndex = window.customSelection[i];
         labelStrings.push(
@@ -828,6 +830,18 @@ export class ProjectorScatterPlotAdapter {
         }
       }
     }
+    if (window.unLabelData?.length) {
+      const n = ds.points.length;
+      let c = new THREE.Color(POINT_COLOR_UNSELECTED);
+      for (let i = 0; i < n; i++) {
+        if (window.unLabelData.indexOf(i) >= 0) {
+          let dst = i * 3
+          colors[dst++] = c.r;
+          colors[dst++] = c.g;
+          colors[dst++] = c.b;
+        }
+      }
+    }
     // Color the selected points.
     {
       const n = selectedPointCount;
@@ -862,6 +876,7 @@ export class ProjectorScatterPlotAdapter {
         colors[dst++] = c.b;
       }
     }
+    // Color the unlabeled points.
 
     if (window.isFilter) {
       let dst = 0;
@@ -892,6 +907,7 @@ export class ProjectorScatterPlotAdapter {
       }
       // return colors
     }
+    //
 
     if (window.customSelection?.length && window.isAdjustingSel) {
       const n = ds.points.length;
@@ -904,7 +920,6 @@ export class ProjectorScatterPlotAdapter {
           colors[dst++] = c.b;
         }
       }
-
     }
 
     // Color the hover point.
@@ -938,20 +953,64 @@ export class ProjectorScatterPlotAdapter {
     }
     return labels;
   }
+  // private getLabelText(ds: DataSet, i: number, accessor: string): string {
+  //   if (window.customSelection?.length && window.isAdjustingSel) {
+  //     if (window.customSelection.indexOf(i) >= 0) {
+  //       //处理unlabeled
+  //       if (window.properties && window.properties[window.iteration]?.length) {
+  //         if (window.properties[window.iteration][i] === 1) {
+  //           return `✅ ${i}`
+  //         }
+  //       }
+  //     }
+  //   }
+  //   if (window.customSelection?.length && window.isAdjustingSel) {
+  //     if (window.customSelection.indexOf(i) >= 0) {
+  //       if (window.properties && window.properties[window.iteration]?.length) {
+  //         return ds.points[i]?.metadata[accessor] !== undefined ? `✅ ${ds.points[i]?.metadata[accessor]}` : `✅ selected`
+  //       }
+  //     }
+  //     if (this.selectedPointIndices?.length) {
+  //       if (this.selectedPointIndices.indexOf(i) >= 0) {
+  //         //处理unlabeled
+  //         if (window.properties && window.properties[window.iteration]?.length) {
+  //           if (window.properties[window.iteration][i] === 1) {
+  //             return i !== undefined ? `💓 ${i}` : `💓 result`
+  //           }
+  //         }
+  //       }
+  //     }
+  //     if (this.selectedPointIndices?.length) {
+  //       if (this.selectedPointIndices.indexOf(i) >= 0) {
+  //         return ds.points[i]?.metadata[accessor] !== undefined ? `💓 ${ds.points[i]?.metadata[accessor]}` : `result`
+  //       }
+  //     }
+
+
+  //     if (window.properties && window.properties[window.iteration]?.length) {
+  //       if (window.properties[window.iteration][i] === 1) {
+  //         return `unlabeled`
+  //       }
+  //     }
+  //     return ds.points[i]?.metadata[accessor] !== undefined
+  //       ? (ds.points[i]?.metadata[accessor] !== "background" ? String(ds.points[i]?.metadata[accessor]) : "")
+  //       : `Unknown #${i}`;
+  //   }
+  // }
   private getLabelText(ds: DataSet, i: number, accessor: string): string {
     if (window.customSelection?.length && window.isAdjustingSel) {
       if (window.customSelection.indexOf(i) >= 0) {
-        return ds.points[i]?.metadata[accessor] !== undefined ? `✅ ${ds.points[i]?.metadata[accessor]}` : `selected`
+        return `✅ ${i}`
       }
     }
     if (this.selectedPointIndices?.length) {
       if (this.selectedPointIndices.indexOf(i) >= 0) {
-        return ds.points[i]?.metadata[accessor] !== undefined ? `💓 ${ds.points[i]?.metadata[accessor]}` : `result`
+        return `💓 ${i}`
       }
     }
     if (window.properties && window.properties[window.iteration]?.length) {
       if (window.properties[window.iteration][i] === 1) {
-        return `unlabeled`
+        return `unlabeled${i}`
       }
     }
     return ds.points[i]?.metadata[accessor] !== undefined
