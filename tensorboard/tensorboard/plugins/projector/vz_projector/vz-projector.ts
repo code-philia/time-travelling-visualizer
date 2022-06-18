@@ -787,7 +787,10 @@ class Projector
           }
         }
       }
-      window.scene.children[2].visible = (hiddenBackground as any).active
+      // if(window.scene.children)
+      if(window.scene.children[2] && window.scene.children[2].type === 'Mesh'){
+        window.scene.children[2].visible = !window.hiddenBackground
+      }
       this.projectorScatterPlotAdapter.scatterPlot.render()
       // this.projectorScatterPlotAdapter.scatterPlot.hiddenBackground(
       //   (hiddenBackground as any).active,

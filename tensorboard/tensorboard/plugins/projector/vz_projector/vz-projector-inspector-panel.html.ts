@@ -416,15 +416,24 @@ export const template = html`
       </paper-dropdown-menu>
       <paper-input value="{{budget}}" label="budget" style="margin-right: 10px;"></paper-input>
       <button style="width: 100px;" class="query-by-stratergy search-button search">Query</button>
+      <paper-tooltip position="bottom" animation-delay="0" fit-to-visible-bounds>
+      query By active Learning
+      </paper-tooltip>
     </div>
     <div style="display:flex;">
-      <paper-input style="width: 90px; margin-right:10px;" value="{{suggestKNum}}" label="k number"></paper-input>
-      <button style="width: 100px;" class="bounding-selection search-button search">Select</button>
-      <button style="width: 100px;" class="query-suggestion search-button search">Suggest</button>
+      <paper-input style="width: 120px; margin-right:10px;" value="{{suggestKNum}}" label="k number"></paper-input>
+      <!--<button style="width: 100px;" class="bounding-selection search-button search">Select</button>-->
+      <button style="width: 140px;" class="query-suggestion search-button search">Query Similar</button>
+      <paper-tooltip position="bottom" animation-delay="0" fit-to-visible-bounds>
+      query the similar points of the Selected Points
+      </paper-tooltip>
     </div>
     <div style="display:flex;">
-    <button style="width: 120px;" class="bounding-selection search-button search">Adjust Selections</button>
-    <button style="width: 140px;" class="train-by-selection search-button search">Train By Selections</button>
+    <button style="width: 120px;" class="bounding-selection search-button search">Select</button>
+    <paper-tooltip position="bottom" animation-delay="0" fit-to-visible-bounds>
+    Selet Points on canvas or query results list
+    </paper-tooltip>
+    <button style="width: 240px;" class="train-by-selection search-button search">Train By Selections</button>
     </div>
   </div>
   <div style="display:flex;width: 280px;justify-content: space-around;margin-bottom: 10px;">

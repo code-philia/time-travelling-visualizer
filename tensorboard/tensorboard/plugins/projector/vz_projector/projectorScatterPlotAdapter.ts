@@ -39,12 +39,12 @@ const LABEL_SCALE_DEFAULT = 1.0;
 const LABEL_SCALE_LARGE = 2;
 const LABEL_FILL_COLOR_CHECKED = 65280;
 
-const LABEL_FILL_COLOR_SELECTED = 16711680;
+const LABEL_FILL_COLOR_SELECTED = 16744192;
 
-const LABEL_FILL_COLOR_HOVER = 0x000000;
+const LABEL_FILL_COLOR_HOVER = 16776960;
 const LABEL_FILL_COLOR_NEIGHBOR = 0x000000;
-const LABEL_STROKE_COLOR_SELECTED = 16711680;
-const LABEL_STROKE_COLOR_HOVER = 0xffffff;
+const LABEL_STROKE_COLOR_SELECTED = 0xffffff;
+const LABEL_STROKE_COLOR_HOVER = 16776960
 const LABEL_STROKE_COLOR_NEIGHBOR = 0xffffff;
 
 const POINT_COLOR_UNSELECTED = 0xe3e3e3;
@@ -862,23 +862,6 @@ export class ProjectorScatterPlotAdapter {
         colors[dst++] = c.b;
       }
     }
-    if (window.hiddenBackground) {
-      const n = ds.points.length;
-      let c = new THREE.Color(0xffffff);
-      for (let i = 0; i < n; i++) {
-        const point = ds.points[i];
-        if (point.metadata[this.labelPointAccessor]) {
-          let hoverText = point.metadata[this.labelPointAccessor].toString();
-          if (hoverText == 'background') {
-            point.color = '#ffffff'
-            let dst = i * 3
-            colors[dst++] = c.r;
-            colors[dst++] = c.g;
-            colors[dst++] = c.b;
-          }
-        }
-      }
-    }
 
     if (window.isFilter) {
       let dst = 0;
@@ -931,7 +914,7 @@ export class ProjectorScatterPlotAdapter {
           && ds.points[hoverPointIndex].metadata[this.labelPointAccessor].toString() !== 'background'))) {
       let c = new THREE.Color(POINT_COLOR_HOVER);
       if (window.properties) {
-        if (window.properties[window.iteration].length) {
+        if (window.properties[window.iteration]?.length) {
           if (window.properties[window.iteration][hoverPointIndex] === 1) {
             c = new THREE.Color(POINT_COLOR_UNLABELED);
           }
@@ -963,7 +946,7 @@ export class ProjectorScatterPlotAdapter {
     }
     if (this.selectedPointIndices?.length) {
       if (this.selectedPointIndices.indexOf(i) >= 0) {
-        return ds.points[i]?.metadata[accessor] !== undefined ? `🏅️ ${ds.points[i]?.metadata[accessor]}` : `result`
+        return ds.points[i]?.metadata[accessor] !== undefined ? `💓 ${ds.points[i]?.metadata[accessor]}` : `result`
       }
     }
     if (window.properties && window.properties[window.iteration]?.length) {
@@ -1022,13 +1005,12 @@ export class ProjectorScatterPlotAdapter {
       this.traceLine.setSelectedPoint(this.selectedPointIndices);
     }
     else {
-      this.spriteVisualizer = new ScatterPlotVisualizerSprites();
       scatterPlot.addVisualizer(this.spriteVisualizer);
+      this.triangles = new scatterPlotVisualizerTriangles();
+      this.triangles.setSelectedPoint(this.selectedPointIndices);
       this.canvasLabelsVisualizer = new ScatterPlotVisualizerCanvasLabels(
         this.scatterPlotContainer
       );
-      this.triangles = new scatterPlotVisualizerTriangles();
-      this.triangles.setSelectedPoint(this.selectedPointIndices);
     }
     this.polylineVisualizer = new ScatterPlotVisualizerPolylines();
     this.setDataSet(ds);
