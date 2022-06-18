@@ -278,42 +278,7 @@ export class scatterPlotVisualizerTriangles implements ScatterPlotVisualizer {
       let triRight = (leftOffset + this.glyphTexture.lengths[115]) / scale;
       let left = leftOffset / scale;
       let top = 40 / scale;
-      // if (window.customSelection.indexOf(Math.round(i / 2)) !== -1) {
-      //   // positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 0, left, 0);
-      //   // positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 1, right * 2, 0);
-      //   // positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 2, left, 40 / scale);
-      //   // positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 3, left, 40 / scale);
-      //   // positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 4, right * 2, 0);
-      //   // positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 5, right * 2, 40 / scale);
-      //   positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 0, 0, left);
-      //   positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 1, left, left);
-      //   positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 2, -left, left);
-      //   positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 3, left, left);
-      //   positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 4, -left, left);
-      //   positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 5, 0, -left);
-      //   // positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 3, left, left);
-      //   // positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 4, -left, left);
-      //   // positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 5, 0, -top / 5);
-      // }
-      // else 
-      if (this.selectedIndexList.indexOf(Math.floor(i / 2)) !== -1) {
-        //三角
-        i === this.selectedIndexList[0]
-        positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 0, 0, left);
-        positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 1, left, left);
-        positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 2, -left, left);
-        positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 3, left, left);
-        positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 4, -left, left);
-        positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 5, 0, -left);
-
-        // positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 0, left, 0);
-        // positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 1, triRight, 20 / scale);
-        // positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 2, left, top);
-        // positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 0, left, 0);
-        // positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 1, triRight, 20 / scale);
-        // positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 2, left, top);
-
-      } else if (window.unLabelData.indexOf(Math.floor(i / 2)) !== -1) {
+      if (window.unLabelData.indexOf(Math.floor(i / 2)) !== -1) {
         positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 0, left, left);
         positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 1, -left, left);
         positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 2, 0, top / 4);

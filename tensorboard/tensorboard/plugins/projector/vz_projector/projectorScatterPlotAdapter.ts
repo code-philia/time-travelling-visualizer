@@ -37,7 +37,10 @@ import * as vector from './vector';
 const LABEL_FONT_SIZE = 10;
 const LABEL_SCALE_DEFAULT = 1.0;
 const LABEL_SCALE_LARGE = 2;
-const LABEL_FILL_COLOR_SELECTED = 65280;
+const LABEL_FILL_COLOR_CHECKED = 65280;
+
+const LABEL_FILL_COLOR_SELECTED = 16711680;
+
 const LABEL_FILL_COLOR_HOVER = 0x000000;
 const LABEL_FILL_COLOR_NEIGHBOR = 0x000000;
 const LABEL_STROKE_COLOR_SELECTED = 0xffffff;
@@ -284,10 +287,10 @@ export class ProjectorScatterPlotAdapter {
     }
     window.worldSpacePointPositions[window.iteration] = newPositions
   }
-  updateBackground(){
-    console.log('update bg img', this.projection, window.iteration,window.sceneBackgroundImg)
-    if(window.sceneBackgroundImg && window.sceneBackgroundImg[window.iteration]){
-      this.scatterPlot.addbackgroundImg('data:image/png;base64,'+ window.sceneBackgroundImg[window.iteration])
+  updateBackground() {
+    console.log('update bg img', this.projection, window.iteration, window.sceneBackgroundImg)
+    if (window.sceneBackgroundImg && window.sceneBackgroundImg[window.iteration]) {
+      this.scatterPlot.addbackgroundImg('data:image/png;base64,' + window.sceneBackgroundImg[window.iteration])
     }
   }
   updateScatterPlotAttributes(isFilter?: boolean) {
@@ -414,13 +417,26 @@ export class ProjectorScatterPlotAdapter {
     if (ds == null) {
       return null;
     }
+    if(!window.customSelection){
+      window.customSelection = []
+    }
+    let tempArr = []
     const selectedPointCount =
-      selectedPointIndices == null ? 0 : window.customSelection?.length;
+    selectedPointIndices == null ? 0 : window.queryResPointIndices?.length;
+    for(let i=0;i<selectedPointCount;i++){
+      let indicate = window.queryResPointIndices[i]
+      if(window.customSelection.indexOf(indicate) === -1){
+        tempArr.push(indicate)
+      }
+    }
+    const tempLength = tempArr.length
+    const customSelectionCount = window.customSelection.length;
     // const customSeletedCount = null ? 0 : window.customSelection?.length
     const neighborCount =
       neighborsOfFirstPoint == null ? 0 : neighborsOfFirstPoint.length;
     const n =
-      selectedPointCount + neighborCount + (hoverPointIndex != null ? 1 : 0);
+    tempLength + customSelectionCount + neighborCount + (hoverPointIndex != null ? 1 : 0);
+    console.log('tempArr',n,tempArr)
     const visibleLabels = new Uint32Array(n);
     const scale = new Float32Array(n);
     const opacityFlags = new Int8Array(n);
@@ -457,8 +473,8 @@ export class ProjectorScatterPlotAdapter {
     }
     // Selected points
     {
-      const n = selectedPointCount;
-      const fillRgb = styleRgbFromHexColor(LABEL_FILL_COLOR_SELECTED);
+      const n = customSelectionCount;
+      const fillRgb = styleRgbFromHexColor(LABEL_FILL_COLOR_CHECKED);
       const strokeRgb = styleRgbFromHexColor(LABEL_STROKE_COLOR_SELECTED);
       for (let i = 0; i < n; ++i) {
         const labelIndex = window.customSelection[i];
@@ -486,7 +502,36 @@ export class ProjectorScatterPlotAdapter {
       }
     }
     {
-      if(window.properties && window.iteration) {
+      const n = tempLength;
+      const fillRgb = styleRgbFromHexColor(LABEL_FILL_COLOR_SELECTED);
+      const strokeRgb = styleRgbFromHexColor(LABEL_STROKE_COLOR_SELECTED);
+      for (let i = 0; i < n; ++i) {
+        const labelIndex = tempArr[i];
+        labelStrings.push(
+          this.getLabelText(ds, labelIndex, this.labelPointAccessor)
+        );
+        visibleLabels[dst] = labelIndex;
+        scale[dst] = LABEL_SCALE_LARGE;
+        opacityFlags[dst] = n === 1 ? 0 : 1;
+        packRgbIntoUint8Array(
+          fillColors,
+          dst,
+          fillRgb[0],
+          fillRgb[1],
+          fillRgb[2]
+        );
+        packRgbIntoUint8Array(
+          strokeColors,
+          dst,
+          strokeRgb[0],
+          strokeRgb[1],
+          strokeRgb[2]
+        );
+        ++dst;
+      }
+    }
+    {
+      if (window.properties && window.iteration) {
         const n = window.properties[window.iteration]?.length;
         const fillRgb = styleRgbFromHexColor(POINT_COLOR_UNLABELED);
         const strokeRgb = styleRgbFromHexColor(POINT_COLOR_UNLABELED);
@@ -522,7 +567,7 @@ export class ProjectorScatterPlotAdapter {
           ++dst;
         }
       }
-     
+
     }
     // Neighbors
     {
@@ -574,7 +619,7 @@ export class ProjectorScatterPlotAdapter {
     }
     const scale = new Float32Array(ds.points.length);
     scale.fill(POINT_SCALE_DEFAULT);
-    if(!window.customSelection){
+    if (!window.customSelection) {
       window.customSelection = []
     }
     const selectedPointCount =
@@ -754,15 +799,13 @@ export class ProjectorScatterPlotAdapter {
     {
       const n = ds.points.length;
       let dst = 0;
-      if (selectedPointCount > 0 && !renderInTriangle && !window.isFilter) {
-        let c = new THREE.Color(unselectedColor);
+      if (selectedPointCount > 0 && !window.isFilter) {
         for (let i = 0; i < n; ++i) {
+          let c = new THREE.Color(unselectedColor);
           let point = ds.points[i]
-          if (point.metadata[this.labelPointAccessor]) {
-            let hoverText = point.metadata[this.labelPointAccessor].toString();
-            if (hoverText == 'background') {
-              c = new THREE.Color(point.color)
-            }
+          //filter之后 只有unlabel无颜色
+          if (window.properties[window.iteration][i] !== 1) {
+            c = new THREE.Color(point.color)
           }
           colors[dst++] = c.r;
           colors[dst++] = c.g;
@@ -871,18 +914,18 @@ export class ProjectorScatterPlotAdapter {
       // return colors
     }
 
-    if(window.customSelection?.length && window.isAdjustingSel){
+    if (window.customSelection?.length && window.isAdjustingSel) {
       const n = ds.points.length;
       let c = new THREE.Color(POINT_CUSTOM_SELECTED);
       for (let i = 0; i < n; i++) {
-        if (window.customSelection.indexOf(i)>=0) {
+        if (window.customSelection.indexOf(i) >= 0) {
           let dst = i * 3
-            colors[dst++] = c.r;
-            colors[dst++] = c.g;
-            colors[dst++] = c.b;
+          colors[dst++] = c.r;
+          colors[dst++] = c.g;
+          colors[dst++] = c.b;
         }
       }
-     
+
     }
 
     // Color the hover point.
@@ -917,14 +960,19 @@ export class ProjectorScatterPlotAdapter {
     return labels;
   }
   private getLabelText(ds: DataSet, i: number, accessor: string): string {
-    if(window.customSelection?.length && window.isAdjustingSel){
-      if (window.customSelection.indexOf(i)>=0) {
+    if (window.customSelection?.length && window.isAdjustingSel) {
+      if (window.customSelection.indexOf(i) >= 0) {
         return ds.points[i]?.metadata[accessor] !== undefined ? `✅ ${ds.points[i]?.metadata[accessor]}` : `selected`
+      }
+    }
+    if (this.selectedPointIndices?.length) {
+      if (this.selectedPointIndices.indexOf(i) >= 0) {
+        return ds.points[i]?.metadata[accessor] !== undefined ? `⭕️ ${ds.points[i]?.metadata[accessor]}` : `result`
       }
     }
     if (window.properties && window.properties[window.iteration]?.length) {
       if (window.properties[window.iteration][i] === 1) {
-        return ds.points[i]?.metadata[accessor] !== undefined ? `(unlabeled)${ds.points[i]?.metadata[accessor]}` : `unlabeled`
+        return `unlabeled`
       }
     }
     return ds.points[i]?.metadata[accessor] !== undefined
@@ -968,7 +1016,7 @@ export class ProjectorScatterPlotAdapter {
       this.triangles.setSelectedPoint(this.selectedPointIndices);
       this.canvasLabelsVisualizer = new ScatterPlotVisualizerCanvasLabels(
         this.scatterPlotContainer
-      );    
+      );
       // this.triangles.setLabelStrings(
       //   this.generate3DLabelsArray(ds, this.labelPointAccessor)
       // );

@@ -31,7 +31,8 @@ declare global {
     labeledData:any,
     nowShowIndicates:any,
     sceneBackgroundImg:any,
-    customMetadata:any
+    customMetadata:any,
+    queryResPointIndices:any
   }
 }
 
@@ -436,8 +437,9 @@ class Projector
    */
   notifySelectionChanged(newSelectedPointIndices: number[], selectMode?: boolean, selectionType?: string) {
     if (selectionType === 'isSuggestion' || selectionType === 'isALQuery' || selectionType === 'normal') {
-      console.log('99999999999')
+       console.log('99999999999')
        window.customSelection =[]
+       window.queryResPointIndices = newSelectedPointIndices
        this.metadataCard.updateCustomList(this.dataSet.points)
     }
     if (selectionType === 'isSuggestion') {
