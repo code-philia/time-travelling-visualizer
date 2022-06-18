@@ -449,7 +449,7 @@ export class DataSet {
       dataPoint.projections['tsne-2'] = 0;
     }
     for (let i = 0; i < this.points.length; i++) {
-      if (pointIndices.indexOf(i) == -1 && i < this.DVICurrentRealDataNumber) {
+      if (pointIndices?.indexOf(i) == -1 && i < this.DVICurrentRealDataNumber) {
         let dataPoint = this.points[i];
         dataPoint.projections = {};
       }
@@ -512,7 +512,7 @@ export class DataSet {
             const prediction_list = data.prediction_list;
 
             const background_point_number = grid_index.length;
-            console.log("grid_index type", typeof (grid_index))
+ 
             const real_data_number = label_color_list.length;
             this.tSNETotalIter = data.maximum_iteration;
 
@@ -815,7 +815,6 @@ export class DataSet {
         mode: 'cors'
       }).then(response => response.json()).then(data => {
         const indices = data.selectedPoints;
-        console.log("response", indices.length);
         stepCallback(this.tSNEIteration, evaluation, newSelection, indices, this.tSNETotalIter);
       }).catch(error => {
         logging.setErrorMessage('querying for indices');
@@ -867,7 +866,7 @@ export class DataSet {
           const prediction_list = data.prediction_list;
 
           const background_point_number = grid_index.length;
-          console.log("grid_index type", typeof (grid_index))
+
           const real_data_number = label_color_list.length;
           this.tSNETotalIter = data.maximum_iteration;
 
@@ -885,6 +884,27 @@ export class DataSet {
           const evaluation = data.evaluation;
           this.DVIEvaluation[iteration] = evaluation;
           const inv_acc = data.inv_acc_list || [];
+
+          if (!window.properties) {
+            window.properties = []
+          }
+          window.properties[iteration] = data.properties;
+
+          window.unLabelData = []
+          window.testingData = []
+          window.labeledData = []
+          window.nowShowIndicates = []
+          
+          for (let i = 0; i < data.properties.length; i++) {
+            if (data.properties[i] === 1) {
+              window.unLabelData.push(i)
+            }else if(data.properties[i] === 2){
+              window.testingData.push(i)
+            }else{
+              window.labeledData.push(i)
+            }
+            window.nowShowIndicates.push(i)
+          }
 
           // const is_uncertainty_diversity_tot_exist = data.uncertainty_diversity_tot?.is_exist;
           // this.is_uncertainty_diversity_tot_exist[iteration] = is_uncertainty_diversity_tot_exist;
@@ -1074,7 +1094,7 @@ export class DataSet {
           window.DVIDataList = this.DVIDataList
           stepCallback(this.tSNEIteration, evaluation, new_selection, filterIndices, this.tSNETotalIter);
         }).catch(error => {
-          logging.setErrorMessage('querying for indices');
+          // logging.setErrorMessage('querying for indices');
           console.log(error);
           stepCallback(null, null, null, null, null);
         });
@@ -1487,7 +1507,6 @@ export class DataSet {
    * Search the dataset based on a metadata field and save all the predicates.
    */
   query(query: string, inRegexMode: boolean, fieldName: string): [any, number[]] {
-    console.log('from,to', query)
     let predicate = util.getSearchPredicate(query, inRegexMode, fieldName);
     let matches: number[] = [];
     this.points.forEach((point, id) => {

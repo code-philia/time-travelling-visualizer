@@ -337,7 +337,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
           if (indicate === 0 || window.nowShowIndicates.indexOf(i) !== -1) {
             indicates.push(i)
           }
-        } 
+        }
         window.nowShowIndicates = indicates
         // this.projector.filterDataset(window.nowShowIndicates)
       } else {
@@ -346,7 +346,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
           if (window.properties[window.iteration][i] !== 0 && window.nowShowIndicates.indexOf(i) !== -1) {
             indicates.push(i)
           }
-        } 
+        }
         window.nowShowIndicates = indicates
       }
       this.projector.filterDataset(window.nowShowIndicates)
@@ -357,14 +357,13 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   _unLabelChanged() {
     let indicates = []
     if (window.nowShowIndicates) {
-      console.log('显示unlabeled')
       if (this.showUnlabeled) {
         for (let i = 0; i < window.properties[window.iteration].length; i++) {
           let indicate = window.properties[window.iteration][i]
           if (indicate === 1 || window.nowShowIndicates.indexOf(i) !== -1) {
             indicates.push(i)
           }
-        } 
+        }
         window.nowShowIndicates = indicates
         // this.projector.filterDataset(window.nowShowIndicates)
       } else {
@@ -372,7 +371,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
           if (window.properties[window.iteration][i] !== 1 && window.nowShowIndicates.indexOf(i) !== -1) {
             indicates.push(i)
           }
-        } 
+        }
         window.nowShowIndicates = indicates
       }
       this.projector.filterDataset(window.nowShowIndicates)
@@ -389,7 +388,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
           if (indicate === 2 || window.nowShowIndicates.indexOf(i) !== -1) {
             indicates.push(i)
           }
-        } 
+        }
         window.nowShowIndicates = indicates
         // this.projector.filterDataset(window.nowShowIndicates)
       } else {
@@ -398,7 +397,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
           if (window.properties[window.iteration][i] !== 2 && window.nowShowIndicates.indexOf(i) !== -1) {
             indicates.push(i)
           }
-        } 
+        }
         window.nowShowIndicates = indicates
       }
       this.projector.filterDataset(window.nowShowIndicates)
@@ -417,7 +416,6 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
           }
         }
       }
-      console.log('indicates', indicates)
       this.projector.filterDataset(indicates)
     } else if (!this.hiddenLabeled && this.hiddenTesting) {
       if (window.properties) {
@@ -429,7 +427,6 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
           }
         }
       }
-      console.log('indicates', indicates)
       this.projector.filterDataset(indicates)
     } else if (this.hiddenLabeled && !this.hiddenTesting) {
       if (window.properties) {
@@ -577,11 +574,6 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       rowLink.onmouseleave = () => {
         this.projectorEventContext.notifyHoverOverPoint(null);
       };
-      // rowLink.onclick = () => {
-      //   this.projectorEventContext.notifySelectionChanged([index]);
-      // };
-
-
 
       await fetch(`http://${DVIServer}/sprite?index=${indices[i]}&path=${'/Users/zhangyifan/Downloads/toy_model/resnet18_cifar10'}`, {
         method: 'GET',
@@ -811,17 +803,28 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             }
 
             this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isALQuery');
-            
+            if (!this.isAlSelecting) {
+              this.isAlSelecting = true
+              window.isAdjustingSel = true
+              this.boundingSelectionBtn.classList.add('actived')
+              this.projectorEventContext.setMouseMode(MouseMode.AREA_SELECT)
+            }
+            // this.projectorScatterPlotAdapter.scatterPlot.setMouseMode(MouseMode.AREA_SELECT);
+
           }
         }
       );
     }
 
     this.queryByCustom.onclick = () => {
-      console.log('90909111')
-      if(!window.customSelection){
+      if (!window.customSelection) {
         window.customSelection = []
       }
+      if (!window.customSelection.length) {
+        logging.setErrorMessage('Please select some points first and then query the similar points of the corresponding points');
+        return
+      }
+
       projector.querySuggestion(
         this.projector.iteration,
         window.customSelection,
@@ -834,17 +837,26 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             } else {
               this.searchBox.message = `${this.queryIndices.length} matches.`;
             }
-            console.log('indices',indices)
+            console.log('indices', indices)
 
             this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isSuggestion');
-            this.projectorScatterPlotAdapter.setTriangleMode(true)
+            // this.projectorScatterPlotAdapter.setTriangleMode(true)
+            if (!this.isAlSelecting) {
+              this.isAlSelecting = true
+              window.isAdjustingSel = true
+              this.boundingSelectionBtn.classList.add('actived')
+              this.projectorEventContext.setMouseMode(MouseMode.AREA_SELECT)
+            }
           }
         }
       );
     }
 
     this.trainBySelBtn.onclick = () => {
-      console.log(this.projector.iteration, this.selectedPointIndices)
+      this.isAlSelecting = false
+      window.isAdjustingSel = false
+      this.boundingSelectionBtn.classList.remove('actived')
+      this.projectorEventContext.setMouseMode(MouseMode.CAMERA_AND_CLICK_SELECT);
       this.projector.retrainBySelections(this.projector.iteration, this.selectedPointIndices)
       //  this.projectionsPanel.reTrainBySel(this.projector.iteration,this.selectedPointIndices)
     }
@@ -947,7 +959,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
       this.currentPredicate[this.selectedMetadataField] = this.searchPredicate;
       this.filterIndices = this.selectedPointIndices.sort()
-      console.log(indices, this.selectedPointIndices)
+
       projector.filterDataset(indices, true);
       this.enableResetFilterButton(true);
       this.updateFilterButtons(this.filterIndices.length);
@@ -1003,7 +1015,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
               this.searchBox.message = `${this.queryIndices.length} matches.`;
             }
             // console.log('this.queryIndices',this.queryIndices)
-            this.projectorEventContext.notifySelectionChanged(this.queryIndices,false,'normal');
+            this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'normal');
           }
         }
       );
@@ -1019,11 +1031,11 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     //   this.boundingBoxSelection = [];
     // }
     //this.sentButton.onclick = () => {
-      //console.log(this.selectedPointIndices, this.boundingBoxSelection)
-      // this.projector.saveDVISelection(this.boundingBoxSelection, (msg: string) => {
-      //   this.selectinMessage.innerText = msg;
-      //   logging.setWarnMessage(msg, null);
-      // });
+    //console.log(this.selectedPointIndices, this.boundingBoxSelection)
+    // this.projector.saveDVISelection(this.boundingBoxSelection, (msg: string) => {
+    //   this.selectinMessage.innerText = msg;
+    //   logging.setWarnMessage(msg, null);
+    // });
     //}
     // this.showButton.onclick = () => {
     //   this.projectorEventContext.notifySelectionChanged(this.boundingBoxSelection, true);
@@ -1070,7 +1082,6 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         window.customSelection.splice(index, 1)
       }
     }
-    console.log('bobob', this.boundingBoxSelection, window.customSelection)
     // window.customSelection = this.currentBoundingBoxSelection
   }
   private updateNumNN() {

@@ -30,7 +30,9 @@ declare global {
     testingData:any,
     labeledData:any,
     nowShowIndicates:any,
-    sceneBackgroundImg:any
+    sceneBackgroundImg:any,
+    customMetadata:any,
+    queryResPointIndices:any
   }
 }
 
@@ -435,8 +437,8 @@ class Projector
    */
   notifySelectionChanged(newSelectedPointIndices: number[], selectMode?: boolean, selectionType?: string) {
     if (selectionType === 'isSuggestion' || selectionType === 'isALQuery' || selectionType === 'normal') {
-      console.log('99999999999')
        window.customSelection =[]
+       window.queryResPointIndices = newSelectedPointIndices
        this.metadataCard.updateCustomList(this.dataSet.points)
     }
     if (selectionType === 'isSuggestion') {
@@ -464,8 +466,6 @@ class Projector
         if (window.customSelection.indexOf(newSelectedPointIndices[i]) < 0) {
           window.customSelection.push(newSelectedPointIndices[i]);
 
-
-          console.log('check', check)
           if (check) {
             check.checked = true
           }
@@ -473,13 +473,14 @@ class Projector
         } else {
           let index = window.customSelection.indexOf(newSelectedPointIndices[i])
           window.customSelection.splice(index, 1)
-          console.log('uncheck', check)
           if (check) {
             check.checked = false
           }
         }
       }
       this.metadataCard.updateCustomList(this.dataSet.points)
+      this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
+      this.projectorScatterPlotAdapter.render()
       return
     }
 
@@ -786,7 +787,10 @@ class Projector
           }
         }
       }
-      window.scene.children[2].visible = (hiddenBackground as any).active
+      // if(window.scene.children)
+      if(window.scene.children[2] && window.scene.children[2].type === 'Mesh'){
+        window.scene.children[2].visible = !window.hiddenBackground
+      }
       this.projectorScatterPlotAdapter.scatterPlot.render()
       // this.projectorScatterPlotAdapter.scatterPlot.hiddenBackground(
       //   (hiddenBackground as any).active,

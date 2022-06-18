@@ -455,7 +455,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
           }
           //indices
           filterIndices = this.projector.inspectorPanel.filterIndices;
-          console.log(filterIndices.length);
+          
           this.projector.dataSet.setDVIFilteredData(filterIndices);
 
           if (iteration != null) {

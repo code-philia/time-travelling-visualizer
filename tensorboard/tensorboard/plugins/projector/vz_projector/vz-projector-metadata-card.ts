@@ -237,6 +237,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
         });
       }
     }
+    window.customMetadata = metadata
     this.customMetadata = metadata;
 
     setTimeout(() => {
@@ -245,13 +246,12 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
   }
   addBtnListener() {
     const container = this.$$('#metadata-container') as any
-    let btns = container.querySelectorAll('.metadata-remove')
-    for (let i = 0; i < btns.length; i++) {
+    let btns = container?.querySelectorAll('.metadata-remove')
+    for (let i = 0; i < btns?.length; i++) {
       let btn = btns[i];
       btn.addEventListener('click', () => {
         window.customSelection.splice(i, 1)
         this.customMetadata.splice(i,1)
-        console.log('window.customSelection',window.customSelection,this.customMetadata)
         btn.parentNode.parentNode.removeChild(btn.parentNode)
       })
     }
