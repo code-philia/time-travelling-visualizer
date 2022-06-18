@@ -43,7 +43,7 @@ const LABEL_FILL_COLOR_SELECTED = 16711680;
 
 const LABEL_FILL_COLOR_HOVER = 0x000000;
 const LABEL_FILL_COLOR_NEIGHBOR = 0x000000;
-const LABEL_STROKE_COLOR_SELECTED = 0xffffff;
+const LABEL_STROKE_COLOR_SELECTED = 16711680;
 const LABEL_STROKE_COLOR_HOVER = 0xffffff;
 const LABEL_STROKE_COLOR_NEIGHBOR = 0xffffff;
 
@@ -963,7 +963,7 @@ export class ProjectorScatterPlotAdapter {
     }
     if (this.selectedPointIndices?.length) {
       if (this.selectedPointIndices.indexOf(i) >= 0) {
-        return ds.points[i]?.metadata[accessor] !== undefined ? `⭕️ ${ds.points[i]?.metadata[accessor]}` : `result`
+        return ds.points[i]?.metadata[accessor] !== undefined ? `🏅️ ${ds.points[i]?.metadata[accessor]}` : `result`
       }
     }
     if (window.properties && window.properties[window.iteration]?.length) {
