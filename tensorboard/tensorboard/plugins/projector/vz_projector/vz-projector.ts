@@ -437,7 +437,6 @@ class Projector
    */
   notifySelectionChanged(newSelectedPointIndices: number[], selectMode?: boolean, selectionType?: string) {
     if (selectionType === 'isSuggestion' || selectionType === 'isALQuery' || selectionType === 'normal') {
-       console.log('99999999999')
        window.customSelection =[]
        window.queryResPointIndices = newSelectedPointIndices
        this.metadataCard.updateCustomList(this.dataSet.points)
@@ -467,8 +466,6 @@ class Projector
         if (window.customSelection.indexOf(newSelectedPointIndices[i]) < 0) {
           window.customSelection.push(newSelectedPointIndices[i]);
 
-
-          console.log('check', check)
           if (check) {
             check.checked = true
           }
@@ -476,7 +473,6 @@ class Projector
         } else {
           let index = window.customSelection.indexOf(newSelectedPointIndices[i])
           window.customSelection.splice(index, 1)
-          console.log('uncheck', check)
           if (check) {
             check.checked = false
           }

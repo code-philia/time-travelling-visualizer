@@ -357,7 +357,6 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   _unLabelChanged() {
     let indicates = []
     if (window.nowShowIndicates) {
-      console.log('显示unlabeled')
       if (this.showUnlabeled) {
         for (let i = 0; i < window.properties[window.iteration].length; i++) {
           let indicate = window.properties[window.iteration][i]
@@ -417,7 +416,6 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
           }
         }
       }
-      console.log('indicates', indicates)
       this.projector.filterDataset(indicates)
     } else if (!this.hiddenLabeled && this.hiddenTesting) {
       if (window.properties) {
@@ -429,7 +427,6 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
           }
         }
       }
-      console.log('indicates', indicates)
       this.projector.filterDataset(indicates)
     } else if (this.hiddenLabeled && !this.hiddenTesting) {
       if (window.properties) {
@@ -818,7 +815,6 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     }
 
     this.queryByCustom.onclick = () => {
-      console.log('90909111')
       if(!window.customSelection){
         window.customSelection = []
       }
@@ -844,7 +840,6 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     }
 
     this.trainBySelBtn.onclick = () => {
-      console.log(this.projector.iteration, this.selectedPointIndices)
       this.projector.retrainBySelections(this.projector.iteration, this.selectedPointIndices)
       //  this.projectionsPanel.reTrainBySel(this.projector.iteration,this.selectedPointIndices)
     }
@@ -947,7 +942,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
       this.currentPredicate[this.selectedMetadataField] = this.searchPredicate;
       this.filterIndices = this.selectedPointIndices.sort()
-      console.log(indices, this.selectedPointIndices)
+
       projector.filterDataset(indices, true);
       this.enableResetFilterButton(true);
       this.updateFilterButtons(this.filterIndices.length);
@@ -1070,7 +1065,6 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         window.customSelection.splice(index, 1)
       }
     }
-    console.log('bobob', this.boundingBoxSelection, window.customSelection)
     // window.customSelection = this.currentBoundingBoxSelection
   }
   private updateNumNN() {

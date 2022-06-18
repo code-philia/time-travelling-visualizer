@@ -512,7 +512,7 @@ export class DataSet {
             const prediction_list = data.prediction_list;
 
             const background_point_number = grid_index.length;
-            console.log("grid_index type", typeof (grid_index))
+ 
             const real_data_number = label_color_list.length;
             this.tSNETotalIter = data.maximum_iteration;
 
@@ -815,7 +815,6 @@ export class DataSet {
         mode: 'cors'
       }).then(response => response.json()).then(data => {
         const indices = data.selectedPoints;
-        console.log("response", indices.length);
         stepCallback(this.tSNEIteration, evaluation, newSelection, indices, this.tSNETotalIter);
       }).catch(error => {
         logging.setErrorMessage('querying for indices');
@@ -867,7 +866,7 @@ export class DataSet {
           const prediction_list = data.prediction_list;
 
           const background_point_number = grid_index.length;
-          console.log("grid_index type", typeof (grid_index))
+
           const real_data_number = label_color_list.length;
           this.tSNETotalIter = data.maximum_iteration;
 
@@ -1487,7 +1486,6 @@ export class DataSet {
    * Search the dataset based on a metadata field and save all the predicates.
    */
   query(query: string, inRegexMode: boolean, fieldName: string): [any, number[]] {
-    console.log('from,to', query)
     let predicate = util.getSearchPredicate(query, inRegexMode, fieldName);
     let matches: number[] = [];
     this.points.forEach((point, id) => {

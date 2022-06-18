@@ -226,7 +226,6 @@ export class ProjectorScatterPlotAdapter {
     this.createVisualizers(false, renderTriangle);
     this.updateScatterPlotAttributes();
     this.scatterPlot.render();
-    // console.log('renderTriangle', renderTriangle)
   }
 
   setRenderInTraceLine(renderTraceLine: boolean, epochFrom: number, epochTo: number) {
@@ -237,7 +236,6 @@ export class ProjectorScatterPlotAdapter {
     this.traceLineEpoch = [epochFrom, epochTo]
     this.createVisualizers(false, false);
     this.updateScatterPlotAttributes();
-    console.log('epochFrom', epochFrom, epochTo)
     this.scatterPlot.render();
   }
   setLegendPointColorer(
@@ -436,7 +434,6 @@ export class ProjectorScatterPlotAdapter {
       neighborsOfFirstPoint == null ? 0 : neighborsOfFirstPoint.length;
     const n =
     tempLength + customSelectionCount + neighborCount + (hoverPointIndex != null ? 1 : 0);
-    console.log('tempArr',n,tempArr)
     const visibleLabels = new Uint32Array(n);
     const scale = new Float32Array(n);
     const opacityFlags = new Int8Array(n);
@@ -843,7 +840,6 @@ export class ProjectorScatterPlotAdapter {
           colors[dst++] = c.b;
         }
       } else {
-        // console.log('selectedPointIndices',selectedPointIndices)
         for (let i = 0; i < n; ++i) {
           let dst = selectedPointIndices[i] * 3;
           colors[dst++] = c.r;
