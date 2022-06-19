@@ -80,7 +80,7 @@ def update_projection():
 @cross_origin()
 def filter():
     res = request.get_json()
-    CONTENT_PATH = os.path.normpath(res['path'])
+    CONTENT_PATH = os.path.normpath(res['content_path'])
     EPOCH = int(res['iteration'])
     predicates = res["predicates"]
 
@@ -204,9 +204,11 @@ def al_train():
 def al_suggest_similar():
     data = request.get_json()
     CONTENT_PATH = os.path.normpath(data['content_path'])
-    indices = data["selectIndices"]
+    previous_indices = data["previousIndices"]
+    current_indices = data["currentIndices"]
     iteration = data["iteration"]
     k = data["k"]
+    
     sys.path.append(CONTENT_PATH)
     from config import config
 
