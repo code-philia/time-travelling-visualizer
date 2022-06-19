@@ -98,7 +98,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
         </div>
         <template is="dom-if" if="[[showImg]]">
         <div id="header">
-          <div id="metadata-label">[[label]]</div>
+          <div id="metadata-label">Meta Data Card</div>
         </div>
         </template>
         <iron-collapse id="metadata-container" opened>
@@ -108,6 +108,8 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
               <div class="metadata-row">
                 <div class="metadata-key">[[item.key]]</div>
                 <div class="metadata-value">[[item.value]]</div>
+                <div class="metadata-key">prediction</div>
+                <div class="metadata-value">[[item.prediction]]</div>
               </div>
             </template>
           </div>
@@ -116,13 +118,20 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
           </div>
         </template>
           <div class="custom-list-header">custom selected list | [[selectedNum]]</div>
+          <div class="metadata-row">
+          <div class="metadata-key">| img |</div>
+          <div class="metadata-key">index |</div>
+          <div class="metadata-key">label |</div>
+          <div class="metadata-key">predict |</div>
+          </div>
           <div style="max-height: calc(100vh - 380px);overflow: auto; padding: 0 10px;">
           <template is="dom-repeat" items="[[customMetadata]]">
           <div class="metadata-row" id=[[item.key]]>
             <img src="[[item.src]]" />
             <div class="metadata-key">[[item.key]]</div>
             <div class="metadata-value">[[item.value]]</div>
-            <button class="metadata-remove" onclick="currentRemove=[[item.key]]">remove</button>
+            <div class="metadata-value">[[item.prediction]]</div>
+            <div class="metadata-value">[[item.flag]]</div>
           </div>
           </div>
         </template>
@@ -193,8 +202,9 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
         if (!pointMetadata.hasOwnProperty(metadataKey)) {
           continue;
         }
-        metadata.push({ key: metadataKey, value: pointMetadata[metadataKey] });
+        metadata.push({ key: metadataKey, value: pointMetadata[metadataKey], prediction:pointMetadata['current_prediction'] });
       }
+      console.log('pointMetadata',pointMetadata)
       this.metadata = metadata;
       this.label = '' + this.pointMetadata[this.labelOption];
       //img
@@ -231,7 +241,8 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
           mode: 'cors'
         }).then(response => response.json()).then(data => {
           let src = 'data:image/png;base64,' + data.imgUrl;
-          metadata.push({ key: window.customSelection[i], value: points[window.customSelection[i]].metadata.label, src: src });
+          let flag = points[window.customSelection[i]]?.metadata.label === points[window.customSelection[i]].current_prediction?'':'🚩'
+          metadata.push({ key: window.customSelection[i], value: points[window.customSelection[i]].metadata.label, src: src,prediction: points[window.customSelection[i]].current_prediction,flag:flag });
         }).catch(error => {
           console.log("error", error);
         });
@@ -250,11 +261,16 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
     for (let i = 0; i < btns?.length; i++) {
       let btn = btns[i];
       btn.addEventListener('click', () => {
-        window.customSelection.splice(i, 1)
-        this.customMetadata.splice(i,1)
+        this.removeCustomListItem(i)
         btn.parentNode.parentNode.removeChild(btn.parentNode)
       })
     }
+  }
+  removeCustomListItem(i:number){
+    this.customMetadata.splice(i,1)
+    window.customSelection.splice(i,1)
+    console.log('rrrr',this.customMetadata,window.customSelection)
+   
   }
   setLabelOption(labelOption: string) {
     this.labelOption = labelOption;

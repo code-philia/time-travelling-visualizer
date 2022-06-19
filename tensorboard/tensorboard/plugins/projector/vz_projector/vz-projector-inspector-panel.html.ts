@@ -471,9 +471,9 @@ export const template = html`
       <div>Dynamic Point Setting</div>
       <div class="confidence-threshold">
         <div class="threshold-container">
-          <paper-input value="{{epochFrom}}" label="epoch from:">
+          <paper-input value="{{epochFrom}}" label="iteration from:">
           </paper-input>
-          <paper-input value="{{epochTo}}" label="epoch to:">
+          <paper-input value="{{epochTo}}" label="iteration to:">
           </paper-input>
         </div>
         <div class="flex-container">
@@ -553,6 +553,8 @@ export const template = html`
     </div>
     <div class="matches-list" style="display: none">
      <div class="matches-list-title">Query Result List:</div>
+     <div class="matches-list-title"> 
+     <span style="margin-left: 4px;">｜img |</span><span>index｜</span><span>label｜</span><span> predict｜</span><span>result｜</span></div>
       <div class="list"></div>
       <div class="limit-msg">Showing only the first 100 results...</div>
     </div>

@@ -41,11 +41,13 @@ const LABEL_FILL_COLOR_CHECKED = 65280;
 const LABEL_STROKE_COLOR_CHECKED = 65280;
 
 const LABEL_FILL_COLOR_SELECTED = 16744192;
+const LABEL_STROKE_COLOR_SELECTED = 16744192;
 
 
 const LABEL_FILL_COLOR_HOVER = 16776960;
+
 const LABEL_FILL_COLOR_NEIGHBOR = 0x000000;
-const LABEL_STROKE_COLOR_SELECTED = 0xffffff;
+
 const LABEL_STROKE_COLOR_HOVER = 16776960
 const LABEL_STROKE_COLOR_NEIGHBOR = 0xffffff;
 
@@ -55,7 +57,7 @@ const POINT_COLOR_SELECTED = 0xfa6666;
 const POINT_COLOR_UNLABELED = 16776960;
 const POINT_COLOR_HOVER = 0x760b4f;
 
-const POINT_SCALE_DEFAULT = 1.0;
+const POINT_SCALE_DEFAULT = 1.2;
 const POINT_SCALE_SELECTED = 1.2;
 const POINT_SCALE_NEIGHBOR = 1.2;
 const POINT_SCALE_HOVER = 1.2;
@@ -529,45 +531,7 @@ export class ProjectorScatterPlotAdapter {
         ++dst;
       }
     }
-    {
-      if (window.properties && window.iteration) {
-        const n = window.properties[window.iteration]?.length;
-        const fillRgb = styleRgbFromHexColor(POINT_COLOR_UNLABELED);
-        const strokeRgb = styleRgbFromHexColor(POINT_COLOR_UNLABELED);
-        // if (window.properties) {
-        //   if (window.properties[window.iteration].length) {
-        //     if (window.properties[window.iteration][hoverPointIndex] === 0) {
-        //       c = new THREE.Color(POINT_COLOR_UNLABELED);
-        //     }
-        //   }
-        // }
-        for (let i = 0; i < n; ++i) {
-          const labelIndex = window.properties[window.iteration][i];
-          labelStrings.push(
-            this.getLabelText(ds, labelIndex, this.labelPointAccessor)
-          );
-          visibleLabels[dst] = labelIndex;
-          scale[dst] = LABEL_SCALE_LARGE;
-          opacityFlags[dst] = n === 1 ? 0 : 1;
-          packRgbIntoUint8Array(
-            fillColors,
-            dst,
-            fillRgb[0],
-            fillRgb[1],
-            fillRgb[2]
-          );
-          packRgbIntoUint8Array(
-            strokeColors,
-            dst,
-            strokeRgb[0],
-            strokeRgb[1],
-            strokeRgb[2]
-          );
-          ++dst;
-        }
-      }
 
-    }
     // Neighbors
     {
       const n = neighborCount;
@@ -1003,9 +967,9 @@ export class ProjectorScatterPlotAdapter {
         return `✅ ${i}`
       }
     }
-    if (this.selectedPointIndices?.length) {
-      if (this.selectedPointIndices.indexOf(i) >= 0) {
-        return `💓 ${i}`
+    if (window.queryResPointIndices?.length) {
+      if (window.queryResPointIndices?.indexOf(i) !== -1) {
+        return `👍 ${i}`
       }
     }
     if (window.properties && window.properties[window.iteration]?.length) {
