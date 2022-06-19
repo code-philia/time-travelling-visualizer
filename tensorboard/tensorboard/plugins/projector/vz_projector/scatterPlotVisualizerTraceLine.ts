@@ -221,7 +221,6 @@ export class scatterPlotVisualizerTraceLine implements ScatterPlotVisualizer {
     if (ds == null) {
       return null;
     }
-    console.log('generrere', ds, epoch)
     const xScaler = d3.scaleLinear();
     const yScaler = d3.scaleLinear();
     let zScaler = null;
@@ -401,7 +400,7 @@ export class scatterPlotVisualizerTraceLine implements ScatterPlotVisualizer {
     //加2000个顶点，范围为-1到1
     let start = this.epoches[0]
     let end = this.epoches[1]
-    console.log('starts123', start, end)
+   
     let getPos = this.getPosition(window.DVIDataList[end], start)
     let getPos2 = this.getPosition(window.DVIDataList[end], end)
     let posArr = []
@@ -413,7 +412,6 @@ export class scatterPlotVisualizerTraceLine implements ScatterPlotVisualizer {
     let selectedLen
     // if (selectedLen !== this.selectedIndexList?.length ) {
     // let count = 0,des = 0
-    console.log('selectedLen', 'refresh', selectedLen)
     selectedLen = this.selectedIndexList?.length
     
     for (let i = 0; i < pointCount; i++) {
@@ -424,7 +422,7 @@ export class scatterPlotVisualizerTraceLine implements ScatterPlotVisualizer {
         // material.resolution.set(window.innerWidth, window.innerHeight);
         const linegeometry = new THREE.Geometry()
         let pointll = []
-        console.log('epochfrom', this.epoches, window.worldSpacePointPositions)
+      
         if (window.worldSpacePointPositions && window.worldSpacePointPositions.length > 1 && window.worldSpacePointPositions[this.epoches[1]] && window.isAnimatating) {
           for (let wlen = this.epoches[0]; wlen <= posArr.length; wlen++) {
             const x = window.worldSpacePointPositions[wlen][i * 3]

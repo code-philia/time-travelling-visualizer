@@ -25,9 +25,6 @@ from torch.utils.data import DataLoader
 from torch.utils.data import WeightedRandomSampler
 
 from umap.umap_ import find_ab_params
-from sqlalchemy import create_engine, text
-
-from antlr4 import *
 
 timevis_path = "../../DLVisDebugger"
 sys.path.append(timevis_path)

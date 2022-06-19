@@ -25,12 +25,14 @@ declare global {
     isAdjustingSel: boolean | false,
     scene: any,
     renderer: any,
-    recommendIndices: any,
+    suggestionIndicates: any,
     unLabelData: any,
     testingData:any,
     labeledData:any,
     nowShowIndicates:any,
-    sceneBackgroundImg:any
+    sceneBackgroundImg:any,
+    customMetadata:any,
+    queryResPointIndices:any
   }
 }
 
@@ -434,20 +436,27 @@ class Projector
    * Used by clients to indicate that a selection has occurred.
    */
   notifySelectionChanged(newSelectedPointIndices: number[], selectMode?: boolean, selectionType?: string) {
-    // if (selectionType === 'isALQuery') {
-    //   window.recommendIndices = []
-    //   console.log('this.queryIndices', newSelectedPointIndices)
-    //   if (newSelectedPointIndices.length) {
-    //     for (let i = 0; i < newSelectedPointIndices.length; i++) {
-    //       this.dataSet.getSpriteImage(newSelectedPointIndices[i], (imgData: any) => {
-    //         let src = 'data:image/png;base64,' + imgData.imgUrl
-    //         window.recommendIndices[i] = {
-    //           src:src
-    //         }
-    //       })
-    //     }
-    //   }
-    // }
+    if (selectionType === 'isSuggestion' || selectionType === 'isALQuery' || selectionType === 'normal') {
+       window.customSelection =[]
+       window.queryResPointIndices = newSelectedPointIndices
+       this.metadataCard.updateCustomList(this.dataSet.points)
+    }
+    if (selectionType === 'isSuggestion') {
+      window.suggestionIndicates = []
+      // console.log('this.queryIndices', newSelectedPointIndices)
+      if (newSelectedPointIndices.length) {
+        for (let i = 0; i < newSelectedPointIndices.length; i++) {
+          this.dataSet.getSpriteImage(newSelectedPointIndices[i], (imgData: any) => {
+            let src = 'data:image/png;base64,' + imgData.imgUrl
+            window.suggestionIndicates[i] = {
+              src:src,
+              index:newSelectedPointIndices[i]
+            }
+          })
+        }
+      }
+      // return
+    }
     if (selectionType === 'boundingbox' && window.isAdjustingSel) {
       if (!window.customSelection) {
         window.customSelection = []
@@ -457,8 +466,6 @@ class Projector
         if (window.customSelection.indexOf(newSelectedPointIndices[i]) < 0) {
           window.customSelection.push(newSelectedPointIndices[i]);
 
-
-          console.log('check', check)
           if (check) {
             check.checked = true
           }
@@ -466,13 +473,14 @@ class Projector
         } else {
           let index = window.customSelection.indexOf(newSelectedPointIndices[i])
           window.customSelection.splice(index, 1)
-          console.log('uncheck', check)
           if (check) {
             check.checked = false
           }
         }
       }
       this.metadataCard.updateCustomList(this.dataSet.points)
+      this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
+      this.projectorScatterPlotAdapter.render()
       return
     }
 
@@ -779,7 +787,10 @@ class Projector
           }
         }
       }
-      window.scene.children[2].visible = (hiddenBackground as any).active
+      // if(window.scene.children)
+      if(window.scene.children[2] && window.scene.children[2].type === 'Mesh'){
+        window.scene.children[2].visible = !window.hiddenBackground
+      }
       this.projectorScatterPlotAdapter.scatterPlot.render()
       // this.projectorScatterPlotAdapter.scatterPlot.hiddenBackground(
       //   (hiddenBackground as any).active,
@@ -1090,7 +1101,7 @@ class Projector
       logging.setModalMessage(null, msgId);
       callback(indices);
     }).catch(error => {
-      logging.setErrorMessage('querying for indices');
+      // logging.setErrorMessage('querying for indices');
       callback(null);
     });
   }

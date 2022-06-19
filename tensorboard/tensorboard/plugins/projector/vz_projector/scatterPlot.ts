@@ -119,7 +119,6 @@ export class ScatterPlot {
     if(!window.sceneBackgroundImg){
       window.sceneBackgroundImg = []
     }
-    console.log('window.sceneBackgroundImg1234567',window.sceneBackgroundImg[window.iteration])
     if(window.sceneBackgroundImg[window.iteration]){
       this.addbackgroundImg('data:image/png;base64,' + window.sceneBackgroundImg[window.iteration])
     }
@@ -356,15 +355,15 @@ export class ScatterPlot {
       return;
     }
     // Only call event handlers if the click originated from the scatter plot.
-    // if (!this.isDragSequence && notify) {
-    //   let selection = this.nearestPoint != null ? [this.nearestPoint] : [];
-    //   if (this.nearestPoint >= this.realDataNumber) {
-    //     selection = [];
-    //   }
-    //   this.projectorEventContext.notifySelectionChanged(selection);
-    // }
-    // this.isDragSequence = false;
-    // this.render();
+    if (!this.isDragSequence && notify) {
+      let selection = this.nearestPoint != null ? [this.nearestPoint] : [];
+      if (this.nearestPoint >= this.realDataNumber) {
+        selection = [];
+      }
+      this.projectorEventContext.notifySelectionChanged(selection);
+    }
+    this.isDragSequence = false;
+    this.render();
   }
   
   private onMouseDown(e: MouseEvent) {
@@ -396,7 +395,6 @@ export class ScatterPlot {
   }
 
   goDown() {
-    console.log('down')
     var factor = 1;
     var vector = new THREE.Vector3(0, -3, 0.1);
     vector.unproject(this.camera);

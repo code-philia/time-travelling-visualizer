@@ -206,7 +206,7 @@ export const template = html`
   }
   .statergy-by paper-dropdown-menu {
     width: 210px;
-    margin-right: 20px;
+    margin-right: 10px;
   }
 
   .search-by button {
@@ -336,7 +336,7 @@ export const template = html`
     flex-direction: column;
   }
   .results .list{
-    max-height: calc(100vh - 610px);
+    max-height: calc(100vh - 540px);
     overflow: auto;
   }
 
@@ -404,7 +404,7 @@ export const template = html`
 
   <div data-panel="advanced" class="ink-panel-content query-content">
     <div class="statergy-by" style="display:flex">
-      <paper-dropdown-menu no-animations label="AL Strategies">
+      <paper-dropdown-menu no-animations label="Strategies">
         <paper-listbox attr-for-selected="value" class="dropdown-content" selected="{{selectedStratergy}}"
           slot="dropdown-content">
           <template is="dom-repeat" items="[[statergyList]]">
@@ -414,15 +414,26 @@ export const template = html`
           </template>
         </paper-listbox>
       </paper-dropdown-menu>
-      <paper-input value="{{budget}}" label="budget"></paper-input>
+      <paper-input value="{{budget}}" label="budget" style="margin-right: 10px;"></paper-input>
+      <button style="width: 100px;" class="query-by-stratergy search-button search">Query</button>
+      <paper-tooltip position="bottom" animation-delay="0" fit-to-visible-bounds>
+      query By active Learning
+      </paper-tooltip>
     </div>
     <div style="display:flex;">
-      <button style="width: 120px;" class="query-by-stratergy search-button search">Query By AL</button>
-      <button style="width: 140px;" class="query-suggestion search-button search">Get Suggestion</button>
+      <paper-input style="width: 120px; margin-right:10px;" value="{{suggestKNum}}" label="k number"></paper-input>
+      <!--<button style="width: 100px;" class="bounding-selection search-button search">Select</button>-->
+      <button style="width: 140px;" class="query-suggestion search-button search">Query Similar</button>
+      <paper-tooltip position="bottom" animation-delay="0" fit-to-visible-bounds>
+      query the similar points of the Selected Points
+      </paper-tooltip>
     </div>
     <div style="display:flex;">
-    <button style="width: 120px;" class="bounding-selection search-button search">Adjust Selections</button>
-    <button style="width: 140px;" class="train-by-selection search-button search">Train By Selections</button>
+    <button style="width: 120px;" class="bounding-selection search-button search">Select</button>
+    <paper-tooltip position="bottom" animation-delay="0" fit-to-visible-bounds>
+    Selet Points on canvas or query results list
+    </paper-tooltip>
+    <button style="width: 240px;" class="train-by-selection search-button search">Train By Selections</button>
     </div>
   </div>
   <div style="display:flex;width: 280px;justify-content: space-around;margin-bottom: 10px;">
