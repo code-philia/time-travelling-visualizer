@@ -463,8 +463,8 @@ export const template = html`
               <div style="display:flex; align-items:center;">
               <b>Testing data:</b><img height="30px" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFIAAABSCAYAAADHLIObAAAAAXNSR0IArs4c6QAAATpJREFUeF7t28ENgkAARUHpw1IszBIszFLsY0m4cd2dGEgedx4w+XBjG2OMR8eywBbksuERCNI4BokcgwxSCaBO38ggkQDKtMggkQDKtMggkQDKtMggkQDKtMggkQDKtMggkQDKtMggkQDKkEX+3l90O//JPD8vfqEgEWmQQc4L9GrP253ODDJIJIAyLTJIJIAyLTJIJIAyLTJIJIAyLTJIJIAyLTJIJIAyLTJIJIAyLTJIJIAyLTJIJIAyLTJIJIAyLTJIJIAyLTJIJIAyLTJIJIAyLTJIJIAyLTJIJIAyLTJIJIAyLTJIJIAyLTJIJIAyLTJIJIAyl10ker5bZ8ifX7cWQDcfZJBIAGVaZJBIAGVaZJBIAGVaZJBIAGVaZJBIAGVaZJBIAGVaZJBIAGVaZJBIAGVaJILcARpIyBqv977cAAAAAElFTkSuQmCC"/>
               </div>
-              <b>Rotate</b>
-              <b>Pan</b> Mouse right click.<br />
+              <b>Classes</b>
+              <b>Number</b> 10<br />
               <b>Zoom</b> Mouse wheel.<br />
               Holding <b>ctrl</b> reverses the mouse clicks.
               <h3>2D controls</h3>

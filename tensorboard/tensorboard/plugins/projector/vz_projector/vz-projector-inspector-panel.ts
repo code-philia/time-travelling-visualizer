@@ -642,7 +642,13 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     }
 
     const stringMetaData = metadata !== undefined ? String(metadata) : `Unknown #${pointIndex}`;
-    return String(pointIndex) + "Label: " + stringMetaData + " Prediction: " + prediction + " Original label: " + original_label;
+
+    const displayprediction = prediction.length>5?prediction:(prediction.length<=4?"\xa0\xa0\xa0" + prediction + "\xa0\xa0\xa0":"\xa0" + prediction + "\xa0\xa0")
+    const displayStringMetaData = stringMetaData.length>5?stringMetaData:(stringMetaData.length <= 3?"\xa0\xa0\xa0" + stringMetaData + "\xa0\xa0\xa0":"\xa0" + stringMetaData + "\xa0\xa0")
+    const displayPointIndex = String(pointIndex).length<=3?(String(pointIndex).length===1?"\xa0\xa0"+String(pointIndex) +"\xa0\xa0":"\xa0"+String(pointIndex) +"\xa0\xa0"):String(pointIndex)
+    // return String(pointIndex) + "Label: " + stringMetaData + " Prediction: " + prediction + " Original label: " + original_label;
+    let prediction_res = stringMetaData === prediction ? ' ✅ ' : ' ⭕️ '
+    return displayPointIndex + " | " + displayStringMetaData + " | " + displayprediction + " | " + prediction_res
   }
   private spriteImageRenderer() {
     const spriteImagePath = this.spriteMeta.imagePath;
@@ -852,9 +858,9 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       );
     }
 
+
     this.trainBySelBtn.onclick = () => {
-      this.isAlSelecting = false
-      window.isAdjustingSel = false
+      this.resetStatus()
       this.boundingSelectionBtn.classList.remove('actived')
       this.projectorEventContext.setMouseMode(MouseMode.CAMERA_AND_CLICK_SELECT);
       this.projector.retrainBySelections(this.projector.iteration, this.selectedPointIndices)
@@ -975,6 +981,8 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     };
     this.clearSelectionButton.onclick = () => {
       window.customSelection = []
+      window.suggestionIndicates = []
+      window.queryResPointIndices = []
       this.projectorEventContext.refresh()
       this.updateFilterButtons(0)
       projector.adjustSelectionAndHover([]);
@@ -1041,6 +1049,14 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     //   this.projectorEventContext.notifySelectionChanged(this.boundingBoxSelection, true);
     // }
   }
+  resetStatus() {
+    this.showTesting = true
+    this.showlabeled = true
+    this.showUnlabeled = true
+    this.isAlSelecting = false
+    window.isAdjustingSel = false
+  }
+
   public showTab(id: string) {
     this.currentFilterType = id;
     const tab = this.$$('.ink-tab[data-tab="' + id + '"]') as HTMLElement;
