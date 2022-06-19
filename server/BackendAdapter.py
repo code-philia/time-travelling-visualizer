@@ -134,6 +134,22 @@ class TimeVisBackend:
     def filter_prediction(self, pred):
         pass
 
+    def detect_noise(self,cls_num):
+        # extract samples
+        train_num = self.train_num
+        repr_dim = self.representation_dim
+        epoch_num = (self.e - self.s)//self.p + 1
+        samples = np.zeros((epoch_num, train_num, repr_dim))
+        for i in range(self.s, self.e+1, self.p):
+            samples[(i-self.s)//self.p] = self.train_representation(i)
+        
+        # embeddings
+        embeddings_2d = np.zeros((50000, 161, 2))
+        for i in range(50000):
+            embedding_2d = trainer.model.encoder(torch.from_numpy(samples[:,i,:]).to(device=DEVICE, dtype=torch.float)).cpu().detach().numpy()
+            embeddings_2d[i] = embedding_2d
+
+
     #################################################################################################################
     #                                                                                                               #
     #                                             Helper Functions                                                  #
@@ -148,8 +164,8 @@ class TimeVisBackend:
 
 
 class ActiveLearningTimeVisBackend(TimeVisBackend):
-    def __init__(self, data_provider, trainer, vis, evaluator, **hyprparameters) -> None:
-        super().__init__(data_provider, trainer, vis, evaluator, **hyprparameters)
+    def __init__(self, data_provider, trainer, vis, evaluator, **hyperparameters) -> None:
+        super().__init__(data_provider, trainer, vis, evaluator, **hyperparameters)
     
     def get_epoch_index(self, iteration):
         """get the training data index for an epoch"""
@@ -161,13 +177,9 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         """get the index of new selection from different strategies"""
         CONTENT_PATH = self.data_provider.content_path
         NUM_QUERY = budget
-        TOTAL_EPOCH = self.hyperparameters["TRAINING"]["total_epoch"]
-        METHOD = strategy
-        # TODO fix me
-        GPU = "0"
+        GPU = self.hyperparameters["GPU"]
         NET = self.hyperparameters["TRAINING"]["NET"]
         DATA_NAME = self.hyperparameters["DATASET"]
-
         sys.path.append(CONTENT_PATH)
 
         # record output information
@@ -175,8 +187,8 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         sys.stdout = open(os.path.join(CONTENT_PATH, now+".txt"), "w")
 
         # for reproduce purpose
-        torch.manual_seed(1331)
-        np.random.seed(1131)
+        # torch.manual_seed(1331)
+        # np.random.seed(1131)
 
         # loading neural network
         import Model.model as subject_model
@@ -218,9 +230,7 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
             # print information
             print(DATA_NAME)
             print(type(strategy).__name__)
-
             print('================Round {:d}==============='.format(iteration+1))
-
             # query new samples
             t0 = time.time()
             new_indices = q_strategy.query(complete_dataset, NUM_QUERY)
@@ -230,11 +240,8 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         elif strategy == "coreset":
             from query_strategies.coreset import CoreSetSampling
             q_strategy = CoreSetSampling(task_model, task_model_type, n_pool, 512, idxs_lb, DATA_NAME, NET, gpu=GPU, **self.hyperparameters["TRAINING"])
-
             print('================Round {:d}==============='.format(iteration+1))
-
             embedding = q_strategy.get_embedding(complete_dataset)
-
             # query new samples
             t0 = time.time()
             new_indices = q_strategy.query(embedding, NUM_QUERY)
@@ -244,14 +251,18 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         return new_indices
     
     def al_train(self, iteration, indices):
+        print("New indices:\t{}".format(len(indices)))
         self.save_human_selection(iteration, indices)
-        lb_idx = self.data_provider.get_labeled_idx(iteration)
+        lb_idx = self.get_epoch_index(iteration)
         train_idx = np.hstack((lb_idx, indices))
+        print("Training indices:\t{}".format(len(train_idx)))
+        print("Valid indices:\t{}".format(len(set(train_idx))))
 
         CONTENT_PATH = self.data_provider.content_path
         TOTAL_EPOCH = self.hyperparameters["TRAINING"]["total_epoch"]
         NET = self.hyperparameters["TRAINING"]["NET"]
         DEVICE = self.data_provider.DEVICE
+        NEW_ITERATION = iteration + 1
         # sys.path.append(CONTENT_PATH)
 
         # record output information
@@ -259,33 +270,27 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         sys.stdout = open(os.path.join(CONTENT_PATH, now+".txt"), "w")
 
         # for reproduce purpose
-        torch.manual_seed(1331)
-        np.random.seed(1131)
+        # torch.manual_seed(1331)
+        # np.random.seed(1131)
 
         # loading neural network
         import Model.model as subject_model
         task_model = eval("subject_model.{}()".format(NET))
-        # start experiment
 
-        new_iteration_dir = os.path.join(CONTENT_PATH, "Model", "Iteration_{}".format(iteration+1))
-        os.system("mkdir -p {}".format(new_iteration_dir))
-
-        save_location = os.path.join(new_iteration_dir, "index.json")
-        with open(save_location, "w") as f:
-            json.dump(train_idx.tolist(), f)
+        self.save_iteration_index(NEW_ITERATION, train_idx)
         
         t1 = time.time()
         task_model.to(DEVICE)
         # setting idx_lb
         train_dataset = torchvision.datasets.CIFAR10(root="..//data//CIFAR10", download=True, train=True, transform=self.hyperparameters["TRAINING"]['transform_tr'])
         test_dataset = torchvision.datasets.CIFAR10(root="..//data//CIFAR10", download=True, train=False, transform=self.hyperparameters["TRAINING"]['transform_te'])
-        complete_dataset = torchvision.datasets.CIFAR10(root="..//data//CIFAR10", download=True, train=True, transform=self.hyperparameters["TRAINING"]['transform_te'])
+
         train_dataset = Subset(train_dataset, train_idx)
         train_loader = DataLoader(train_dataset, batch_size=self.hyperparameters["TRAINING"]['loader_tr_args']['batch_size'], shuffle=True, num_workers=self.hyperparameters["TRAINING"]['loader_tr_args']['num_workers'])
         optimizer = optim.SGD(
             task_model.parameters(), lr=self.hyperparameters["TRAINING"]['optimizer_args']['lr'], momentum=self.hyperparameters["TRAINING"]['optimizer_args']['momentum'], weight_decay=self.hyperparameters["TRAINING"]['optimizer_args']['weight_decay']
         )
-        criterion = torch.nn.CrossEntropyLoss(reduction='none')
+        criterion = torch.nn.CrossEntropyLoss()
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=TOTAL_EPOCH)
         # scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=self.hyperparameters["TRAINING"]['milestone']) # official implementation
 
@@ -303,7 +308,7 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
                 optimizer.zero_grad()
                 outputs = task_model(inputs)
                 loss = criterion(outputs, targets)
-                loss = torch.mean(loss)
+                # loss = torch.mean(loss)
                 loss.backward()
                 optimizer.step()
 
@@ -314,21 +319,21 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
 
             total_loss /= n_batch
             acc /= n_batch
-
             if epoch % 50 == 0 or epoch == TOTAL_EPOCH-1:
                 print('==========Inner epoch {:d} ========'.format(epoch))
                 print('Training Loss {:.3f}'.format(total_loss))
                 print('Training accuracy {:.3f}'.format(acc*100))
+            task_model.eval()
             scheduler.step()
         t2 = time.time()
         print("Training time is {:.2f}".format(t2-t1))
+
         # save model
-        model_path = os.path.join(new_iteration_dir, "subject_model.pth")
-        torch.save(task_model.state_dict(), model_path)
+        self.save_subject_model(NEW_ITERATION, task_model.state_dict())
 
         # compute accuracy at each round
         loader_te = DataLoader(test_dataset, shuffle=False, **self.hyperparameters["TRAINING"]['loader_te_args'])
-        task_model.to(DEVICE)
+        # task_model.to(DEVICE)
         task_model.eval()
 
         batch_size = self.hyperparameters["TRAINING"]['loader_te_args']['batch_size']
@@ -355,6 +360,19 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         save_location = os.path.join(self.data_provider.model_path, "Iteration_{}".format(iteration), "human_select.json")
         with open(save_location, "w") as f:
             json.dump(indices, f)
+    
+    def save_iteration_index(self, iteration, idxs):
+        new_iteration_dir = os.path.join(self.data_provider.content_path, "Model", "Iteration_{}".format(iteration))
+        os.system("mkdir -p {}".format(new_iteration_dir))
+        save_location = os.path.join(new_iteration_dir, "index.json")
+        with open(save_location, "w") as f:
+            json.dump(idxs.tolist(), f)
+    
+    def save_subject_model(self, iteration, state_dict):
+        new_iteration_dir = os.path.join(self.data_provider.content_path, "Model", "Iteration_{}".format(iteration))
+        model_path = os.path.join(new_iteration_dir, "subject_model.pth")
+        torch.save(state_dict, model_path)
+
     
     def vis_train(self, iteration, **config):
         # preprocess
@@ -420,7 +438,7 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
             sampler = CustomWeightedRandomSampler(probs, n_samples, replacement=True)
         else:
             sampler = WeightedRandomSampler(probs, n_samples, replacement=True)
-        edge_loader = DataLoader(dataset, batch_size=1024, sampler=sampler)
+        edge_loader = DataLoader(dataset, batch_size=512, sampler=sampler)
         self.trainer.update_edge_loader(edge_loader)
 
         t2=time.time()
@@ -442,6 +460,7 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         save_dir = os.path.join(self.data_provider.model_path, "Iteration_{}".format(iteration))
         os.system("mkdir -p {}".format(save_dir))
         self.trainer.save(save_dir=save_dir, file_name="al")
+        # TODO evaluate visualization model
 
         
         
