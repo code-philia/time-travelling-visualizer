@@ -4,15 +4,16 @@ import sys
 import json
 import time
 import torch
-import pandas as pd
 import numpy as np
 from scipy.special import softmax
-import torchvision
 
 import torch.nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, Subset
 from torch.utils.data import WeightedRandomSampler
+import torchvision
+
+from .helper import *
 
 timevis_path = "../../DLVisDebugger"
 sys.path.append(timevis_path)
@@ -30,7 +31,6 @@ from singleVis.spatial_edge_constructor import SingleEpochSpatialEdgeConstructor
 
 active_learning_path = "../../ActiveLearning"
 sys.path.append(active_learning_path)
-
 
 class TimeVisBackend:
     def __init__(self, data_provider, trainer, vis, evaluator, **hyperparameters) -> None:
@@ -130,11 +130,8 @@ class TimeVisBackend:
             test_num = self.data_provider.test_num
             res = list(range(0, train_num + test_num, 1))
         return res
-
-    def filter_prediction(self, pred):
-        pass
-
-    def detect_noise(self,cls_num):
+    
+    def detect_noise(self, cls_num):
         # extract samples
         train_num = self.train_num
         repr_dim = self.representation_dim
@@ -144,10 +141,18 @@ class TimeVisBackend:
             samples[(i-self.s)//self.p] = self.train_representation(i)
         
         # embeddings
-        embeddings_2d = np.zeros((50000, 161, 2))
-        for i in range(50000):
-            embedding_2d = trainer.model.encoder(torch.from_numpy(samples[:,i,:]).to(device=DEVICE, dtype=torch.float)).cpu().detach().numpy()
+        embeddings_2d = np.zeros((train_num, epoch_num, 2))
+        for i in range(train_num):
+            embedding_2d = self.trainer.model.encoder(torch.from_numpy(samples[:,i,:]).to(device=self.data_provider.DEVICE, dtype=torch.float)).cpu().detach().numpy()
             embeddings_2d[i] = embedding_2d
+        
+        train_labels = self.data_provider.train_labels(self.s)
+
+        cls = np.argwhere(train_labels == cls_num).squeeze()
+        high_data = embeddings_2d[cls].reshape(len(cls), -1)
+        labels, scores, centroid, centroid_labels, embedding = test_abnormal(high_data)
+
+
 
 
     #################################################################################################################

@@ -8,7 +8,6 @@
 # TODO refactor, similar function should be in utils
 # TODO tidy up
 # TODO return lb and ulb property
-from PIL import Image
 
 from flask import request, Flask, jsonify, make_response
 from flask_cors import CORS, cross_origin
@@ -16,30 +15,11 @@ import base64
 import os
 import sys
 import json
-import time
-import torch
-import pandas as pd
 import numpy as np
 
-from torch.utils.data import DataLoader
-from torch.utils.data import WeightedRandomSampler
-
-from umap.umap_ import find_ab_params
-
-timevis_path = "../../DLVisDebugger"
-sys.path.append(timevis_path)
-from singleVis.SingleVisualizationModel import SingleVisualizationModel
-from singleVis.data import DataProvider
-from singleVis.eval.evaluator import Evaluator
-from singleVis.trainer import SingleVisTrainer
-from singleVis.losses import ReconstructionLoss, UmapLoss, SingleVisLoss
-from singleVis.visualizer import visualizer
-from singleVis.custom_weighted_random_sampler import CustomWeightedRandomSampler
-from singleVis.edge_dataset import DataHandler
-from singleVis.eval.evaluator import Evaluator
-from singleVis.spatial_edge_constructor import SingleEpochSpatialEdgeConstructor
-from BackendAdapter import TimeVisBackend
-from utils import *
+# timevis_path = "../../DLVisDebugger"
+# sys.path.append(timevis_path)
+from timevis_backend.utils import *
 
 
 # flask for API server
@@ -53,11 +33,12 @@ app.config['CORS_HEADERS'] = 'Content-Type'
 def update_projection():
     res = request.get_json()
     CONTENT_PATH = os.path.normpath(res['path'])
-    EPOCH = int(res['iteration'])
+    iteration = int(res['iteration'])
     predicates = res["predicates"]
 
     sys.path.append(CONTENT_PATH)
-    timevis = initialize_backend(CONTENT_PATH, EPOCH)
+    timevis = initialize_backend(CONTENT_PATH, iteration)
+    EPOCH = (iteration-1)*timevis.data_provider.p + timevis.data_provider.s
 
     embedding_2d, grid, decision_view, label_color_list, label_list, max_iter, training_data_index, \
     testing_data_index, eval_new, prediction_list, selected_points, properties = update_epoch_projection(timevis, EPOCH, predicates)
@@ -78,11 +59,12 @@ def update_projection():
 def filter():
     res = request.get_json()
     CONTENT_PATH = os.path.normpath(res['content_path'])
-    EPOCH = int(res['iteration'])
+    iteration = int(res['iteration'])
     predicates = res["predicates"]
 
     sys.path.append(CONTENT_PATH)
-    timevis = initialize_backend(CONTENT_PATH, EPOCH)
+    timevis = initialize_backend(CONTENT_PATH, iteration)
+    EPOCH = (iteration-1)*timevis.data_provider.p + timevis.data_provider.s
 
     training_data_number = timevis.hyperparameters["TRAINING"]["train_num"]
     testing_data_number = timevis.hyperparameters["TRAINING"]["test_num"]
@@ -103,27 +85,7 @@ def filter():
         selected_points = np.intersect1d(selected_points, tmp)
     sys.path.remove(CONTENT_PATH)
 
-    return make_response(jsonify({"selectedPoints": selected_points.tolist()}), 200)
-
-
-def image_cut_save(path, left, upper, right, lower, save_path):
-    """
-        所截区域图片保存
-    :param path: 图片路径
-    :param left: 区块左上角位置的像素点离图片左边界的距离
-    :param upper：区块左上角位置的像素点离图片上边界的距离
-    :param right：区块右下角位置的像素点离图片左边界的距离
-    :param lower：区块右下角位置的像素点离图片上边界的距离
-     故需满足：lower > upper、right > left
-    :param save_path: 所截图片保存位置
-    """
-    img = Image.open(path)  # 打开图像
-    box = (left, upper, right, lower)
-    roi = img.crop(box)
-    # print('img_stream',img_stream)
-    # 保存截取的图片
-    roi.save(save_path)
-    # readImg(save_path)
+    return make_response(jsonify({"selectedPoints": selected_points.tolist(), "suggestLabels":labels}), 200)
 
 @app.route('/sprite', methods=["POST","GET"])
 @cross_origin()
@@ -216,7 +178,7 @@ def al_suggest_similar():
     indices = timevis.al_find_similar(iteration, k).tolist()
 
     sys.path.remove(CONTENT_PATH)
-    return make_response(jsonify({"similarIndices": indices}), 200)
+    return make_response(jsonify({"similarIndices": indices, "suggestLabels":labels}), 200)
 
 if __name__ == "__main__":
     with open('config.json', 'r') as f:

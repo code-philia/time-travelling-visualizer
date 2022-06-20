@@ -1,13 +1,13 @@
 import os, sys
-sys.path.append("..")
+# sys.path.append("..")
 
 import torch
-import json
-import time
 import numpy as np
-
 from umap.umap_ import find_ab_params
+from .backend_adapter import TimeVisBackend, ActiveLearningTimeVisBackend
 
+timevis_path = "../../DLVisDebugger"
+sys.path.append(timevis_path)
 from singleVis.custom_weighted_random_sampler import CustomWeightedRandomSampler
 from singleVis.SingleVisualizationModel import SingleVisualizationModel
 from singleVis.losses import SingleVisLoss, UmapLoss, ReconstructionLoss
@@ -17,8 +17,6 @@ from singleVis.data import NormalDataProvider, ActiveLearningDataProvider
 from singleVis.eval.evaluator import Evaluator
 from singleVis.spatial_edge_constructor import SingleEpochSpatialEdgeConstructor
 from singleVis.visualizer import visualizer
-
-from BackendAdapter import TimeVisBackend, ActiveLearningTimeVisBackend
 
 def initialize_backend(CONTENT_PATH, EPOCH):
     # TODO fix this
