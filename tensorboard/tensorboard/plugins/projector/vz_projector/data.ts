@@ -1107,17 +1107,17 @@ export class DataSet {
     let headers = new Headers();
     headers.append('Content-Type', 'application/json');
     headers.append('Accept', 'application/json');
-    const msgId = logging.setModalMessage('Fetching sprite image...');
+    // const msgId = logging.setModalMessage('Fetching sprite image...');
 
     await fetch(`http://${this.DVIServer}/sprite?index=${id}&path=${this.DVIsubjectModelPath}`, {
       method: 'GET',
       mode: 'cors'
     }).then(response => response.json()).then(data => {
       console.log("response", data);
-      logging.setModalMessage(null, msgId);
+      // logging.setModalMessage(null, msgId);
       stepCallback(data);
     }).catch(error => {
-      logging.setModalMessage(null, msgId);
+      // logging.setModalMessage(null, msgId);
       console.log("error", error);
     });
   }

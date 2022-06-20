@@ -191,7 +191,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
   }
 
 
-  updateMetadata(pointMetadata?: PointMetadata, src?: string) {
+  updateMetadata(pointMetadata?: PointMetadata, src?: string, point?:any) {
     this.pointMetadata = pointMetadata;
     this.showImg = pointMetadata != null
 
@@ -202,7 +202,8 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
         if (!pointMetadata.hasOwnProperty(metadataKey)) {
           continue;
         }
-        metadata.push({ key: metadataKey, value: pointMetadata[metadataKey], prediction:pointMetadata['current_prediction'] });
+        console.log('pointMetadata',point)
+        metadata.push({ key: metadataKey, value: pointMetadata[metadataKey], prediction:point['current_prediction'] });
       }
       console.log('pointMetadata',pointMetadata)
       this.metadata = metadata;

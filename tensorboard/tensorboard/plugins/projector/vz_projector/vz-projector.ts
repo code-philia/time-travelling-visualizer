@@ -27,12 +27,12 @@ declare global {
     renderer: any,
     suggestionIndicates: any,
     unLabelData: any,
-    testingData:any,
-    labeledData:any,
-    nowShowIndicates:any,
-    sceneBackgroundImg:any,
-    customMetadata:any,
-    queryResPointIndices:any
+    testingData: any,
+    labeledData: any,
+    nowShowIndicates: any,
+    sceneBackgroundImg: any,
+    customMetadata: any,
+    queryResPointIndices: any
   }
 }
 
@@ -338,7 +338,7 @@ class Projector
   setSelectedTensor(run: string, tensorInfo: EmbeddingInfo) {
     this.bookmarkPanel.setSelectedTensor(run, tensorInfo, this.dataProvider);
   }
-  updateBackgroundImg(){
+  updateBackgroundImg() {
     this.projectorScatterPlotAdapter.updateBackground()
   }
   /**
@@ -437,9 +437,9 @@ class Projector
    */
   notifySelectionChanged(newSelectedPointIndices: number[], selectMode?: boolean, selectionType?: string) {
     if (selectionType === 'isSuggestion' || selectionType === 'isALQuery' || selectionType === 'normal') {
-       window.customSelection =[]
-       window.queryResPointIndices = newSelectedPointIndices
-       this.metadataCard.updateCustomList(this.dataSet.points)
+      window.customSelection = []
+      window.queryResPointIndices = newSelectedPointIndices
+      this.metadataCard.updateCustomList(this.dataSet.points)
     }
     if (selectionType === 'isSuggestion') {
       window.suggestionIndicates = []
@@ -449,8 +449,8 @@ class Projector
           this.dataSet.getSpriteImage(newSelectedPointIndices[i], (imgData: any) => {
             let src = 'data:image/png;base64,' + imgData.imgUrl
             window.suggestionIndicates[i] = {
-              src:src,
-              index:newSelectedPointIndices[i]
+              src: src,
+              index: newSelectedPointIndices[i]
             }
           })
         }
@@ -590,7 +590,7 @@ class Projector
           this.dataSet.getSpriteImage(this.selectedPointIndices[0], (imgData: any) => {
             let src = 'data:image/png;base64,' + imgData.imgUrl
             this.metadataCard.updateMetadata(
-              this.dataSet.points[newSelectedPointIndices[0]].metadata, src
+              this.dataSet.points[newSelectedPointIndices[0]].metadata, src, this.dataSet.points[newSelectedPointIndices[0]]
             );
           })
         }
@@ -608,8 +608,21 @@ class Projector
       return
     }
     this.metadataCard.updateMetadata(
-      this.dataSet.points[indices].metadata, src
+      this.dataSet.points[indices].metadata, src, this.dataSet.points[indices]
     );
+  }
+
+  updateMetaByIndices(indices: number) {
+    if (indices === -1) {
+      this.metadataCard.updateMetadata(null);
+      return
+    }
+    this.dataSet.getSpriteImage(indices, (imgData: any) => {
+      let src = 'data:image/png;base64,' + imgData.imgUrl
+      this.metadataCard.updateMetadata(
+        this.dataSet.points[indices].metadata, src, this.dataSet.points[indices]
+      );
+    })
   }
   /**
    * Registers a listener to be called any time the mouse hovers over a point.
@@ -749,7 +762,7 @@ class Projector
     // View controls
     this.helpBtn.addEventListener('click', () => {
       // console.log('help')
-        (this.$.help3dDialog as any).open();
+      (this.$.help3dDialog as any).open();
     })
     this.$$('#reset-zoom').addEventListener('click', () => {
       this.projectorScatterPlotAdapter.scatterPlot.resetZoom();
@@ -788,7 +801,7 @@ class Projector
         }
       }
       // if(window.scene.children)
-      if(window.scene.children[2] && window.scene.children[2].type === 'Mesh'){
+      if (window.scene.children[2] && window.scene.children[2].type === 'Mesh') {
         window.scene.children[2].visible = !window.hiddenBackground
       }
       this.projectorScatterPlotAdapter.scatterPlot.render()
@@ -1080,7 +1093,7 @@ class Projector
     });
   }
 
-  querySuggestion(iteration: number,  indices: number[], k:number,
+  querySuggestion(iteration: number, indices: number[], k: number,
     callback: (indices: any) => void) {
     const msgId = logging.setModalMessage('Querying...');
     let headers = new Headers();
@@ -1091,7 +1104,7 @@ class Projector
       body: JSON.stringify({
         "iteration": iteration,
         "selectIndices": indices,
-        "k":k,
+        "k": k,
         "content_path": this.dataSet.DVIsubjectModelPath,
       }),
       headers: headers,
