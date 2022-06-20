@@ -116,10 +116,10 @@ export class ScatterPlot {
 
     // 1,创建场景对象
     this.scene = new THREE.Scene();
-    if(!window.sceneBackgroundImg){
+    if (!window.sceneBackgroundImg) {
       window.sceneBackgroundImg = []
     }
-    if(window.sceneBackgroundImg[window.iteration]){
+    if (window.sceneBackgroundImg[window.iteration]) {
       this.addbackgroundImg('data:image/png;base64,' + window.sceneBackgroundImg[window.iteration])
     }
     this.getLayoutValues();
@@ -153,7 +153,7 @@ export class ScatterPlot {
     if (window.backgroundMesh) {
       this.scene.remove(window.backgroundMesh)
     }
-    if(!imgUrl){
+    if (!imgUrl) {
       return
     }
     // 2，使用canvas画图作为纹理贴图
@@ -365,7 +365,7 @@ export class ScatterPlot {
     this.isDragSequence = false;
     this.render();
   }
-  
+
   private onMouseDown(e: MouseEvent) {
     this.isDragSequence = false;
     this.mouseIsDown = true;
@@ -459,7 +459,26 @@ export class ScatterPlot {
     } else if (!this.mouseIsDown) {
       this.setNearestPointToMouse(e);
       this.projectorEventContext.notifyHoverOverPoint(this.nearestPoint);
+      if (window.isAdjustingSel) {
+        console.log('this.nearestPoint', this.nearestPoint)
+        if (this.nearestPoint !== undefined) {
+          this.throttle(this.projectorEventContext.updateMetaByIndices(this.nearestPoint), 1000)
+        }
+      }
     }
+  }
+
+  throttle(fn: any, wait) {
+    let timer = null;
+    return function () {
+      var context = this;
+      var args = arguments;
+      if (!timer) {
+        timer = setTimeout(function () {
+          fn.apply(context, args);
+        }, wait);
+      }
+    };
   }
   /** For using ctrl + left click as right click, and for circle select */
   private onKeyDown(e: any) {
@@ -548,7 +567,7 @@ export class ScatterPlot {
         validIndices.push(pointIndices[i]);
       }
     }
-    this.projectorEventContext.notifySelectionChanged(validIndices, true,'boundingbox');
+    this.projectorEventContext.notifySelectionChanged(validIndices, true, 'boundingbox');
   }
   private setNearestPointToMouse(e: MouseEvent) {
     if (this.pickingTexture == null) {

@@ -972,6 +972,11 @@ export class ProjectorScatterPlotAdapter {
         return `👍 ${i}`
       }
     }
+    if(window.isAdjustingSel){
+      if(ds.points[i]?.metadata[accessor] !== undefined && ds.points[i]?.current_prediction !== ds.points[i]?.metadata[accessor]){
+        return `❌ ${i}`
+      }
+    }
     if (window.properties && window.properties[window.iteration]?.length) {
       if (window.properties[window.iteration][i] === 1) {
         return `unlabeled${i}`

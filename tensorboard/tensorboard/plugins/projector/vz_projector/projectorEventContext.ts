@@ -45,7 +45,7 @@ export interface ProjectorEventContext {
   setDynamicStop();
   refresh();
   updateMetaDataByIndices(indicate:number,src:string);
-
+  updateMetaByIndices(indicate:number);
   renderInTraceLine(inTrace: boolean, from: number, to: number);
   setMouseMode(mode:any);
   /** Registers a callback to be invoked when the projection changes. */
