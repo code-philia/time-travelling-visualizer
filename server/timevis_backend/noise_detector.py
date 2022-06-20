@@ -146,9 +146,9 @@ class NoiseTrajectoryDetector:
 
         # select three clean representative ones
         clean_centroids = centroid[centroid_labels==1]
-        repr_centroid = select_centroid(clean_centroids)
+        repr_centroid_idx = select_centroid(clean_centroids)
         clean_ones = embeddings[labels==1]
-        clean_indices = select_closest(repr_centroid, clean_ones)
+        clean_indices = select_closest(clean_centroids[repr_centroid_idx], clean_ones)
         repr_centroid = clean_ones[clean_indices]
 
         # noise ones
@@ -236,6 +236,33 @@ class NoiseTrajectoryDetector:
             centroid[:, 0],
             centroid[:, 1],
             s=5,
+            c='black')
+        plt.title('Trajectories Visualization of class {}'.format(cls_num), fontsize=24)
+        if save_path is None:
+            plt.show()
+        else:
+            plt.savefig(save_path)
+    
+    def show_highlight(self, cls_num, highlights, save_path=None):
+        embedding = self.trajectory_embedding[str(cls_num)]
+        centroid = self.sub_centers[str(cls_num)]
+
+        plt.scatter(
+            embedding[:, 0],
+            embedding[:, 1],
+            s=1,
+            # c=clean_labels,
+            c=[2 for _ in range(len(embedding))],
+            cmap="Pastel2")
+        plt.scatter(
+            centroid[:, 0],
+            centroid[:, 1],
+            s=5,
+            c='r')
+        plt.scatter(
+            highlights[:, 0],
+            highlights[:, 1],
+            s=10,
             c='black')
         plt.title('Trajectories Visualization of class {}'.format(cls_num), fontsize=24)
         if save_path is None:
