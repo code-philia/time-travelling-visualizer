@@ -1111,7 +1111,7 @@ export class DataSet {
     await fetch("standalone_projector_config.json", { method: 'GET' })
     .then(response => response.json())
     .then(data => {  this.DVIsubjectModelPath = data.DVIsubjectModelPath })
-    await fetch(`http://${this.DVIServer}/spriteindex=${id}&path=${this.DVIsubjectModelPath}`, {
+    await fetch(`http://${this.DVIServer}/sprite?index=${id}&path=${this.DVIsubjectModelPath}`, {
       method: 'GET',
       mode: 'cors'
     }).then(response => response.json()).then(data => {
