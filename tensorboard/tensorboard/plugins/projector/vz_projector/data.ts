@@ -1108,7 +1108,9 @@ export class DataSet {
     headers.append('Content-Type', 'application/json');
     headers.append('Accept', 'application/json');
     // const msgId = logging.setModalMessage('Fetching sprite image...');
-
+    await fetch("standalone_projector_config.json", { method: 'GET' })
+    .then(response => response.json())
+    .then(data => {  this.DVIsubjectModelPath = data.DVIsubjectModelPath })
     await fetch(`http://${this.DVIServer}/sprite?index=${id}&path=${this.DVIsubjectModelPath}`, {
       method: 'GET',
       mode: 'cors'
