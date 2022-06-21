@@ -551,12 +551,13 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     // const msgId = logging.setModalMessage('Fetching sprite image...');
 
     let DVIServer = '';
+    let basePath = ''
     let headers = new Headers();
     headers.append('Content-Type', 'application/json');
     headers.append('Accept', 'application/json');
     await fetch("standalone_projector_config.json", { method: 'GET' })
       .then(response => response.json())
-      .then(data => { DVIServer = data.DVIServerIP + ":" + data.DVIServerPort; })
+      .then(data => { DVIServer = data.DVIServerIP + ":" + data.DVIServerPort; basePath = data.DVIsubjectModelPath })
     window.suggestionIndicates = []
     window.checkboxDom = []
     for (let i = 0; i < indices.length; i++) {
@@ -575,7 +576,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         this.projectorEventContext.notifyHoverOverPoint(null);
       };
 
-      await fetch(`http://${DVIServer}/sprite?index=${indices[i]}&path=${'/Users/zhangyifan/Downloads/toy_model/resnet18_cifar10'}`, {
+      await fetch(`http://${DVIServer}/sprite?index=${indices[i]}&path=${basePath}`, {
         method: 'GET',
         mode: 'cors'
       }).then(response => response.json()).then(data => {
