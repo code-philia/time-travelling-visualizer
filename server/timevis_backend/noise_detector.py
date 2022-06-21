@@ -15,9 +15,11 @@ def select_centroid(samples, n_select=3):
     return indices.squeeze()
 
 def select_closest(queries, pool):
+    if len(queries)==0:
+        return np.array([])
     nbrs = NearestNeighbors(n_neighbors=1, algorithm='ball_tree').fit(pool)
     indices = nbrs.kneighbors(queries, return_distance=False)
-    return indices.squeeze()
+    return indices.squeeze(axis=1)
 
 
 class NoiseTrajectoryDetector:
@@ -152,20 +154,28 @@ class NoiseTrajectoryDetector:
         repr_centroid = clean_ones[clean_indices]
 
         # noise ones
-        noise_centroids = centroid[centroid_labels==0]
-        noise_ones = embeddings[labels==0]
-        noise_indices = select_closest(noise_centroids, noise_ones)
-        noise_centroids = noise_ones[noise_indices]
+        if np.sum(centroid_labels==0)>0:
+            noise_centroids = centroid[centroid_labels==0]
+            noise_ones = embeddings[labels==0]
+            noise_indices = select_closest(noise_centroids, noise_ones)
+            noise_centroids = noise_ones[noise_indices]
+        else:
+            noise_centroids = np.array([])
+
 
         # suspicious ones
-        suspicious_centroids = centroid[centroid_labels==2]
-        suspicious_indices = select_closest(suspicious_centroids, clean_ones)
-        suspicious_centroids = clean_ones[suspicious_indices]
+        if np.sum(centroid_labels==2)>0:
+            suspicious_centroids = centroid[centroid_labels==2]
+            suspicious_indices = select_closest(suspicious_centroids, clean_ones)
+            suspicious_centroids = clean_ones[suspicious_indices]
+        else:
+            suspicious_centroids = np.array([])
 
         return repr_centroid, noise_centroids, suspicious_centroids
 
     def query_noise_score(self, cls_num, queries):
-        # TODO to be verified
+        if len(queries)==0:
+            return np.array([])
         # calculate noise score
         centroid = self.sub_centers[str(cls_num)]
         centroid_labels = self.sub_centers_labels[str(cls_num)]
@@ -259,11 +269,12 @@ class NoiseTrajectoryDetector:
             centroid[:, 1],
             s=5,
             c='r')
-        plt.scatter(
-            highlights[:, 0],
-            highlights[:, 1],
-            s=10,
-            c='black')
+        if len(highlights)>0:
+            plt.scatter(
+                highlights[:, 0],
+                highlights[:, 1],
+                s=10,
+                c='black')
         plt.title('Trajectories Visualization of class {}'.format(cls_num), fontsize=24)
         if save_path is None:
             plt.show()
