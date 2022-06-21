@@ -123,10 +123,10 @@ def al_query():
     sys.path.append(CONTENT_PATH)
 
     timevis = initialize_backend(CONTENT_PATH, iteration)
-    indices, labels = timevis.al_query(iteration, budget, strategy).tolist()
+    indices, labels = timevis.al_query(iteration, budget, strategy)
 
     sys.path.remove(CONTENT_PATH)
-    return make_response(jsonify({"selectedPoints": indices, "suggestLabels":labels.tolist()}), 200)
+    return make_response(jsonify({"selectedPoints": indices.tolist(), "suggestLabels":labels.tolist()}), 200)
 
 @app.route('/al_train', methods=["POST"])
 @cross_origin()
