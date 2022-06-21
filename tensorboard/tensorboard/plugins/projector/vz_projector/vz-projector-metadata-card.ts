@@ -191,7 +191,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
   }
 
 
-  updateMetadata(pointMetadata?: PointMetadata, src?: string, point?:any) {
+  updateMetadata(pointMetadata?: PointMetadata, src?: string, point?: any) {
     this.pointMetadata = pointMetadata;
     this.showImg = pointMetadata != null
 
@@ -202,10 +202,10 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
         if (!pointMetadata.hasOwnProperty(metadataKey)) {
           continue;
         }
-        console.log('pointMetadata',point)
-        metadata.push({ key: metadataKey, value: pointMetadata[metadataKey], prediction:point['current_prediction'] });
+        console.log('pointMetadata', point)
+        metadata.push({ key: metadataKey, value: pointMetadata[metadataKey], prediction: point['current_prediction'] });
       }
-      console.log('pointMetadata',pointMetadata)
+      console.log('pointMetadata', pointMetadata)
       this.metadata = metadata;
       this.label = '' + this.pointMetadata[this.labelOption];
       //img
@@ -229,21 +229,23 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
     this.selectedNum = window.customSelection?.length
     let metadata = [];
     let DVIServer = '';
+    let basePath = ''
     let headers = new Headers();
     headers.append('Content-Type', 'application/json');
     headers.append('Accept', 'application/json');
     await fetch("standalone_projector_config.json", { method: 'GET' })
       .then(response => response.json())
-      .then(data => { DVIServer = data.DVIServerIP + ":" + data.DVIServerPort; })
+      .then(data => { DVIServer = data.DVIServerIP + ":" + data.DVIServerPort;basePath = data.DVIsubjectModelPath })
+      
     if (window.customSelection) {
       for (let i = 0; i < window.customSelection.length; i++) {
-        await fetch(`http://${DVIServer}/sprite?index=${window.customSelection[i]}&path=${'/Users/zhangyifan/Downloads/toy_model/resnet18_cifar10'}`, {
+        await fetch(`http://${DVIServer}/sprite?index=${window.customSelection[i]}&path=${basePath}`, {
           method: 'GET',
           mode: 'cors'
         }).then(response => response.json()).then(data => {
           let src = 'data:image/png;base64,' + data.imgUrl;
-          let flag = points[window.customSelection[i]]?.metadata.label === points[window.customSelection[i]].current_prediction?'':'🚩'
-          metadata.push({ key: window.customSelection[i], value: points[window.customSelection[i]].metadata.label, src: src,prediction: points[window.customSelection[i]].current_prediction,flag:flag });
+          let flag = points[window.customSelection[i]]?.metadata.label === points[window.customSelection[i]].current_prediction ? '' : '🚩'
+          metadata.push({ key: window.customSelection[i], value: points[window.customSelection[i]].metadata.label, src: src, prediction: points[window.customSelection[i]].current_prediction, flag: flag });
         }).catch(error => {
           console.log("error", error);
         });
@@ -267,11 +269,11 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
       })
     }
   }
-  removeCustomListItem(i:number){
-    this.customMetadata.splice(i,1)
-    window.customSelection.splice(i,1)
-    console.log('rrrr',this.customMetadata,window.customSelection)
-   
+  removeCustomListItem(i: number) {
+    this.customMetadata.splice(i, 1)
+    window.customSelection.splice(i, 1)
+    console.log('rrrr', this.customMetadata, window.customSelection)
+
   }
   setLabelOption(labelOption: string) {
     this.labelOption = labelOption;
