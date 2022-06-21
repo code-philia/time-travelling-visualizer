@@ -1,6 +1,6 @@
 
 #! Noted that
-#! iteration in frontend is start+(iteration -1)*period
+#! iteration in frontend is start+(iteration -1)*period for normal training scenarios!!
 
 # TODO change to timevis format
 # TODO set a base class for some trainer functions... we dont need too many hyperparameters for frontend
@@ -9,6 +9,7 @@
 # TODO tidy up
 # TODO return lb and ulb property
 
+from enum import unique
 from flask import request, Flask, jsonify, make_response
 from flask_cors import CORS, cross_origin
 import base64
@@ -85,7 +86,7 @@ def filter():
         selected_points = np.intersect1d(selected_points, tmp)
     sys.path.remove(CONTENT_PATH)
 
-    return make_response(jsonify({"selectedPoints": selected_points.tolist(), "suggestLabels":labels}), 200)
+    return make_response(jsonify({"selectedPoints": selected_points.tolist()}), 200)
 
 @app.route('/sprite', methods=["POST","GET"])
 @cross_origin()
@@ -110,8 +111,6 @@ def sprite_json():
     with open('graphic.json', 'r') as f:
        config = json.load(f)
     return make_response(jsonify({"imgUrl":config}), 200)
-# if this is the main thread of execution first load the model and then start the server
-
 
 @app.route('/al_query', methods=["POST"])
 @cross_origin()
@@ -124,10 +123,10 @@ def al_query():
     sys.path.append(CONTENT_PATH)
 
     timevis = initialize_backend(CONTENT_PATH, iteration)
-    indices = timevis.al_query(iteration, budget, strategy).tolist()
+    indices, labels = timevis.al_query(iteration, budget, strategy).tolist()
 
     sys.path.remove(CONTENT_PATH)
-    return make_response(jsonify({"selectedPoints": indices}), 200)
+    return make_response(jsonify({"selectedPoints": indices, "suggestLabels":labels.tolist()}), 200)
 
 @app.route('/al_train', methods=["POST"])
 @cross_origin()
@@ -163,8 +162,9 @@ def al_train():
 def al_suggest_similar():
     data = request.get_json()
     CONTENT_PATH = os.path.normpath(data['content_path'])
-    previous_indices = data["previousIndices"]
-    current_indices = data["currentIndices"]
+    prev_idxs = data["previousIndices"]
+    curr_idxs = data["currentIndices"]
+    # curr_labels = data["currentLabels"]
     iteration = data["iteration"]
     k = data["k"]
     
@@ -174,11 +174,11 @@ def al_suggest_similar():
     timevis = initialize_backend(CONTENT_PATH, iteration)
 
     # nearest neighbors
-    # TODO
-    indices = timevis.al_find_similar(iteration, k).tolist()
+    indices, labels = timevis.al_find_similar(iteration, prev_idxs, curr_idxs, k)
+    # TODO suggest samples with high losses?
 
     sys.path.remove(CONTENT_PATH)
-    return make_response(jsonify({"similarIndices": indices, "suggestLabels":labels}), 200)
+    return make_response(jsonify({"similarIndices": indices.tolist(), "suggestLabels":labels.tolist()}), 200)
 
 if __name__ == "__main__":
     with open('config.json', 'r') as f:
