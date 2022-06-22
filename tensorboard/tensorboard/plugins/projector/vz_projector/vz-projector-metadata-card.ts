@@ -212,10 +212,8 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
         if (!pointMetadata.hasOwnProperty(metadataKey)) {
           continue;
         }
-        console.log('pointMetadata', point)
         metadata.push({ key: metadataKey, value: pointMetadata[metadataKey], prediction: point['current_prediction'], possibelWroung: pointMetadata[metadataKey] !== point['current_prediction']});
       }
-      console.log('pointMetadata', pointMetadata)
       this.metadata = metadata;
       this.label = '' + this.pointMetadata[this.labelOption];
       //img
@@ -254,7 +252,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
           mode: 'cors'
         }).then(response => response.json()).then(data => {
           let src = 'data:image/png;base64,' + data.imgUrl;
-          let flag = points[window.customSelection[i]]?.metadata.label === points[window.customSelection[i]].current_prediction ? '' : '❗️'
+          let flag = points[window.customSelection[i]]?.metadata.label === points[window.customSelection[i]]?.current_prediction ? '' : '❗️'
           metadata.push({ key: window.customSelection[i], value: points[window.customSelection[i]].metadata.label, src: src, prediction: points[window.customSelection[i]].current_prediction, flag: flag });
         }).catch(error => {
           console.log("error", error);

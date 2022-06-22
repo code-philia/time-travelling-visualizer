@@ -130,6 +130,15 @@ class Projector
   @property({ type: String })
   DVIServer: string
 
+  @property({ type: Boolean })
+  showlabeled: boolean = true;
+
+  @property({ type: Boolean })
+  showUnlabeled: boolean = true;
+
+  @property({ type: Boolean })
+  showTesting: boolean = true;
+
   // The working subset of the data source's original data set.
   dataSet: DataSet;
   iteration: number;
@@ -164,12 +173,15 @@ class Projector
 
   private goDownBtn: any;
   private goUpBtn: any;
-  private goLeftBtn: any;
-  private goRightBtn: any;
+  // private goLeftBtn: any;
+  // private goRightBtn: any;
 
   private helpBtn: any;
 
   private timer: any;
+
+
+  
 
   async ready() {
     super.ready();
@@ -204,8 +216,8 @@ class Projector
     this.statusBar = this.$$('#status-bar') as HTMLDivElement;
     this.goDownBtn = this.$$('#cavasGoDown') as HTMLElement;
     this.goUpBtn = this.$$('#cavasGoUp') as HTMLElement;
-    this.goLeftBtn = this.$$('#cavasGoLeft') as HTMLElement;
-    this.goRightBtn = this.$$('#cavasGoRight') as HTMLElement;
+    // this.goLeftBtn = this.$$('#cavasGoLeft') as HTMLElement;
+    // this.goRightBtn = this.$$('#cavasGoRight') as HTMLElement;
     this.helpBtn = this.$$('#help-3d-icon') as HTMLElement;
     this.inspectorPanel.initialize(this, this as ProjectorEventContext);
     this.projectionsPanel.initialize(this);
@@ -214,6 +226,10 @@ class Projector
     this.initializeDataProvider();
     this.iteration = 0;
 
+    this.showlabeled = true
+    this.showUnlabeled = true
+    this.showTesting = true
+
     let headers = new Headers();
     headers.append('Content-Type', 'application/json');
     headers.append('Accept', 'application/json');
@@ -221,6 +237,84 @@ class Projector
       .then(response => response.json())
       .then(data => { this.DVIServer = data.DVIServerIP + ":" + data.DVIServerPort; })
   };
+
+  @observe('showlabeled')
+  _labeledChanged() {
+    let indicates = []
+    if (window.nowShowIndicates) {
+      if (this.showlabeled) {
+        for (let i = 0; i < window.properties[window.iteration].length; i++) {
+          let indicate = window.properties[window.iteration][i]
+          if (indicate === 0 || window.nowShowIndicates.indexOf(i) !== -1) {
+            indicates.push(i)
+          }
+        }
+        window.nowShowIndicates = indicates
+        // this.projector.filterDataset(window.nowShowIndicates)
+      } else {
+        ///隐藏labeled
+        for (let i = 0; i < window.properties[window.iteration].length; i++) {
+          if (window.properties[window.iteration][i] !== 0 && window.nowShowIndicates.indexOf(i) !== -1) {
+            indicates.push(i)
+          }
+        }
+        window.nowShowIndicates = indicates
+      }
+      this.filterDataset(window.nowShowIndicates)
+    }
+  }
+
+  @observe('showUnlabeled')
+  _unLabelChanged() {
+    let indicates = []
+    if (window.nowShowIndicates) {
+      if (this.showUnlabeled) {
+        for (let i = 0; i < window.properties[window.iteration].length; i++) {
+          let indicate = window.properties[window.iteration][i]
+          if (indicate === 1 || window.nowShowIndicates.indexOf(i) !== -1) {
+            indicates.push(i)
+          }
+        }
+        window.nowShowIndicates = indicates
+        // this.projector.filterDataset(window.nowShowIndicates)
+      } else {
+        for (let i = 0; i < window.properties[window.iteration].length; i++) {
+          if (window.properties[window.iteration][i] !== 1 && window.nowShowIndicates.indexOf(i) !== -1) {
+            indicates.push(i)
+          }
+        }
+        window.nowShowIndicates = indicates
+      }
+      this.filterDataset(window.nowShowIndicates)
+    }
+  }
+
+  @observe('showTesting')
+  _testingChanged() {
+    let indicates = []
+    if (window.nowShowIndicates) {
+      if (this.showTesting) {
+        for (let i = 0; i < window.properties[window.iteration].length; i++) {
+          let indicate = window.properties[window.iteration][i]
+          if (indicate === 2 || window.nowShowIndicates.indexOf(i) !== -1) {
+            indicates.push(i)
+          }
+        }
+        window.nowShowIndicates = indicates
+        // this.projector.filterDataset(window.nowShowIndicates)
+      } else {
+        ///隐藏labeled
+        for (let i = 0; i < window.properties[window.iteration].length; i++) {
+          if (window.properties[window.iteration][i] !== 2 && window.nowShowIndicates.indexOf(i) !== -1) {
+            indicates.push(i)
+          }
+        }
+        window.nowShowIndicates = indicates
+      }
+      this.filterDataset(window.nowShowIndicates)
+    }
+  }
+
   onIterationChange(num: number) {
     window.iteration = num;
     this.iteration = num;
@@ -360,7 +454,10 @@ class Projector
     this.projectorScatterPlotAdapter.updateScatterPlotAttributes(filter);
     this.projectorScatterPlotAdapter.updateBackground()
     this.adjustSelectionAndHover(util.range(selectionSize));
-
+    if(window.isAdjustingSel){
+      // this.boundingSelectionBtn.classList.add('actived')
+      this.setMouseMode(MouseMode.AREA_SELECT)
+    }
   }
   resetFilterDataset(num?) {
     const originalPointIndices = this.selectedPointIndices.map(
@@ -587,12 +684,12 @@ class Projector
             dist: 0
           };
         if (window.isAnimatating !== true) {
-          this.dataSet.getSpriteImage(this.selectedPointIndices[0], (imgData: any) => {
-            let src = 'data:image/png;base64,' + imgData.imgUrl
-            this.metadataCard.updateMetadata(
-              this.dataSet.points[newSelectedPointIndices[0]].metadata, src, this.dataSet.points[newSelectedPointIndices[0]]
-            );
-          })
+          // this.dataSet.getSpriteImage(this.selectedPointIndices[0], (imgData: any) => {
+          //   let src = 'data:image/png;base64,' + imgData.imgUrl
+          //   this.metadataCard.updateMetadata(
+          //     this.dataSet.points[newSelectedPointIndices[0]].metadata, src, this.dataSet.points[newSelectedPointIndices[0]]
+          //   );
+          // })
         }
       } else {
         this.metadataCard.updateMetadata(null);
@@ -833,13 +930,13 @@ class Projector
       this.projectorScatterPlotAdapter.scatterPlot.goUp()
     })
 
-    this.goLeftBtn.addEventListener('click', (e) => {
-      this.projectorScatterPlotAdapter.scatterPlot.goLeft()
-    })
+    // this.goLeftBtn.addEventListener('click', (e) => {
+    //   this.projectorScatterPlotAdapter.scatterPlot.goLeft()
+    // })
 
-    this.goRightBtn.addEventListener('click', (e) => {
-      this.projectorScatterPlotAdapter.scatterPlot.goRight()
-    })
+    // this.goRightBtn.addEventListener('click', (e) => {
+    //   this.projectorScatterPlotAdapter.scatterPlot.goRight()
+    // })
 
     window.addEventListener('resize', () => {
       this.projectorScatterPlotAdapter.resize();
