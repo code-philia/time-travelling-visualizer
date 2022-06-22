@@ -36,6 +36,9 @@ export const template = html`
       .hidden {
         display: none !important;
       }
+      .diff-layer-checkbox{
+        margin: 0 5px;
+      }
 
       /* Main */
 
@@ -435,14 +438,14 @@ export const template = html`
               >Reset zoom to fit all points</paper-tooltip
             >
           </div>
-          <paper-checkbox id="label-points-toggle" checked="{{showlabeled}}">
+          <paper-checkbox class="diff-layer-checkbox" id="label-points-toggle" checked="{{showlabeled}}">
             labeled
           </paper-checkbox>
-          <paper-checkbox id="unlabel-points-toggle" checked="{{showUnlabeled}}">
+          <paper-checkbox class="diff-layer-checkbox" id="unlabel-points-toggle" checked="{{showUnlabeled}}">
             unlabeled
           </paper-checkbox>
           </paper-checkbox>
-          <paper-checkbox id="testing-points-toggle" checked="{{showTesting}}">
+          <paper-checkbox class="diff-layer-checkbox" id="testing-points-toggle" checked="{{showTesting}}">
             testing
           </paper-checkbox>
         </div>

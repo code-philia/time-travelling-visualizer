@@ -1115,7 +1115,6 @@ export class DataSet {
       method: 'GET',
       mode: 'cors'
     }).then(response => response.json()).then(data => {
-      console.log("response", data);
       // logging.setModalMessage(null, msgId);
       stepCallback(data);
     }).catch(error => {
