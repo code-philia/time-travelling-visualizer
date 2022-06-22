@@ -297,11 +297,9 @@ export const template = html`
 
   .matches-list {
     padding: 0px;
-    margin-top: 10px;
-    border-top: 1px solid #ccc;
   }
   .matches-list-title{
-    line-height: 30px;
+    line-height: 40px;
     font-weight: 600;
   }
 
@@ -337,7 +335,7 @@ export const template = html`
     flex-direction: column;
   }
   .results .list{
-    max-height: calc(100vh - 540px);
+    max-height: calc(100vh - 500px);
     overflow: auto;
   }
 
@@ -397,7 +395,7 @@ export const template = html`
           </paper-input>
         </div>
       </div>
-      <button class="search-button search">search</button>
+      <button class="search-button search" style="margin-top:0px;">search</button>
       <div>
       </div>
     </div>
@@ -542,11 +540,11 @@ export const template = html`
     </div>
     <div class="matches-list" style="display: none">
      <div class="matches-list-title">Query Result List:</div>
-     <div class="buttons">
+     <!--<div class="buttons">
      <button class="button reset-filter">Show All</button>
      <button class="button set-filter">Filter query result</button>
      <button class="button clear-selection">Clear Selection</button>
-     </div>
+     </div>-->
      <div class="matches-list-title"> 
      <span style="margin-left: 4px;">｜img |</span><span>index｜</span><span>label｜</span><span> predict｜</span><span>result｜</span></div>
       <div class="list"></div>
