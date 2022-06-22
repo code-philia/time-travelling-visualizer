@@ -465,11 +465,15 @@ export const template = html`
               </div>
               <b>Classes</b>
               <b>Number</b> 10<br />
-              <b>Zoom</b> Mouse wheel.<br />
+              <h3>3D Label Intro</h3>
+              disagreement between prediction and pseudo label : 💩
+              suggest label: 👍
+              custom selected: ✅
+              <!-- <b>Zoom</b> Mouse wheel.<br />
               Holding <b>ctrl</b> reverses the mouse clicks.
               <h3>2D controls</h3>
               <b>Pan</b> Mouse left click.<br />
-              <b>Zoom</b> Mouse wheel.
+              <b>Zoom</b> Mouse wheel. -->
               <div class="dismiss-dialog-note">Click anywhere to dismiss.</div>
             </div>
           </paper-dialog>

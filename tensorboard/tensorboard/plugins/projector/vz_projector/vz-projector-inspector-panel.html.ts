@@ -36,7 +36,7 @@ export const template = html`
 
   .buttons {
     display: flex;
-    height: 60px;
+    height: 30px;
   }
 
   .button {
@@ -46,6 +46,7 @@ export const template = html`
     font-size: 13px;
     padding: 10px;
     background: #e3e3e3;
+    white-space: nowrap;
   }
 
   .button:last-child {
@@ -455,11 +456,6 @@ export const template = html`
   </paper-toggle-button> -->
   </div>
 
-  <div class="buttons">
-    <button class="button reset-filter">Show All Data</button>
-    <button class="button set-filter">Filter selection</button>
-    <button class="button clear-selection">Clear selection</button>
-  </div>
 
   <div id="query-container">
     <div id="query-header-container">
@@ -553,6 +549,11 @@ export const template = html`
     </div>
     <div class="matches-list" style="display: none">
      <div class="matches-list-title">Query Result List:</div>
+     <div class="buttons">
+     <button class="button reset-filter">Show All</button>
+     <button class="button set-filter">Filter query result</button>
+     <button class="button clear-selection">Clear Selection</button>
+     </div>
      <div class="matches-list-title"> 
      <span style="margin-left: 4px;">｜img |</span><span>index｜</span><span>label｜</span><span> predict｜</span><span>result｜</span></div>
       <div class="list"></div>
