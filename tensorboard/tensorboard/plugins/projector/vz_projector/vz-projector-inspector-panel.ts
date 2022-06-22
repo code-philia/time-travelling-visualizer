@@ -648,7 +648,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     const displayStringMetaData = stringMetaData.length>5?stringMetaData:(stringMetaData.length <= 3?"\xa0\xa0\xa0" + stringMetaData + "\xa0\xa0\xa0":"\xa0" + stringMetaData + "\xa0\xa0")
     const displayPointIndex = String(pointIndex).length<=3?(String(pointIndex).length===1?"\xa0\xa0"+String(pointIndex) +"\xa0\xa0":"\xa0"+String(pointIndex) +"\xa0\xa0"):String(pointIndex)
     // return String(pointIndex) + "Label: " + stringMetaData + " Prediction: " + prediction + " Original label: " + original_label;
-    let prediction_res = stringMetaData === prediction ? ' ✅ ' : ' ⭕️ '
+    let prediction_res = stringMetaData === prediction ? ' ✅ ' : ' ❗️ '
     return displayPointIndex + " | " + displayStringMetaData + " | " + displayprediction + " | " + prediction_res
   }
   private spriteImageRenderer() {
@@ -757,7 +757,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   }
   private updateFilterButtons(numPoints: number) {
     if (numPoints) {
-      this.setFilterButton.innerText = `Filter ${numPoints} points`;
+      this.setFilterButton.innerText = `Filter ${numPoints}`;
       if (numPoints > 1) {
         this.setFilterButton.disabled = null;
       }

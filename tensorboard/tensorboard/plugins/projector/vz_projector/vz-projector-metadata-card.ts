@@ -106,10 +106,20 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
           <div id="metadata-table">
             <template is="dom-repeat" items="[[metadata]]">
               <div class="metadata-row">
+                <div>
                 <div class="metadata-key">[[item.key]]</div>
                 <div class="metadata-value">[[item.value]]</div>
+                </div>
+                <div>
                 <div class="metadata-key">prediction</div>
                 <div class="metadata-value">[[item.prediction]]</div>
+                </div>
+                <template is="dom-if" if="[[item.possibelWroung]]">
+                <div id="tips-warn" style="position: absolute;right: 10px;top: 50px;" class="meta-tips">❗️</div>
+                <paper-tooltip animation-delay="0" for="tips-warn"
+                >disagreement between prediction and pseudo label
+                </paper-tooltip>
+                </template>
               </div>
             </template>
           </div>
@@ -203,7 +213,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
           continue;
         }
         console.log('pointMetadata', point)
-        metadata.push({ key: metadataKey, value: pointMetadata[metadataKey], prediction: point['current_prediction'] });
+        metadata.push({ key: metadataKey, value: pointMetadata[metadataKey], prediction: point['current_prediction'], possibelWroung: pointMetadata[metadataKey] !== point['current_prediction']});
       }
       console.log('pointMetadata', pointMetadata)
       this.metadata = metadata;
@@ -235,8 +245,8 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
     headers.append('Accept', 'application/json');
     await fetch("standalone_projector_config.json", { method: 'GET' })
       .then(response => response.json())
-      .then(data => { DVIServer = data.DVIServerIP + ":" + data.DVIServerPort;basePath = data.DVIsubjectModelPath })
-      
+      .then(data => { DVIServer = data.DVIServerIP + ":" + data.DVIServerPort; basePath = data.DVIsubjectModelPath })
+
     if (window.customSelection) {
       for (let i = 0; i < window.customSelection.length; i++) {
         await fetch(`http://${DVIServer}/sprite?index=${window.customSelection[i]}&path=${basePath}`, {
@@ -244,7 +254,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
           mode: 'cors'
         }).then(response => response.json()).then(data => {
           let src = 'data:image/png;base64,' + data.imgUrl;
-          let flag = points[window.customSelection[i]]?.metadata.label === points[window.customSelection[i]].current_prediction ? '' : '🚩'
+          let flag = points[window.customSelection[i]]?.metadata.label === points[window.customSelection[i]].current_prediction ? '' : '❗️'
           metadata.push({ key: window.customSelection[i], value: points[window.customSelection[i]].metadata.label, src: src, prediction: points[window.customSelection[i]].current_prediction, flag: flag });
         }).catch(error => {
           console.log("error", error);
