@@ -26,13 +26,21 @@ declare global {
     scene: any,
     renderer: any,
     suggestionIndicates: any,
+
     unLabelData: any,
     testingData: any,
     labeledData: any,
+
     nowShowIndicates: any,
     sceneBackgroundImg: any,
     customMetadata: any,
-    queryResPointIndices: any
+
+    queryResPointIndices: any,
+    previousIndecates: any,
+    previousAnormalIndecates: any,
+    alSuggestionIndicates: any,
+    alSuggestLabelList: any,
+    alSuggestScoreList: any
   }
 }
 
@@ -181,7 +189,7 @@ class Projector
   private timer: any;
 
 
-  
+
 
   async ready() {
     super.ready();
@@ -454,7 +462,7 @@ class Projector
     this.projectorScatterPlotAdapter.updateScatterPlotAttributes(filter);
     this.projectorScatterPlotAdapter.updateBackground()
     this.adjustSelectionAndHover(util.range(selectionSize));
-    if(window.isAdjustingSel){
+    if (window.isAdjustingSel) {
       // this.boundingSelectionBtn.classList.add('actived')
       this.setMouseMode(MouseMode.AREA_SELECT)
     }
@@ -533,27 +541,30 @@ class Projector
    * Used by clients to indicate that a selection has occurred.
    */
   notifySelectionChanged(newSelectedPointIndices: number[], selectMode?: boolean, selectionType?: string) {
-    if (selectionType === 'isSuggestion' || selectionType === 'isALQuery' || selectionType === 'normal') {
+    if (selectionType === 'isALQuery' || selectionType === 'normal') {
       window.customSelection = []
       window.queryResPointIndices = newSelectedPointIndices
       this.metadataCard.updateCustomList(this.dataSet.points)
     }
-    if (selectionType === 'isSuggestion') {
-      window.suggestionIndicates = []
-      // console.log('this.queryIndices', newSelectedPointIndices)
-      if (newSelectedPointIndices.length) {
-        for (let i = 0; i < newSelectedPointIndices.length; i++) {
-          this.dataSet.getSpriteImage(newSelectedPointIndices[i], (imgData: any) => {
-            let src = 'data:image/png;base64,' + imgData.imgUrl
-            window.suggestionIndicates[i] = {
-              src: src,
-              index: newSelectedPointIndices[i]
-            }
-          })
-        }
-      }
-      // return
+    if(selectionType === 'isShowSelected'){
+      this.metadataCard.updateCustomList(this.dataSet.points)
     }
+    // if (selectionType === 'isALQuery') {
+    //   window.suggestionIndicates = []
+    //   // console.log('this.queryIndices', newSelectedPointIndices)
+    //   if (newSelectedPointIndices.length) {
+    //     for (let i = 0; i < newSelectedPointIndices.length; i++) {
+    //       this.dataSet.getSpriteImage(newSelectedPointIndices[i], (imgData: any) => {
+    //         let src = 'data:image/png;base64,' + imgData.imgUrl
+    //         window.suggestionIndicates[i] = {
+    //           src: src,
+    //           index: newSelectedPointIndices[i]
+    //         }
+    //       })
+    //     }
+    //   }
+    //   // return
+    // }
     if (selectionType === 'boundingbox' && window.isAdjustingSel) {
       if (!window.customSelection) {
         window.customSelection = []
@@ -717,7 +728,7 @@ class Projector
     this.dataSet.getSpriteImage(indices, (imgData: any) => {
       let src = 'data:image/png;base64,' + imgData.imgUrl
       this.metadataCard.updateMetadata(
-        this.dataSet.points[indices].metadata, src, this.dataSet.points[indices]
+        this.dataSet.points[indices].metadata, src, this.dataSet.points[indices],indices
       );
     })
   }
@@ -1163,9 +1174,9 @@ class Projector
       logging.setErrorMessage('querying for indices');
     });
   }
-
-  queryByAL(iteration: number, strategy: string, budget: number,
-    callback: (indices: any) => void) {
+  // active learning
+  queryByAL(iteration: number, strategy: string, budget: number, currentIndices: number[], previousIndices: number[],
+    callback: (indices: any, scores: any, labels: any) => void) {
     const msgId = logging.setModalMessage('Querying...');
     let headers = new Headers();
     headers.append('Content-Type', 'application/json');
@@ -1176,6 +1187,50 @@ class Projector
         "iteration": iteration,
         "strategy": strategy,
         "budget": budget,
+        "content_path": this.dataSet.DVIsubjectModelPath,
+        "currentIndices": currentIndices,
+        "previousIndices": previousIndices
+      }),
+      headers: headers,
+      mode: 'cors'
+    }).then(response => response.json()).then(data => {
+      const indices = data.selectedPoints;
+      const labels = data.suggestLabels;
+      const scores = data.scores
+      logging.setModalMessage(null, msgId);
+
+      for (let i = 0; i < currentIndices.length; i++) {
+        if (window.previousIndecates.indexOf(currentIndices[i]) === -1) {
+          window.previousIndecates.push(currentIndices[i])
+        }
+      }
+      function func(a, b) {
+        return a - b;
+      }
+      window.previousIndecates.sort(func)
+      console.log('window.previousIndecates', window.previousIndecates)
+
+      callback(indices, scores, labels);
+    }).catch(error => {
+      logging.setErrorMessage('querying for indices');
+      callback(null, [], []);
+    });
+  }
+  // anormaly detection
+  queryAnormalyStrategy(strategy: string, budget: number, cls: number, currentIndices: number[], previousIndices: number[],
+    callback: (indices: any) => void) {
+    const msgId = logging.setModalMessage('Querying...');
+    let headers = new Headers();
+    headers.append('Content-Type', 'application/json');
+    headers.append('Accept', 'application/json');
+    fetch(`http://${this.DVIServer}/anomaly_query`, {
+      method: 'POST',
+      body: JSON.stringify({
+        "strategy": strategy,
+        "budget": budget,
+        "cls": cls,
+        "currentIndices": currentIndices,
+        "previousIndices": previousIndices,
         "content_path": this.dataSet.DVIsubjectModelPath,
       }),
       headers: headers,

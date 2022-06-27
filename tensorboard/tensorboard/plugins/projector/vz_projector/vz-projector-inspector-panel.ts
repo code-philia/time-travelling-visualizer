@@ -52,6 +52,9 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   @property({ type: String })
   selectedStratergy: string;
 
+  @property({ type: String })
+  selectedAnormalyStratergy: string;
+
   @property({ type: Number })
   budget: number
 
@@ -120,7 +123,9 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   private searchBox: any; // ProjectorInput; type omitted b/c LegacyElement
 
   private queryByStrategtBtn: HTMLButtonElement;
-  private queryByCustom: HTMLButtonElement;
+  private queryAnomalyBtn: HTMLButtonElement;
+  private showSelectionBtn: HTMLButtonElement;
+
   private boundingSelectionBtn: HTMLButtonElement;
   private isAlSelecting: boolean;
   private trainBySelBtn: HTMLButtonElement;
@@ -149,6 +154,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   private filterIndices: number[];
   private searchFields: string[];
   private statergyList: string[];
+  private anormalyStatergyList: string[];
   private boundingBoxSelection: number[];
   private currentBoundingBoxSelection: number[];
   private projectorScatterPlotAdapter: ProjectorScatterPlotAdapter;
@@ -164,7 +170,8 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     this.currentFilterType = 'normal'
 
     this.queryByStrategtBtn = this.$$('.query-by-stratergy') as HTMLButtonElement;
-    this.queryByCustom = this.$$('.query-suggestion') as HTMLButtonElement;
+    this.showSelectionBtn = this.$$('.show-selection') as HTMLButtonElement
+    this.queryAnomalyBtn = this.$$('.query-anomaly') as HTMLButtonElement;
     // this.boundingSelectionBtn = this.$$('.bounding-selection') as HTMLButtonElement;
 
     // this.resetFilterButton = this.$$('.reset-filter') as HTMLButtonElement;
@@ -215,7 +222,10 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     );
     // TODO change them based on metadata fields
     this.searchFields = ["type", "label", "new_selection"]
+    // active learning statergy
     this.statergyList = ["random", "coreset", 'bayesianLeastConfidence', "LeastConfidence"]
+    // anormaly detection statergy
+    this.anormalyStatergyList = ['anormalyStageone', 'anormalyStageTwo', 'anormalyStageThree']
     // TODO read real points length from dataSet
     for (let i = 0; i < 60000; i++) {
       this.filterIndices.push(i);
@@ -492,15 +502,23 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     if (original_label == undefined) {
       original_label = `Unknown`;
     }
-
+    let index = window.queryResPointIndices?.indexOf(pointIndex)
+    
+    let suggest_label = window.alSuggestLabelList[index]
+    if (original_label == undefined) {
+      original_label = `Unknown`;
+    } 
+    let score = window.alSuggestScoreList[index]?.toFixed(3)
     const stringMetaData = metadata !== undefined ? String(metadata) : `Unknown #${pointIndex}`;
 
-    const displayprediction = prediction.length>5?prediction:(prediction.length<=4?"\xa0\xa0\xa0" + prediction + "\xa0\xa0\xa0":"\xa0" + prediction + "\xa0\xa0")
-    const displayStringMetaData = stringMetaData.length>5?stringMetaData:(stringMetaData.length <= 3?"\xa0\xa0\xa0" + stringMetaData + "\xa0\xa0\xa0":"\xa0" + stringMetaData + "\xa0\xa0")
-    const displayPointIndex = String(pointIndex).length<=3?(String(pointIndex).length===1?"\xa0\xa0"+String(pointIndex) +"\xa0\xa0":"\xa0"+String(pointIndex) +"\xa0\xa0"):String(pointIndex)
+    const displayprediction = prediction.length > 5 ? prediction : (prediction.length <= 4 ? "\xa0\xa0\xa0" + prediction + "\xa0\xa0\xa0" : "\xa0" + prediction + "\xa0\xa0")
+    const displayStringMetaData = stringMetaData.length > 5 ? stringMetaData : (stringMetaData.length <= 3 ? "\xa0\xa0\xa0" + stringMetaData + "\xa0\xa0\xa0" : "\xa0" + stringMetaData + "\xa0\xa0")
+    const displayPointIndex = String(pointIndex).length <= 3 ? (String(pointIndex).length === 1 ? "\xa0\xa0" + String(pointIndex) + "\xa0\xa0" : "\xa0" + String(pointIndex) + "\xa0\xa0") : String(pointIndex)
     // return String(pointIndex) + "Label: " + stringMetaData + " Prediction: " + prediction + " Original label: " + original_label;
     let prediction_res = stringMetaData === prediction ? ' ✅ ' : ' ❗️ '
-    return displayPointIndex + " | " + displayStringMetaData + " | " + displayprediction + " | " + prediction_res
+
+
+    return displayPointIndex + " | " + displayStringMetaData +`(${suggest_label})` + " | " + displayprediction + " | " + prediction_res + " | " + score
   }
   private spriteImageRenderer() {
     const spriteImagePath = this.spriteMeta.imagePath;
@@ -647,10 +665,68 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     // }
 
     this.queryByStrategtBtn.onclick = () => {
+      let currentIndices = []
+      let previoustIIndices = []
+      if(!window.previousIndecates){
+        window.previousIndecates = []
+      }
+      if(!window.customSelection){
+        window.customSelection = []
+      }else{
+        for(let i =0;i<window.customSelection.length;i++){
+          if(window.previousIndecates.indexOf(window.customSelection[i]) == -1){
+            currentIndices.push(window.customSelection[i])
+          }else{
+            previoustIIndices.push(window.customSelection[i])
+          }
+        }
+      }
       projector.queryByAL(
         this.projector.iteration,
         this.selectedStratergy,
         Number(this.budget),
+        currentIndices,
+        previoustIIndices,
+        (indices: any,scores:any, labels:any) => {
+          if (indices != null) {
+            this.queryIndices = indices;
+            if (this.queryIndices.length == 0) {
+              this.searchBox.message = '0 matches.';
+            } else {
+              this.searchBox.message = `${this.queryIndices.length} matches.`;
+            }
+            console.log('scores',scores,labels)
+
+            window.alSuggestScoreList = scores
+            window.alSuggestLabelList = labels
+
+            this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isALQuery');
+            if (!this.isAlSelecting) {
+              this.isAlSelecting = true
+              window.isAdjustingSel = true
+              // this.boundingSelectionBtn.classList.add('actived')
+              this.projectorEventContext.setMouseMode(MouseMode.AREA_SELECT)
+            }
+            // this.projectorScatterPlotAdapter.scatterPlot.setMouseMode(MouseMode.AREA_SELECT);
+
+          }
+        }
+      );
+    }
+
+    this.showSelectionBtn.onclick = () => {
+      for(let i=0;i< window.previousIndecates?.length;i++){
+        if(window.customSelection.indexOf(window.previousIndecates[i]) === -1){
+          window.customSelection.push(window.previousIndecates[i])
+        }
+      }
+      this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isShowSelected');
+    }
+
+    this.queryAnomalyBtn.onclick = () => {
+      projector.queryAnormalyStrategy(
+        this.selectedStratergy,
+        Number(this.budget),10,[],[],
         (indices: any) => {
           if (indices != null) {
             this.queryIndices = indices;
@@ -670,45 +746,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             // this.projectorScatterPlotAdapter.scatterPlot.setMouseMode(MouseMode.AREA_SELECT);
 
           }
-        }
-      );
-    }
-
-    this.queryByCustom.onclick = () => {
-      if (!window.customSelection) {
-        window.customSelection = []
-      }
-      if (!window.customSelection.length) {
-        logging.setErrorMessage('Please select some points first and then query the similar points of the corresponding points');
-        return
-      }
-
-      projector.querySuggestion(
-        this.projector.iteration,
-        window.customSelection,
-        Number(this.suggestKNum),
-        (indices: any) => {
-          if (indices != null) {
-            this.queryIndices = indices;
-            if (this.queryIndices.length == 0) {
-              this.searchBox.message = '0 matches.';
-            } else {
-              this.searchBox.message = `${this.queryIndices.length} matches.`;
-            }
-            console.log('indices', indices)
-
-            this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isSuggestion');
-            // this.projectorScatterPlotAdapter.setTriangleMode(true)
-            if (!this.isAlSelecting) {
-              this.isAlSelecting = true
-              window.isAdjustingSel = true
-              // this.boundingSelectionBtn.classList.add('actived')
-  
-              this.projectorEventContext.setMouseMode(MouseMode.AREA_SELECT)
-            }
-          }
-        }
-      );
+        })
     }
 
 
@@ -716,7 +754,19 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       this.resetStatus()
       // this.boundingSelectionBtn.classList.remove('actived')
       // this.projectorEventContext.setMouseMode(MouseMode.CAMERA_AND_CLICK_SELECT);
-      this.projector.retrainBySelections(this.projector.iteration, this.selectedPointIndices)
+      // console.log(window.cus)
+      let retrainList  = window.previousIndecates
+      retrainList
+      for(let i =0;i<window.customSelection.length;i++){
+        if(window.previousIndecates.indexOf(window.customSelection[i]) === -1){
+          retrainList.push(window.customSelection[i])
+        }
+      }
+      function func(a, b) {
+        return a - b;
+      }
+      retrainList.sort(func)
+      this.projector.retrainBySelections(this.projector.iteration, retrainList)
       //  this.projectionsPanel.reTrainBySel(this.projector.iteration,this.selectedPointIndices)
     }
     this.distFunc = vector.cosDist;

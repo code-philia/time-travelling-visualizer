@@ -120,6 +120,12 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
                 >disagreement between prediction and pseudo label
                 </paper-tooltip>
                 </template>
+                <template is="dom-if" if="[[item.isSelected]]">
+                <div id="tips-warn" style="position: absolute;right: 10px;top: 80px;" class="meta-tips">☑️selected</div>
+                <paper-tooltip animation-delay="0" for="tips-warn"
+                >disagreement between prediction and pseudo label
+                </paper-tooltip>
+                </template>
               </div>
             </template>
           </div>
@@ -134,7 +140,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
           <div class="metadata-key">label |</div>
           <div class="metadata-key">predict |</div>
           </div>
-          <div style="max-height: calc(100vh - 380px);overflow: auto; padding: 0 10px;">
+          <div style="max-height: calc(100vh - 420px);overflow: auto; padding: 0 10px;">
           <template is="dom-repeat" items="[[customMetadata]]">
           <div class="metadata-row" id=[[item.key]]>
             <img src="[[item.src]]" />
@@ -201,18 +207,23 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
   }
 
 
-  updateMetadata(pointMetadata?: PointMetadata, src?: string, point?: any) {
+  updateMetadata(pointMetadata?: PointMetadata, src?: string, point?: any,indicate?:number) {
     this.pointMetadata = pointMetadata;
     this.showImg = pointMetadata != null
+    console.log('99999',pointMetadata,point,indicate)
 
     this.hasMetadata = pointMetadata != null || window.customSelection?.length;
+    if(!window.previousIndecates){
+      window.previousIndecates = []
+    }
     if (pointMetadata) {
       let metadata = [];
       for (let metadataKey in pointMetadata) {
         if (!pointMetadata.hasOwnProperty(metadataKey)) {
           continue;
         }
-        metadata.push({ key: metadataKey, value: pointMetadata[metadataKey], prediction: point['current_prediction'], possibelWroung: pointMetadata[metadataKey] !== point['current_prediction']});
+    
+        metadata.push({ key: metadataKey, value: pointMetadata[metadataKey], prediction: point['current_prediction'], possibelWroung: pointMetadata[metadataKey] !== point['current_prediction'],isSelected:window.previousIndecates?.indexOf(indicate) !== -1});
       }
       this.metadata = metadata;
       this.label = '' + this.pointMetadata[this.labelOption];

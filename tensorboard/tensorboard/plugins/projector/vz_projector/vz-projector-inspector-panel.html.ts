@@ -362,11 +362,17 @@ export const template = html`
         Normal Query
       </paper-tooltip>
       <div data-tab="advanced" id="al-filter-tab" class="ink-tab projection-tab">
-        AL Query
+        Active Learning
       </div>
       <paper-tooltip for="al-filter-tab" position="bottom" animation-delay="0" fit-to-visible-bounds>
         Query By Actived Learning
       </paper-tooltip>
+      <div data-tab="anomaly" id="anomaly-filter-tab" class="ink-tab projection-tab">
+      Anomaly Detection
+      </div>
+     <paper-tooltip for="al-filter-tab" position="bottom" animation-delay="0" fit-to-visible-bounds>
+      Query By Actived Learning
+     </paper-tooltip>
     </div>
   </div>
 
@@ -419,21 +425,40 @@ export const template = html`
       query By active Learning
       </paper-tooltip>
     </div>
-    <div style="display:flex;">
+    <!--<div style="display:flex;">
       <paper-input style="width: 120px; margin-right:10px;" value="{{suggestKNum}}" label="k number"></paper-input>
       <button style="width: 140px;" class="query-suggestion search-button search">Query Similar</button>
       <paper-tooltip position="bottom" animation-delay="0" fit-to-visible-bounds>
       query the similar points of the Selected Points
       </paper-tooltip>
-    </div>
+    </div>-->
     <div style="display:flex;">
     <!--<button style="width: 120px;" class="bounding-selection search-button search">Select</button>-->
-    <paper-tooltip position="bottom" animation-delay="0" fit-to-visible-bounds>
-    Selet Points on canvas or query results list
-    </paper-tooltip>
-    <button style="width: 320px;" class="train-by-selection search-button search">Train By Selections</button>
+    <button style="width: 160px;" class="show-selection search-button search">Show Selection</button>
+    <button style="width: 240px;" class="train-by-selection search-button search">Train By Selections</button>
     </div>
   </div>
+
+  <div data-panel="anomaly" class="ink-panel-content query-content">
+    <div class="statergy-by" style="display:flex">
+      <paper-dropdown-menu no-animations label="Strategies">
+        <paper-listbox attr-for-selected="value" class="dropdown-content" selected="{{selectedAnormalyStratergy}}"
+          slot="dropdown-content">
+          <template is="dom-repeat" items="[[statergyList]]">
+            <paper-item value="[[item]]" label="[[item]]">
+              [[item]]
+            </paper-item>
+          </template>
+        </paper-listbox>
+      </paper-dropdown-menu>
+      <paper-input value="{{budget}}" label="budget" style="margin-right: 10px;"></paper-input>
+      <button style="width: 100px;" class="query-anomaly search-button search">Query</button>
+      <paper-tooltip position="bottom" animation-delay="0" fit-to-visible-bounds>
+      anomaly detection
+      </paper-tooltip>
+    </div>
+  </div>
+
   <!--<div style="display:flex;width: 280px;justify-content: space-around;margin-bottom: 10px;">
   <paper-checkbox id="label-points-toggle" checked="{{showlabeled}}">
   labeled
@@ -546,7 +571,7 @@ export const template = html`
      <button class="button clear-selection">Clear Selection</button>
      </div>-->
      <div class="matches-list-title"> 
-     <span style="margin-left: 4px;">｜img |</span><span>index｜</span><span>label｜</span><span> predict｜</span><span>result｜</span></div>
+     <span style="margin-left: 4px;">｜img |</span><span>index｜</span><span>label｜</span><span> predict｜</span><span>result｜</span><span>score</span></div>
       <div class="list"></div>
       <div class="limit-msg">Showing only the first 100 results...</div>
     </div>
