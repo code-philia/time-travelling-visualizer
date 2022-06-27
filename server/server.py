@@ -9,7 +9,6 @@
 # TODO tidy up
 # TODO return lb and ulb property
 
-from enum import unique
 from flask import request, Flask, jsonify, make_response
 from flask_cors import CORS, cross_origin
 import base64
@@ -120,13 +119,44 @@ def al_query():
     iteration = data["iteration"]
     strategy = data["strategy"]
     budget = int(data["budget"])
-    sys.path.append(CONTENT_PATH)
+    prev_idxs = data["previousIndices"]
+    curr_idxs = data["currentIndices"]
 
+    sys.path.append(CONTENT_PATH)
     timevis = initialize_backend(CONTENT_PATH, iteration)
-    indices, labels = timevis.al_query(iteration, budget, strategy)
+    # indices, scores, labels = timevis.al_query(iteration, budget, strategy, prev_idxs, curr_idxs)
+
+    # dummy input
+    indices = np.arange(10)
+    scores = np.random.rand(10)
+    labels = np.arange(10)
 
     sys.path.remove(CONTENT_PATH)
-    return make_response(jsonify({"selectedPoints": indices.tolist(), "suggestLabels":labels.tolist()}), 200)
+    return make_response(jsonify({"selectedPoints": indices.tolist(), "scores": scores.tolist(), "suggestLabels":labels.tolist()}), 200)
+
+@app.route('/anomaly_query', methods=["POST"])
+@cross_origin()
+def anomaly_query():
+    data = request.get_json()
+    CONTENT_PATH = os.path.normpath(data['content_path'])
+    iteration = data["iteration"]
+    strategy = data["strategy"]
+    budget = int(data["budget"])
+    prev_idxs = data["previousIndices"]
+    curr_idxs = data["currentIndices"]
+
+    sys.path.append(CONTENT_PATH)
+
+    # timevis = initialize_backend(CONTENT_PATH, iteration)
+    # indices, labels = timevis.al_query(iteration, budget, strategy)
+
+    # dummy input
+    indices = np.arange(10)
+    scores = np.random.rand(10)
+    labels = np.arange(10)
+
+    sys.path.remove(CONTENT_PATH)
+    return make_response(jsonify({"selectedPoints": indices.tolist(), "scores": scores.tolist(), "suggestLabels":labels.tolist()}), 200)
 
 @app.route('/al_train', methods=["POST"])
 @cross_origin()
@@ -157,28 +187,6 @@ def al_train():
                                   "selectedPoints":selected_points.tolist(),
                                   "properties":properties.tolist()}), 200)
 
-@app.route('/al_suggest_similar', methods=["POST"])
-@cross_origin()
-def al_suggest_similar():
-    data = request.get_json()
-    CONTENT_PATH = os.path.normpath(data['content_path'])
-    prev_idxs = data["previousIndices"]
-    curr_idxs = data["currentIndices"]
-    # curr_labels = data["currentLabels"]
-    iteration = data["iteration"]
-    k = data["k"]
-    
-    sys.path.append(CONTENT_PATH)
-    from config import config
-
-    timevis = initialize_backend(CONTENT_PATH, iteration)
-
-    # nearest neighbors
-    indices, labels = timevis.al_find_similar(iteration, prev_idxs, curr_idxs, k)
-    # TODO suggest samples with high losses?
-
-    sys.path.remove(CONTENT_PATH)
-    return make_response(jsonify({"similarIndices": indices.tolist(), "suggestLabels":labels.tolist()}), 200)
 
 if __name__ == "__main__":
     with open('config.json', 'r') as f:

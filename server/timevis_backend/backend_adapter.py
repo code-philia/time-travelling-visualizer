@@ -259,162 +259,55 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         return new_indices, true_labels[new_indices]
     
     def al_train(self, iteration, indices):
-        # print("New indices:\t{}".format(len(indices)))
-        # self.save_human_selection(iteration, indices)
-        # lb_idx = self.get_epoch_index(iteration)
-        # train_idx = np.hstack((lb_idx, indices))
-        # print("Training indices:\t{}".format(len(train_idx)))
-        # print("Valid indices:\t{}".format(len(set(train_idx))))
+        print("New indices:\t{}".format(len(indices)))
+        self.save_human_selection(iteration, indices.tolist())
+        lb_idx = self.get_epoch_index(iteration)
+        train_idx = np.hstack((lb_idx, indices))
+        print("Training indices:\t{}".format(len(train_idx)))
+        print("Valid indices:\t{}".format(len(set(train_idx))))
 
-        # CONTENT_PATH = self.data_provider.content_path
-        # TOTAL_EPOCH = self.hyperparameters["TRAINING"]["total_epoch"]
-        # NET = self.hyperparameters["TRAINING"]["NET"]
-        # DEVICE = self.data_provider.DEVICE
-        # NEW_ITERATION = iteration + 1
-        # # sys.path.append(CONTENT_PATH)
-
-        # # record output information
-        # now = time.strftime("%Y-%m-%d-%H_%M_%S", time.localtime(time.time())) 
-        # sys.stdout = open(os.path.join(CONTENT_PATH, now+".txt"), "w")
-
-        # # for reproduce purpose
-        # # torch.manual_seed(1331)
-        # # np.random.seed(1131)
-
-        # # loading neural network
-        # import Model.model as subject_model
-        # task_model = eval("subject_model.{}()".format(NET))
-
-        # self.save_iteration_index(NEW_ITERATION, train_idx)
-        
-        # t1 = time.time()
-        # task_model.to(DEVICE)
-        # # setting idx_lb
-        # train_dataset = torchvision.datasets.CIFAR10(root="..//data//CIFAR10", download=True, train=True, transform=self.hyperparameters["TRAINING"]['transform_tr'])
-        # test_dataset = torchvision.datasets.CIFAR10(root="..//data//CIFAR10", download=True, train=False, transform=self.hyperparameters["TRAINING"]['transform_te'])
-
-        # train_dataset = Subset(train_dataset, train_idx)
-        # train_loader = DataLoader(train_dataset, batch_size=self.hyperparameters["TRAINING"]['loader_tr_args']['batch_size'], shuffle=True, num_workers=self.hyperparameters["TRAINING"]['loader_tr_args']['num_workers'])
-        # optimizer = optim.SGD(
-        #     task_model.parameters(), lr=self.hyperparameters["TRAINING"]['optimizer_args']['lr'], momentum=self.hyperparameters["TRAINING"]['optimizer_args']['momentum'], weight_decay=self.hyperparameters["TRAINING"]['optimizer_args']['weight_decay']
-        # )
-        # criterion = torch.nn.CrossEntropyLoss()
-        # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=TOTAL_EPOCH)
-        # # scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=self.hyperparameters["TRAINING"]['milestone']) # official implementation
-
-        # for epoch in range(TOTAL_EPOCH):
-        #     task_model.train()
-
-        #     total_loss = 0
-        #     n_batch = 0
-        #     acc = 0
-
-        #     for inputs, targets in train_loader:
-        #         n_batch += 1
-        #         inputs, targets = inputs.to(DEVICE), targets.to(DEVICE)
-
-        #         optimizer.zero_grad()
-        #         outputs = task_model(inputs)
-        #         loss = criterion(outputs, targets)
-        #         # loss = torch.mean(loss)
-        #         loss.backward()
-        #         optimizer.step()
-
-        #         total_loss += loss.item()
-        #         predicted = outputs.argmax(1)
-        #         b_acc = 1.0 * (targets == predicted).sum().item() / targets.shape[0]
-        #         acc += b_acc
-
-        #     total_loss /= n_batch
-        #     acc /= n_batch
-        #     if epoch % 50 == 0 or epoch == TOTAL_EPOCH-1:
-        #         print('==========Inner epoch {:d} ========'.format(epoch))
-        #         print('Training Loss {:.3f}'.format(total_loss))
-        #         print('Training accuracy {:.3f}'.format(acc*100))
-        #     task_model.eval()
-        #     scheduler.step()
-        # t2 = time.time()
-        # print("Training time is {:.2f}".format(t2-t1))
-
-        # # save model
-        # self.save_subject_model(NEW_ITERATION, task_model.state_dict())
-
-        # # compute accuracy at each round
-        # loader_te = DataLoader(test_dataset, shuffle=False, **self.hyperparameters["TRAINING"]['loader_te_args'])
-        # # task_model.to(DEVICE)
-        # task_model.eval()
-
-        # batch_size = self.hyperparameters["TRAINING"]['loader_te_args']['batch_size']
-        # label = np.array(test_dataset.targets)
-        # pred = np.zeros(len(label), dtype=np.long)
-        # with torch.no_grad():
-        #     for idx, (x, y) in enumerate(loader_te):
-        #         x, y = x.to(DEVICE), y.to(DEVICE)
-        #         out = task_model(x)
-        #         p = out.argmax(1)
-        #         pred[idx*batch_size:(idx+1)*batch_size] = p.cpu().numpy()
-
-        # acc =  np.sum(pred == label) / float(label.shape[0])
-        # print('Test Accuracy {:.3f}'.format(100*acc))
-        """get the index of new selection from different strategies"""
         CONTENT_PATH = self.data_provider.content_path
-        GPU = self.hyperparameters["GPU"]
+        TOTAL_EPOCH = self.hyperparameters["TRAINING"]["total_epoch"]
         NET = self.hyperparameters["TRAINING"]["NET"]
+        DEVICE = self.data_provider.DEVICE
+        NEW_ITERATION = iteration + 1
+        GPU = self.hyperparameters["GPU"]
         DATA_NAME = self.hyperparameters["DATASET"]
         sys.path.append(CONTENT_PATH)
 
-        # record output information
-        now = time.strftime("%Y-%m-%d-%H_%M_%S", time.localtime(time.time())) 
-        sys.stdout = open(os.path.join(CONTENT_PATH, now+".txt"), "w")
-
-        # for reproduce purpose
-        # torch.manual_seed(1331)
-        # np.random.seed(1131)
-
         # loading neural network
-        import Model.model as subject_model
-        task_model = eval("subject_model.{}()".format(NET))
+        from Model.model import ResNet18
+        task_model = ResNet18()
+        resume_path = os.path.join(CONTENT_PATH, "Model", "Iteration_{}".format(iteration))
+        state_dict = torch.load(os.path.join(resume_path, "subject_model.pth"))
+        task_model.load_state_dict(state_dict)
+
+        self.save_iteration_index(NEW_ITERATION, train_idx)
         task_model_type = "pytorch"
         # start experiment
         n_pool = self.hyperparameters["TRAINING"]["train_num"]  # 50000
-        n_test = self.hyperparameters["TRAINING"]['test_num']   # 10000
-
-        resume_path = os.path.join(CONTENT_PATH, "Model", "Iteration_{}".format(iteration))
-        idxs_lb = np.array(json.load(open(os.path.join(resume_path, "index.json"), "r")))
-        state_dict = torch.load(os.path.join(resume_path, "subject_model.pth"))
-        task_model.load_state_dict(state_dict)
-        NUM_INIT_LB = len(idxs_lb)
-
-        print('resume from iteration {}'.format(iteration))
-        print('number of labeled pool: {}'.format(NUM_INIT_LB))
-        print('number of unlabeled pool: {}'.format(n_pool - NUM_INIT_LB))
-        print('number of testing pool: {}'.format(n_test))
-
 
         from query_strategies.random import RandomSampling
-        q_strategy = RandomSampling(task_model, task_model_type, n_pool, idxs_lb, 10, DATA_NAME, NET, gpu=GPU, **self.hyperparameters["TRAINING"])
+        q_strategy = RandomSampling(task_model, task_model_type, n_pool, lb_idx, 10, DATA_NAME, NET, gpu=GPU, **self.hyperparameters["TRAINING"])
         # print information
-        print(DATA_NAME)
-        print(type(q_strategy).__name__)
-        print('================Round {:d}==============='.format(iteration+1))
+        print('================Round {:d}==============='.format(NEW_ITERATION))
         # update
-        new_indices = np.hstack((q_strategy.lb_idxs, new_indices))
-        q_strategy.update_lb_idxs(indices)
-        # resnet_model = ResNet18()
-        resnet_model = eval("subject_model.{}()".format(NET))
+        q_strategy.update_lb_idxs(train_idx)
+        resnet_model = ResNet18()
         train_dataset = torchvision.datasets.CIFAR10(root="..//data//CIFAR10", download=True, train=True, transform=self.hyperparameters["TRAINING"]['transform_tr'])
         test_dataset = torchvision.datasets.CIFAR10(root="..//data//CIFAR10", download=True, train=False, transform=self.hyperparameters["TRAINING"]['transform_te'])
         t1 = time.time()
-        q_strategy.train(total_epoch=200, task_model=resnet_model, complete_dataset=train_dataset)
+        q_strategy.train(total_epoch=TOTAL_EPOCH, task_model=resnet_model, complete_dataset=train_dataset)
         t2 = time.time()
         print("Training time is {:.2f}".format(t2-t1))
+        self.save_subject_model(NEW_ITERATION, q_strategy.task_model.state_dict())
 
         # compute accuracy at each round
         accu = q_strategy.test_accu(test_dataset)
         print('Accuracy {:.3f}'.format(100*accu))
     
 
-    def al_find_similar(self, iteration, prev_idxs, curr_idxs, curr_labels, k):
+    def al_find_similar(self, iteration, prev_idxs, curr_idxs, k):
         train_data = self.data_provider.train_representation(iteration)
         train_labels = self.data_provider.train_labels(iteration)
 
