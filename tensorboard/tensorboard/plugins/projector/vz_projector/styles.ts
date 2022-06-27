@@ -153,7 +153,7 @@ registerStyleDomModule({
       color: rgba(0, 0, 0, 0.5);
       cursor: pointer;
       font-weight: 300;
-      line-height: 49px;
+      line-height: 20px;
       padding: 0 12px;
       text-align: center;
       text-transform: none;

@@ -83,7 +83,7 @@ export const template = html`
         display: flex;
         height: 100%;
         min-width: 300px;
-        width: 300px;
+        width: 360px;
       }
 
       .file-name {
