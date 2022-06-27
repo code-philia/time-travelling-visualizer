@@ -141,6 +141,7 @@ def anomaly_query():
     CONTENT_PATH = os.path.normpath(data['content_path'])
     strategy = data["strategy"]
     budget = int(data["budget"])
+    cls = int(data["cls"])
     prev_idxs = data["previousIndices"]
     curr_idxs = data["currentIndices"]
 
