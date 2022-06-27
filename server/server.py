@@ -139,7 +139,6 @@ def al_query():
 def anomaly_query():
     data = request.get_json()
     CONTENT_PATH = os.path.normpath(data['content_path'])
-    iteration = data["iteration"]
     strategy = data["strategy"]
     budget = int(data["budget"])
     prev_idxs = data["previousIndices"]
