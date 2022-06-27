@@ -36,6 +36,9 @@ export const template = html`
       .hidden {
         display: none !important;
       }
+      .diff-layer-checkbox{
+        margin: 0 5px;
+      }
 
       /* Main */
 
@@ -383,7 +386,7 @@ export const template = html`
             position="bottom"
             animation-delay="0"
             fit-to-visible-bounds
-            >Cavans move down</paper-tooltip
+            >Canvas move down</paper-tooltip
         >
         <div id="cavasGoDown"><svg xmlns="http://www.w3.org/2000/svg" enable-background="new 0 0 24 24" height="24px" viewBox="0 0 24 24" width="24px" fill="#000000"><g><rect fill="none" height="24" width="24"/></g><g><polygon points="11,6.83 9.41,8.41 8,7 12,3 16,7 14.59,8.41 13,6.83 13,21 11,21"/></g></svg></div>
         <paper-tooltip
@@ -435,6 +438,16 @@ export const template = html`
               >Reset zoom to fit all points</paper-tooltip
             >
           </div>
+          <paper-checkbox class="diff-layer-checkbox" id="label-points-toggle" checked="{{showlabeled}}">
+            labeled
+          </paper-checkbox>
+          <paper-checkbox class="diff-layer-checkbox" id="unlabel-points-toggle" checked="{{showUnlabeled}}">
+            unlabeled
+          </paper-checkbox>
+          </paper-checkbox>
+          <paper-checkbox class="diff-layer-checkbox" id="testing-points-toggle" checked="{{showTesting}}">
+            testing
+          </paper-checkbox>
         </div>
         <div class="stage">
           <div id="scatter">
@@ -465,11 +478,15 @@ export const template = html`
               </div>
               <b>Classes</b>
               <b>Number</b> 10<br />
-              <b>Zoom</b> Mouse wheel.<br />
+              <h3>3D Label Intro</h3>
+              disagreement between prediction and pseudo label : 💩
+              suggest label: 👍
+              custom selected: ✅
+              <!-- <b>Zoom</b> Mouse wheel.<br />
               Holding <b>ctrl</b> reverses the mouse clicks.
               <h3>2D controls</h3>
               <b>Pan</b> Mouse left click.<br />
-              <b>Zoom</b> Mouse wheel.
+              <b>Zoom</b> Mouse wheel. -->
               <div class="dismiss-dialog-note">Click anywhere to dismiss.</div>
             </div>
           </paper-dialog>

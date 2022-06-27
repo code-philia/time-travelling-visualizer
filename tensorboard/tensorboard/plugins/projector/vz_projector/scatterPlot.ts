@@ -459,8 +459,8 @@ export class ScatterPlot {
     } else if (!this.mouseIsDown) {
       this.setNearestPointToMouse(e);
       this.projectorEventContext.notifyHoverOverPoint(this.nearestPoint);
-      if (window.isAdjustingSel) {
-        console.log('this.nearestPoint', this.nearestPoint)
+      if (window.iteration) {
+       
         if (this.nearestPoint !== undefined) {
           this.throttle(this.projectorEventContext.updateMetaByIndices(this.nearestPoint), 1000)
         }

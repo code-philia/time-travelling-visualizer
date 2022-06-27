@@ -82,11 +82,6 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   @property({ type: Number })
   confidenceThresholdTo: number
 
-  @property({ type: Boolean })
-  hiddenLabeled: false
-
-  @property({ type: Boolean })
-  hiddenTesting: false
 
   @property({ type: Number })
   epochFrom: number
@@ -112,14 +107,6 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   @property({ type: String })
   collapseIcon: string = 'expand-less';
 
-  @property({ type: Boolean })
-  showlabeled: boolean = true;
-
-  @property({ type: Boolean })
-  showUnlabeled: boolean = true;
-
-  @property({ type: Boolean })
-  showTesting: boolean = true;
 
   distFunc: DistanceFunction;
 
@@ -178,13 +165,13 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
     this.queryByStrategtBtn = this.$$('.query-by-stratergy') as HTMLButtonElement;
     this.queryByCustom = this.$$('.query-suggestion') as HTMLButtonElement;
-    this.boundingSelectionBtn = this.$$('.bounding-selection') as HTMLButtonElement;
+    // this.boundingSelectionBtn = this.$$('.bounding-selection') as HTMLButtonElement;
 
-    this.resetFilterButton = this.$$('.reset-filter') as HTMLButtonElement;
-    this.setFilterButton = this.$$('.set-filter') as HTMLButtonElement;
-    this.clearSelectionButton = this.$$(
-      '.clear-selection'
-    ) as HTMLButtonElement;
+    // this.resetFilterButton = this.$$('.reset-filter') as HTMLButtonElement;
+    // this.setFilterButton = this.$$('.set-filter') as HTMLButtonElement;
+    // this.clearSelectionButton = this.$$(
+    //   '.clear-selection'
+    // ) as HTMLButtonElement;
     this.noisyBtn = this.$$('.show-noisy-btn') as HTMLButtonElement
     this.stopBtn = this.$$('.stop-animation-btn') as HTMLButtonElement
 
@@ -214,12 +201,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     this.epochFrom = 1
     this.epochTo = 1
     this.showTrace = false
-    this.hiddenLabeled = false
-    this.hiddenTesting = false
 
-    this.showlabeled = true
-    this.showUnlabeled = true
-    this.showTesting = true
 
     this.budget = 1000
     this.suggestKNum = 10
@@ -247,7 +229,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     this.neighborsOfFirstPoint = neighbors;
     this.selectedPointIndices = indices;
     // this.updateFilterButtons(indices.length + neighbors.length);
-    this.updateFilterButtons(indices.length);
+    // this.updateFilterButtons(indices.length);
     this.updateNeighborsList(neighbors);
     if (neighbors.length === 0) {
       this.updateSearchResults(indices);
@@ -256,7 +238,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     }
   }
   private enableResetFilterButton(enabled: boolean) {
-    this.resetFilterButton.disabled = !enabled;
+    // this.resetFilterButton.disabled = !enabled;
   }
 
   /** Handles toggle of metadata-container. */
@@ -315,137 +297,6 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   @observe('showNeighborImages', 'spriteImagesAvailable')
   _refreshNeighborsList() {
     this.updateNeighborsList();
-  }
-
-  @observe('hiddenLabeled')
-  _refreshClassiftPoints() {
-    this.update()
-  }
-
-  @observe('hiddenTesting')
-  _refreshTestPoints() {
-    this.update()
-  }
-
-  @observe('showlabeled')
-  _labeledChanged() {
-    let indicates = []
-    if (window.nowShowIndicates) {
-      if (this.showlabeled) {
-        for (let i = 0; i < window.properties[window.iteration].length; i++) {
-          let indicate = window.properties[window.iteration][i]
-          if (indicate === 0 || window.nowShowIndicates.indexOf(i) !== -1) {
-            indicates.push(i)
-          }
-        }
-        window.nowShowIndicates = indicates
-        // this.projector.filterDataset(window.nowShowIndicates)
-      } else {
-        ///隐藏labeled
-        for (let i = 0; i < window.properties[window.iteration].length; i++) {
-          if (window.properties[window.iteration][i] !== 0 && window.nowShowIndicates.indexOf(i) !== -1) {
-            indicates.push(i)
-          }
-        }
-        window.nowShowIndicates = indicates
-      }
-      this.projector.filterDataset(window.nowShowIndicates)
-    }
-  }
-
-  @observe('showUnlabeled')
-  _unLabelChanged() {
-    let indicates = []
-    if (window.nowShowIndicates) {
-      if (this.showUnlabeled) {
-        for (let i = 0; i < window.properties[window.iteration].length; i++) {
-          let indicate = window.properties[window.iteration][i]
-          if (indicate === 1 || window.nowShowIndicates.indexOf(i) !== -1) {
-            indicates.push(i)
-          }
-        }
-        window.nowShowIndicates = indicates
-        // this.projector.filterDataset(window.nowShowIndicates)
-      } else {
-        for (let i = 0; i < window.properties[window.iteration].length; i++) {
-          if (window.properties[window.iteration][i] !== 1 && window.nowShowIndicates.indexOf(i) !== -1) {
-            indicates.push(i)
-          }
-        }
-        window.nowShowIndicates = indicates
-      }
-      this.projector.filterDataset(window.nowShowIndicates)
-    }
-  }
-
-  @observe('showTesting')
-  _testingChanged() {
-    let indicates = []
-    if (window.nowShowIndicates) {
-      if (this.showTesting) {
-        for (let i = 0; i < window.properties[window.iteration].length; i++) {
-          let indicate = window.properties[window.iteration][i]
-          if (indicate === 2 || window.nowShowIndicates.indexOf(i) !== -1) {
-            indicates.push(i)
-          }
-        }
-        window.nowShowIndicates = indicates
-        // this.projector.filterDataset(window.nowShowIndicates)
-      } else {
-        ///隐藏labeled
-        for (let i = 0; i < window.properties[window.iteration].length; i++) {
-          if (window.properties[window.iteration][i] !== 2 && window.nowShowIndicates.indexOf(i) !== -1) {
-            indicates.push(i)
-          }
-        }
-        window.nowShowIndicates = indicates
-      }
-      this.projector.filterDataset(window.nowShowIndicates)
-    }
-  }
-
-  update() {
-    let indicates = []
-    if (this.hiddenLabeled && this.hiddenTesting) {
-      if (window.properties) {
-        if (window.properties[window.iteration].length) {
-          for (let i = 0; i < window.properties[window.iteration].length; ++i) {
-            if (window.properties[window.iteration][i] === 0) {
-              indicates.push(i)
-            }
-          }
-        }
-      }
-      this.projector.filterDataset(indicates)
-    } else if (!this.hiddenLabeled && this.hiddenTesting) {
-      if (window.properties) {
-        if (window.properties[window.iteration].length) {
-          for (let i = 0; i < window.properties[window.iteration].length; ++i) {
-            if (window.properties[window.iteration][i] !== 2) {
-              indicates.push(i)
-            }
-          }
-        }
-      }
-      this.projector.filterDataset(indicates)
-    } else if (this.hiddenLabeled && !this.hiddenTesting) {
-      if (window.properties) {
-        if (window.properties[window.iteration].length) {
-          for (let i = 0; i < window.properties[window.iteration].length; ++i) {
-            if (window.properties[window.iteration][i] !== 0) {
-              indicates.push(i)
-            }
-          }
-        }
-      }
-      console.log('indicates', indicates)
-      this.projector.filterDataset(indicates)
-    } else {
-      for (let i = 0; i < 60000; ++i) {
-        indicates.push(i)
-      }
-      this.projector?.filterDataset(indicates)
-    }
   }
 
   @observe('showTrace')
@@ -632,7 +483,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     const metadata = this.projector.dataSet.points[pointIndex].metadata[
       this.selectedMetadataField
     ];
-    let prediction = this.projector.dataSet.points[pointIndex].current_prediction;
+    let prediction = this.projector.dataSet.points[pointIndex]?.current_prediction;
     if (prediction == undefined) {
       prediction = `Unknown`;
     }
@@ -648,7 +499,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     const displayStringMetaData = stringMetaData.length>5?stringMetaData:(stringMetaData.length <= 3?"\xa0\xa0\xa0" + stringMetaData + "\xa0\xa0\xa0":"\xa0" + stringMetaData + "\xa0\xa0")
     const displayPointIndex = String(pointIndex).length<=3?(String(pointIndex).length===1?"\xa0\xa0"+String(pointIndex) +"\xa0\xa0":"\xa0"+String(pointIndex) +"\xa0\xa0"):String(pointIndex)
     // return String(pointIndex) + "Label: " + stringMetaData + " Prediction: " + prediction + " Original label: " + original_label;
-    let prediction_res = stringMetaData === prediction ? ' ✅ ' : ' ⭕️ '
+    let prediction_res = stringMetaData === prediction ? ' ✅ ' : ' ❗️ '
     return displayPointIndex + " | " + displayStringMetaData + " | " + displayprediction + " | " + prediction_res
   }
   private spriteImageRenderer() {
@@ -757,7 +608,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   }
   private updateFilterButtons(numPoints: number) {
     if (numPoints) {
-      this.setFilterButton.innerText = `Filter ${numPoints} points`;
+      this.setFilterButton.innerText = `Filter ${numPoints}`;
       if (numPoints > 1) {
         this.setFilterButton.disabled = null;
       }
@@ -780,20 +631,20 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     }
     self.showTab('normal');
 
-    this.boundingSelectionBtn.onclick = (e: any) => {
+    // this.boundingSelectionBtn.onclick = (e: any) => {
 
-      this.isAlSelecting = !this.isAlSelecting
-      if (this.isAlSelecting) {
-        window.isAdjustingSel = true
-        this.boundingSelectionBtn.classList.add('actived')
-        this.projectorEventContext.setMouseMode(MouseMode.AREA_SELECT)
-        // this.projectorScatterPlotAdapter.scatterPlot.setMouseMode(MouseMode.AREA_SELECT);
-      } else {
-        window.isAdjustingSel = false
-        this.boundingSelectionBtn.classList.remove('actived')
-        this.projectorEventContext.setMouseMode(MouseMode.CAMERA_AND_CLICK_SELECT);
-      }
-    }
+    //   this.isAlSelecting = !this.isAlSelecting
+    //   if (this.isAlSelecting) {
+    //     window.isAdjustingSel = true
+    //     this.boundingSelectionBtn.classList.add('actived')
+    //     this.projectorEventContext.setMouseMode(MouseMode.AREA_SELECT)
+    //     // this.projectorScatterPlotAdapter.scatterPlot.setMouseMode(MouseMode.AREA_SELECT);
+    //   } else {
+    //     window.isAdjustingSel = false
+    //     this.boundingSelectionBtn.classList.remove('actived')
+    //     this.projectorEventContext.setMouseMode(MouseMode.CAMERA_AND_CLICK_SELECT);
+    //   }
+    // }
 
     this.queryByStrategtBtn.onclick = () => {
       projector.queryByAL(
@@ -813,7 +664,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             if (!this.isAlSelecting) {
               this.isAlSelecting = true
               window.isAdjustingSel = true
-              this.boundingSelectionBtn.classList.add('actived')
+              // this.boundingSelectionBtn.classList.add('actived')
               this.projectorEventContext.setMouseMode(MouseMode.AREA_SELECT)
             }
             // this.projectorScatterPlotAdapter.scatterPlot.setMouseMode(MouseMode.AREA_SELECT);
@@ -851,7 +702,8 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             if (!this.isAlSelecting) {
               this.isAlSelecting = true
               window.isAdjustingSel = true
-              this.boundingSelectionBtn.classList.add('actived')
+              // this.boundingSelectionBtn.classList.add('actived')
+  
               this.projectorEventContext.setMouseMode(MouseMode.AREA_SELECT)
             }
           }
@@ -862,8 +714,8 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
     this.trainBySelBtn.onclick = () => {
       this.resetStatus()
-      this.boundingSelectionBtn.classList.remove('actived')
-      this.projectorEventContext.setMouseMode(MouseMode.CAMERA_AND_CLICK_SELECT);
+      // this.boundingSelectionBtn.classList.remove('actived')
+      // this.projectorEventContext.setMouseMode(MouseMode.CAMERA_AND_CLICK_SELECT);
       this.projector.retrainBySelections(this.projector.iteration, this.selectedPointIndices)
       //  this.projectionsPanel.reTrainBySel(this.projector.iteration,this.selectedPointIndices)
     }
@@ -958,37 +810,37 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       }
     }
 
-    this.setFilterButton.onclick = () => {
-      window.isFilter = true
-      var indices = this.selectedPointIndices.concat(
-        this.neighborsOfFirstPoint.map((n) => n.index)
-      );
+    // this.setFilterButton.onclick = () => {
+    //   window.isFilter = true
+    //   var indices = this.selectedPointIndices.concat(
+    //     this.neighborsOfFirstPoint.map((n) => n.index)
+    //   );
 
-      this.currentPredicate[this.selectedMetadataField] = this.searchPredicate;
-      this.filterIndices = this.selectedPointIndices.sort()
+    //   this.currentPredicate[this.selectedMetadataField] = this.searchPredicate;
+    //   this.filterIndices = this.selectedPointIndices.sort()
 
-      projector.filterDataset(indices, true);
-      this.enableResetFilterButton(true);
-      this.updateFilterButtons(this.filterIndices.length);
-    };
-    this.resetFilterButton.onclick = () => {
-      window.isFilter = false
-      this.queryIndices = [];
-      this.currentPredicate = {};
-      this.filterIndices = [];
-      projector.resetFilterDataset(projector.dataSet.DVICurrentRealDataNumber);
-      this.enableResetFilterButton(false);
-      this.searchBox.setValue("", false);
-    };
-    this.clearSelectionButton.onclick = () => {
-      window.customSelection = []
-      window.suggestionIndicates = []
-      window.queryResPointIndices = []
-      this.projectorEventContext.refresh()
-      this.updateFilterButtons(0)
-      projector.adjustSelectionAndHover([]);
-      this.queryIndices = [];
-    };
+    //   projector.filterDataset(indices, true);
+    //   this.enableResetFilterButton(true);
+    //   this.updateFilterButtons(this.filterIndices.length);
+    // };
+    // this.resetFilterButton.onclick = () => {
+    //   window.isFilter = false
+    //   this.queryIndices = [];
+    //   this.currentPredicate = {};
+    //   this.filterIndices = [];
+    //   projector.resetFilterDataset(projector.dataSet.DVICurrentRealDataNumber);
+    //   this.enableResetFilterButton(false);
+    //   this.searchBox.setValue("", false);
+    // };
+    // this.clearSelectionButton.onclick = () => {
+    //   window.customSelection = []
+    //   window.suggestionIndicates = []
+    //   window.queryResPointIndices = []
+    //   this.projectorEventContext.refresh()
+    //   this.updateFilterButtons(0)
+    //   projector.adjustSelectionAndHover([]);
+    //   this.queryIndices = [];
+    // };
     this.enableResetFilterButton(false);
 
     const updateInput = (value: string, inRegexMode: boolean) => {
@@ -1051,9 +903,6 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     // }
   }
   resetStatus() {
-    this.showTesting = true
-    this.showlabeled = true
-    this.showUnlabeled = true
     this.isAlSelecting = false
     window.isAdjustingSel = false
   }
