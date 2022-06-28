@@ -38,6 +38,7 @@ declare global {
     queryResPointIndices: any,
     previousIndecates: any,
     previousAnormalIndecates: any,
+    queryResAnormalIndecates: any,
     alSuggestionIndicates: any,
     alSuggestLabelList: any,
     alSuggestScoreList: any
@@ -541,10 +542,13 @@ class Projector
    * Used by clients to indicate that a selection has occurred.
    */
   notifySelectionChanged(newSelectedPointIndices: number[], selectMode?: boolean, selectionType?: string) {
-    if (selectionType === 'isALQuery' || selectionType === 'normal') {
+    if (selectionType === 'isALQuery' || selectionType === 'normal' || selectionType === 'isAnormalyQuery') {
       window.customSelection = []
       window.queryResPointIndices = newSelectedPointIndices
       this.metadataCard.updateCustomList(this.dataSet.points)
+    }
+    if(selectionType === 'isAnormalyQuery'){
+      window.queryResAnormalIndecates = newSelectedPointIndices
     }
     if(selectionType === 'isShowSelected'){
       this.metadataCard.updateCustomList(this.dataSet.points)
@@ -1237,6 +1241,8 @@ class Projector
       mode: 'cors'
     }).then(response => response.json()).then(data => {
       const indices = data.selectedPoints;
+      const labels = data.suggestLabels;
+      const scores = data.scores
       logging.setModalMessage(null, msgId);
       callback(indices);
     }).catch(error => {

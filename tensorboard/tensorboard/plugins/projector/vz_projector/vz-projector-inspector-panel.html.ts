@@ -401,7 +401,7 @@ export const template = html`
           </paper-input>
         </div>
       </div>
-      <button class="search-button search" style="margin-top:0px;">search</button>
+      <button style="width: 320px;" class="search-button search" style="margin-top:0px;">Query By Condition</button>
       <div>
       </div>
     </div>
@@ -441,16 +441,6 @@ export const template = html`
 
   <div data-panel="anomaly" class="ink-panel-content query-content">
     <div class="statergy-by" style="display:flex">
-      <paper-dropdown-menu no-animations label="Strategies">
-        <paper-listbox attr-for-selected="value" class="dropdown-content" selected="{{selectedAnormalyStratergy}}"
-          slot="dropdown-content">
-          <template is="dom-repeat" items="[[statergyList]]">
-            <paper-item value="[[item]]" label="[[item]]">
-              [[item]]
-            </paper-item>
-          </template>
-        </paper-listbox>
-      </paper-dropdown-menu>
 
       <paper-dropdown-menu no-animations label="Classes">
       <paper-listbox attr-for-selected="value" class="dropdown-content" selected="{{selectedAnormalyClass}}"

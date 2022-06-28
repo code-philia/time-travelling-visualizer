@@ -55,6 +55,9 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   @property({ type: String })
   selectedAnormalyStratergy: string;
 
+  @property({type: Number})
+  selectedAnormalyClass: number
+
   @property({ type: Number })
   budget: number
 
@@ -728,8 +731,8 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
     this.queryAnomalyBtn.onclick = () => {
       projector.queryAnormalyStrategy(
-        this.selectedStratergy,
-        Number(this.budget),10,[],[],
+        '',
+        Number(this.budget),this.selectedAnormalyClass,[],[],
         (indices: any) => {
           if (indices != null) {
             this.queryIndices = indices;
@@ -739,7 +742,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
               this.searchBox.message = `${this.queryIndices.length} matches.`;
             }
 
-            this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isALQuery');
+            this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isAnormalyQuery');
             if (!this.isAlSelecting) {
               this.isAlSelecting = true
               window.isAdjustingSel = true
