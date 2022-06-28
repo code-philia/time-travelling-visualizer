@@ -458,6 +458,11 @@ export const template = html`
     <paper-tooltip position="bottom" animation-delay="0" fit-to-visible-bounds>
     anomaly detection
     </paper-tooltip>
+    <div class="buttons">
+    <button class="button reset-filter">Show All</button>
+    <button class="button set-filter">Filter query result</button>
+    <button class="button clear-selection">Clear Selection</button>
+    </div>
   </div>
 
   <!--<div style="display:flex;width: 280px;justify-content: space-around;margin-bottom: 10px;">
