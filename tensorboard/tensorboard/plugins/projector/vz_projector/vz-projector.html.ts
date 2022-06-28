@@ -482,6 +482,8 @@ export const template = html`
               disagreement between prediction and pseudo label : 💩
               suggest label: 👍
               custom selected: ✅
+              anomaly data: ⭕️
+              clean data: 🟢
               <!-- <b>Zoom</b> Mouse wheel.<br />
               Holding <b>ctrl</b> reverses the mouse clicks.
               <h3>2D controls</h3>

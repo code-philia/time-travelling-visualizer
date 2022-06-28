@@ -230,7 +230,7 @@ export const template = html`
     background: #fff;
     bottom: 0;
     z-index: 99;
-    width: 280px;
+    width: 340px;
     height: 60px;
   }
 
@@ -328,6 +328,7 @@ export const template = html`
   .flex-container {
     display: flex;
     justify-content: space-between;
+    align-items:center;
   }
 
   .results {
@@ -453,16 +454,30 @@ export const template = html`
       </paper-listbox>
     </paper-dropdown-menu>
       <paper-input value="{{budget}}" label="budget" style="margin-right: 10px;"></paper-input>
+      <button style="width: 100px;" class="query-anomaly search-button search">Query</button>
     </div>
-    <button style="width: 320px;" class="query-anomaly search-button search">Query Anomaly</button>
     <paper-tooltip position="bottom" animation-delay="0" fit-to-visible-bounds>
     anomaly detection
     </paper-tooltip>
-    <div class="buttons">
+    <!--<div class="buttons">
     <button class="button reset-filter">Show All</button>
     <button class="button set-filter">Filter query result</button>
     <button class="button clear-selection">Clear Selection</button>
+    </div>-->
+    <div class="confidence-threshold">
+    <div class="threshold-container">
+      <paper-input value="{{epochFrom}}" label="iteration from:">
+      </paper-input>
+      <paper-input value="{{epochTo}}" label="iteration to:">
+      </paper-input>
     </div>
+    <div class="flex-container">
+      <p class="current-epoch" style="margin-top:26px;">iteration: {{currentPlayedEpoch}}</p>
+      <button style="width: 110px;" class="boundingbox-button show-noisy-btn">play animation</button>
+      <button class="boundingbox-button stop-animation-btn">
+        stop playing
+      </button></div>
+  </div>
   </div>
 
   <!--<div style="display:flex;width: 280px;justify-content: space-around;margin-bottom: 10px;">
