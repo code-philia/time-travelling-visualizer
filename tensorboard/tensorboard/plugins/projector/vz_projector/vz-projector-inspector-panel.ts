@@ -178,11 +178,11 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     this.queryAnomalyBtn = this.$$('.query-anomaly') as HTMLButtonElement;
     // this.boundingSelectionBtn = this.$$('.bounding-selection') as HTMLButtonElement;
 
-    this.resetFilterButton = this.$$('.reset-filter') as HTMLButtonElement;
-    this.setFilterButton = this.$$('.set-filter') as HTMLButtonElement;
-    this.clearSelectionButton = this.$$(
-      '.clear-selection'
-    ) as HTMLButtonElement;
+    // this.resetFilterButton = this.$$('.reset-filter') as HTMLButtonElement;
+    // this.setFilterButton = this.$$('.set-filter') as HTMLButtonElement;
+    // this.clearSelectionButton = this.$$(
+    //   '.clear-selection'
+    // ) as HTMLButtonElement;
     this.noisyBtn = this.$$('.show-noisy-btn') as HTMLButtonElement
     this.stopBtn = this.$$('.stop-animation-btn') as HTMLButtonElement
 
@@ -870,37 +870,37 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       }
     }
 
-    this.setFilterButton.onclick = () => {
-      window.isFilter = true
-      var indices = this.selectedPointIndices.concat(
-        this.neighborsOfFirstPoint.map((n) => n.index)
-      );
+    // this.setFilterButton.onclick = () => {
+    //   window.isFilter = true
+    //   var indices = this.selectedPointIndices.concat(
+    //     this.neighborsOfFirstPoint.map((n) => n.index)
+    //   );
 
-      this.currentPredicate[this.selectedMetadataField] = this.searchPredicate;
-      this.filterIndices = this.selectedPointIndices.sort()
+    //   this.currentPredicate[this.selectedMetadataField] = this.searchPredicate;
+    //   this.filterIndices = this.selectedPointIndices.sort()
 
-      projector.filterDataset(indices, true);
-      this.enableResetFilterButton(true);
-      this.updateFilterButtons(this.filterIndices.length);
-    };
-    this.resetFilterButton.onclick = () => {
-      window.isFilter = false
-      this.queryIndices = [];
-      this.currentPredicate = {};
-      this.filterIndices = [];
-      projector.resetFilterDataset(projector.dataSet.DVICurrentRealDataNumber);
-      this.enableResetFilterButton(false);
-      this.searchBox.setValue("", false);
-    };
-    this.clearSelectionButton.onclick = () => {
-      window.customSelection = []
-      window.suggestionIndicates = []
-      window.queryResPointIndices = []
-      this.projectorEventContext.refresh()
-      this.updateFilterButtons(0)
-      projector.adjustSelectionAndHover([]);
-      this.queryIndices = [];
-    };
+    //   projector.filterDataset(indices, true);
+    //   this.enableResetFilterButton(true);
+    //   this.updateFilterButtons(this.filterIndices.length);
+    // };
+    // this.resetFilterButton.onclick = () => {
+    //   window.isFilter = false
+    //   this.queryIndices = [];
+    //   this.currentPredicate = {};
+    //   this.filterIndices = [];
+    //   projector.resetFilterDataset(projector.dataSet.DVICurrentRealDataNumber);
+    //   this.enableResetFilterButton(false);
+    //   this.searchBox.setValue("", false);
+    // };
+    // this.clearSelectionButton.onclick = () => {
+    //   window.customSelection = []
+    //   window.suggestionIndicates = []
+    //   window.queryResPointIndices = []
+    //   this.projectorEventContext.refresh()
+    //   this.updateFilterButtons(0)
+    //   projector.adjustSelectionAndHover([]);
+    //   this.queryIndices = [];
+    // };
     this.enableResetFilterButton(false);
 
     const updateInput = (value: string, inRegexMode: boolean) => {
