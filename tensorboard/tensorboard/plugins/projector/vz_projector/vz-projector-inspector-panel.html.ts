@@ -99,7 +99,7 @@ export const template = html`
     color:#fff;
   }
   .bounding-selection,.train-by-selection{
-    font-size:12px;
+    
   }
 
 
@@ -420,11 +420,11 @@ export const template = html`
         </paper-listbox>
       </paper-dropdown-menu>
       <paper-input value="{{budget}}" label="budget" style="margin-right: 10px;"></paper-input>
-      <button style="width: 100px;" class="query-by-stratergy search-button search">Query</button>
       <paper-tooltip position="bottom" animation-delay="0" fit-to-visible-bounds>
       query By active Learning
       </paper-tooltip>
     </div>
+    <button style="width: 320px;" class="query-by-stratergy search-button search">Query By Strategy(& Selection)</button>
     <!--<div style="display:flex;">
       <paper-input style="width: 120px; margin-right:10px;" value="{{suggestKNum}}" label="k number"></paper-input>
       <button style="width: 140px;" class="query-suggestion search-button search">Query Similar</button>
@@ -434,8 +434,8 @@ export const template = html`
     </div>-->
     <div style="display:flex;">
     <!--<button style="width: 120px;" class="bounding-selection search-button search">Select</button>-->
-    <button style="width: 160px;" class="show-selection search-button search">Show Selection</button>
-    <button style="width: 240px;" class="train-by-selection search-button search">Train By Selections</button>
+    <button style="width: 180px; white-space: nowrap;" class="show-selection search-button search">Prev & Cur Selection</button>
+    <button style="width: 230px;" class="train-by-selection search-button search">Train By Selections</button>
     </div>
   </div>
 
@@ -451,12 +451,23 @@ export const template = html`
           </template>
         </paper-listbox>
       </paper-dropdown-menu>
+
+      <paper-dropdown-menu no-animations label="Classes">
+      <paper-listbox attr-for-selected="value" class="dropdown-content" selected="{{selectedAnormalyClass}}"
+        slot="dropdown-content">
+        <template is="dom-repeat" items="[[classOptionsList]]">
+          <paper-item value="[[item.value]]" label="[[item.label]]">
+            [[item.label]]
+          </paper-item>
+        </template>
+      </paper-listbox>
+    </paper-dropdown-menu>
       <paper-input value="{{budget}}" label="budget" style="margin-right: 10px;"></paper-input>
-      <button style="width: 100px;" class="query-anomaly search-button search">Query</button>
-      <paper-tooltip position="bottom" animation-delay="0" fit-to-visible-bounds>
-      anomaly detection
-      </paper-tooltip>
     </div>
+    <button style="width: 320px;" class="query-anomaly search-button search">Query Anomaly</button>
+    <paper-tooltip position="bottom" animation-delay="0" fit-to-visible-bounds>
+    anomaly detection
+    </paper-tooltip>
   </div>
 
   <!--<div style="display:flex;width: 280px;justify-content: space-around;margin-bottom: 10px;">

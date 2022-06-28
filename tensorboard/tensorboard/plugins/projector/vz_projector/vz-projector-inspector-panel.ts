@@ -155,6 +155,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   private searchFields: string[];
   private statergyList: string[];
   private anormalyStatergyList: string[];
+  private classOptionsList:any;
   private boundingBoxSelection: number[];
   private currentBoundingBoxSelection: number[];
   private projectorScatterPlotAdapter: ProjectorScatterPlotAdapter;
@@ -226,6 +227,8 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     this.statergyList = ["random", "coreset", 'bayesianLeastConfidence', "LeastConfidence"]
     // anormaly detection statergy
     this.anormalyStatergyList = ['anormalyStageone', 'anormalyStageTwo', 'anormalyStageThree']
+    // anormaly detcttion classes
+    this.classOptionsList = [{value:0,label:'airplane'},{value:1,label:'car'},{value:2,label:'bird'},{value:3,label:'cat'},{value:4,label:'deer'},{value:5,label:'dog'},{value:6,label:'frog'},{value:7,label:'horse'},{value:8,label:'ship'},{value:9,label:'truck'}]
     // TODO read real points length from dataSet
     for (let i = 0; i < 60000; i++) {
       this.filterIndices.push(i);
@@ -430,10 +433,10 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       rowLink.className = 'label';
       rowLink.title = label;
       rowLink.innerText = label;
-      rowLink.onmouseenter = () => {
+      row.onmouseenter = () => {
         this.projectorEventContext.notifyHoverOverPoint(index);
       };
-      rowLink.onmouseleave = () => {
+      row.onmouseleave = () => {
         this.projectorEventContext.notifyHoverOverPoint(null);
       };
 
@@ -447,11 +450,11 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         input.type = 'checkbox'
         input.setAttribute('id', `resCheckbox${indices[i]}`)
         img.src = 'data:image/png;base64,' + data.imgUrl;
-        rowLink.onmouseenter = () => {
+        row.onmouseenter = () => {
           this.projectorEventContext.updateMetaDataByIndices(indices[i], img.src)
           this.projectorEventContext.notifyHoverOverPoint(index);
         };
-        rowLink.onmouseleave = () => {
+        row.onmouseleave = () => {
           this.projectorEventContext.updateMetaDataByIndices(-1, '')
           this.projectorEventContext.notifyHoverOverPoint(null);
         };
