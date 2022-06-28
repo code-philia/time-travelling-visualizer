@@ -230,7 +230,7 @@ export const template = html`
     background: #fff;
     bottom: 0;
     z-index: 99;
-    width: 280px;
+    width: 340px;
     height: 60px;
   }
 
