@@ -39,6 +39,7 @@ declare global {
     previousIndecates: any,
     previousAnormalIndecates: any,
     queryResAnormalIndecates: any,
+    queryResAnormalCleanIndecates:any,
     alSuggestionIndicates: any,
     alSuggestLabelList: any,
     alSuggestScoreList: any
@@ -546,9 +547,6 @@ class Projector
       window.customSelection = []
       window.queryResPointIndices = newSelectedPointIndices
       this.metadataCard.updateCustomList(this.dataSet.points)
-    }
-    if(selectionType === 'isAnormalyQuery'){
-      window.queryResAnormalIndecates = newSelectedPointIndices
     }
     if(selectionType === 'isShowSelected'){
       this.metadataCard.updateCustomList(this.dataSet.points)
@@ -1222,7 +1220,7 @@ class Projector
   }
   // anormaly detection
   queryAnormalyStrategy(strategy: string, budget: number, cls: number, currentIndices: number[], previousIndices: number[],
-    callback: (indices: any) => void) {
+    callback: (indices: any, cleanIndices?:any) => void) {
     const msgId = logging.setModalMessage('Querying...');
     let headers = new Headers();
     headers.append('Content-Type', 'application/json');
@@ -1243,8 +1241,11 @@ class Projector
       const indices = data.selectedPoints;
       const labels = data.suggestLabels;
       const scores = data.scores
+      const cleanIndices = data.cleanList
+      window.alSuggestScoreList = data.scores
+      window.alSuggestLabelList = data.suggestLabels;
       logging.setModalMessage(null, msgId);
-      callback(indices);
+      callback(indices,cleanIndices);
     }).catch(error => {
       logging.setErrorMessage('querying for indices');
       callback(null);

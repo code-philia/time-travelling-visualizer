@@ -972,6 +972,12 @@ export class ProjectorScatterPlotAdapter {
         return `⭕️ ${i}`
       }
     }
+    if(window.queryResAnormalCleanIndecates?.length){
+      if (window.queryResAnormalCleanIndecates.indexOf(i) >= 0) {
+        return `🟢${i}`
+      }
+    }
+    
     if (window.queryResPointIndices?.length) {
       if (window.queryResPointIndices?.indexOf(i) !== -1) {
         return `👍 ${i}`
