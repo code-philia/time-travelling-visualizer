@@ -183,8 +183,8 @@ class Projector
 
   private goDownBtn: any;
   private goUpBtn: any;
-  // private goLeftBtn: any;
-  // private goRightBtn: any;
+  private goLeftBtn: any;
+  private goRightBtn: any;
 
   private helpBtn: any;
 
@@ -226,8 +226,8 @@ class Projector
     this.statusBar = this.$$('#status-bar') as HTMLDivElement;
     this.goDownBtn = this.$$('#cavasGoDown') as HTMLElement;
     this.goUpBtn = this.$$('#cavasGoUp') as HTMLElement;
-    // this.goLeftBtn = this.$$('#cavasGoLeft') as HTMLElement;
-    // this.goRightBtn = this.$$('#cavasGoRight') as HTMLElement;
+    this.goLeftBtn = this.$$('#cavasGoLeft') as HTMLElement;
+    this.goRightBtn = this.$$('#cavasGoRight') as HTMLElement;
     this.helpBtn = this.$$('#help-3d-icon') as HTMLElement;
     this.inspectorPanel.initialize(this, this as ProjectorEventContext);
     this.projectionsPanel.initialize(this);
@@ -549,7 +549,19 @@ class Projector
       this.metadataCard.updateCustomList(this.dataSet.points)
     }
     if(selectionType === 'isShowSelected'){
+      for(let i=0;i< window.previousIndecates?.length;i++){
+        if(window.customSelection.indexOf(window.previousIndecates[i]) === -1){
+          let index = window.previousIndecates[i]
+          if(window.checkboxDom[index]){
+            console.log('checkboxDom',window.checkboxDom[index])
+            window.checkboxDom[index].checked = true
+            console.log('checkboxDom',window.checkboxDom[index].checked)
+          }
+        }
+      }
       this.metadataCard.updateCustomList(this.dataSet.points)
+      this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
+      this.projectorScatterPlotAdapter.render()
     }
     // if (selectionType === 'isALQuery') {
     //   window.suggestionIndicates = []
@@ -871,7 +883,6 @@ class Projector
   private setupUIControls() {
     // View controls
     this.helpBtn.addEventListener('click', () => {
-      // console.log('help')
       (this.$.help3dDialog as any).open();
     })
     this.$$('#reset-zoom').addEventListener('click', () => {
@@ -943,13 +954,13 @@ class Projector
       this.projectorScatterPlotAdapter.scatterPlot.goUp()
     })
 
-    // this.goLeftBtn.addEventListener('click', (e) => {
-    //   this.projectorScatterPlotAdapter.scatterPlot.goLeft()
-    // })
+    this.goLeftBtn.addEventListener('click', (e) => {
+      this.projectorScatterPlotAdapter.scatterPlot.goLeft()
+    })
 
-    // this.goRightBtn.addEventListener('click', (e) => {
-    //   this.projectorScatterPlotAdapter.scatterPlot.goRight()
-    // })
+    this.goRightBtn.addEventListener('click', (e) => {
+      this.projectorScatterPlotAdapter.scatterPlot.goRight()
+    })
 
     window.addEventListener('resize', () => {
       this.projectorScatterPlotAdapter.resize();
@@ -1210,7 +1221,6 @@ class Projector
         return a - b;
       }
       window.previousIndecates.sort(func)
-      console.log('window.previousIndecates', window.previousIndecates)
 
       callback(indices, scores, labels);
     }).catch(error => {
