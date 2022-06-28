@@ -471,8 +471,10 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             window.customSelection = []
           }
           if (input.checked) {
-            window.customSelection.push(indices[i])
-            this.projectorEventContext.refresh()
+            if(window.customSelection.indexOf(indices[i]) === -1){
+              window.customSelection.push(indices[i])
+              this.projectorEventContext.refresh()
+            }
           } else {
             let index = window.customSelection.indexOf(indices[i])
             window.customSelection.splice(index, 1)
@@ -727,6 +729,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         }
       }
       this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isShowSelected');
+      // this.updateSearchResults(this.queryIndices)
     }
 
     this.queryAnomalyBtn.onclick = () => {

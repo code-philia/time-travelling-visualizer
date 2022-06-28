@@ -872,6 +872,18 @@ export class ProjectorScatterPlotAdapter {
       // return colors
     }
     //
+    if(window.isAnimatating){
+      const n = ds.points.length;
+      const c = new THREE.Color(POINT_COLOR_UNSELECTED);
+        for (let i = 0; i < n; ++i) {
+          if(selectedPointIndices.indexOf(i) === -1){
+            let dst = i * 3;
+            colors[dst++] = c.r;
+            colors[dst++] = c.g;
+            colors[dst++] = c.b;
+          }
+        }
+    }
 
     if (window.customSelection?.length && window.isAdjustingSel) {
       const n = ds.points.length;
@@ -1042,6 +1054,9 @@ export class ProjectorScatterPlotAdapter {
       this.traceLine = new scatterPlotVisualizerTraceLine()
       this.traceLine.setEpoches(this.traceLineEpoch)
       this.traceLine.setSelectedPoint(this.selectedPointIndices);
+      this.canvasLabelsVisualizer = new ScatterPlotVisualizerCanvasLabels(
+        this.scatterPlotContainer
+      );
     }
     else {
       scatterPlot.addVisualizer(this.spriteVisualizer);
