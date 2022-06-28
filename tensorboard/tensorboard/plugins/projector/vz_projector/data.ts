@@ -1123,6 +1123,16 @@ export class DataSet {
     });
   }
 
+  iterationChangeReset(){
+    window.queryResPointIndices = [],
+    window.previousIndecates = []
+    // previousAnormalIndecates: any,
+    // queryResAnormalIndecates: any,
+    window.alSuggestionIndicates = []
+    window.alSuggestLabelList= [],
+    window.alSuggestScoreList= []
+  }
+
   async projectTSNE(
     perplexity: number,
     learningRate: number,
