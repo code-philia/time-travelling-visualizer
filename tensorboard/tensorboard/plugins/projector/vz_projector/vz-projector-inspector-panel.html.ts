@@ -592,7 +592,7 @@ export const template = html`
      <button class="button clear-selection">Clear Selection</button>
      </div>-->
      <div class="matches-list-title"> 
-     <span style="margin-left: 4px;">｜img |</span><span>index｜</span><span>label｜</span><span> predict｜</span><span>result｜</span><span>score</span></div>
+     <span style="margin-left: 4px;">| </span><span>index｜</span><span>label｜</span><span> predict｜</span><span>result｜</span><span>score</span></div>
       <div class="list"></div>
       <div class="limit-msg">Showing only the first 100 results...</div>
     </div>
