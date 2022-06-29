@@ -442,25 +442,9 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       row.onmouseleave = () => {
         this.projectorEventContext.notifyHoverOverPoint(null);
       };
-
-      await fetch(`http://${DVIServer}/sprite?index=${indices[i]}&path=${basePath}`, {
-        method: 'GET',
-        mode: 'cors'
-      }).then(response => response.json()).then(data => {
-        // console.log("response", data);
-        let img = document.createElement('img');
-        let input = document.createElement('input');
+      let input = document.createElement('input');
         input.type = 'checkbox'
         input.setAttribute('id', `resCheckbox${indices[i]}`)
-        img.src = 'data:image/png;base64,' + data.imgUrl;
-        row.onmouseenter = () => {
-          this.projectorEventContext.updateMetaDataByIndices(indices[i], img.src)
-          this.projectorEventContext.notifyHoverOverPoint(index);
-        };
-        row.onmouseleave = () => {
-          this.projectorEventContext.updateMetaDataByIndices(-1, '')
-          this.projectorEventContext.notifyHoverOverPoint(null);
-        };
         if (!window.checkboxDom) {
           window.checkboxDom = []
         }
@@ -483,11 +467,43 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
           this.projectorEventContext.notifyHoverOverPoint(indices[i]);
         })
         row.appendChild(input);
-        row.appendChild(img);
+      // await fetch(`http://${DVIServer}/sprite?index=${indices[i]}&path=${basePath}`, {
+      //   method: 'GET',
+      //   mode: 'cors'
+      // }).then(response => response.json()).then(data => {
+      //   // console.log("response", data);
+      //   let img = document.createElement('img');
+      //   let input = document.createElement('input');
+      //   input.type = 'checkbox'
+      //   input.setAttribute('id', `resCheckbox${indices[i]}`)
+      //   img.src = 'data:image/png;base64,' + data.imgUrl;
+        
+      //   row.appendChild(input);
+      //   row.appendChild(img);
+      //   // logging.setModalMessage(null, msgId);
+      // }).catch(error => {
+      //   console.log("error", error);
+      // });
+
+      row.onmouseenter = async () => {
+         await fetch(`http://${DVIServer}/sprite?index=${indices[i]}&path=${basePath}`, {
+        method: 'GET',
+        mode: 'cors'
+      }).then(response => response.json()).then(data => {
+        // console.log("response", data);
+        let  imgsrc = 'data:image/png;base64,' + data.imgUrl;
+        this.projectorEventContext.updateMetaDataByIndices(indices[i], imgsrc)
+        this.projectorEventContext.notifyHoverOverPoint(index);
         // logging.setModalMessage(null, msgId);
       }).catch(error => {
         console.log("error", error);
       });
+      
+      };
+      row.onmouseleave = () => {
+        this.projectorEventContext.updateMetaDataByIndices(-1, '')
+        this.projectorEventContext.notifyHoverOverPoint(null);
+      };
 
 
       row.className = 'row-img';

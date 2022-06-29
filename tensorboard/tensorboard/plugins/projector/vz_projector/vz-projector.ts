@@ -560,8 +560,7 @@ class Projector
         }
       }
       this.metadataCard.updateCustomList(this.dataSet.points)
-      this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
-      this.projectorScatterPlotAdapter.render()
+      
     }
     // if (selectionType === 'isALQuery') {
     //   window.suggestionIndicates = []

@@ -479,12 +479,15 @@ export const template = html`
               <b>Classes</b>
               <b>Number</b> 10<br />
               <h3>3D Label Intro</h3>
-              disagreement between prediction and pseudo label : 💩
-              suggest label: 👍
-              custom selected: ✅
-              anomaly data: ⭕️
-              clean data: 🟢
+              disagreement between prediction and pseudo label : 💩<br/>
+              suggest label: 👍<br/>
+              custom selected: ✅<br/>
+              anomaly data: ⭕️<br/>
+              clean data: 🟢<br/>
               <!-- <b>Zoom</b> Mouse wheel.<br />
+              <h3>Meta Card</h3>
+              previous selected：☑️
+              
               Holding <b>ctrl</b> reverses the mouse clicks.
               <h3>2D controls</h3>
               <b>Pan</b> Mouse left click.<br />
