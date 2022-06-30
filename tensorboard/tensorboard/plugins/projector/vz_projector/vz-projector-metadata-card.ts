@@ -77,8 +77,9 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
       .custom-list-header{
         line-height: 30px;
         font-weight: 600;
-        border-top: 1px solid #ccc;
         margin-bottom: 10px;
+        background: #e9e9e9;
+        padding: 8px;
       }
 
       .metadata-value {
@@ -98,7 +99,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
         </div>
         <template is="dom-if" if="[[showImg]]">
         <div id="header">
-          <div id="metadata-label">Meta Data Card</div>
+          <div id="metadata-label">Current Hover Detail</div>
         </div>
         </template>
         <iron-collapse id="metadata-container" opened>

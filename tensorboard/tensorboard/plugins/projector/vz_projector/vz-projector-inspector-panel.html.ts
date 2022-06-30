@@ -141,6 +141,7 @@ export const template = html`
     display:flex;
     margin-bottom: 8px;
     align-items: center;
+    cursor: pointer;
   }
 
   .nn-list .value,
