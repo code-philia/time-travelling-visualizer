@@ -43,7 +43,7 @@ declare global {
     alSuggestionIndicates: any,
     alSuggestLabelList: any,
     alSuggestScoreList: any,
-    previousHover:number
+    previousHover: number
   }
 }
 
@@ -758,12 +758,18 @@ class Projector
   /**
    * Used by clients to indicate that a hover is occurring.
    */
+  private timer = null
   notifyHoverOverPoint(pointIndex: number) {
-    console.log('pointIndex',pointIndex)
+    console.log('pointIndex', pointIndex)
     this.hoverListeners.forEach((l) => l(pointIndex));
-    if (window.iteration && pointIndex !== undefined && window.previousHover !== pointIndex ) {
-      this.updateMetaByIndices(pointIndex)
-      window.previousHover = pointIndex
+    let timeNow = new Date().getTime()
+    if (this.timer === null || timeNow - this.timer > 1000) {
+      this.timer = timeNow
+      console.log('get img')
+      if (window.iteration && pointIndex !== undefined && window.previousHover !== pointIndex) {
+        this.updateMetaByIndices(pointIndex)
+        window.previousHover = pointIndex
+      }
     }
   }
   registerProjectionChangedListener(listener: ProjectionChangedListener) {
