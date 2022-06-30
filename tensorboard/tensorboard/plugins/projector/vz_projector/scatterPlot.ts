@@ -183,6 +183,7 @@ export class ScatterPlot {
   private addInteractionListeners() {
 
     this.container.addEventListener('mousemove', this.onMouseMove.bind(this));
+
     this.container.addEventListener('mousedown', this.onMouseDown.bind(this));
     this.container.addEventListener('mouseup', this.onMouseUp.bind(this));
     // this.container.addEventListener('mouseup', this.onMousewheel.bind(this));
@@ -458,28 +459,18 @@ export class ScatterPlot {
       this.render();
     } else if (!this.mouseIsDown) {
       this.setNearestPointToMouse(e);
-      this.projectorEventContext.notifyHoverOverPoint(this.nearestPoint);
-      if (window.iteration) {
-       
-        if (this.nearestPoint !== undefined) {
-          this.throttle(this.projectorEventContext.updateMetaByIndices(this.nearestPoint), 1000)
-        }
-      }
+      this.projectorEventContext.notifyHoverOverPoint(this.nearestPoint)
+    }
+  }
+  debounce(func:any, wait:any) {
+    let timeout;
+    return function () {
+      // 清空定时器
+      if(timeout) clearTimeout(timeout);
+      timeout = setTimeout(func, wait)
     }
   }
 
-  throttle(fn: any, wait) {
-    let timer = null;
-    return function () {
-      var context = this;
-      var args = arguments;
-      if (!timer) {
-        timer = setTimeout(function () {
-          fn.apply(context, args);
-        }, wait);
-      }
-    };
-  }
   /** For using ctrl + left click as right click, and for circle select */
   private onKeyDown(e: any) {
     // If ctrl is pressed, use left click to orbit
