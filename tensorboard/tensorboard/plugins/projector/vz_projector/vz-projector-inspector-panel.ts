@@ -864,7 +864,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     this.noisyBtn.onclick = () => {
       window.isAnimatating = true
       console.log(this.epochFrom, this.epochTo)
-      this.projectorEventContext.setDynamicNoisy(this.epochFrom, this.epochTo)
+      this.projectorEventContext.setDynamicNoisy(1, this.epochTo)
       this.noisyBtn.disabled = true;
       this.stopBtn.disabled = false;
       // if (this.showTrace) {

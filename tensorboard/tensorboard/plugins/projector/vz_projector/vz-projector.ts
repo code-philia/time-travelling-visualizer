@@ -549,18 +549,21 @@ class Projector
       this.metadataCard.updateCustomList(this.dataSet.points)
     }
     if(selectionType === 'isShowSelected'){
+      console.log('window.previousIndecates',window.previousIndecates)
       for(let i=0;i< window.previousIndecates?.length;i++){
-        if(window.customSelection.indexOf(window.previousIndecates[i]) === -1){
+        // if(window.customSelection.indexOf(window.previousIndecates[i]) === -1){
           let index = window.previousIndecates[i]
           if(window.checkboxDom[index]){
             console.log('checkboxDom',window.checkboxDom[index])
             window.checkboxDom[index].checked = true
             console.log('checkboxDom',window.checkboxDom[index].checked)
           }
-        }
+        // }
       }
       this.metadataCard.updateCustomList(this.dataSet.points)
-      
+      this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
+      this.projectorScatterPlotAdapter.render()
+      return
     }
     // if (selectionType === 'isALQuery') {
     //   window.suggestionIndicates = []
