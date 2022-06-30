@@ -141,7 +141,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
           <div class="metadata-key">label |</div>
           <div class="metadata-key">predict |</div>
           </div>
-          <div style="max-height: calc(100vh - 420px);overflow: auto; padding: 0 10px;">
+          <div style="max-height: calc(100vh - 440px);overflow: auto; padding: 0 10px;">
           <template is="dom-repeat" items="[[customMetadata]]">
           <div class="metadata-row" id=[[item.key]]>
             <img src="[[item.src]]" />
