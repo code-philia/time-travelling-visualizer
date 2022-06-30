@@ -110,6 +110,9 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   @property({ type: Boolean })
   isCollapsed: boolean = false;
 
+  @property({ type: Boolean})
+  checkAllQueryRes: boolean = false
+
   @property({ type: String })
   collapseIcon: string = 'expand-less';
 
@@ -166,6 +169,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
   private currentFilterType: string
 
+
   ready() {
     super.ready();
 
@@ -212,7 +216,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     this.epochFrom = 1
     this.epochTo = 1
     this.showTrace = false
-
+    this.checkAllQueryRes = false
 
     this.budget = 1000
     this.suggestKNum = 10
@@ -321,6 +325,27 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       this.projectorEventContext?.renderInTraceLine(true, this.epochFrom, this.epochTo)
     } else {
       this.projectorEventContext?.renderInTraceLine(false, this.epochFrom, this.epochTo)
+    }
+  }
+  @observe('checkAllQueryRes')
+  _checkAll(){
+    if(this.checkAllQueryRes){
+      if(window.checkboxDom){
+        if(window.queryResPointIndices && window.queryResPointIndices.length){
+          for(let i =0;i<window.queryResPointIndices.length;i++){
+            let index = window.queryResPointIndices[i]
+            if(window.customSelection.indexOf(index) === -1){
+              if(window.checkboxDom[index]){
+                window.checkboxDom[index].checked = true
+              }
+              window.customSelection.push(index)
+            }
+          }
+          this.projectorEventContext.refresh()
+        }
+      }
+    }else{
+
     }
   }
 

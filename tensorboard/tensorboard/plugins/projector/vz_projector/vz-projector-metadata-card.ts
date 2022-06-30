@@ -211,7 +211,6 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
   updateMetadata(pointMetadata?: PointMetadata, src?: string, point?: any,indicate?:number) {
     this.pointMetadata = pointMetadata;
     this.showImg = pointMetadata != null
-    console.log('99999',pointMetadata,point,indicate)
 
     this.hasMetadata = pointMetadata != null || window.customSelection?.length;
     if(!window.previousIndecates){

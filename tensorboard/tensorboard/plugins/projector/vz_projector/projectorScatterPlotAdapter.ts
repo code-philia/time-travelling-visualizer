@@ -290,7 +290,6 @@ export class ProjectorScatterPlotAdapter {
     window.worldSpacePointPositions[window.iteration] = newPositions
   }
   updateBackground() {
-    console.log('update bg img', this.projection, window.iteration, window.sceneBackgroundImg)
     if (window.sceneBackgroundImg && window.sceneBackgroundImg[window.iteration]) {
       this.scatterPlot.addbackgroundImg('data:image/png;base64,' + window.sceneBackgroundImg[window.iteration])
     }

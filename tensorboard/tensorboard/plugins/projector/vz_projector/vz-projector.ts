@@ -39,10 +39,11 @@ declare global {
     previousIndecates: any,
     previousAnormalIndecates: any,
     queryResAnormalIndecates: any,
-    queryResAnormalCleanIndecates:any,
+    queryResAnormalCleanIndecates: any,
     alSuggestionIndicates: any,
     alSuggestLabelList: any,
-    alSuggestScoreList: any
+    alSuggestScoreList: any,
+    previousHover:number
   }
 }
 
@@ -548,16 +549,16 @@ class Projector
       window.queryResPointIndices = newSelectedPointIndices
       this.metadataCard.updateCustomList(this.dataSet.points)
     }
-    if(selectionType === 'isShowSelected'){
-      console.log('window.previousIndecates',window.previousIndecates)
-      for(let i=0;i< window.previousIndecates?.length;i++){
+    if (selectionType === 'isShowSelected') {
+      console.log('window.previousIndecates', window.previousIndecates)
+      for (let i = 0; i < window.previousIndecates?.length; i++) {
         // if(window.customSelection.indexOf(window.previousIndecates[i]) === -1){
-          let index = window.previousIndecates[i]
-          if(window.checkboxDom[index]){
-            console.log('checkboxDom',window.checkboxDom[index])
-            window.checkboxDom[index].checked = true
-            console.log('checkboxDom',window.checkboxDom[index].checked)
-          }
+        let index = window.previousIndecates[i]
+        if (window.checkboxDom[index]) {
+          console.log('checkboxDom', window.checkboxDom[index])
+          window.checkboxDom[index].checked = true
+          console.log('checkboxDom', window.checkboxDom[index].checked)
+        }
         // }
       }
       this.metadataCard.updateCustomList(this.dataSet.points)
@@ -744,7 +745,7 @@ class Projector
     this.dataSet.getSpriteImage(indices, (imgData: any) => {
       let src = 'data:image/png;base64,' + imgData.imgUrl
       this.metadataCard.updateMetadata(
-        this.dataSet.points[indices].metadata, src, this.dataSet.points[indices],indices
+        this.dataSet.points[indices].metadata, src, this.dataSet.points[indices], indices
       );
     })
   }
@@ -758,7 +759,12 @@ class Projector
    * Used by clients to indicate that a hover is occurring.
    */
   notifyHoverOverPoint(pointIndex: number) {
+    console.log('pointIndex',pointIndex)
     this.hoverListeners.forEach((l) => l(pointIndex));
+    if (window.iteration && pointIndex !== undefined && window.previousHover !== pointIndex ) {
+      this.updateMetaByIndices(pointIndex)
+      window.previousHover = pointIndex
+    }
   }
   registerProjectionChangedListener(listener: ProjectionChangedListener) {
     this.projectionChangedListeners.push(listener);
@@ -1232,7 +1238,7 @@ class Projector
   }
   // anormaly detection
   queryAnormalyStrategy(strategy: string, budget: number, cls: number, currentIndices: number[], previousIndices: number[],
-    callback: (indices: any, cleanIndices?:any) => void) {
+    callback: (indices: any, cleanIndices?: any) => void) {
     const msgId = logging.setModalMessage('Querying...');
     let headers = new Headers();
     headers.append('Content-Type', 'application/json');
@@ -1257,7 +1263,7 @@ class Projector
       window.alSuggestScoreList = data.scores
       window.alSuggestLabelList = data.suggestLabels;
       logging.setModalMessage(null, msgId);
-      callback(indices,cleanIndices);
+      callback(indices, cleanIndices);
     }).catch(error => {
       logging.setErrorMessage('querying for indices');
       callback(null);

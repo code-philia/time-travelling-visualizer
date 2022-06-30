@@ -593,7 +593,8 @@ export const template = html`
      <button class="button clear-selection">Clear Selection</button>
      </div>-->
      <div class="matches-list-title"> 
-     <span style="margin-left: 4px;"><input type="checkbox"/>| </span><span>index｜</span><span>label｜</span><span> predict｜</span><span>result｜</span><span>score</span></div>
+     <paper-checkbox id="label-points-toggle" checked="{{checkAllQueryRes}}"></paper-checkbox>
+     <span>| </span><span>index｜</span><span>label｜</span><span> predict｜</span><span>result｜</span><span>score</span></div>
       <div class="list"></div>
       <div class="limit-msg">Showing only the first 100 results...</div>
     </div>
