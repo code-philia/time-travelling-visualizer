@@ -17,6 +17,7 @@ import '../../../components/security';
 
 import './styles';
 import './vz-projector-app';
+import './vz-login-app';
 import './vz-projector-bookmark-panel';
 import './vz-projector-dashboard';
 import './vz-projector-data-panel';
