@@ -50,6 +50,7 @@ tf_ts_library(
         "vz-projector-metadata-card.ts",
         "vz-projector-projections-panel.html.ts",
         "vz-projector-projections-panel.ts",
+        "vz-login-app.ts"
     ],
     strict_checks = False,
     deps = [
@@ -126,3 +127,5 @@ tensorboard_html_binary(
         ":standalone_lib",
     ],
 )
+
+
