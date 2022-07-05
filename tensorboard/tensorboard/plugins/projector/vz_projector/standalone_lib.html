@@ -40,11 +40,47 @@ limitations under the License.
       document.getElementById("loginContainer").style.display = 'none'
     }
 
-    document.getElementById("loginBtn").addEventListener('click', () => {
-      document.getElementById("bodyContent").style.visibility = ''
-      document.getElementById("loginContainer").style.display = 'none'
+    document.getElementById("loginBtn").addEventListener('click', async () => {
+
+      const username = document.getElementById("loginInput").value
+      const password = document.getElementById("passwordInput").value
       //调用登陆接口获取token
-      window.sessionStorage.setItem('token', 123)
+      let headers = new Headers();
+      headers.append('Content-Type', 'application/json');
+      headers.append('Accept', 'application/json');
+      await fetch("standalone_projector_config.json", {
+          method: 'GET'
+        })
+        .then(response => response.json())
+        .then(data => {
+          const ip_address = data.DVIServerIP + ":" + data.DVIServerPort;
+          const DVIServer = ip_address;
+          fetch("http://" + DVIServer + "/login", {
+            method: 'POST',
+            body: JSON.stringify({
+              "username": username,
+              "password": password,
+            }),
+            headers: headers,
+            mode: 'cors'
+          }).then(response => response.json()).then(data => {
+            console.log('data', data)
+            if (data.normal_content_path && data.unormaly_content_path) {
+              document.getElementById("bodyContent").style.visibility = ''
+              document.getElementById("loginContainer").style.display = 'none'
+              window.sessionStorage.setItem('normal_content_path', data.normal_content_path)
+              window.sessionStorage.setItem('unormaly_content_path', data.unormaly_content_path)
+            }else{
+              alert(data.message)
+            }
+           
+          }).catch(error => {
+            console.log(error);
+            stepCallback(null, null, null, null, null);
+          });
+
+        });
+
     })
     document.getElementById("registerBtn").addEventListener('click', () => {
       showRegisterDialog()
@@ -110,10 +146,10 @@ limitations under the License.
     <div class="login-card">
       <h2>User Login</h2>
       <div class="login-item">
-        <span>username:</span><input class="login-input" />
+        <span>username:</span><input class="login-input" id="loginInput" />
       </div>
       <div class="login-item">
-        <span>password:</span><input type="password" class="login-input" />
+        <span>password:</span><input type="password" class="login-input" id="passwordInput" />
       </div>
       <div class="footer">
         <button id="loginBtn" class="ink-button">Login</button>
@@ -124,7 +160,7 @@ limitations under the License.
   </div>
   <dialog id="registerDialog">
     <div class="dialog-header">
-      <h2>User Register</h2>
+      <h2>Register An Account </h2>
     </div>
     <div class="dialog-content">
       <div class="login-item">
@@ -132,6 +168,9 @@ limitations under the License.
       </div>
       <div class="login-item">
         <span>password:</span><input type="password" class="login-input" />
+      </div>
+      <div class="login-item">
+        <span> confirm:</span><input type="password" class="login-input" />
       </div>
       <div class="footer">
         <button id="confirmRegisterBtn">Register</button>

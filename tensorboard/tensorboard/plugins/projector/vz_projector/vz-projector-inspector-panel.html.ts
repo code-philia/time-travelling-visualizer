@@ -467,7 +467,7 @@ export const template = html`
     </div>-->
     <div class="confidence-threshold">
     <div class="threshold-container">
-      <paper-input disabled value="{{epochFrom}}" label="iteration from:">
+      <paper-input value="{{epochFrom}}" label="iteration from:">
       </paper-input>
       <paper-input value="{{epochTo}}" label="iteration to:">
       </paper-input>
