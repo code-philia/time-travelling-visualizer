@@ -35,17 +35,70 @@ limitations under the License.
       //window.location.href = './login.html'
       document.getElementById("bodyContent").style.visibility = 'hidden'
       document.getElementById("loginContainer").style.display = 'block'
-    }else{
+    } else {
       document.getElementById("bodyContent").style.visibility = ''
       document.getElementById("loginContainer").style.display = 'none'
     }
 
-    document.getElementById("loginBtn").addEventListener('click', () => {
-      document.getElementById("bodyContent").style.visibility = ''
-      document.getElementById("loginContainer").style.display = 'none'
+    document.getElementById("loginBtn").addEventListener('click', async () => {
+
+      const username = document.getElementById("loginInput").value
+      const password = document.getElementById("passwordInput").value
       //调用登陆接口获取token
-      window.sessionStorage.setItem('token',123)
+      let headers = new Headers();
+      headers.append('Content-Type', 'application/json');
+      headers.append('Accept', 'application/json');
+      await fetch("standalone_projector_config.json", {
+          method: 'GET'
+        })
+        .then(response => response.json())
+        .then(data => {
+          const ip_address = data.DVIServerIP + ":" + data.DVIServerPort;
+          const DVIServer = ip_address;
+          fetch("http://" + DVIServer + "/login", {
+            method: 'POST',
+            body: JSON.stringify({
+              "username": username,
+              "password": password,
+            }),
+            headers: headers,
+            mode: 'cors'
+          }).then(response => response.json()).then(data => {
+            console.log('data', data)
+            if (data.normal_content_path && data.unormaly_content_path) {
+              document.getElementById("bodyContent").style.visibility = ''
+              document.getElementById("loginContainer").style.display = 'none'
+              window.sessionStorage.setItem('normal_content_path', data.normal_content_path)
+              window.sessionStorage.setItem('unormaly_content_path', data.unormaly_content_path)
+            }else{
+              alert(data.message)
+            }
+           
+          }).catch(error => {
+            console.log(error);
+            stepCallback(null, null, null, null, null);
+          });
+
+        });
+
     })
+    document.getElementById("registerBtn").addEventListener('click', () => {
+      showRegisterDialog()
+    })
+    document.getElementById("confirmRegisterBtn").addEventListener('click', () => {
+      closeDialog()
+    })
+    document.getElementById("cancelBtn").addEventListener('click', () => {
+      closeDialog()
+    })
+
+    function showRegisterDialog() {
+      document.getElementById('registerDialog').showModal()
+    }
+
+    function closeDialog() {
+      document.getElementById('registerDialog').close()
+    }
   </script>
   <!-- <script>
       (function (i, s, o, g, r, a, m) {
@@ -93,17 +146,38 @@ limitations under the License.
     <div class="login-card">
       <h2>User Login</h2>
       <div class="login-item">
-        <span>username:</span><input class="login-input"/>
+        <span>username:</span><input class="login-input" id="loginInput" />
       </div>
       <div class="login-item">
-        <span>password:</span><input class="login-input"/>
+        <span>password:</span><input type="password" class="login-input" id="passwordInput" />
       </div>
-      <div>
-        <button id="loginBtn" title="Choose a TSV metadata file" class="ink-button">Login In</button>
+      <div class="footer">
+        <button id="loginBtn" class="ink-button">Login</button>
+        <button id="registerBtn" class="ink-button">Register</button>
       </div>
     </div>
 
   </div>
+  <dialog id="registerDialog">
+    <div class="dialog-header">
+      <h2>Register An Account </h2>
+    </div>
+    <div class="dialog-content">
+      <div class="login-item">
+        <span>username:</span><input class="login-input" />
+      </div>
+      <div class="login-item">
+        <span>password:</span><input type="password" class="login-input" />
+      </div>
+      <div class="login-item">
+        <span> confirm:</span><input type="password" class="login-input" />
+      </div>
+      <div class="footer">
+        <button id="confirmRegisterBtn">Register</button>
+        <button id="cancelBtn">Cancel</button>
+      </div>
+    </div>
+  </dialog>
   <!-- <vz-login-app></vz-login-app> -->
   <vz-projector-app id="bodyContent" documentation-link="https://www.tensorflow.org/get_started/embedding_viz"
     bug-report-link="https://github.com/tensorflow/tensorboard/issues" serving-mode="demo"
@@ -113,16 +187,17 @@ limitations under the License.
 
 </html>
 <style>
-  #loginContainer{
+  #loginContainer {
     display: none;
     position: absolute;
     width: 100%;
     height: 100vh;
     background: linear-gradient(35deg, #b8ffff, #ffcfcf);
     text-align: center;
-    
+
   }
-  .login-page-title{
+
+  .login-page-title {
     position: absolute;
     text-align: center;
     top: 20%;
@@ -130,6 +205,7 @@ limitations under the License.
     width: 350px;
     margin-left: -130px;
   }
+
   .login-card {
     width: 300px;
     height: 220px;
@@ -140,21 +216,26 @@ limitations under the License.
     text-align: center;
     padding: 20px 50px;
     box-shadow: 0 3px 15px rgb(0 0 0 / 20%);
-    background: rgba(255,255,255,0.3);
+    background: rgba(255, 255, 255, 0.3);
   }
-  .login-input{
+
+  .login-input {
     height: 30px;
     width: 200px;
   }
-  .login-item{
+
+  .login-item {
     margin: 10px 0;
     display: flex;
     justify-content: space-between;
     width: 100%;
     line-height: 36px;
   }
-  #loginBtn{
-    width: 100%;
+
+  #loginBtn,
+  #registerBtn,
+  button {
+    width: 40%;
     height: 32px;
     line-height: 32px;
     margin: 10px 0;
@@ -162,5 +243,9 @@ limitations under the License.
     border: none;
     color: #fff;
   }
-  
+
+  .footer {
+    display: flex;
+    justify-content: space-between;
+  }
 </style>
