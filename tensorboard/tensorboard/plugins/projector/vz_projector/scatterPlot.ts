@@ -120,7 +120,7 @@ export class ScatterPlot {
       window.sceneBackgroundImg = []
     }
     if (window.sceneBackgroundImg[window.iteration]) {
-      this.addbackgroundImg('data:image/png;base64,' + window.sceneBackgroundImg[window.iteration])
+      this.addbackgroundImg( window.sceneBackgroundImg[window.iteration])
     }
     this.getLayoutValues();
     // this.scene = new THREE.Scene();

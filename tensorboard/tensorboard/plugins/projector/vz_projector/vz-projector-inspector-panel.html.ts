@@ -137,6 +137,10 @@ export const template = html`
     max-height: 32px;
     margin-left: 4px;
   }
+  .label:hover {
+    color: #560731;
+    font-weight: 600;
+  }
   .row-img{
     display:flex;
     margin-bottom: 8px;
@@ -466,12 +470,12 @@ export const template = html`
     <button class="button clear-selection">Clear Selection</button>
     </div>-->
     <div class="confidence-threshold">
-    <div class="threshold-container">
+    <!--<div class="threshold-container">
       <paper-input value="{{epochFrom}}" label="iteration from:">
       </paper-input>
       <paper-input value="{{epochTo}}" label="iteration to:">
       </paper-input>
-    </div>
+    </div>-->
     <div class="flex-container">
       <p class="current-epoch" style="margin-top:26px;">iteration: {{currentPlayedEpoch}}</p>
       <button style="width: 110px;" class="boundingbox-button show-noisy-btn">play animation</button>

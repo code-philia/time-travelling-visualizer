@@ -43,7 +43,9 @@ declare global {
     alSuggestionIndicates: any,
     alSuggestLabelList: any,
     alSuggestScoreList: any,
-    previousHover: number
+    previousHover: number,
+
+    allResPositions: any
   }
 }
 
@@ -499,27 +501,37 @@ class Projector
 
   }
   ///
-  setDynamicNoisy(epochFrom, epochTo) {
-    let current = epochFrom
+  setDynamicNoisy() {
+    let current = 1
+    let positions = window.allResPositions?.results
+    let interationList = []
+    for (let key of Object.keys(window.allResPositions?.results)) {
+      interationList.push(Number(key))
+    }
+    current = Number(interationList[0])
+    console.log('positions',current,interationList,positions[current])
+    let count = 0
     this.timer = setInterval(() => {
       this.inspectorPanel.updateCurrentPlayEpoch(current)
       window.iteration = current;
       for (let i = 0; i < this.dataSet.points.length; i++) {
         const point = this.dataSet.points[i];
         if (!this.selectedPointIndices.length || this.selectedPointIndices.indexOf(i) !== -1) {
-          point.projections['tsne-0'] = point.DVI_projections[current][0];
-          point.projections['tsne-1'] = point.DVI_projections[current][1];
+          console.log('i------>',i,positions[current][i],positions[current][i][0],point.DVI_projections)
+          point.projections['tsne-0'] = positions[current][i][0];
+          point.projections['tsne-1'] = positions[current][i][1];
           point.projections['tsne-2'] = 0;
         }
       }
       this.dataSet.updateProjection(current)
       this.notifySelectionChanged(this.selectedPointIndices)
-      this.onProjectionChanged();
+      this.updateBackgroundImg();
       this.onIterationChange(current);
-      if (current < epochTo) {
-        current++
+      if (count < interationList.length -1) {
+        current = interationList[++count]
       } else {
-        current = epochFrom
+        current = interationList[0]
+        count = 0
       }
       // this.projectorScatterPlotAdapter.setDataSet(this.dataSet)
       // // this.projectorScatterPlotAdapter.updateScatterPlotPositions();
@@ -528,11 +540,12 @@ class Projector
     }, 1500)
   }
   setDynamicStop() {
+    console.log('this.timer',this.timer)
     clearInterval(this.timer)
   }
 
-  renderInTraceLine(inTrace: boolean, from: number, to: number) {
-    this.projectorScatterPlotAdapter.setRenderInTraceLine(inTrace, from, to)
+  renderInTraceLine(inTrace: boolean) {
+    this.projectorScatterPlotAdapter.setRenderInTraceLine(inTrace)
   }
 
   refresh() {
@@ -743,7 +756,7 @@ class Projector
       return
     }
     this.dataSet.getSpriteImage(indices, (imgData: any) => {
-      let src = 'data:image/png;base64,' + imgData.imgUrl
+      let src = imgData.imgUrl
       this.metadataCard.updateMetadata(
         this.dataSet.points[indices].metadata, src, this.dataSet.points[indices], indices
       );
@@ -763,7 +776,7 @@ class Projector
     this.hoverListeners.forEach((l) => l(pointIndex));
     let timeNow = new Date().getTime()
     if (this.timer === null || timeNow - this.timer > 1000) {
-      if (window.iteration && pointIndex !== undefined && window.previousHover !== pointIndex) {
+      if (window.iteration && pointIndex !== undefined && pointIndex !==null && window.previousHover !== pointIndex) {
         console.log('get img')
         this.timer = timeNow
         this.updateMetaByIndices(pointIndex)
@@ -1175,6 +1188,25 @@ class Projector
     }).catch(error => {
       logging.setErrorMessage('querying for indices');
       callback(null);
+    });
+  }
+
+  getAllResPosList(callback: (data: any) => void){
+    const msgId = logging.setModalMessage('Querying...');
+    let headers = new Headers();
+    headers.append('Content-Type', 'application/json');
+    headers.append('Accept', 'application/json');
+    fetch(`http://${this.DVIServer}/result_list`, {
+      method: 'GET',
+      headers: headers,
+      mode: 'cors'
+    }).then(response => response.json()).then(data => {
+      const indices = data.selectedPoints;
+      logging.setModalMessage(null, msgId);
+      callback(data)
+    }).catch(error => {
+      logging.setErrorMessage('querying for indices');
+      
     });
   }
 

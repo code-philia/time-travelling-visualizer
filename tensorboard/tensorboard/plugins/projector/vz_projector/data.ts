@@ -458,7 +458,14 @@ export class DataSet {
   }
 
   updateProjection(index) {
-    this.points = window.DVIDataList[index]
+    if(window.DVIDataList[index]){
+      this.points = window.DVIDataList[index]
+    }else if(window.allResPositions?.results){
+      for (let i = 0; i < this.points.length; i++) {
+        let dataPoint = this.points[i];
+        dataPoint.DVI_projections = window.allResPositions?.results
+      }
+    }
   }
 
   /** Runs DVI on the data. */
@@ -1123,6 +1130,8 @@ export class DataSet {
       console.log("error", error);
     });
   }
+
+
 
   iterationChangeReset(){
     window.queryResPointIndices = [],

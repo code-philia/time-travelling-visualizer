@@ -41,12 +41,12 @@ export interface ProjectorEventContext {
    */
   notifySelectionChanged(newSelectedPointIndices: number[], selectMode?:boolean, selectionType?:string);
 
-  setDynamicNoisy(epochFrom: number, epochTo: number);
+  setDynamicNoisy();
   setDynamicStop();
   refresh();
   updateMetaDataByIndices(indicate:number,src:string);
   updateMetaByIndices(indicate:number);
-  renderInTraceLine(inTrace: boolean, from: number, to: number);
+  renderInTraceLine(inTrace: boolean);
   setMouseMode(mode:any);
   /** Registers a callback to be invoked when the projection changes. */
   registerProjectionChangedListener(listener: ProjectionChangedListener);

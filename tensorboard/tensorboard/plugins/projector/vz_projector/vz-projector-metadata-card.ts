@@ -143,7 +143,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
           </div>
           <div style="max-height: calc(100vh - 440px);overflow: auto; padding: 0 10px;">
           <template is="dom-repeat" items="[[customMetadata]]">
-          <div class="metadata-row" id=[[item.key]]>
+          <div class="metadata-row custom-list-Row" id=[[item.key]]>
             <img src="[[item.src]]" />
             <div class="metadata-key">[[item.key]]</div>
             <div class="metadata-value">[[item.value]]</div>
@@ -262,7 +262,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
           method: 'GET',
           mode: 'cors'
         }).then(response => response.json()).then(data => {
-          let src = 'data:image/png;base64,' + data.imgUrl;
+          let src = data.imgUrl;
           let flag = points[window.customSelection[i]]?.metadata.label === points[window.customSelection[i]]?.current_prediction ? '' : '❗️'
           metadata.push({ key: window.customSelection[i], value: points[window.customSelection[i]].metadata.label, src: src, prediction: points[window.customSelection[i]].current_prediction, flag: flag });
         }).catch(error => {
@@ -279,12 +279,11 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
   }
   addBtnListener() {
     const container = this.$$('#metadata-container') as any
-    let btns = container?.querySelectorAll('.metadata-remove')
+    let btns = container?.querySelectorAll('.custom-list-Row')
     for (let i = 0; i < btns?.length; i++) {
       let btn = btns[i];
-      btn.addEventListener('click', () => {
-        this.removeCustomListItem(i)
-        btn.parentNode.parentNode.removeChild(btn.parentNode)
+      btn.addEventListener('hover', () => {
+        console.log(btn)
       })
     }
   }
