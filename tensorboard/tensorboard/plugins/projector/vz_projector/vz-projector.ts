@@ -510,7 +510,7 @@ class Projector
     let current = 1
     let positions = window.allResPositions?.results
     let interationList = []
-    if(window.allResPositions && window.allResPositions.bgimgList){
+    if (window.allResPositions && window.allResPositions.bgimgList) {
       window.sceneBackgroundImg = window.allResPositions?.bgimgList
     }
     for (let key of Object.keys(window.allResPositions?.results)) {
@@ -536,7 +536,7 @@ class Projector
       this.onIterationChange(current);
       // this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
       this.projectorScatterPlotAdapter.render()
-      if (count < interationList.length -1) {
+      if (count < interationList.length - 1) {
         current = interationList[++count]
       } else {
         current = interationList[0]
@@ -545,7 +545,7 @@ class Projector
     }, 1500)
   }
 
-  updatePosByIndicates(current:number){
+  updatePosByIndicates(current: number) {
     let positions = window.allResPositions?.results
     for (let i = 0; i < this.dataSet.points.length; i++) {
       const point = this.dataSet.points[i];
@@ -562,8 +562,8 @@ class Projector
     this.onIterationChange(current);
   }
   setDynamicStop() {
-    console.log('this.timer',this.timer)
-    if(this.timer){
+    console.log('this.timer', this.timer)
+    if (this.timer) {
       clearInterval(this.timer)
     }
     this.iteration = this.currentIteration
@@ -785,7 +785,7 @@ class Projector
     this.hoverListeners.forEach((l) => l(pointIndex));
     let timeNow = new Date().getTime()
     if (this.timer === null || timeNow - this.timer > 1000) {
-      if (window.iteration && pointIndex !== undefined && pointIndex !==null && window.previousHover !== pointIndex) {
+      if (window.iteration && pointIndex !== undefined && pointIndex !== null && window.previousHover !== pointIndex) {
         console.log('get img')
         this.timer = timeNow
         this.updateMetaByIndices(pointIndex)
@@ -1200,7 +1200,11 @@ class Projector
     });
   }
 
-  getAllResPosList(callback: (data: any) => void){
+  getAllResPosList(callback: (data: any) => void) {
+    if (window.allResPositions && window.allResPositions.results && window.allResPositions.bgimgList) {
+      callback(window.allResPositions)
+      return
+    }
     const msgId = logging.setModalMessage('Querying...');
     let headers = new Headers();
     headers.append('Content-Type', 'application/json');
@@ -1215,7 +1219,7 @@ class Projector
       callback(data)
     }).catch(error => {
       logging.setErrorMessage('querying for indices');
-      
+
     });
   }
 
