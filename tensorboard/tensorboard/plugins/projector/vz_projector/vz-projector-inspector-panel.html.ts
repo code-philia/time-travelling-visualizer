@@ -476,12 +476,16 @@ export const template = html`
       <paper-input value="{{epochTo}}" label="iteration to:">
       </paper-input>
     </div>-->
-    <div class="flex-container">
+    <div class="flex-container" style="justify-content:space-around;">
+      <p class="total-epoch" style="margin-top:26px;">total: {{totalEpoch}}</p>
       <p class="current-epoch" style="margin-top:26px;">iteration: {{currentPlayedEpoch}}</p>
-      <button style="width: 110px;" class="boundingbox-button show-noisy-btn">play animation</button>
-      <button class="boundingbox-button stop-animation-btn">
-        stop playing
-      </button></div>
+    </div>
+    <div class="flex-container">
+    <button style="width: 150px;" class="boundingbox-button show-noisy-btn">play animation</button>
+    <button style="width: 150px;" class="boundingbox-button stop-animation-btn">
+      stop playing
+    </button>
+  </div>
   </div>
   </div>
 

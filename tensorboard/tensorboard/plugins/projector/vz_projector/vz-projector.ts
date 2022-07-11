@@ -183,6 +183,7 @@ class Projector
   private statusBar: HTMLDivElement;
   private analyticsLogger: AnalyticsLogger;
   private backgroundPoints: any;
+  private currentIteration: number
 
   private goDownBtn: any;
   private goUpBtn: any;
@@ -238,6 +239,7 @@ class Projector
     this.setupUIControls();
     this.initializeDataProvider();
     this.iteration = 0;
+    this.currentIteration = 0
 
     this.showlabeled = true
     this.showUnlabeled = true
@@ -329,7 +331,7 @@ class Projector
   }
 
   onIterationChange(num: number) {
-    window.iteration = num;
+    // window.iteration = num;
     this.iteration = num;
   }
 
@@ -502,14 +504,19 @@ class Projector
   }
   ///
   setDynamicNoisy() {
+
+    this.currentIteration = window.iteration
+
     let current = 1
     let positions = window.allResPositions?.results
     let interationList = []
+    if(window.allResPositions && window.allResPositions.bgimgList){
+      window.sceneBackgroundImg = window.allResPositions?.bgimgList
+    }
     for (let key of Object.keys(window.allResPositions?.results)) {
       interationList.push(Number(key))
     }
     current = Number(interationList[0])
-    console.log('positions',current,interationList,positions[current])
     let count = 0
     this.timer = setInterval(() => {
       this.inspectorPanel.updateCurrentPlayEpoch(current)
@@ -517,31 +524,51 @@ class Projector
       for (let i = 0; i < this.dataSet.points.length; i++) {
         const point = this.dataSet.points[i];
         if (!this.selectedPointIndices.length || this.selectedPointIndices.indexOf(i) !== -1) {
-          console.log('i------>',i,positions[current][i],positions[current][i][0],point.DVI_projections)
           point.projections['tsne-0'] = positions[current][i][0];
           point.projections['tsne-1'] = positions[current][i][1];
           point.projections['tsne-2'] = 0;
         }
       }
-      this.dataSet.updateProjection(current)
-      this.notifySelectionChanged(this.selectedPointIndices)
+      // this.dataSet.updateProjection(current)
+      this.projectorScatterPlotAdapter.updateScatterPlotPositions();
+      this.projectorScatterPlotAdapter.updateScatterPlotAttributes();
       this.updateBackgroundImg();
       this.onIterationChange(current);
+      // this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
+      this.projectorScatterPlotAdapter.render()
       if (count < interationList.length -1) {
         current = interationList[++count]
       } else {
         current = interationList[0]
         count = 0
       }
-      // this.projectorScatterPlotAdapter.setDataSet(this.dataSet)
-      // // this.projectorScatterPlotAdapter.updateScatterPlotPositions();
-      // this.projectorScatterPlotAdapter.updateScatterPlotAttributes();
-      // this.projectorScatterPlotAdapter.scatterPlot.render()
     }, 1500)
+  }
+
+  updatePosByIndicates(current:number){
+    let positions = window.allResPositions?.results
+    for (let i = 0; i < this.dataSet.points.length; i++) {
+      const point = this.dataSet.points[i];
+      if (!this.selectedPointIndices.length || this.selectedPointIndices.indexOf(i) !== -1) {
+        point.projections['tsne-0'] = positions[current][i][0];
+        point.projections['tsne-1'] = positions[current][i][1];
+        point.projections['tsne-2'] = 0;
+      }
+    }
+    // this.dataSet.updateProjection(current)
+    this.projectorScatterPlotAdapter.updateScatterPlotPositions();
+    this.projectorScatterPlotAdapter.updateScatterPlotAttributes();
+    this.updateBackgroundImg();
+    this.onIterationChange(current);
   }
   setDynamicStop() {
     console.log('this.timer',this.timer)
-    clearInterval(this.timer)
+    if(this.timer){
+      clearInterval(this.timer)
+    }
+    this.iteration = this.currentIteration
+    window.iteration = this.currentIteration
+    this.updatePosByIndicates(window.iteration)
   }
 
   renderInTraceLine(inTrace: boolean) {
@@ -557,20 +584,18 @@ class Projector
    * Used by clients to indicate that a selection has occurred.
    */
   notifySelectionChanged(newSelectedPointIndices: number[], selectMode?: boolean, selectionType?: string) {
+
     if (selectionType === 'isALQuery' || selectionType === 'normal' || selectionType === 'isAnormalyQuery') {
       window.customSelection = []
       window.queryResPointIndices = newSelectedPointIndices
       this.metadataCard.updateCustomList(this.dataSet.points)
     }
     if (selectionType === 'isShowSelected') {
-      console.log('window.previousIndecates', window.previousIndecates)
       for (let i = 0; i < window.previousIndecates?.length; i++) {
         // if(window.customSelection.indexOf(window.previousIndecates[i]) === -1){
         let index = window.previousIndecates[i]
         if (window.checkboxDom[index]) {
-          console.log('checkboxDom', window.checkboxDom[index])
           window.checkboxDom[index].checked = true
-          console.log('checkboxDom', window.checkboxDom[index].checked)
         }
         // }
       }
@@ -579,22 +604,6 @@ class Projector
       this.projectorScatterPlotAdapter.render()
       return
     }
-    // if (selectionType === 'isALQuery') {
-    //   window.suggestionIndicates = []
-    //   // console.log('this.queryIndices', newSelectedPointIndices)
-    //   if (newSelectedPointIndices.length) {
-    //     for (let i = 0; i < newSelectedPointIndices.length; i++) {
-    //       this.dataSet.getSpriteImage(newSelectedPointIndices[i], (imgData: any) => {
-    //         let src = 'data:image/png;base64,' + imgData.imgUrl
-    //         window.suggestionIndicates[i] = {
-    //           src: src,
-    //           index: newSelectedPointIndices[i]
-    //         }
-    //       })
-    //     }
-    //   }
-    //   // return
-    // }
     if (selectionType === 'boundingbox' && window.isAdjustingSel) {
       if (!window.customSelection) {
         window.customSelection = []
@@ -1196,7 +1205,7 @@ class Projector
     let headers = new Headers();
     headers.append('Content-Type', 'application/json');
     headers.append('Accept', 'application/json');
-    fetch(`http://${this.DVIServer}/result_list`, {
+    fetch(`http://${this.DVIServer}/all_result_list`, {
       method: 'GET',
       headers: headers,
       mode: 'cors'

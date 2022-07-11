@@ -457,17 +457,6 @@ export class DataSet {
     this.DVIfilterIndices = pointIndices;
   }
 
-  updateProjection(index) {
-    if(window.DVIDataList[index]){
-      this.points = window.DVIDataList[index]
-    }else if(window.allResPositions?.results){
-      for (let i = 0; i < this.points.length; i++) {
-        let dataPoint = this.points[i];
-        dataPoint.DVI_projections = window.allResPositions?.results
-      }
-    }
-  }
-
   /** Runs DVI on the data. */
   async projectDVI(
     iteration: number, predicates: { [key: string]: any },
@@ -644,20 +633,6 @@ export class DataSet {
               }
 
               dataPoint.noisy = false;
-              // if (is_uncertainty_diversity_tot_exist) {
-              //   dataPoint.metadata['uncertainty'] = data.uncertainty_diversity_tot.uncertainty[i];
-              //   dataPoint.uncertainty[iteration] = dataPoint.metadata['uncertainty'];
-              //   dataPoint.metadata['diversity'] = data.uncertainty_diversity_tot.diversity[i];
-              //   dataPoint.diversity[iteration] = dataPoint.metadata['diversity'];
-              //   dataPoint.metadata['tot'] = data.uncertainty_diversity_tot.tot[i];
-              //   dataPoint.tot[iteration] = dataPoint.metadata['tot'];
-              //   dataPoint.uncertainty_ranking[iteration] = data.uncertainty_diversity_tot.uncertainty_ranking[i];
-              //   dataPoint.current_uncertainty_ranking = data.uncertainty_diversity_tot.uncertainty_ranking[i];
-              //   dataPoint.diversity_ranking[iteration] = data.uncertainty_diversity_tot.diversity_ranking[i];
-              //   dataPoint.current_diversity_ranking = data.uncertainty_diversity_tot.diversity_ranking[i];
-              //   dataPoint.tot_ranking[iteration] = data.uncertainty_diversity_tot.tot_ranking[i];
-              //   dataPoint.current_tot_ranking = data.uncertainty_diversity_tot.tot_ranking[i];
-              // }
             }
 
             for (let i = 0; i < background_point_number; i++) {
@@ -681,20 +656,6 @@ export class DataSet {
               dataPoint.current_wrong_prediction = undefined;
               dataPoint.original_label = "background";
               dataPoint.noisy = undefined;
-              // if (is_uncertainty_diversity_tot_exist) {
-              //   dataPoint.metadata['uncertainty'] = -1;
-              //   dataPoint.uncertainty[iteration] = -1;
-              //   dataPoint.metadata['diversity'] = -1;
-              //   dataPoint.diversity[iteration] = -1;
-              //   dataPoint.metadata['tot'] = -1;
-              //   dataPoint.tot[iteration] = -1;
-              //   dataPoint.uncertainty_ranking[iteration] = -1;
-              //   dataPoint.current_uncertainty_ranking = -1;
-              //   dataPoint.diversity_ranking[iteration] = -1;
-              //   dataPoint.current_diversity_ranking = -1;
-              //   dataPoint.tot_ranking[iteration] = -1;
-              //   dataPoint.current_tot_ranking = -1;
-              // }
             }
 
             for (let i = real_data_number + background_point_number; i < this.points.length; i++) {
@@ -715,28 +676,6 @@ export class DataSet {
               dataPoint.testing_data[iteration] = true;
               dataPoint.current_testing = true;
             }
-
-            // for (let i = 0; i < new_selection.length; i++) {
-            //   const dataIndex = new_selection[i];
-            //   let dataPoint = this.points[dataIndex];
-            //   dataPoint.new_selection[iteration] = true;
-            //   dataPoint.current_new_selection = true;
-            // }
-
-            // for (let i = 0; i < noisy_data?.length; i++) {
-            //   const dataIndex = noisy_data[i];
-            //   let dataPoint = this.points[dataIndex];
-            //   dataPoint.noisy = true;
-            // }
-
-            // const matches = this.get_match();
-            //
-            // for (let i = 0; i < real_data_number; i++) {
-            //   let dataPoint = this.points[i];
-            //   if (indices.indexOf(i) == -1 && i < this.DVICurrentRealDataNumber) {
-            //     dataPoint.projections = {}
-            //   }
-            // }
 
             this.DVICurrentRealDataNumber = real_data_number;
             this.DVIRealDataNumber[iteration] = real_data_number;

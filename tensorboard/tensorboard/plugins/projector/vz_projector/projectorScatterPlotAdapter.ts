@@ -299,17 +299,12 @@ export class ProjectorScatterPlotAdapter {
     if (this.projection == null) {
       return;
     }
-    console.log('this.projection',this.projection)
     const dataSet = this.projection.dataSet;
     const selectedSet = this.selectedPointIndices;
     // const newSelectionSet = this.newSelectionIndices;
     const hoverIndex = this.hoverPointIndex;
     const neighbors = this.neighborsOfFirstSelectedPoint;
     const pointColorer = this.legendPointColorer;
-    console.log('dataSet',dataSet,pointColorer,selectedSet,neighbors,hoverIndex,this.renderLabelsIn3D,
-    this.getSpriteImageMode(),
-    this.renderInTriangle,
-    this.renderInTraceLine,)
     const pointColors = this.generatePointColorArray(
       dataSet,
       pointColorer,
@@ -811,7 +806,6 @@ export class ProjectorScatterPlotAdapter {
         }
       }
     }
-    console.log('selectedPointCount',selectedPointIndices)
     // Color the selected points.
     {
       const n = selectedPointCount;
@@ -832,7 +826,6 @@ export class ProjectorScatterPlotAdapter {
         }
       }
     }
-    console.log('selectedPointCount2',selectedPointIndices)
     // Color the neighbors.
     {
       const n = neighborCount;
@@ -878,7 +871,6 @@ export class ProjectorScatterPlotAdapter {
       }
       // return colors
     }
-    console.log('ds.points.length',ds.points.length)
     //
     if(window.isAnimatating){
       const n = ds.points.length;

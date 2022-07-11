@@ -101,6 +101,9 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   @property({ type: Number })
   currentPlayedEpoch: number
 
+  @property({ type: Number})
+  totalEpoch: number
+
   @property({ type: Boolean })
   spriteImagesAvailable: Boolean = true;
 
@@ -887,12 +890,19 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     // Filtering dataset.
 
     this.noisyBtn.onclick = () => {
+      if(!window.queryResAnormalIndecates?.length){
+        logging.setErrorMessage('Please query anomaly points first');
+        return
+      }
       window.isAnimatating = true
       projector.getAllResPosList((data:any)=>{
-        window.allResPositions = data
-        this.projectorEventContext.setDynamicNoisy()
-        this.noisyBtn.disabled = true;
-        this.stopBtn.disabled = false;
+        if(data && data.results) {
+          window.allResPositions = data
+          this.totalEpoch = Object.keys(data.results).length
+          this.projectorEventContext.setDynamicNoisy()
+          this.noisyBtn.disabled = true;
+          this.stopBtn.disabled = false;
+        }
       })
     }
 

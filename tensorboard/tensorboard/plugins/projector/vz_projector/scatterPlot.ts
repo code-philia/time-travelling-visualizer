@@ -120,7 +120,7 @@ export class ScatterPlot {
       window.sceneBackgroundImg = []
     }
     if (window.sceneBackgroundImg[window.iteration]) {
-      this.addbackgroundImg( window.sceneBackgroundImg[window.iteration])
+      this.addbackgroundImg(window.sceneBackgroundImg[window.iteration])
     }
     this.getLayoutValues();
     // this.scene = new THREE.Scene();
@@ -150,12 +150,14 @@ export class ScatterPlot {
 
   addbackgroundImg(imgUrl: string) {
     //移除上一个画布
-    if (window.backgroundMesh) {
-      this.scene.remove(window.backgroundMesh)
-    }
+    // if (window.backgroundMesh) {
+    //   this.scene.remove(window.backgroundMesh)
+    // }
+    let temp = window.backgroundMesh
     if (!imgUrl) {
       return
     }
+    console.log('this.scene', this.scene)
     // 2，使用canvas画图作为纹理贴图
     // 先使用canvas画图
     let canvas = document.createElement('canvas');
@@ -175,8 +177,12 @@ export class ScatterPlot {
         map: texture,
         side: THREE.DoubleSide
       });
-      window.backgroundMesh = new THREE.Mesh(plane_geometry, material);
-      this.scene.add(window.backgroundMesh);
+      const newMesh = new THREE.Mesh(plane_geometry, material);
+      this.scene.add(newMesh);
+      if (temp) {
+        this.scene.remove(temp)
+      }
+      window.backgroundMesh = newMesh
       this.render();
     }
   }
@@ -462,11 +468,11 @@ export class ScatterPlot {
       this.projectorEventContext.notifyHoverOverPoint(this.nearestPoint)
     }
   }
-  debounce(func:any, wait:any) {
+  debounce(func: any, wait: any) {
     let timeout;
     return function () {
       // 清空定时器
-      if(timeout) clearTimeout(timeout);
+      if (timeout) clearTimeout(timeout);
       timeout = setTimeout(func, wait)
     }
   }

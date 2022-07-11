@@ -180,7 +180,6 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
   private iterationInput: number;
 
   initialize(projector: any) {
-    console.log('projector', projector)
     this.polymerChangesTriggerReprojection = true;
     this.projector = projector;
     // Set up TSNE projections.
