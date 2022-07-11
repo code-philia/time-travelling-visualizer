@@ -89,17 +89,20 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   confidenceThresholdTo: number
 
 
-  @property({ type: Number })
-  epochFrom: number
+  // @property({ type: Number })
+  // epochFrom: number
 
-  @property({ type: Number })
-  epochTo: number
+  // @property({ type: Number })
+  // epochTo: number
 
   @property({ type: Boolean })
   showTrace: false
 
   @property({ type: Number })
   currentPlayedEpoch: number
+
+  @property({ type: Number})
+  totalEpoch: number
 
   @property({ type: Boolean })
   spriteImagesAvailable: Boolean = true;
@@ -213,8 +216,8 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     // this.selectinMessage.innerText = "0 seleted.";
     this.confidenceThresholdFrom = 0
     this.confidenceThresholdTo = 1
-    this.epochFrom = 1
-    this.epochTo = 1
+    // this.epochFrom = 1
+    // this.epochTo = 1
     this.showTrace = false
     this.checkAllQueryRes = false
 
@@ -322,9 +325,9 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   @observe('showTrace')
   _refreshScatterplot() {
     if (this.showTrace) {
-      this.projectorEventContext?.renderInTraceLine(true, this.epochFrom, this.epochTo)
+      this.projectorEventContext?.renderInTraceLine(true)
     } else {
-      this.projectorEventContext?.renderInTraceLine(false, this.epochFrom, this.epochTo)
+      this.projectorEventContext?.renderInTraceLine(false)
     }
   }
   @observe('checkAllQueryRes')
@@ -515,7 +518,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         mode: 'cors'
       }).then(response => response.json()).then(data => {
         // console.log("response", data);
-        let  imgsrc = 'data:image/png;base64,' + data.imgUrl;
+        let  imgsrc = data.imgUrl;
         this.projectorEventContext.updateMetaDataByIndices(indices[i], imgsrc)
         this.projectorEventContext.notifyHoverOverPoint(index);
         // logging.setModalMessage(null, msgId);
@@ -887,18 +890,20 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     // Filtering dataset.
 
     this.noisyBtn.onclick = () => {
+      if(!window.queryResAnormalIndecates?.length){
+        logging.setErrorMessage('Please query anomaly points first');
+        return
+      }
       window.isAnimatating = true
-      console.log(this.epochFrom, this.epochTo)
-      this.projectorEventContext.setDynamicNoisy(1, this.epochTo)
-      this.noisyBtn.disabled = true;
-      this.stopBtn.disabled = false;
-      // if (this.showTrace) {
-      //   // this.projectorScatterPlotAdapter.scatterPlot.render()
-      //   this.projectorEventContext.renderInTraceLine(true, this.epochFrom, this.epochTo)
-      // }
-      // } else{
-      //   this.projectorEventContext.renderInTraceLine(false, this.epochFrom, this.epochTo)
-      // }
+      projector.getAllResPosList((data:any)=>{
+        if(data && data.results) {
+          window.allResPositions = data
+          this.totalEpoch = Object.keys(data.results).length
+          this.projectorEventContext.setDynamicNoisy()
+          this.noisyBtn.disabled = true;
+          this.stopBtn.disabled = false;
+        }
+      })
     }
 
 
