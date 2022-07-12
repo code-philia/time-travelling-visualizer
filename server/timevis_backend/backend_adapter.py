@@ -178,7 +178,7 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         index = load_labelled_data_index(index_file)
         return index
 
-    def al_query(self, iteration, budget, strategy):
+    def al_query(self, iteration, budget, strategy, prev_idxs, curr_idxs):
         """get the index of new selection from different strategies"""
         CONTENT_PATH = self.data_provider.content_path
         NUM_QUERY = budget
@@ -226,7 +226,7 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
             print('================Round {:d}==============='.format(iteration+1))
             # query new samples
             t0 = time.time()
-            new_indices = q_strategy.query(NUM_QUERY)
+            new_indices, scores = q_strategy.query(NUM_QUERY)
             t1 = time.time()
             print("Query time is {:.2f}".format(t1-t0))
         elif strategy == "LeastConfidence":
@@ -238,7 +238,7 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
             print('================Round {:d}==============='.format(iteration+1))
             # query new samples
             t0 = time.time()
-            new_indices = q_strategy.query(complete_dataset, NUM_QUERY)
+            new_indices, scores = q_strategy.query(complete_dataset, NUM_QUERY)
             t1 = time.time()
             print("Query time is {:.2f}".format(t1-t0))
         
@@ -249,18 +249,20 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
             embedding = q_strategy.get_embedding(complete_dataset)
             # query new samples
             t0 = time.time()
-            new_indices = q_strategy.query(embedding, NUM_QUERY)
+            new_indices, scores = q_strategy.query(embedding, NUM_QUERY)
             t1 = time.time()
             print("Query time is {:.2f}".format(t1-t0))
         
         # TODO return the suggest labels, need to develop pesudo label generation technique in the future
         true_labels = self.data_provider.train_labels(iteration)
 
-        return new_indices, true_labels[new_indices]
+        return new_indices, true_labels[new_indices], scores
     
     def al_train(self, iteration, indices):
+        # for reproduce purpose
+        
         print("New indices:\t{}".format(len(indices)))
-        self.save_human_selection(iteration, indices.tolist())
+        self.save_human_selection(iteration, indices)
         lb_idx = self.get_epoch_index(iteration)
         train_idx = np.hstack((lb_idx, indices))
         print("Training indices:\t{}".format(len(train_idx)))
