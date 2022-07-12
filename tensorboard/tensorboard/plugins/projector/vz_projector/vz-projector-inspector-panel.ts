@@ -89,17 +89,20 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   confidenceThresholdTo: number
 
 
-  @property({ type: Number })
-  epochFrom: number
+  // @property({ type: Number })
+  // epochFrom: number
 
-  @property({ type: Number })
-  epochTo: number
+  // @property({ type: Number })
+  // epochTo: number
 
   @property({ type: Boolean })
   showTrace: false
 
   @property({ type: Number })
   currentPlayedEpoch: number
+
+  @property({ type: Number})
+  totalEpoch: number
 
   @property({ type: Boolean })
   spriteImagesAvailable: Boolean = true;
@@ -109,6 +112,9 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
   @property({ type: Boolean })
   isCollapsed: boolean = false;
+
+  @property({ type: Boolean})
+  checkAllQueryRes: boolean = false
 
   @property({ type: String })
   collapseIcon: string = 'expand-less';
@@ -166,6 +172,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
   private currentFilterType: string
 
+
   ready() {
     super.ready();
 
@@ -209,10 +216,10 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     // this.selectinMessage.innerText = "0 seleted.";
     this.confidenceThresholdFrom = 0
     this.confidenceThresholdTo = 1
-    this.epochFrom = 1
-    this.epochTo = 1
+    // this.epochFrom = 1
+    // this.epochTo = 1
     this.showTrace = false
-
+    this.checkAllQueryRes = false
 
     this.budget = 1000
     this.suggestKNum = 10
@@ -318,9 +325,30 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   @observe('showTrace')
   _refreshScatterplot() {
     if (this.showTrace) {
-      this.projectorEventContext?.renderInTraceLine(true, this.epochFrom, this.epochTo)
+      this.projectorEventContext?.renderInTraceLine(true)
     } else {
-      this.projectorEventContext?.renderInTraceLine(false, this.epochFrom, this.epochTo)
+      this.projectorEventContext?.renderInTraceLine(false)
+    }
+  }
+  @observe('checkAllQueryRes')
+  _checkAll(){
+    if(this.checkAllQueryRes){
+      if(window.checkboxDom){
+        if(window.queryResPointIndices && window.queryResPointIndices.length){
+          for(let i =0;i<window.queryResPointIndices.length;i++){
+            let index = window.queryResPointIndices[i]
+            if(window.customSelection.indexOf(index) === -1){
+              if(window.checkboxDom[index]){
+                window.checkboxDom[index].checked = true
+              }
+              window.customSelection.push(index)
+            }
+          }
+          this.projectorEventContext.refresh()
+        }
+      }
+    }else{
+
     }
   }
 
@@ -450,7 +478,6 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         }
         window.checkboxDom[indices[i]] = input
         input.addEventListener('change', (e) => {
-          console.log('e', indices[i], e, input.checked)
           if (!window.customSelection) {
             window.customSelection = []
           }
@@ -491,7 +518,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         mode: 'cors'
       }).then(response => response.json()).then(data => {
         // console.log("response", data);
-        let  imgsrc = 'data:image/png;base64,' + data.imgUrl;
+        let  imgsrc = data.imgUrl;
         this.projectorEventContext.updateMetaDataByIndices(indices[i], imgsrc)
         this.projectorEventContext.notifyHoverOverPoint(index);
         // logging.setModalMessage(null, msgId);
@@ -863,18 +890,20 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     // Filtering dataset.
 
     this.noisyBtn.onclick = () => {
+      if(!window.queryResAnormalIndecates?.length){
+        logging.setErrorMessage('Please query anomaly points first');
+        return
+      }
       window.isAnimatating = true
-      console.log(this.epochFrom, this.epochTo)
-      this.projectorEventContext.setDynamicNoisy(this.epochFrom, this.epochTo)
-      this.noisyBtn.disabled = true;
-      this.stopBtn.disabled = false;
-      // if (this.showTrace) {
-      //   // this.projectorScatterPlotAdapter.scatterPlot.render()
-      //   this.projectorEventContext.renderInTraceLine(true, this.epochFrom, this.epochTo)
-      // }
-      // } else{
-      //   this.projectorEventContext.renderInTraceLine(false, this.epochFrom, this.epochTo)
-      // }
+      projector.getAllResPosList((data:any)=>{
+        if(data && data.results) {
+          window.allResPositions = data
+          this.totalEpoch = Object.keys(data.results).length
+          this.projectorEventContext.setDynamicNoisy()
+          this.noisyBtn.disabled = true;
+          this.stopBtn.disabled = false;
+        }
+      })
     }
 
 

@@ -120,7 +120,7 @@ export class ScatterPlot {
       window.sceneBackgroundImg = []
     }
     if (window.sceneBackgroundImg[window.iteration]) {
-      this.addbackgroundImg('data:image/png;base64,' + window.sceneBackgroundImg[window.iteration])
+      this.addbackgroundImg(window.sceneBackgroundImg[window.iteration])
     }
     this.getLayoutValues();
     // this.scene = new THREE.Scene();
@@ -150,12 +150,14 @@ export class ScatterPlot {
 
   addbackgroundImg(imgUrl: string) {
     //移除上一个画布
-    if (window.backgroundMesh) {
-      this.scene.remove(window.backgroundMesh)
-    }
+    // if (window.backgroundMesh) {
+    //   this.scene.remove(window.backgroundMesh)
+    // }
+    let temp = window.backgroundMesh
     if (!imgUrl) {
       return
     }
+    console.log('this.scene', this.scene)
     // 2，使用canvas画图作为纹理贴图
     // 先使用canvas画图
     let canvas = document.createElement('canvas');
@@ -175,14 +177,19 @@ export class ScatterPlot {
         map: texture,
         side: THREE.DoubleSide
       });
-      window.backgroundMesh = new THREE.Mesh(plane_geometry, material);
-      this.scene.add(window.backgroundMesh);
+      const newMesh = new THREE.Mesh(plane_geometry, material);
+      this.scene.add(newMesh);
+      if (temp) {
+        this.scene.remove(temp)
+      }
+      window.backgroundMesh = newMesh
       this.render();
     }
   }
   private addInteractionListeners() {
 
     this.container.addEventListener('mousemove', this.onMouseMove.bind(this));
+
     this.container.addEventListener('mousedown', this.onMouseDown.bind(this));
     this.container.addEventListener('mouseup', this.onMouseUp.bind(this));
     // this.container.addEventListener('mouseup', this.onMousewheel.bind(this));
@@ -458,28 +465,18 @@ export class ScatterPlot {
       this.render();
     } else if (!this.mouseIsDown) {
       this.setNearestPointToMouse(e);
-      this.projectorEventContext.notifyHoverOverPoint(this.nearestPoint);
-      if (window.iteration) {
-       
-        if (this.nearestPoint !== undefined) {
-          this.throttle(this.projectorEventContext.updateMetaByIndices(this.nearestPoint), 1000)
-        }
-      }
+      this.projectorEventContext.notifyHoverOverPoint(this.nearestPoint)
+    }
+  }
+  debounce(func: any, wait: any) {
+    let timeout;
+    return function () {
+      // 清空定时器
+      if (timeout) clearTimeout(timeout);
+      timeout = setTimeout(func, wait)
     }
   }
 
-  throttle(fn: any, wait) {
-    let timer = null;
-    return function () {
-      var context = this;
-      var args = arguments;
-      if (!timer) {
-        timer = setTimeout(function () {
-          fn.apply(context, args);
-        }, wait);
-      }
-    };
-  }
   /** For using ctrl + left click as right click, and for circle select */
   private onKeyDown(e: any) {
     // If ctrl is pressed, use left click to orbit

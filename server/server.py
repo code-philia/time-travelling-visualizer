@@ -187,6 +187,31 @@ def al_train():
                                   "selectedPoints":selected_points.tolist(),
                                   "properties":properties.tolist()}), 200)
 
+@app.route('/login', methods=["POST"])
+@cross_origin()
+def login():
+    data = request.get_json()
+    username = data["username"]
+    password = data["password"]
+    # Verify username and password
+    # if pass return normal_content_path and unormaly_content_path
+    if username == 'admin' and password == '123qwe': # mock
+        return make_response(jsonify({"normal_content_path": '/Contents/{}/cifar10/normal'.format(username),"unormaly_content_path":'/Contents/{}/cifar10/unormaly'.format(username)}), 200)
+    else:
+        return make_response(jsonify({"message":"username or password is wrong"}), 200)
+  
+@app.route('/all_result_list', methods=["GET"])
+@cross_origin()
+def get_res():
+    with open('./res.json',encoding='utf8')as fp:
+        json_data = json.load(fp)
+    imglist = {
+        "1":"http://127.0.0.1/bgpic/bg1.png",
+        "2":"http://127.0.0.1/bgpic/bg1.png",
+        "3":"http://127.0.0.1/bgpic/bg3.png"
+    }
+    return make_response(jsonify({"results":json_data,"bgimgList":imglist}), 200)
+
 
 if __name__ == "__main__":
     with open('config.json', 'r') as f:

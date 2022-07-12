@@ -118,4 +118,5 @@ class VzProjectorApp extends PolymerElement {
   documentationLink: string = '';
   @property({type: String})
   bugReportLink: string = '';
+ 
 }
