@@ -1,10 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from torch import embedding
 
 import umap.umap_ as umap
 from sklearn.metrics import silhouette_score, calinski_harabasz_score
 from sklearn.neighbors import NearestNeighbors
 from sklearn.cluster import Birch, KMeans
+from sklearn.neighbors import KernelDensity
 
 # helper functions
 def select_centroid(samples, n_select=3):
@@ -15,15 +17,38 @@ def select_centroid(samples, n_select=3):
     return indices.squeeze()
 
 def select_closest(queries, pool):
+    return select_close(queries, pool, k=1).squeeze(axis=1)
+
+def select_close(queries, pool, k):
     if len(queries)==0:
         return np.array([])
-    nbrs = NearestNeighbors(n_neighbors=1, algorithm='ball_tree').fit(pool)
+    nbrs = NearestNeighbors(n_neighbors=k, algorithm='ball_tree').fit(pool)
     indices = nbrs.kneighbors(queries, return_distance=False)
-    return indices.squeeze(axis=1)
+    return indices
+
+def closest_dists(embedding, centers):
+    dists = np.zeros((len(embedding), len(centers)))
+    # embedding_2 = np.power(embedding, 2).sum(axis=1)
+    embedding_2 = np.linalg.norm(embedding, axis=1)**2
+    # centers_2 = np.power(centers, 2).sum(axis=1)
+    centers_2 = np.linalg.norm(centers, axis=1)**2
+    ec = np.dot(embedding, centers.T)
+    dists = -2*ec+embedding_2[:, np.newaxis]+centers_2[np.newaxis,:]
+    dists = dists.min(axis=1)
+    return dists
 
 
 class NoiseTrajectoryDetector:
     def __init__(self, embeddings_2d, labels):
+        """ detect noise by 2d embeddings of samples
+
+        Parameters
+        ----------
+        embeddings_2d : ndarray, shape (train_num, epoch_num, 2)
+            all 2d embeddings of representations by timevis
+        labels : ndarray, shape (train_num, )
+            Noise labels list of training data
+        """
         self.embeddings_2d = embeddings_2d
         self.labels = labels
 
@@ -32,20 +57,38 @@ class NoiseTrajectoryDetector:
         self.time_steps = time_steps
         self.repr_dim = repr_dim
         self.classes_num = np.max(self.labels)+1
+        self.threshold = .4
 
         # init centers dict
-        self.trajectory_embedding = dict()
-        self.trajectory_eval = dict()
-        self.trajectory_labels = dict() # noise or clean
-        self.sub_centers = dict()
+        self.trajectory_embedding = dict()  # 2d embedding of trajectories
+        self.trajectory_eval = dict()   # silhouette_scores and calinski_harabasz_scores
+
+        self.clean_centers = dict()
+        self.sub_centers = dict()   
         self.sub_centers_labels = dict()
         self.sub_center_verified = dict()
-        for cls_num in range(self.classes_num):
-            self.sub_centers[str(cls_num)] = dict()
+        self.umap_scores = dict()
+        self.umap_norm = dict()
+
+        self.dense = dict() # dense point for each class
+        self.u = dict()
+        self.pca_scores = dict()
+        self.pca_norm = dict()
     
-    def proj_cls(self, cls_num, repeat=2):
+    def proj_cls(self, cls_num, period=75, repeat=2):
+        """calculate the score for class cls_num
+
+        Parameters
+        ----------
+        cls_num : int
+            the number of class that we are working on
+        period : _type_
+            how many epochs' trajectory that we consider
+        repeat : int, optional
+            repeat umap algorithm and select a better one, by default 2
+        """
         cls = self.labels == cls_num
-        high_data = self.embeddings_2d[cls,:,:].reshape(np.sum(cls), -1)
+        high_data = self.embeddings_2d[cls,-period:,:].reshape(np.sum(cls), -1)
         best_s = -1.
         best_c = -1.
         best_embedding = None
@@ -71,145 +114,165 @@ class NoiseTrajectoryDetector:
         self.trajectory_embedding[str(cls_num)] = best_embedding
         self.trajectory_eval[str(cls_num)] = (best_s, best_c)
 
-        labels = best_brc.labels_
-        centroid = best_brc.subcluster_centers_
-        centroid_labels = best_brc.subcluster_labels_
-        # clean 1, noise 0
-        bin = np.bincount(labels)
-        if bin[0] > bin[1]:
-            centroid_labels = np.abs(centroid_labels-1)
-            labels = np.abs(labels-1)
-        self.sub_centers[str(cls_num)] = centroid
-        self.sub_center_verified[str(cls_num)] = np.full(len(centroid), False, dtype=bool)
+        if best_s > 0.5:
+            print("Suspect abnormal in embedding...")
 
-        if best_s>=0.5:
-            # contain noises
-            current_cleans = centroid_labels==1
-            nbrs = NearestNeighbors(n_neighbors=5, algorithm='ball_tree').fit(centroid[current_cleans])
-            dists, _ = nbrs.kneighbors(centroid[current_cleans])
-            suspicious = (dists[:, -1]/ dists[:, 1])>1.8
-            
-            # multi level assignment
-            tmp = centroid_labels[current_cleans]
-            tmp[suspicious] = 2
-            centroid_labels[current_cleans] = tmp
+            print("Calculating umap scores...")
+            # calculate umap scores
+            labels = best_brc.labels_
+            centroid = best_brc.subcluster_centers_
+            centroid_labels = best_brc.subcluster_labels_
+            # clean 0, noise 1
+            bin = np.bincount(labels)
+            if bin[0] < bin[1]:
+                centroid_labels = np.abs(centroid_labels-1)
+                labels = np.abs(labels-1)
 
-            self.sub_centers_labels[str(cls_num)] = centroid_labels
-            self.trajectory_labels[str(cls_num)] = labels
+            centroid_idxs = select_closest(centroid, embedding)
+            self.sub_centers[str(cls_num)] = centroid_idxs
+            self.sub_center_verified[str(cls_num)] = np.full(len(centroid), False, dtype=bool)
+
+            clean_center = embedding[labels==0].mean(axis=0)
+            id = select_closest([clean_center], embedding)
+            self.clean_centers[str(cls_num)] = np.array(embedding[id])
+
+            umap_scores = closest_dists(embedding, self.clean_centers[str(cls_num)])
+            # umap_scores = umap_scores/umap_scores.max()
+            self.umap_scores[str(cls_num)] = umap_scores
+            self.umap_norm[str(cls_num)] = umap_scores.max()
+
+            # calculate pca scores
+            print("Calculating pca scores...")
+            _, _, v = np.linalg.svd(high_data)
+            pca_scores = np.abs(np.inner(v[0], high_data))
+            pca_scores = pca_scores / pca_scores.max()
+
+            X_plot = np.linspace(0, 1, 1000)[:, np.newaxis]
+            kde = KernelDensity(kernel='gaussian', bandwidth=0.75).fit(pca_scores.reshape(len(pca_scores), 1))
+            log_dens = kde.score_samples(X_plot)
+            i = np.argmax(np.exp(log_dens))
+            dense = X_plot[i, 0]
+            self.dense[str(cls_num)] = dense
+            self.u[str(cls_num)] = v[0]
+            self.pca_scores[str(cls_num)] = np.abs(pca_scores-dense).squeeze()
+            self.pca_norm[str(cls_num)] = self.pca_scores[str(cls_num)].max()
+            print("Finish calculating scores for class {}".format(cls_num))
+
+            # update labels
+            scores = self.query_noise_score(cls_num)
+            self.sub_centers_labels[str(cls_num)] = np.zeros(len(centroid_idxs))
+            self.sub_centers_labels[str(cls_num)][scores[centroid_idxs]>self.threshold] = 1
+        
         else:
-            self.sub_centers_labels[str(cls_num)] = np.full(len(centroid), 1)
-            self.trajectory_labels[str(cls_num)] = np.full(len(labels), 1)
+            print("No anomaly detected for class {}!".format(cls_num))
 
-    def proj_all(self, repeat=2):
+    def proj_all(self, period=75, repeat=2):
         for cls_num in range(self.classes_num):
-            self.proj_cls(cls_num, repeat=repeat)
+            self.proj_cls(cls_num, period=period, repeat=repeat)
     
     def detect_noise_cls(self, cls_num):
         best_s, best_c = self.trajectory_eval[str(cls_num)]
-        print("silhouette_score\t", best_s)
-        print("calinski_harabasz_score\t", best_c)
         if best_s>=0.5:
             return True
+        print("silhouette_score\t", best_s)
+        print("calinski_harabasz_score\t", best_c)
         return False
     
     def update_belief(self, cls_num, centroid, is_noise):
-        centroids = self.sub_centers[str(cls_num)]
-        centroid_labels = self.sub_centers_labels[str(cls_num)]
         embeddings = self.trajectory_embedding[str(cls_num)]
+        centroids = embeddings[self.sub_centers[str(cls_num)]]
 
-        # update single center
-        label = 0 if is_noise else 1
+        # update single center, (clean 0, noise 1)
+        label = 1 if is_noise else 0
 
         idx = np.argmin(np.linalg.norm(centroids-centroid, axis=1))
         self.sub_centers_labels[str(cls_num)][idx] = label 
         self.sub_center_verified[str(cls_num)][idx] = True
 
-        # update other embeddings
-        nbrs = NearestNeighbors(n_neighbors=1, algorithm='ball_tree').fit(centroids)
-        indices = nbrs.kneighbors(embeddings, return_distance=False)
-        self.trajectory_labels[str(cls_num)][indices.squeeze()==idx] = label
+        if label==0:
+            self.clean_centers[str(cls_num)] = np.concatenate((self.clean_centers[str(cls_num)], [centroid]), axis=0)
 
-        # recalculate suspicious
-        nbrs = NearestNeighbors(n_neighbors=5, algorithm='ball_tree').fit(centroids[centroid_labels!=0])
-        dists, _ = nbrs.kneighbors(centroids[centroid_labels!=0])
-        suspicious = (dists[:, -1]/ dists[:, 1])>1.8
+            # recalculate scores
+            umap_scores = closest_dists(embeddings, self.clean_centers[str(cls_num)])
+            # umap_scores = umap_scores/umap_scores.max()
+            self.umap_scores[str(cls_num)] = umap_scores
 
-        tmp = self.sub_centers_labels[str(cls_num)][centroid_labels!=0]
-        tmp[np.logical_and(suspicious, self.sub_center_verified[str(cls_num)][centroid_labels!=0]==False)] = 2
-        self.sub_centers_labels[str(cls_num)][centroid_labels!=0] = tmp 
+            # update labels of each sub centers
+            scores = self.query_noise_score(cls_num)
+            center_s = scores[self.sub_centers[str(cls_num)]]
+            labels = np.zeros(len(center_s))
+            labels[center_s>self.threshold] = 1
+            not_verified = np.logical_not(self.sub_center_verified[str(cls_num)])
+
+            self.sub_centers_labels[str(cls_num)][not_verified] = labels[not_verified]
+        
     
-    def select_cls_representative(self, cls_num):
-        # TODO to be verified
-        # calculate noise score
-        centroid = self.sub_centers[str(cls_num)]
-        centroid_labels = self.sub_centers_labels[str(cls_num)]
+    def query_noise_score(self, cls_num):
+        s1 = self.umap_scores[str(cls_num)]/self.umap_norm[str(cls_num)]
+        s2 = self.pca_scores[str(cls_num)]/self.pca_norm[str(cls_num)]
+        return s1+s2
+    
+    def suggest_abnormal(self, cls_num, show=False):
+        # check if we have abnormal
+        if not self.detect_noise_cls(cls_num):
+            return False
+
         embeddings = self.trajectory_embedding[str(cls_num)]
-        labels = self.trajectory_labels[str(cls_num)]
+        centroids = embeddings[self.sub_centers[str(cls_num)]]
 
-        # select three clean representative ones
-        clean_centroids = centroid[centroid_labels==1]
-        repr_centroid_idx = select_centroid(clean_centroids)
-        clean_ones = embeddings[labels==1]
-        clean_indices = select_closest(clean_centroids[repr_centroid_idx], clean_ones)
-        repr_centroid = clean_ones[clean_indices]
+        scores = self.query_noise_score(cls_num)
+        center_idxs = self.sub_centers[str(cls_num)]
 
-        # noise ones
-        if np.sum(centroid_labels==0)>0:
-            noise_centroids = centroid[centroid_labels==0]
-            noise_ones = embeddings[labels==0]
-            noise_indices = select_closest(noise_centroids, noise_ones)
-            noise_centroids = noise_ones[noise_indices]
-        else:
-            noise_centroids = np.array([])
+        # vote for scores (score summary)
+        c_labels = select_closest(embeddings, centroids)
+        centroid_scores = np.zeros(len(centroids))
+        for i in range(len(centroids)):
+            centroid_scores[i] = scores[c_labels==i].mean()
 
 
-        # suspicious ones
-        if np.sum(centroid_labels==2)>0:
-            suspicious_centroids = centroid[centroid_labels==2]
-            suspicious_indices = select_closest(suspicious_centroids, clean_ones)
-            suspicious_centroids = clean_ones[suspicious_indices]
-        else:
-            suspicious_centroids = np.array([])
+        not_verified = (self.sub_center_verified[str(cls_num)] == False)
+        s = np.max(centroid_scores[not_verified])
+        suggest_idx = np.argwhere(centroid_scores==s)[0,0]
 
-        return repr_centroid, noise_centroids, suspicious_centroids
+        if show:
 
-    def query_noise_score(self, cls_num, queries):
-        if len(queries)==0:
-            return np.array([])
-        # calculate noise score
-        centroid = self.sub_centers[str(cls_num)]
-        centroid_labels = self.sub_centers_labels[str(cls_num)]
-        embeddings = self.trajectory_embedding[str(cls_num)]
-        labels = self.trajectory_labels[str(cls_num)]
+            plt.scatter(
+                embeddings[:, 0],
+                embeddings[:, 1],
+                s=.3,
+                c=[1 for _ in range(len(embedding))],
+                cmap="Pastel2")
 
-        # normalize term
-        clean_centroids = centroid[centroid_labels==1]
-        clean_ones = embeddings[labels==1]
-        nbrs = NearestNeighbors(n_neighbors=1, algorithm='ball_tree').fit(clean_centroids)
-        dists, _ = nbrs.kneighbors(clean_ones)
-        norm_term = dists.max()
-
-        nbrs = NearestNeighbors(n_neighbors=1, algorithm='ball_tree').fit(clean_centroids)
-        dists, _ = nbrs.kneighbors(queries)
-        scores = dists/norm_term
-        return scores
+            plt.scatter(
+                embeddings[center_idxs[suggest_idx]:center_idxs[suggest_idx]+1, 0],
+                embeddings[center_idxs[suggest_idx]:center_idxs[suggest_idx]+1, 1],
+                s=7,
+                c='black' if s>self.threshold else "red" )
+            plt.title('Trajectories Visualization of class {}'.format(cls_num), fontsize=24)
+            plt.show()
+        return center_idxs[suggest_idx], self.trajectory_embedding[str(cls_num)][center_idxs[suggest_idx]]
     
     def show(self, cls_num, save_path=None):
         embedding = self.trajectory_embedding[str(cls_num)]
-        labels = self.trajectory_labels[str(cls_num)]
-        centroid = self.sub_centers[str(cls_num)]
+
+        centroids = embedding[self.sub_centers[str(cls_num)]]
         centroid_labels = self.sub_centers_labels[str(cls_num)]
+
+        # show embeddings
+        nbrs = NearestNeighbors(n_neighbors=1, algorithm='ball_tree').fit(centroids)
+        indices = nbrs.kneighbors(embedding, return_distance=False)
+        labels = centroid_labels[indices]
 
         plt.scatter(
             embedding[:, 0],
             embedding[:, 1],
-            s=1,
+            s=.3,
             c=labels,
             cmap="Pastel2")
-
-        cleans = centroid[centroid_labels==1]
-        noises = centroid[centroid_labels==0]
-        suspicious = centroid[centroid_labels==2]
+        
+        # show centroids
+        cleans = centroids[centroid_labels==0]
+        noises = centroids[centroid_labels==1]
         plt.scatter(
             cleans[:, 0],
             cleans[:, 1],
@@ -220,12 +283,7 @@ class NoiseTrajectoryDetector:
             noises[:, 1],
             s=5,
             c='black')
-        if len(suspicious)>0:
-            plt.scatter(
-                suspicious[:, 0],
-                suspicious[:, 1],
-                s=5,
-                c='b')
+
         plt.title('Trajectories Visualization of class {}'.format(cls_num), fontsize=24)
         if save_path is None:
             plt.show()
@@ -234,17 +292,36 @@ class NoiseTrajectoryDetector:
     
     def show_ground_truth(self, cls_num, clean_labels, save_path=None):
         embedding = self.trajectory_embedding[str(cls_num)]
-        centroid = self.sub_centers[str(cls_num)]
+        centroids = embedding[self.sub_centers[str(cls_num)]]
+        scores = self.query_noise_score(cls_num=cls_num)
+
+        # vote for labels and scores
+        c_labels = select_closest(embedding, centroids)
+        centroid_scores = np.zeros(len(centroids))
+        centroid_labels = np.zeros(len(centroids))
+        for i in range(len(centroids)):
+            centroid_scores[i] = scores[c_labels==i].mean()
+            centroid_labels[i] = np.bincount(clean_labels[c_labels==i]).argmax()
+
+        noise_c = centroid_labels != cls_num
+        benign = centroid_labels == cls_num
 
         plt.scatter(
             embedding[:, 0],
             embedding[:, 1],
-            s=1,
+            s=.3,
             c=clean_labels,
             cmap="tab10")
+        
         plt.scatter(
-            centroid[:, 0],
-            centroid[:, 1],
+            centroids[benign][:, 0],
+            centroids[benign][:, 1],
+            s=5,
+            c='r')
+
+        plt.scatter(
+            centroids[noise_c][:, 0],
+            centroids[noise_c][:, 1],
             s=5,
             c='black')
         plt.title('Trajectories Visualization of class {}'.format(cls_num), fontsize=24)
@@ -253,28 +330,99 @@ class NoiseTrajectoryDetector:
         else:
             plt.savefig(save_path)
     
-    def show_highlight(self, cls_num, highlights, save_path=None):
+    def show_verified(self, cls_num, save_path=None):
         embedding = self.trajectory_embedding[str(cls_num)]
-        centroid = self.sub_centers[str(cls_num)]
+        centroid = embedding[self.sub_centers[str(cls_num)]]
+        verified = self.sub_center_verified[str(cls_num)]
+        centroid_labels = self.sub_centers_labels[str(cls_num)]
 
         plt.scatter(
             embedding[:, 0],
             embedding[:, 1],
-            s=1,
-            # c=clean_labels,
-            c=[2 for _ in range(len(embedding))],
+            s=.3,
+            c=[1 for _ in range(len(embedding))],
             cmap="Pastel2")
+        colors = np.array(["red","black"])
         plt.scatter(
-            centroid[:, 0],
-            centroid[:, 1],
+            centroid[verified][:, 0],
+            centroid[verified][:, 1],
             s=5,
-            c='r')
+            c=colors[centroid_labels[verified].astype("int")],
+        )
+
+        plt.title('Trajectories Visualization of class {}'.format(cls_num), fontsize=24)
+        if save_path is None:
+            plt.show()
+        else:
+            plt.savefig(save_path)
+
+    
+    def show_highlight(self, cls_num, highlights, save_path=None):
+        embedding = self.trajectory_embedding[str(cls_num)]
+
+        plt.scatter(
+            embedding[:, 0],
+            embedding[:, 1],
+            s=.3,
+            c=[1 for _ in range(len(embedding))],
+            cmap="Pastel2")
+
         if len(highlights)>0:
             plt.scatter(
                 highlights[:, 0],
                 highlights[:, 1],
-                s=10,
+                s=7,
                 c='black')
+        plt.title('Trajectories Visualization of class {}'.format(cls_num), fontsize=24)
+        if save_path is None:
+            plt.show()
+        else:
+            plt.savefig(save_path)
+    
+    def show_centroid_scores(self, cls_num, save_path=None):
+        embedding = self.trajectory_embedding[str(cls_num)]
+        centroids = embedding[self.sub_centers[str(cls_num)]]
+        scores = self.query_noise_score(cls_num=cls_num)
+
+        # vote for score summary
+        c_labels = select_closest(embedding, centroids)
+        centroid_scores = np.zeros(len(centroids))
+        for i in range(len(centroids)):
+            centroid_scores[i] = scores[c_labels==i].mean()
+
+        plt.scatter(
+            embedding[:, 0],
+            embedding[:, 1],
+            s=.3,
+            c=[1 for _ in range(len(embedding))],
+            cmap="Pastel2")
+
+        # show centroids
+        plt.scatter(
+            centroids[:, 0],
+            centroids[:, 1],
+            s=5,
+            c=centroid_scores/centroid_scores.max(),
+            cmap="Reds")
+
+        plt.title('Trajectories Visualization of class {}'.format(cls_num), fontsize=24)
+        if save_path is None:
+            plt.show()
+        else:
+            plt.savefig(save_path)
+    
+    def show_scores(self, cls_num, save_path=None):
+        embedding = self.trajectory_embedding[str(cls_num)]
+        scores = self.query_noise_score(cls_num)
+        scores = scores/scores.max()
+
+        plt.scatter(
+            embedding[:, 0],
+            embedding[:, 1],
+            s=.3,
+            c=scores,
+            cmap="Reds")
+
         plt.title('Trajectories Visualization of class {}'.format(cls_num), fontsize=24)
         if save_path is None:
             plt.show()
