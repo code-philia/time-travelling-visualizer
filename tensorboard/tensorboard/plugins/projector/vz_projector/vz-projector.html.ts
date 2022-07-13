@@ -479,7 +479,7 @@ export const template = html`
               <b>Classes</b>
               <b>Number</b> 10<br />
               <h3>3D Label Intro</h3>
-              disagreement between prediction and pseudo label : 💩<br/>
+              disagreement between prediction and pseudo label : ❗<br/>
               suggest label: 👍<br/>
               custom selected: ✅<br/>
               anomaly data: ⭕️<br/>

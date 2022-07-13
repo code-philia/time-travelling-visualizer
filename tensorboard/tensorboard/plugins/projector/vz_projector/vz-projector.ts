@@ -504,6 +504,7 @@ class Projector
   }
   ///
   setDynamicNoisy() {
+    // this.setDynamicStop()
 
     this.currentIteration = window.iteration
 
@@ -518,7 +519,7 @@ class Projector
     }
     current = Number(interationList[0])
     let count = 0
-    this.timer = setInterval(() => {
+    this.timer = window.setInterval(() => {
       this.inspectorPanel.updateCurrentPlayEpoch(current)
       window.iteration = current;
       for (let i = 0; i < this.dataSet.points.length; i++) {
@@ -541,6 +542,7 @@ class Projector
       } else {
         current = interationList[0]
         count = 0
+        this.setDynamicStop()
       }
     }, 1500)
   }
@@ -564,8 +566,9 @@ class Projector
   setDynamicStop() {
     console.log('this.timer', this.timer)
     if (this.timer) {
-      clearInterval(this.timer)
+      window.clearInterval(this.timer)
     }
+    
     this.iteration = this.currentIteration
     window.iteration = this.currentIteration
     this.updatePosByIndicates(window.iteration)
@@ -1064,6 +1067,7 @@ class Projector
   onProjectionChanged(projection?: Projection) {
     this.dataPanel.projectionChanged(projection);
     this.updateBackgroundImg()
+    this.inspectorPanel.clearQueryResList()
     this.projectorScatterPlotAdapter.render();
   }
   setProjection(projection: Projection) {

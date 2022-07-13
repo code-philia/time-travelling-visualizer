@@ -504,6 +504,8 @@ export class DataSet {
             window.sceneBackgroundImg[window.iteration] = data.grid_color
             window.customSelection = []
 
+            this.iterationChangeReset()
+
             const label_color_list = data.label_color_list;
             const label_list = data.label_list;
             const prediction_list = data.prediction_list;
