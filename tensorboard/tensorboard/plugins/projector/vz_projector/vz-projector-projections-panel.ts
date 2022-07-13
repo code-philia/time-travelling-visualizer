@@ -436,6 +436,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
       } else if (this.iterationInput == this.dataSet.tSNEIteration) {
         logging.setWarningMessage("current iteration!");
         this.jumpDVIButton.disabled = false;
+        logging.setModalMessage(null, msgId);
         return;
       }
       this.nextDVIButton.disabled = true;

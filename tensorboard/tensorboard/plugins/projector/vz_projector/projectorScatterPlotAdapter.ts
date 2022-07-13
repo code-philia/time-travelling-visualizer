@@ -881,6 +881,12 @@ export class ProjectorScatterPlotAdapter {
             colors[dst++] = c.r;
             colors[dst++] = c.g;
             colors[dst++] = c.b;
+          }else{
+            const c = new THREE.Color(ds.points[i].color);
+            let dst = i * 3;
+            colors[dst++] = c.r;
+            colors[dst++] = c.g;
+            colors[dst++] = c.b;
           }
         }
     }
@@ -992,7 +998,7 @@ export class ProjectorScatterPlotAdapter {
     
     if (window.queryResPointIndices?.length) {
       if (window.queryResPointIndices?.indexOf(i) !== -1) {
-        return `👍 ${i}`
+        return `${i}`
       }
     }
     if(window.isAdjustingSel){
