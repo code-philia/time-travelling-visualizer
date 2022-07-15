@@ -70,10 +70,10 @@ class NoiseTrajectoryDetector:
         self.umap_scores = dict()
         self.umap_norm = dict()
 
-        self.dense = dict() # dense point for each class
-        self.u = dict()
-        self.pca_scores = dict()
-        self.pca_norm = dict()
+        # self.dense = dict() # dense point for each class
+        # self.u = dict()
+        # self.pca_scores = dict()
+        # self.pca_norm = dict()
     
     def proj_cls(self, cls_num, period=75, repeat=2):
         """calculate the score for class cls_num
@@ -131,37 +131,35 @@ class NoiseTrajectoryDetector:
             centroid_idxs = select_closest(centroid, embedding)
             self.sub_centers[str(cls_num)] = centroid_idxs
             self.sub_center_verified[str(cls_num)] = np.full(len(centroid), False, dtype=bool)
+            # update labels
+            self.sub_centers_labels[str(cls_num)] = centroid_labels
 
             clean_center = embedding[labels==0].mean(axis=0)
             id = select_closest([clean_center], embedding)
             self.clean_centers[str(cls_num)] = np.array(embedding[id])
 
             umap_scores = closest_dists(embedding, self.clean_centers[str(cls_num)])
-            # umap_scores = umap_scores/umap_scores.max()
             self.umap_scores[str(cls_num)] = umap_scores
             self.umap_norm[str(cls_num)] = umap_scores.max()
 
-            # calculate pca scores
-            print("Calculating pca scores...")
-            _, _, v = np.linalg.svd(high_data)
-            pca_scores = np.abs(np.inner(v[0], high_data))
-            pca_scores = pca_scores / pca_scores.max()
+            # # calculate pca scores
+            # print("Calculating pca scores...")
+            # _, _, v = np.linalg.svd(high_data)
+            # pca_scores = np.abs(np.inner(v[0], high_data))
+            # pca_scores = pca_scores / pca_scores.max()
 
-            X_plot = np.linspace(0, 1, 1000)[:, np.newaxis]
-            kde = KernelDensity(kernel='gaussian', bandwidth=0.75).fit(pca_scores.reshape(len(pca_scores), 1))
-            log_dens = kde.score_samples(X_plot)
-            i = np.argmax(np.exp(log_dens))
-            dense = X_plot[i, 0]
-            self.dense[str(cls_num)] = dense
-            self.u[str(cls_num)] = v[0]
-            self.pca_scores[str(cls_num)] = np.abs(pca_scores-dense).squeeze()
-            self.pca_norm[str(cls_num)] = self.pca_scores[str(cls_num)].max()
-            print("Finish calculating scores for class {}".format(cls_num))
+            # X_plot = np.linspace(0, 1, 1000)[:, np.newaxis]
+            # kde = KernelDensity(kernel='gaussian', bandwidth=0.75).fit(pca_scores.reshape(len(pca_scores), 1))
+            # log_dens = kde.score_samples(X_plot)
+            # i = np.argmax(np.exp(log_dens))
+            # dense = X_plot[i, 0]
+            # self.dense[str(cls_num)] = dense
+            # self.u[str(cls_num)] = v[0]
+            # self.pca_scores[str(cls_num)] = np.abs(pca_scores-dense).squeeze()
+            # self.pca_norm[str(cls_num)] = self.pca_scores[str(cls_num)].max()
+            # print("Finish calculating scores for class {}".format(cls_num))
 
-            # update labels
-            scores = self.query_noise_score(cls_num)
-            self.sub_centers_labels[str(cls_num)] = np.zeros(len(centroid_idxs))
-            self.sub_centers_labels[str(cls_num)][scores[centroid_idxs]>self.threshold] = 1
+            # update scores
         
         else:
             print("No anomaly detected for class {}!".format(cls_num))
@@ -170,12 +168,13 @@ class NoiseTrajectoryDetector:
         for cls_num in range(self.classes_num):
             self.proj_cls(cls_num, period=period, repeat=repeat)
     
-    def detect_noise_cls(self, cls_num):
+    def detect_noise_cls(self, cls_num, verbose=0):
         best_s, best_c = self.trajectory_eval[str(cls_num)]
+        if verbose:
+            print("silhouette_score\t", best_s)
+            print("calinski_harabasz_score\t", best_c)
         if best_s>=0.5:
-            return True
-        print("silhouette_score\t", best_s)
-        print("calinski_harabasz_score\t", best_c)
+            return True   
         return False
     
     def update_belief(self, cls_num, centroid, is_noise):
@@ -197,20 +196,20 @@ class NoiseTrajectoryDetector:
             # umap_scores = umap_scores/umap_scores.max()
             self.umap_scores[str(cls_num)] = umap_scores
 
-            # update labels of each sub centers
-            scores = self.query_noise_score(cls_num)
-            center_s = scores[self.sub_centers[str(cls_num)]]
-            labels = np.zeros(len(center_s))
-            labels[center_s>self.threshold] = 1
-            not_verified = np.logical_not(self.sub_center_verified[str(cls_num)])
+            # # update labels of each sub centers
+            # scores = self.query_noise_score(cls_num)
+            # center_s = scores[self.sub_centers[str(cls_num)]]
+            # labels = np.zeros(len(center_s))
+            # labels[center_s>self.threshold] = 1
+            # not_verified = np.logical_not(self.sub_center_verified[str(cls_num)])
 
-            self.sub_centers_labels[str(cls_num)][not_verified] = labels[not_verified]
+            # self.sub_centers_labels[str(cls_num)][not_verified] = labels[not_verified]
         
     
     def query_noise_score(self, cls_num):
         s1 = self.umap_scores[str(cls_num)]/self.umap_norm[str(cls_num)]
-        s2 = self.pca_scores[str(cls_num)]/self.pca_norm[str(cls_num)]
-        return s1+s2
+        # s2 = self.pca_scores[str(cls_num)]/self.pca_norm[str(cls_num)]
+        return s1
     
     def suggest_abnormal(self, cls_num, show=False):
         # check if we have abnormal
@@ -250,7 +249,7 @@ class NoiseTrajectoryDetector:
                 c='black' if s>self.threshold else "red" )
             plt.title('Trajectories Visualization of class {}'.format(cls_num), fontsize=24)
             plt.show()
-        return center_idxs[suggest_idx], self.trajectory_embedding[str(cls_num)][center_idxs[suggest_idx]]
+        return suggest_idx, center_idxs[suggest_idx], self.trajectory_embedding[str(cls_num)][center_idxs[suggest_idx]]
     
     def show(self, cls_num, save_path=None):
         embedding = self.trajectory_embedding[str(cls_num)]
