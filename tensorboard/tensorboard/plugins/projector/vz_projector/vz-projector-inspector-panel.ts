@@ -431,6 +431,9 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       (this.$$(lastContext) as HTMLDivElement).style.display = null;
     }
   }
+  clearQueryResList(){
+    this.updateSearchResults([])
+  }
   private async updateSearchResults(indices: number[]) {
     const container = this.$$('.matches-list') as HTMLDivElement;
     const list = container.querySelector('.list') as HTMLDivElement;
@@ -746,7 +749,6 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             } else {
               this.searchBox.message = `${this.queryIndices.length} matches.`;
             }
-            console.log('scores',scores,labels)
 
             window.alSuggestScoreList = scores
             window.alSuggestLabelList = labels

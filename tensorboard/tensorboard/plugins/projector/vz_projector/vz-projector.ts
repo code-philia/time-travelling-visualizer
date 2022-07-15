@@ -504,13 +504,14 @@ class Projector
   }
   ///
   setDynamicNoisy() {
+    // this.setDynamicStop()
 
     this.currentIteration = window.iteration
 
     let current = 1
     let positions = window.allResPositions?.results
     let interationList = []
-    if(window.allResPositions && window.allResPositions.bgimgList){
+    if (window.allResPositions && window.allResPositions.bgimgList) {
       window.sceneBackgroundImg = window.allResPositions?.bgimgList
     }
     for (let key of Object.keys(window.allResPositions?.results)) {
@@ -518,7 +519,7 @@ class Projector
     }
     current = Number(interationList[0])
     let count = 0
-    this.timer = setInterval(() => {
+    this.timer = window.setInterval(() => {
       this.inspectorPanel.updateCurrentPlayEpoch(current)
       window.iteration = current;
       for (let i = 0; i < this.dataSet.points.length; i++) {
@@ -536,16 +537,17 @@ class Projector
       this.onIterationChange(current);
       // this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
       this.projectorScatterPlotAdapter.render()
-      if (count < interationList.length -1) {
+      if (count < interationList.length - 1) {
         current = interationList[++count]
       } else {
         current = interationList[0]
         count = 0
+        this.setDynamicStop()
       }
     }, 1500)
   }
 
-  updatePosByIndicates(current:number){
+  updatePosByIndicates(current: number) {
     let positions = window.allResPositions?.results
     for (let i = 0; i < this.dataSet.points.length; i++) {
       const point = this.dataSet.points[i];
@@ -562,10 +564,11 @@ class Projector
     this.onIterationChange(current);
   }
   setDynamicStop() {
-    console.log('this.timer',this.timer)
-    if(this.timer){
-      clearInterval(this.timer)
+    console.log('this.timer', this.timer)
+    if (this.timer) {
+      window.clearInterval(this.timer)
     }
+    
     this.iteration = this.currentIteration
     window.iteration = this.currentIteration
     this.updatePosByIndicates(window.iteration)
@@ -785,7 +788,7 @@ class Projector
     this.hoverListeners.forEach((l) => l(pointIndex));
     let timeNow = new Date().getTime()
     if (this.timer === null || timeNow - this.timer > 1000) {
-      if (window.iteration && pointIndex !== undefined && pointIndex !==null && window.previousHover !== pointIndex) {
+      if (window.iteration && pointIndex !== undefined && pointIndex !== null && window.previousHover !== pointIndex) {
         console.log('get img')
         this.timer = timeNow
         this.updateMetaByIndices(pointIndex)
@@ -1064,6 +1067,7 @@ class Projector
   onProjectionChanged(projection?: Projection) {
     this.dataPanel.projectionChanged(projection);
     this.updateBackgroundImg()
+    this.inspectorPanel.clearQueryResList()
     this.projectorScatterPlotAdapter.render();
   }
   setProjection(projection: Projection) {
@@ -1200,7 +1204,11 @@ class Projector
     });
   }
 
-  getAllResPosList(callback: (data: any) => void){
+  getAllResPosList(callback: (data: any) => void) {
+    if (window.allResPositions && window.allResPositions.results && window.allResPositions.bgimgList) {
+      callback(window.allResPositions)
+      return
+    }
     const msgId = logging.setModalMessage('Querying...');
     let headers = new Headers();
     headers.append('Content-Type', 'application/json');
@@ -1215,7 +1223,7 @@ class Projector
       callback(data)
     }).catch(error => {
       logging.setErrorMessage('querying for indices');
-      
+
     });
   }
 
