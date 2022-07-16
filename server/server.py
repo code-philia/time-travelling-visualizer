@@ -100,7 +100,8 @@ def sprite_image():
     img_stream = ''
     with open(pic_save_dir_path, 'rb') as img_f:
         img_stream = img_f.read()
-        img_stream = base64.b64encode(img_stream).decode()
+        # img_stream = base64.b64encode(img_stream).decode()
+        img_stream = base64.b64encode(img_stream)
     image_type = "image/png"
     return make_response(jsonify({"imgUrl":img_stream}), 200)
 
@@ -172,7 +173,6 @@ def al_train():
 
     from config import config
     NEW_ITERATION = iteration + 1
-    timevis.vis_train(NEW_ITERATION, **config)
 
     # update iteration projection
     embedding_2d, grid, decision_view, label_color_list, label_list, _, training_data_index, \
@@ -194,7 +194,7 @@ def login():
     username = data["username"]
     password = data["password"]
     # Verify username and password
-    # if pass return normal_content_path and unormaly_content_path
+    # if pass return normal_content_path and anormaly_content_path
     if username == 'admin' and password == '123qwe': # mock
         return make_response(jsonify({"normal_content_path": '/Contents/{}/cifar10/normal'.format(username),"unormaly_content_path":'/Contents/{}/cifar10/unormaly'.format(username)}), 200)
     else:
@@ -203,14 +203,45 @@ def login():
 @app.route('/all_result_list', methods=["GET"])
 @cross_origin()
 def get_res():
-    with open('./res.json',encoding='utf8')as fp:
-        json_data = json.load(fp)
-    imglist = {
-        "1":"http://127.0.0.1/bgpic/bg1.png",
-        "2":"http://127.0.0.1/bgpic/bg1.png",
-        "3":"http://127.0.0.1/bgpic/bg3.png"
-    }
-    return make_response(jsonify({"results":json_data,"bgimgList":imglist}), 200)
+    data = request.get_json()
+    CONTENT_PATH = os.path.normpath(data['content_path'])
+    iteration_s = data["iteration_start"]
+    iteration_e = data["iteration_end"]
+    predicates = dict() # placeholder
+
+    results = dict()
+    imglist = dict()
+    gridlist = dict()
+
+    from config import config
+    EPOCH_START = config["EPOCH_START"]
+    EPOCH_PERIOD = config["EPOCH_START"]
+
+
+    for i in range(iteration_s, iteration_e+1, 1):
+        EPOCH = (i-1)*EPOCH_PERIOD + EPOCH_START
+
+        sys.path.append(CONTENT_PATH)
+        timevis = initialize_backend(CONTENT_PATH, EPOCH)
+
+        # detect whether we have query before
+        fname = "Epoch" if timevis.data_provider.mode == "normal" else "Iteration"
+        bgimg_path = os.path.join(timevis.data_provider.model_path, "{}_{}".format(fname, EPOCH), "bgimg.png")
+        if os.path.exists(bgimg_path):
+            path = os.path.join(timevis.data_provider.model_path, "{}_{}".format(fname, EPOCH))
+            result_path = os.path.join(path,"embedding.npy")
+            results[str(i)] = np.load(result_path)
+            with open(os.path.join(path, "grid.bin"), "wb") as f:
+                grid = pickle.load(f)
+            gridlist[str(i)] = grid
+        else:
+            embedding_2d, grid, _, _, _, _, _, _, _, _, _, _ = update_epoch_projection(timevis, EPOCH, predicates)
+            results[str(i)] = embedding_2d
+            gridlist[str(i)] = grid
+        imglist[str(i)] = "http://{}{}".format(ip_adress, bgimg_path)
+        sys.path.remove(CONTENT_PATH)
+        
+    return make_response(jsonify({"results":results,"bgimgList":imglist, "grid": gridlist}), 200)
 
 
 if __name__ == "__main__":

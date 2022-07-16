@@ -4,6 +4,7 @@ import os, sys
 import torch
 import numpy as np
 from umap.umap_ import find_ab_params
+import pickle
 from .backend_adapter import TimeVisBackend, ActiveLearningTimeVisBackend
 
 timevis_path = "../../DLVisDebugger"
@@ -144,11 +145,15 @@ def update_epoch_projection(timevis, EPOCH, predicates):
     # formating
     grid = [float(i) for i in grid]
     b_fig = str(b_fig, encoding='utf-8')
-    # grid, decision_view = timevis.vis.get_epoch_decision_view(EPOCH, timevis.hyperparameters["VISUALIZATION"]["RESOLUTION"])
-    # grid = grid.reshape((-1, 2)).tolist()
-    # decision_view = decision_view * 255
-    # decision_view = decision_view.reshape((-1, 3)).astype(int).tolist()
 
+    # save results, grid and decision_view
+    save_path = timevis.data_provider.model_path
+    iteration_name = "Epoch" if timevis.data_provider.mode == "normal" else "Iteration"
+    save_path = os.path.join(save_path, "{}_{}".format(iteration_name, EPOCH))
+    with open(os.path.join(save_path, "grid.bin"), "wb") as f:
+        pickle.dump(grid, f)
+    np.save(os.path.join(save_path, "embedding.npy"), np.array(embedding_2d))
+    
     color = timevis.vis.get_standard_classes_color() * 255
     color = color.astype(int).tolist()
 
