@@ -178,7 +178,8 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         index = load_labelled_data_index(index_file)
         return index
 
-    def al_query(self, iteration, budget, strategy, prev_idxs, curr_idxs):
+    # def al_query(self, iteration, budget, strategy, prev_idxs, curr_idxs):
+    def al_query(self, iteration, budget, strategy):
         """get the index of new selection from different strategies"""
         CONTENT_PATH = self.data_provider.content_path
         NUM_QUERY = budget
@@ -253,6 +254,17 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
             t1 = time.time()
             print("Query time is {:.2f}".format(t1-t0))
         
+        elif strategy == "badge":
+            from query_strategies.badge import BadgeSampling
+            q_strategy = BadgeSampling(task_model, task_model_type, n_pool, 512, idxs_lb, 10, DATA_NAME, NET, gpu=GPU, **self.hyperparameters["TRAINING"])
+            print('================Round {:d}==============='.format(iteration+1))
+            # query new samples
+            t0 = time.time()
+            new_indices, scores = q_strategy.query(complete_dataset, NUM_QUERY)
+            t1 = time.time()
+            print("Query time is {:.2f}".format(t1-t0))
+
+        
         # TODO return the suggest labels, need to develop pesudo label generation technique in the future
         true_labels = self.data_provider.train_labels(iteration)
 
@@ -278,8 +290,8 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         sys.path.append(CONTENT_PATH)
 
         # loading neural network
-        from Model.model import ResNet18
-        task_model = ResNet18()
+        from Model.model import resnet18
+        task_model = resnet18()
         resume_path = os.path.join(CONTENT_PATH, "Model", "Iteration_{}".format(iteration))
         state_dict = torch.load(os.path.join(resume_path, "subject_model.pth"))
         task_model.load_state_dict(state_dict)
@@ -295,7 +307,7 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         print('================Round {:d}==============='.format(NEW_ITERATION))
         # update
         q_strategy.update_lb_idxs(train_idx)
-        resnet_model = ResNet18()
+        resnet_model = resnet18()
         train_dataset = torchvision.datasets.CIFAR10(root="..//data//CIFAR10", download=True, train=True, transform=self.hyperparameters["TRAINING"]['transform_tr'])
         test_dataset = torchvision.datasets.CIFAR10(root="..//data//CIFAR10", download=True, train=False, transform=self.hyperparameters["TRAINING"]['transform_te'])
         t1 = time.time()
