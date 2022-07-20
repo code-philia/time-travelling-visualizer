@@ -15,7 +15,7 @@ import torchvision
 from scipy.special import softmax
 from sklearn.neighbors import NearestNeighbors
 
-timevis_path = "D:\\code-space\\DLVisDebugger"
+timevis_path = "../../DLVisDebuggerDLVisDebugger"
 sys.path.append(timevis_path)
 from singleVis.utils import *
 from singleVis.SingleVisualizationModel import SingleVisualizationModel
@@ -29,7 +29,7 @@ from singleVis.edge_dataset import DataHandler
 from singleVis.eval.evaluator import Evaluator
 from singleVis.spatial_edge_constructor import SingleEpochSpatialEdgeConstructor
 
-active_learning_path = "D:\\code-space\\ActiveLearning"
+active_learning_path = "../../ActiveLearning"
 sys.path.append(active_learning_path)
 
 class TimeVisBackend:
