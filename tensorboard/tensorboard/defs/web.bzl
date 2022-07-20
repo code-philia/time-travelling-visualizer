@@ -239,7 +239,7 @@ def _tf_web_library(ctx):
     ts_typings_paths = depset()
     ts_typings_execroots = depset()
 
-  print("linyun:", collect_runfiles([ctx.attr._WebfilesServer]))
+  # print("linyun:", collect_runfiles([ctx.attr._WebfilesServer]))
 
   # Export data to parent rules. This uses the legacy, string-based
   # provider mechanism for compatibility with the base `web_library`
