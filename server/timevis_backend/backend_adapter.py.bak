@@ -15,7 +15,7 @@ import torchvision
 from scipy.special import softmax
 from sklearn.neighbors import NearestNeighbors
 
-timevis_path = "D:\\code-space\\DLVisDebugger"
+timevis_path = "../../DLVisDebugger"
 sys.path.append(timevis_path)
 from singleVis.utils import *
 from singleVis.SingleVisualizationModel import SingleVisualizationModel
