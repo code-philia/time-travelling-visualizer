@@ -102,7 +102,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
   customSelectedSearchByMetadataOption: string;
 
   @property({ type: String })
-  subjectModelPathEditorInput: string = "/Users/zhangyifan/Downloads/toy_model/resnet18_cifar10/";
+  subjectModelPathEditorInput: string = "";
 
   @property({ type: String })
   resolutionEditorInput: number;
@@ -149,7 +149,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
   private zDropdown: HTMLElement;
   private iterationLabelTsne: HTMLElement;
   private totalIterationLabelDVI: HTMLElement;
-  private runUmapButton: HTMLButtonElement;
+
   private customProjectionXLeftInput: any; // ProjectorInput; type ommited
   private customProjectionXRightInput: any; // ProjectorInput; type ommited
   private customProjectionYUpInput: any; // ProjectorInput; type ommited
@@ -215,7 +215,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
     ) as HTMLInputElement;*/
     this.iterationLabelTsne = this.$$('.run-tsne-iter') as HTMLElement;
     this.totalIterationLabelDVI = this.$$('.dvi-total-iter') as HTMLElement;
-    this.runUmapButton = this.$$('#run-umap') as HTMLButtonElement;
+
 
     /*evaluation information*/
     this.nnTrain15 = this.$$('.nn_train_15') as HTMLElement;
@@ -236,30 +236,10 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
   enablePolymerChangesTriggerReprojection() {
     this.polymerChangesTriggerReprojection = true;
   }
-  /*
-  private updateTSNEPerplexityFromSliderChange() {
-    if (this.perplexitySlider) {
-      this.perplexity = +this.perplexitySlider.value;
-    }
-    (this.$$('.tsne-perplexity span') as HTMLSpanElement).innerText =
-      '' + this.perplexity;
-  }*/
-  /*
-  private updateTSNELearningRateFromUIChange() {
-    if (this.learningRateInput) {
-      this.learningRate = Math.pow(10, +this.learningRateInput.value);
-    }
-    (this.$$('.tsne-learning-rate span') as HTMLSpanElement).innerText =
-      '' + this.learningRate;
-  }
-  private updateTSNESuperviseFactorFromUIChange() {
-    (this.$$('.tsne-supervise-factor span') as HTMLSpanElement).innerText =
-      '' + this.superviseFactor;
-    if (this.dataSet) {
-      this.dataSet.setSuperviseFactor(this.superviseFactor);
-    }
-  }*/
+
   private subjectModelPathEditorInputChange() {
+    console.log('this.subjectModelPathEditorInput',this.subjectModelPathEditorInput)
+    window.modelMath = this.subjectModelPathEditorInput
     this.dataSet.DVIsubjectModelPath = this.subjectModelPathEditorInput;
   }
   private resolutionEditorInputChange() {
@@ -909,8 +889,6 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
       this.showPCA();
     } else if (projection === 'tsne') {
       this.showTSNE();
-    } else if (projection === 'umap') {
-      this.showUmap();
     } else if (projection === 'custom') {
       if (this.dataSet != null) {
         this.dataSet.stopTSNE();
@@ -941,86 +919,8 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
       this.projector.notifyProjectionPositionsUpdated();
     }
   }
-  private runTSNE() {
-    let projectionChangeNotified = false;
-    this.runTsneButton.innerText = 'Stop';
-    this.runTsneButton.disabled = true;
-    this.pauseTsneButton.innerText = 'Pause';
-    this.pauseTsneButton.disabled = true;
-    this.previousDVIButton.disabled = true;
-    this.nextDVIButton.disabled = true;
-    //this.perturbTsneButton.disabled = false;
-    this.dataSet.projectTSNE(
-      this.perplexity,
-      this.learningRate,
-      this.tSNEis3d ? 3 : 2,
-      (iteration: number, dataset?: DataSet, totalIter?: number) => {
-        if (iteration != null) {
-          this.runTsneButton.disabled = false;
-          this.pauseTsneButton.disabled = false;
-          this.iterationLabelTsne.innerText = '' + iteration;
-          this.totalIterationLabelDVI.innerText = '' + totalIter;
-          this.projector.notifyProjectionPositionsUpdated();
-          if (!projectionChangeNotified && this.dataSet.projections['tsne']) {
-            this.projector.onProjectionChanged();
-            projectionChangeNotified = true;
-          }
-        } else {
-          this.runTsneButton.innerText = 'Re-run';
-          this.runTsneButton.disabled = false;
-          this.pauseTsneButton.innerText = 'Pause';
-          this.pauseTsneButton.disabled = true;
-          //this.perturbTsneButton.disabled = true;
-          this.previousDVIButton.disabled = false;
-          this.projector.onProjectionChanged();
-        }
-      }
-    );
-  }
-  private showUmap() {
-    const dataSet = this.dataSet;
-    if (dataSet == null) {
-      return;
-    }
-    const accessors = getProjectionComponents('umap', [
-      0,
-      1,
-      this.umapIs3d ? 2 : null,
-    ]);
-    const dimensionality = this.umapIs3d ? 3 : 2;
-    const projection = new Projection(
-      'umap',
-      accessors,
-      dimensionality,
-      dataSet
-    );
-    this.projector.setProjection(projection);
-    if (!this.dataSet.hasUmapRun) {
-      this.runUmap();
-    } else {
-      this.projector.notifyProjectionPositionsUpdated();
-    }
-  }
-  private runUmap() {
-    let projectionChangeNotified = false;
-    this.runUmapButton.disabled = true;
-    const nComponents = this.umapIs3d ? 3 : 2;
-    const nNeighbors = this.umapNeighbors;
-    this.dataSet.projectUmap(nComponents, nNeighbors, (iteration: number, bg: string) => {
-      if (iteration != null) {
-        this.runUmapButton.disabled = false;
-        this.projector.notifyProjectionPositionsUpdated();
-        if (!projectionChangeNotified && this.dataSet.projections['umap']) {
-          this.projector.onProjectionChanged();
-          projectionChangeNotified = true;
-        }
-      } else {
-        this.runUmapButton.innerText = 'Re-run';
-        this.runUmapButton.disabled = false;
-        this.projector.onProjectionChanged();
-      }
-    });
-  }
+
+
   @observe('pcaX', 'pcaY', 'pcaZ')
   private showPCAIfEnabled() {
     if (this.polymerChangesTriggerReprojection) {
