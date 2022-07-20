@@ -36,7 +36,8 @@ def tf_js_binary(compile, deps, **kwargs):
         # Must pass `true` here specifically, else the input file argument to
         # Rollup (appended by `rollup_binary`) is interpreted as a value for
         # the preceding option.
-        args = ["--failAfterWarnings", "true", "--silent", "true"],
+        # args = ["--failAfterWarnings", "true", "--silent", "true"],
+        args = ["--silent", "false"],
         deps = deps + [
             "@npm//@rollup/plugin-commonjs",
             "@npm//@rollup/plugin-node-resolve",
