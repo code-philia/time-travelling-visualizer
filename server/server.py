@@ -97,13 +97,13 @@ def sprite_image():
     print('index', index)
     idx = int(index)
     pic_save_dir_path = os.path.join(CONTENT_PATH, "sprites", "{}.png".format(idx))
-    img_stream = ''
-    with open(pic_save_dir_path, 'rb') as img_f:
-        img_stream = img_f.read()
-        # img_stream = base64.b64encode(img_stream).decode()
-        img_stream = base64.b64encode(img_stream)
-    image_type = "image/png"
-    return make_response(jsonify({"imgUrl":img_stream}), 200)
+#     img_stream = ''
+#     with open(pic_save_dir_path, 'rb') as img_f:
+#         img_stream = img_f.read()
+#         # img_stream = base64.b64encode(img_stream).decode()
+#         img_stream = base64.b64encode(img_stream)
+#     image_type = "image/png"
+    return make_response(jsonify({"imgUrl":pic_save_dir_path}), 200)
 
 @app.route('/json', methods=["POST","GET"])
 @cross_origin()
