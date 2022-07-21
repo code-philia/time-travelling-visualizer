@@ -173,6 +173,7 @@ def al_train():
 
     from config import config
     NEW_ITERATION = iteration + 1
+    timevis.vis_train(NEW_ITERATION, **config)
 
     # update iteration projection
     embedding_2d, grid, decision_view, label_color_list, label_list, _, training_data_index, \
