@@ -562,6 +562,7 @@ export class ScatterPlot {
     let length = pointIndices.length
     if (pointIndices.length >= 100) {
       length = 100
+      alert('You can select up to 100 points at a time, and the first 100 points are selected by default')
     }
     console.log('pointIndices.length', pointIndices.length)
     for (let i = 0; i < length; i++) {
