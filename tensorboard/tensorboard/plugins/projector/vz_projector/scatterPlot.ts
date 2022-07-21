@@ -559,7 +559,12 @@ export class ScatterPlot {
     let pointIndices = this.getPointIndicesFromPickingTexture(boundingBox);
     // remove backgound
     let validIndices = [];
-    for (let i = 0; i < pointIndices.length; i++) {
+    let length = pointIndices.length
+    if (pointIndices.length >= 100) {
+      length = 100
+    }
+    console.log('pointIndices.length', pointIndices.length)
+    for (let i = 0; i < length; i++) {
       if (pointIndices[i] < this.realDataNumber) {
         validIndices.push(pointIndices[i]);
       }

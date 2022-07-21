@@ -47,7 +47,8 @@ declare global {
 
     allResPositions: any,
     modelMath: string,
-    tSNETotalIter: number
+    tSNETotalIter: number,
+    taskType: string
   }
 }
 

@@ -119,6 +119,12 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   @property({ type: String })
   collapseIcon: string = 'expand-less';
 
+  @property({ type: Boolean})
+  showAnomaly: boolean = false
+
+  @property({type: Boolean})
+  shownormal: boolean = false
+
 
   distFunc: DistanceFunction;
 
@@ -179,6 +185,9 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     this.isAlSelecting = false
 
     this.currentFilterType = 'normal'
+
+    this.showAnomaly = window.sessionStorage.taskType == 'anormaly detection' || window.taskType == 'anormaly detection'
+    this.shownormal = window.sessionStorage.taskType == 'active learning' || window.taskType == 'active learning'
 
     this.queryByStrategtBtn = this.$$('.query-by-stratergy') as HTMLButtonElement;
     this.showSelectionBtn = this.$$('.show-selection') as HTMLButtonElement
@@ -321,6 +330,8 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   _refreshNeighborsList() {
     this.updateNeighborsList();
   }
+
+
 
   @observe('showTrace')
   _refreshScatterplot() {
