@@ -46,7 +46,8 @@ declare global {
     previousHover: number,
 
     allResPositions: any,
-    modelMath: string
+    modelMath: string,
+    tSNETotalIter: number
   }
 }
 
@@ -1214,7 +1215,7 @@ class Projector
     let headers = new Headers();
     headers.append('Content-Type', 'application/json');
     headers.append('Accept', 'application/json');
-    fetch(`http://${this.DVIServer}/all_result_list`, {
+    fetch(`http://${this.DVIServer}/all_result_list?content_path=${this.dataSet.DVIsubjectModelPath}&iteration_start=1&iteration_end=${window.tSNETotalIter}`, {
       method: 'GET',
       headers: headers,
       mode: 'cors'
