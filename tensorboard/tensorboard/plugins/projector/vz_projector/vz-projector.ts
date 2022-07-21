@@ -45,7 +45,8 @@ declare global {
     alSuggestScoreList: any,
     previousHover: number,
 
-    allResPositions: any
+    allResPositions: any,
+    modelMath: string
   }
 }
 
