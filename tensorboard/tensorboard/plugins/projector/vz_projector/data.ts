@@ -181,23 +181,6 @@ function getSequenceNextPointIndex(
 /**
  * Test http request
  */
-function retrieveIPAddress(callback: (ip: any) => void): void {
-  const msgId = logging.setModalMessage('Fetching Server IP...');
-  const xhr = new XMLHttpRequest();
-  xhr.open('GET', `localhost:5000/test`, true)
-  xhr.setRequestHeader('Content-type', 'application/json');
-  xhr.setRequestHeader('Accept', 'application/json')
-
-  xhr.onerror = (err) => {
-    logging.setErrorMessage(xhr.responseText, 'fetching test error');
-  };
-  xhr.onload = () => {
-    const ip = JSON.parse(xhr.responseText);
-    logging.setModalMessage(null, msgId);
-    callback(ip);
-  };
-  xhr.send();
-}
 /**
  * Dataset contains a DataPoints array that should be treated as immutable. This
  * acts as a working subset of the original data, with cached properties
@@ -229,7 +212,7 @@ export class DataSet {
   /**
    * This part contains information for DVI visualization
    */
-  DVIsubjectModelPath = "/Users/zhangyifan/Downloads/toy_model/resnet18_cifar10";
+  DVIsubjectModelPath = "";
   DVIResolution = 400;
   DVIServer = "";
   DVIValidPointNumber: {
@@ -484,6 +467,10 @@ export class DataSet {
           const ip_address = data.DVIServerIP + ":" + data.DVIServerPort;
           this.DVIServer = ip_address;
 
+          if(window.modelMath){
+            this.DVIsubjectModelPath = window.modelMath
+          }
+
           window.iteration = iteration
           fetch("http://" + this.DVIServer + "/updateProjection", {
             method: 'POST',
@@ -514,6 +501,7 @@ export class DataSet {
  
             const real_data_number = label_color_list.length;
             this.tSNETotalIter = data.maximum_iteration;
+            window.tSNETotalIter = data.maximum_iteration
 
             this.tSNEIteration = iteration;
             this.DVIValidPointNumber[iteration] = real_data_number + background_point_number;
@@ -792,6 +780,9 @@ export class DataSet {
     await fetch("standalone_projector_config.json", { method: 'GET' })
       .then(response => response.json())
       .then(data => {
+        if(window.modelMath){
+          this.DVIsubjectModelPath = window.modelMath
+        }
         const ip_address = data.DVIServerIP + ":" + data.DVIServerPort;
         this.DVIServer = ip_address;
         fetch("http://" + this.DVIServer + "/al_train", {
@@ -818,6 +809,7 @@ export class DataSet {
 
           const real_data_number = label_color_list.length;
           this.tSNETotalIter = data.maximum_iteration;
+          window.tSNETotalIter = data.maximum_iteration;
 
           this.tSNEIteration = iteration;
           this.DVIValidPointNumber[iteration] = real_data_number + background_point_number;
@@ -1056,10 +1048,14 @@ export class DataSet {
     let headers = new Headers();
     headers.append('Content-Type', 'application/json');
     headers.append('Accept', 'application/json');
+    if(window.modelMath){
+      this.DVIsubjectModelPath = window.modelMath
+    }
     // const msgId = logging.setModalMessage('Fetching sprite image...');
     await fetch("standalone_projector_config.json", { method: 'GET' })
     .then(response => response.json())
     .then(data => {  this.DVIsubjectModelPath = data.DVIsubjectModelPath })
+    
     await fetch(`http://${this.DVIServer}/sprite?index=${id}&path=${this.DVIsubjectModelPath}`, {
       method: 'GET',
       mode: 'cors'
@@ -1084,291 +1080,8 @@ export class DataSet {
     window.alSuggestScoreList= []
   }
 
-  async projectTSNE(
-    perplexity: number,
-    learningRate: number,
-    tsneDim: number,
-    stepCallback: (iter: number, dataset?: DataSet, totalIter?: number) => void
-  ) {/*
-    //console.log('here3');
-    this.hasTSNERun = true;
-    this.tSNEShouldKill = false;
-    this.tSNEShouldPause = false;
-    this.tSNEShouldStop = false;
-    this.tSNEJustPause = false;
-    this.tSNEShouldPauseAndCheck = false;
-    this.tSNEIteration = 0;
-    this.tSNETotalIter = 0;
-    //let sampledIndices = this.shuffledDataIndices.slice(0, TSNE_SAMPLE_SIZE);
-    let headers = new Headers();
-    headers.append('Content-Type', 'application/json');
-    headers.append('Accept', 'application/json');
-    //const sampledData = sampledIndices.map((i) => this.points[i]);
 
-    const rawdata = this.points.map((data) => {
-      let datalist = [];
-      for (let i = 0; i < data.original_vector.length; i++) {
-        let num = data.original_vector[i];
-        num = +num.toFixed(5);
-        datalist.push(num)
-      }
-      return datalist;});
-    const metadata = this.points.map((data) => data.metadata);
-    let result = [[[0]]];
-    let bg_list = ["0"];
-    let model_prediction = [[true]];
-    let grid_index = [];
-    let grid_color = [];
-    let label_color_list = [];
-    const delay = ms => new Promise(res => setTimeout(res, ms));
-
-    function componentToHex(c: number) {
-      const hex = c.toString(16);
-      return hex.length == 1 ? "0" + hex : hex;
-    }
-
-    function rgbToHex(r:number, g:number, b:number) {
-      return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
-    }
-
-    let total_epoch_number = 0;
-    let real_data_number = this.points.length;
-    let background_point_number = 0;
-    //console.log(this.points);
-    let step = async () => {
-      if (this.tSNEShouldKill) {
-        //console.log('here2');
-        return;
-      }
-      if (this.tSNEShouldStop || this.tSNEIteration >= total_epoch_number) {
-        this.projections['tsne'] = false;
-        this.tSNEJustPause = true;
-        stepCallback(null);
-        this.hasTSNERun = false;
-        //return;
-      }
-
-      if (!(this.tSNEShouldStop || this.tSNEIteration >= total_epoch_number)
-          && (!this.tSNEShouldPause || this.tSNEShouldPauseAndCheck)) {
-        this.points = this.points.slice(0, real_data_number);
-        //console.log(this.points);
-        for (let i = 0; i < real_data_number; i++) {
-          let dataPoint = this.points[i];
-          dataPoint.projections['tsne-0'] = result[this.tSNEIteration][i][0];
-          dataPoint.projections['tsne-1'] = result[this.tSNEIteration][i][1];
-          dataPoint.projections['tsne-2'] = 0;
-          dataPoint.color = rgbToHex(label_color_list[i][0], label_color_list[i][1], label_color_list[i][2])
-        }
-        for (let i = 0; i < background_point_number; i++) {
-          const newDataPoint : DataPoint = {
-            metadata: {label: "background"},
-            index: real_data_number + i,
-            vector: new Float32Array(),
-            projections: {
-              'tsne-0': grid_index[this.tSNEIteration][i][0],
-              'tsne-1': grid_index[this.tSNEIteration][i][1],
-              'tsne-2': 0
-            },
-        color: rgbToHex(grid_color[this.tSNEIteration][i][0],   grid_color[this.tSNEIteration][i][1], grid_color[this.tSNEIteration][i][2]),
-        };
-        this.points.push(newDataPoint);
-        }
-        this.projections['tsne'] = true;
-
-        stepCallback(this.tSNEIteration + 1, undefined, new DataSet(this.points, this.spriteAndMetadataInfo),
-            total_epoch_number);
-        if(!this.tSNEShouldPauseAndCheck)  {
-           this.tSNEIteration++;
-           await delay(1000);
-        }
-
-      }
-      requestAnimationFrame(step);
-    };
-    await fetch("http://192.168.10.115:5000/animation", {
-      method: 'POST',
-      body: JSON.stringify({"cache": this.DVIUseCache, "rawdata": rawdata, "metadata": metadata,
-            "path": this.DVIsubjectModelPath,  "resolution":this.DVIResolution}),
-      headers: headers,
-      mode: 'cors'
-    }).then(response => response.json()).then(data => {
-      result = data.result;
-      grid_index = data.grid_index;
-      grid_color = data.grid_color;
-      background_point_number = grid_index[0].length;
-      label_color_list = data.label_color_list;
-      real_data_number = label_color_list.length;
-      total_epoch_number = result.length;
-      this.tSNETotalIter = total_epoch_number;
-      step();
-    });*/
-    /*
-    let step = async () => {
-      if (this.tSNEShouldStop || epoch >= 5) {
-        this.projections['tsne'] = false;
-        stepCallback(null, null);
-        this.tsne = null;
-        this.hasTSNERun = false;
-        return;
-      }
-      if (!this.tSNEShouldPause) {
-        sampledIndices.forEach((index, i) => {
-          let dataPoint = this.points[index];
-          dataPoint.projections['tsne-0'] = result[epoch][i][0];
-          dataPoint.projections['tsne-1'] = result[epoch][i][1];
-          if (tsneDim === 3) {
-            dataPoint.projections['tsne-2'] = 0;
-          }
-          dataPoint.mislabel_vector = !model_prediction[epoch][i];
-        });
-        this.projections['tsne'] = true;
-        this.tSNEIteration++;
-        const bg = 'data:image/png;base64,'+ bg_list[epoch];
-        epoch++;
-        stepCallback(this.tSNEIteration, bg);
-        await delay(10000);
-      }
-      requestAnimationFrame(step);
-    };
-
-    await fetch("http://192.168.10.115:5000/animation", {
-      method: 'POST',
-      body: JSON.stringify({"sampled_data": sampledData}),
-      headers: headers,
-      mode: 'cors'
-    }).then(response => response.json()).then(data => {
-      result = data.result;
-      bg_list = data.bg_list;
-      model_prediction = data.model_prediction;
-      console.log(model_prediction);
-      step();
-    });*/
-    /*
-    let step = () => {
-      if (this.tSNEShouldStop) {
-        this.projections['tsne'] = false;
-        stepCallback(null);
-        this.tsne = null;
-        this.hasTSNERun = false;
-        return;
-      }
-      if (!this.tSNEShouldPause) {
-        this.tsne.step();
-        let result = this.tsne.getSolution();
-        sampledIndices.forEach((index, i) => {
-          let dataPoint = this.points[index];
-          dataPoint.projections['tsne-0'] = result[i * tsneDim + 0];
-          dataPoint.projections['tsne-1'] = result[i * tsneDim + 1];
-          if (tsneDim === 3) {
-            dataPoint.projections['tsne-2'] = result[i * tsneDim + 2];
-          }
-        });
-        this.projections['tsne'] = true;
-        this.tSNEIteration++;
-        stepCallback(this.tSNEIteration);
-      }
-      requestAnimationFrame(step);
-    };*/
-    //const sampledData = sampledIndices.map((i) => this.points[i]);
-    /*
-    const knnComputation = this.computeKnn(sampledData, k);
-    knnComputation.then((nearest) => {
-      util
-        .runAsyncTask('Initializing T-SNE...', () => {
-          this.tsne.initDataDist(nearest);
-        })
-        .then(step);
-    });*/
-  }
-  /** Runs UMAP on the data. */
-  async projectUmap(
-    nComponents: number,
-    nNeighbors: number,
-    stepCallback: (iter: number, bg: string) => void
-  ) {
-    this.hasUmapRun = true;
-    this.umap = new UMAP({ nComponents, nNeighbors });
-    let currentEpoch = 0;
-    const sampledIndices = this.shuffledDataIndices.slice(0, UMAP_SAMPLE_SIZE);
-    const sampledData = sampledIndices.map((i) => this.points[i]);
-
-    let headers = new Headers();
-    headers.append('Content-Type', 'application/json');
-    headers.append('Accept', 'application/json');
-
-    const result_bg = await fetch("http://192.168.1.115:5000/visualize", {
-      method: 'POST',
-      body: JSON.stringify({ "sampled_data": sampledData }),
-      headers: headers,
-      mode: 'cors'
-    }).then(response => response.json()).then(data => [data.result, data.bg]);
-    const result = result_bg[0];
-    const bg = 'data:image/png;base64,' + result_bg[1];
-
-
-    return new Promise((resolve, reject) => {
-      util.runAsyncTask(`Updating`, () => {
-        sampledIndices.forEach((index, i) => {
-          const dataPoint = this.points[index];
-          dataPoint.projections['umap-0'] = result[i][0];
-          dataPoint.projections['umap-1'] = result[i][1];
-          if (nComponents === 3) {
-            //dataPoint.projections['umap-2'] = result[i][2];
-            dataPoint.projections['umap-2'] = 0;
-          }
-        });
-        this.projections['umap'] = true;
-        logging.setModalMessage(null, UMAP_MSG_ID);
-        this.hasUmapRun = true;
-        stepCallback(currentEpoch, bg);
-        //@ts-ignore
-        resolve();
-      });
-    });
-  };
-  /** Computes KNN to provide to the UMAP and t-SNE algorithms. */
-  private async computeKnn(
-    data: DataPoint[],
-    nNeighbors: number
-  ): Promise<knn.NearestEntry[][]> {
-    // Handle the case where we've previously found the nearest neighbors.
-    const previouslyComputedNNeighbors =
-      this.nearest && this.nearest.length ? this.nearest[0].length : 0;
-    if (this.nearest != null && previouslyComputedNNeighbors >= nNeighbors) {
-      return Promise.resolve(
-        this.nearest.map((neighbors) => neighbors.slice(0, nNeighbors))
-      );
-    } else {
-      const knnGpuEnabled = (await util.hasWebGLSupport()) && !IS_FIREFOX;
-      const result = await (knnGpuEnabled
-        ? knn.findKNNGPUCosine(data, nNeighbors, (d) => d.vector)
-        : knn.findKNN(
-          data,
-          nNeighbors,
-          (d) => d.vector,
-          (a, b) => vector.cosDistNorm(a, b)
-        ));
-      this.nearest = result;
-      return Promise.resolve(result);
-    }
-  }
-  /* Perturb TSNE and update dataset point coordinates. */
-  perturbTsne() {
-    if (this.hasTSNERun && this.tsne) {
-      this.tsne.perturb();
-      let tsneDim = this.tsne.getDim();
-      let result = this.tsne.getSolution();
-      let sampledIndices = this.shuffledDataIndices.slice(0, TSNE_SAMPLE_SIZE);
-      sampledIndices.forEach((index, i) => {
-        let dataPoint = this.points[index];
-        dataPoint.projections['tsne-0'] = result[i * tsneDim + 0];
-        dataPoint.projections['tsne-1'] = result[i * tsneDim + 1];
-        if (tsneDim === 3) {
-          dataPoint.projections['tsne-2'] = result[i * tsneDim + 2];
-        }
-      });
-    }
-  }
+ 
   setSupervision(superviseColumn: string, superviseInput?: string) {
     if (superviseColumn != null) {
       this.superviseLabels = this.shuffledDataIndices

@@ -87,6 +87,21 @@ def filter():
 
     return make_response(jsonify({"selectedPoints": selected_points.tolist()}), 200)
 
+#server
+# @app.route('/sprite', methods=["POST","GET"])
+# @cross_origin()
+# def sprite_image():
+#     path = request.args.get("path")
+#     index=request.args.get("index")
+
+#     CONTENT_PATH = os.path.normpath(path)
+#     print('index', index)
+#     idx = int(index)
+#     pic_save_dir_path = os.path.join('http://ip:host', "sprites", "{}.png".format(idx))
+
+#     return make_response(jsonify({"imgUrl":pic_save_dir_path}), 200)
+
+#base64
 @app.route('/sprite', methods=["POST","GET"])
 @cross_origin()
 def sprite_image():
@@ -100,10 +115,10 @@ def sprite_image():
     img_stream = ''
     with open(pic_save_dir_path, 'rb') as img_f:
         img_stream = img_f.read()
-        # img_stream = base64.b64encode(img_stream).decode()
-        img_stream = base64.b64encode(img_stream)
+        img_stream = base64.b64encode(img_stream).decode()
+        # img_stream = base64.b64encode(img_stream)
     image_type = "image/png"
-    return make_response(jsonify({"imgUrl":img_stream}), 200)
+    return make_response(jsonify({"imgUrl":'data:image/png;base64,' + img_stream}), 200)
 
 @app.route('/json', methods=["POST","GET"])
 @cross_origin()
@@ -198,7 +213,7 @@ def login():
     # if pass return normal_content_path and anormaly_content_path
     # TODO copy datasets
     if username == 'admin' and password == '123qwe': # mock
-        return make_response(jsonify({"normal_content_path": '/home/xianglin/projects/DVI_data/active_learning/base/resnet18',"unormal_content_path":'/home/xianglin/projects/DVI_data/noisy/symmetric/cifar10'}), 200)
+        return make_response(jsonify({"normal_content_path": '/home/xianglin/projects/DVI_data/active_learning/base/resnet18',"unormaly_content_path":'/home/xianglin/projects/DVI_data/noisy/symmetric/cifar10'}), 200)
     else:
         return make_response(jsonify({"message":"username or password is wrong"}), 200)
   
