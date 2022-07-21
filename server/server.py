@@ -212,7 +212,7 @@ def login():
     # if pass return normal_content_path and anormaly_content_path
     # TODO copy datasets
     if username == 'admin' and password == '123qwe': # mock
-        return make_response(jsonify({"normal_content_path": '/home/xianglin/projects/DVI_data/active_learning/base/resnet18',"unormal_content_path":'/home/xianglin/projects/DVI_data/noisy/symmetric/cifar10'}), 200)
+        return make_response(jsonify({"normal_content_path": '/home/xianglin/projects/DVI_data/active_learning/base/resnet18',"unormaly_content_path":'/home/xianglin/projects/DVI_data/noisy/symmetric/cifar10'}), 200)
     else:
         return make_response(jsonify({"message":"username or password is wrong"}), 200)
   
