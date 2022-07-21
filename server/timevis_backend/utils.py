@@ -107,7 +107,6 @@ def initialize_backend(CONTENT_PATH, EPOCH):
     # ########################################################################################################################
     # #                                                       EVALUATION                                                     #
     # ########################################################################################################################
-    evaluator = Evaluator(data_provider, trainer)
 
     vis = visualizer(data_provider, trainer.model, RESOLUTION, 10, CLASSES)
     evaluator = Evaluator(data_provider, trainer)

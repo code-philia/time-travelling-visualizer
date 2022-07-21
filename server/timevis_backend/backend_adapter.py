@@ -314,8 +314,8 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         index = load_labelled_data_index(index_file)
         return index
 
-    # def al_query(self, iteration, budget, strategy, prev_idxs, curr_idxs):
-    def al_query(self, iteration, budget, strategy, idxs_lb):
+    def al_query(self, iteration, budget, strategy, prev_idxs, curr_idxs):
+    # def al_query(self, iteration, budget, strategy, idxs_lb):
         """get the index of new selection from different strategies"""
         CONTENT_PATH = self.data_provider.content_path
         NUM_QUERY = budget
@@ -341,7 +341,11 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         n_test = self.hyperparameters["TRAINING"]['test_num']   # 10000
 
         resume_path = os.path.join(CONTENT_PATH, "Model", "Iteration_{}".format(iteration))
-        # idxs_lb = np.array(json.load(open(os.path.join(resume_path, "index.json"), "r")))
+
+        idxs_lb = np.array(json.load(open(os.path.join(resume_path, "index.json"), "r")))
+        idxs_lb = np.concatenate((idxs_lb, prev_idxs), axis=0)
+        idxs_lb = np.concatenate((idxs_lb, curr_idxs), axis=0)
+        
         state_dict = torch.load(os.path.join(resume_path, "subject_model.pth"))
         task_model.load_state_dict(state_dict)
         NUM_INIT_LB = len(idxs_lb)

@@ -1,18 +1,18 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from torch import embedding
+
 
 import umap.umap_ as umap
 from sklearn.metrics import silhouette_score, calinski_harabasz_score
-from sklearn.neighbors import NearestNeighbors
+from sklearn.neighbors import NearestNeighbors, KernelDensity
 from sklearn.cluster import Birch, KMeans
-from sklearn.neighbors import KernelDensity
+from pynndescent import NNDescent
 
 # helper functions
 def select_centroid(samples, n_select=3):
     kmeans = KMeans(n_clusters=n_select).fit(samples)
 
-    nbrs = NearestNeighbors(n_neighbors=1, algorithm='ball_tree').fit(samples)
+    nbrs = NearestNeighbors(n_neighbors=1).fit(samples)
     indices = nbrs.kneighbors(kmeans.cluster_centers_,return_distance=False)
     return indices.squeeze()
 
@@ -22,18 +22,22 @@ def select_closest(queries, pool):
 def select_close(queries, pool, k):
     if len(queries)==0:
         return np.array([])
-    nbrs = NearestNeighbors(n_neighbors=k, algorithm='ball_tree').fit(pool)
+    # index = NNDescent(pool)
+    # indices, _ = index.query(queries, k=k)
+    nbrs = NearestNeighbors(n_neighbors=k).fit(pool)
     indices = nbrs.kneighbors(queries, return_distance=False)
     return indices
 
 def closest_dists(embedding, centers):
     dists = np.zeros((len(embedding), len(centers)))
-    # embedding_2 = np.power(embedding, 2).sum(axis=1)
-    embedding_2 = np.linalg.norm(embedding, axis=1)**2
-    # centers_2 = np.power(centers, 2).sum(axis=1)
-    centers_2 = np.linalg.norm(centers, axis=1)**2
-    ec = np.dot(embedding, centers.T)
-    dists = -2*ec+embedding_2[:, np.newaxis]+centers_2[np.newaxis,:]
+    for i in range(len(embedding)):
+        dists[i] = np.linalg.norm(embedding[i]-centers, axis=1)
+    # # embedding_2 = np.power(embedding, 2).sum(axis=1)
+    # embedding_2 = np.linalg.norm(embedding, axis=1)**2
+    # # centers_2 = np.power(centers, 2).sum(axis=1)
+    # centers_2 = np.linalg.norm(centers, axis=1)**2
+    # ec = np.dot(embedding, centers.T)
+    # dists = -2*ec+embedding_2[:, np.newaxis]+centers_2[np.newaxis,:]
     dists = dists.min(axis=1)
     return dists
 
@@ -75,7 +79,7 @@ class NoiseTrajectoryDetector:
         # self.pca_scores = dict()
         # self.pca_norm = dict()
     
-    def proj_cls(self, cls_num, period=75, repeat=2):
+    def proj_cls(self, cls_num, dim=2, period=75, repeat=2):
         """calculate the score for class cls_num
 
         Parameters
@@ -94,7 +98,7 @@ class NoiseTrajectoryDetector:
         best_embedding = None
         best_brc = None
         for _ in range(repeat):
-            reducer = umap.UMAP(n_components=2)
+            reducer = umap.UMAP(n_components=dim)
             embedding = reducer.fit_transform(high_data)
 
             brc = Birch(n_clusters=2)
@@ -164,9 +168,9 @@ class NoiseTrajectoryDetector:
         else:
             print("No anomaly detected for class {}!".format(cls_num))
 
-    def proj_all(self, period=75, repeat=2):
+    def proj_all(self, dim=2, period=75, repeat=2):
         for cls_num in range(self.classes_num):
-            self.proj_cls(cls_num, period=period, repeat=repeat)
+            self.proj_cls(cls_num, dim=dim, period=period, repeat=repeat)
     
     def detect_noise_cls(self, cls_num, verbose=0):
         best_s, best_c = self.trajectory_eval[str(cls_num)]
