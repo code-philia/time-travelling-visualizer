@@ -360,22 +360,27 @@ export const template = html`
 
   <div class="ink-panel-header">
     <div class="ink-tab-group">
-
       <div data-tab="normal" id="normal-filter-tab" class="ink-tab projection-tab">
         Normal Query
       </div>
       <paper-tooltip for="normal-filter-tab" position="bottom" animation-delay="0" fit-to-visible-bounds>
         Normal Query
       </paper-tooltip>
+      <template is="dom-if" if="[[shownormal]]">
       <div data-tab="advanced" id="al-filter-tab" class="ink-tab projection-tab">
         Active Learning
       </div>
+      </template>
       <paper-tooltip for="al-filter-tab" position="bottom" animation-delay="0" fit-to-visible-bounds>
         Query By Actived Learning
       </paper-tooltip>
+
+      <template is="dom-if" if="[[showAnomaly]]">
       <div data-tab="anomaly" id="anomaly-filter-tab" class="ink-tab projection-tab">
       Anomaly Detection
       </div>
+     </template>
+
      <paper-tooltip for="al-filter-tab" position="bottom" animation-delay="0" fit-to-visible-bounds>
       Query By Actived Learning
      </paper-tooltip>

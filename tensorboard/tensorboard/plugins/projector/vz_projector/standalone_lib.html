@@ -41,7 +41,14 @@ limitations under the License.
     }
 
     document.getElementById("loginBtn").addEventListener('click', async () => {
-
+      let temp = document.getElementsByName("task")
+      for(let i = 0;i<temp.length;i++){
+        if(temp[i].checked){
+          alert('You have chosen the task:'+ temp[i].value)
+          window.sessionStorage.setItem('taskType', temp[i].value)
+          window.taskType = temp[i].value
+        }
+      }
       const username = document.getElementById("loginInput").value
       const password = document.getElementById("passwordInput").value
       //调用登陆接口获取token
@@ -70,6 +77,9 @@ limitations under the License.
               document.getElementById("loginContainer").style.display = 'none'
               window.sessionStorage.setItem('normal_content_path', data.normal_content_path)
               window.sessionStorage.setItem('unormaly_content_path', data.unormaly_content_path)
+              setTimeout(()=>{
+                location.reload()
+              },1)
             }else{
               alert(data.message)
             }
@@ -155,6 +165,10 @@ limitations under the License.
         <button id="loginBtn" class="ink-button">Login</button>
         <button id="registerBtn" class="ink-button">Register</button>
       </div>
+      <div class="choose-task">
+        task: <input type="radio" name="task" value="active learning" checked="checked">active learning
+        <input type="radio" name="task" value="anormaly detection"> anormaly detection
+      </div>
     </div>
 
   </div>
@@ -181,7 +195,7 @@ limitations under the License.
   <!-- <vz-login-app></vz-login-app> -->
   <vz-projector-app id="bodyContent" documentation-link="https://www.tensorflow.org/get_started/embedding_viz"
     bug-report-link="https://github.com/tensorflow/tensorboard/issues" serving-mode="demo"
-    projector-config-json-path="standalone_projector_config.json" page-view-logging>
+    projector-config-json-path="standalone_projector_config.json">
   </vz-projector-app>
 </body>
 
@@ -247,5 +261,8 @@ limitations under the License.
   .footer {
     display: flex;
     justify-content: space-between;
+  }
+  .choose-task{
+    white-space: nowrap;
   }
 </style>
