@@ -48,7 +48,8 @@ declare global {
     allResPositions: any,
     modelMath: string,
     tSNETotalIter: number,
-    taskType: string
+    taskType: string,
+    selectedStack:any
   }
 }
 
@@ -584,13 +585,15 @@ class Projector
   refresh() {
     // this.projectorScatterPlotAdapter.scatterPlot.render()
     this.metadataCard.updateCustomList(this.dataSet.points)
-    this.projectorScatterPlotAdapter.scatterPlot.render()
+    // this.projectorScatterPlotAdapter.scatterPlot.render()
+    this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
+    this.projectorScatterPlotAdapter.render()
   }
   /**
    * Used by clients to indicate that a selection has occurred.
    */
   notifySelectionChanged(newSelectedPointIndices: number[], selectMode?: boolean, selectionType?: string) {
-
+    
     if (selectionType === 'isALQuery' || selectionType === 'normal' || selectionType === 'isAnormalyQuery') {
       window.customSelection = []
       window.queryResPointIndices = newSelectedPointIndices

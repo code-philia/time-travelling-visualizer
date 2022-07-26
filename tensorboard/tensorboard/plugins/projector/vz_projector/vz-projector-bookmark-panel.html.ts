@@ -34,6 +34,7 @@ export const template = html`
     }
     #bookmark-container {
       background-color: #fafafa;
+      display:none;
     }
     #icon-container {
       line-height: 60px;
