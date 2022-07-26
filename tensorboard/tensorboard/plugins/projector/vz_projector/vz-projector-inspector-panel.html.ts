@@ -341,7 +341,7 @@ export const template = html`
     flex-direction: column;
   }
   .results .list{
-    max-height: calc(100vh - 500px);
+    max-height: calc(100vh - 420px);
     overflow: auto;
   }
 
@@ -508,7 +508,7 @@ export const template = html`
   </div>-->
 
 
-  <div id="query-container">
+  <!--<div id="query-container">
     <div id="query-header-container">
       <div id="query-header">Dynamically Selection</div>
       <paper-icon-button icon="[[collapseIcon]]" on-tap="_toggleMetadataContainer">
@@ -536,7 +536,7 @@ export const template = html`
           </button></div>
       </div>
     </iron-collapse>
-  </div>
+  </div>-->
   <!--<div>
     <button class="boundingbox-button add">add</button>
     <button class="boundingbox-button reset">reset</button>

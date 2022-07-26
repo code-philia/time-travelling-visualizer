@@ -243,7 +243,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     // TODO change them based on metadata fields
     this.searchFields = ["type", "label", "new_selection"]
     // active learning statergy
-    this.statergyList = ["random", "coreset", 'bayesianLeastConfidence', "LeastConfidence"]
+    this.statergyList = ["random", "leastcondifence"]
     // anormaly detection statergy
     this.anormalyStatergyList = ['anormalyStageone', 'anormalyStageTwo', 'anormalyStageThree']
     // anormaly detcttion classes
@@ -359,7 +359,21 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         }
       }
     }else{
-
+      if(window.checkboxDom){
+        if(window.queryResPointIndices && window.queryResPointIndices.length){
+          for(let i =0;i<window.queryResPointIndices.length;i++){
+            let index = window.queryResPointIndices[i]
+            if(window.customSelection.indexOf(index) !== -1){
+              let m = window.customSelection.indexOf(index)
+              if(window.checkboxDom[index]){
+                window.checkboxDom[index].checked = false
+              }
+              window.customSelection.splice(m,1)
+            }
+          }
+          this.projectorEventContext.refresh()
+        }
+      }
     }
   }
 

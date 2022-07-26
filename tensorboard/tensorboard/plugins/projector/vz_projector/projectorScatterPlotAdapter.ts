@@ -935,50 +935,6 @@ export class ProjectorScatterPlotAdapter {
     }
     return labels;
   }
-  // private getLabelText(ds: DataSet, i: number, accessor: string): string {
-  //   if (window.customSelection?.length && window.isAdjustingSel) {
-  //     if (window.customSelection.indexOf(i) >= 0) {
-  //       //处理unlabeled
-  //       if (window.properties && window.properties[window.iteration]?.length) {
-  //         if (window.properties[window.iteration][i] === 1) {
-  //           return `✅ ${i}`
-  //         }
-  //       }
-  //     }
-  //   }
-  //   if (window.customSelection?.length && window.isAdjustingSel) {
-  //     if (window.customSelection.indexOf(i) >= 0) {
-  //       if (window.properties && window.properties[window.iteration]?.length) {
-  //         return ds.points[i]?.metadata[accessor] !== undefined ? `✅ ${ds.points[i]?.metadata[accessor]}` : `✅ selected`
-  //       }
-  //     }
-  //     if (this.selectedPointIndices?.length) {
-  //       if (this.selectedPointIndices.indexOf(i) >= 0) {
-  //         //处理unlabeled
-  //         if (window.properties && window.properties[window.iteration]?.length) {
-  //           if (window.properties[window.iteration][i] === 1) {
-  //             return i !== undefined ? `💓 ${i}` : `💓 result`
-  //           }
-  //         }
-  //       }
-  //     }
-  //     if (this.selectedPointIndices?.length) {
-  //       if (this.selectedPointIndices.indexOf(i) >= 0) {
-  //         return ds.points[i]?.metadata[accessor] !== undefined ? `💓 ${ds.points[i]?.metadata[accessor]}` : `result`
-  //       }
-  //     }
-
-
-  //     if (window.properties && window.properties[window.iteration]?.length) {
-  //       if (window.properties[window.iteration][i] === 1) {
-  //         return `unlabeled`
-  //       }
-  //     }
-  //     return ds.points[i]?.metadata[accessor] !== undefined
-  //       ? (ds.points[i]?.metadata[accessor] !== "background" ? String(ds.points[i]?.metadata[accessor]) : "")
-  //       : `Unknown #${i}`;
-  //   }
-  // }
   private getLabelText(ds: DataSet, i: number, accessor: string): string {
     if (window.customSelection?.length && window.isAdjustingSel) {
       if (window.customSelection.indexOf(i) >= 0) {
@@ -998,7 +954,7 @@ export class ProjectorScatterPlotAdapter {
     
     if (window.queryResPointIndices?.length) {
       if (window.queryResPointIndices?.indexOf(i) !== -1) {
-        return `${i}`
+        return `👍 ${i}`
       }
     }
     if(window.isAdjustingSel){
