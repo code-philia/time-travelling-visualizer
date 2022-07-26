@@ -173,6 +173,12 @@ export const template = html`
         visibility:hidden;
         width: 0;
       }
+      .layers-checkbox{
+        display: flex;
+        align-items: center;
+        border-left: 2px solid;
+        padding-left: 6px;
+      }
 
       .status-bar-entry {
         border-right: 1px solid rgba(0, 0, 0, 0.5);
@@ -253,25 +259,6 @@ export const template = html`
         display: flex;
         align-items: center;
         --paper-toast-color: #eeff41;
-      }
-      #cavasGoUp{
-        cursor:pointer;
-        margin: 0 4px;
-      }
-      #cavasGoDown{
-        transform:rotate(180deg);
-        cursor:pointer;
-        margin: 0 4px;
-      }
-      #cavasGoRight{
-        transform:rotate(90deg);
-        cursor:pointer;
-        margin: 0 4px;
-      }
-      #cavasGoLeft{
-        transform:rotate(-90deg);
-        cursor:pointer;
-        margin: 0 4px;
       }
       .canvans-move-container{
         border-right: 1px solid rgba(0,0,0,0.5);
@@ -380,40 +367,7 @@ export const template = html`
           toggles
           icon="dns"
         ></paper-icon-button>
-        <div class="canvans-move-container">
-        <paper-tooltip
-            for="cavasGoDown"
-            position="bottom"
-            animation-delay="0"
-            fit-to-visible-bounds
-            >Canvas move down</paper-tooltip
-        >
-        <div id="cavasGoDown"><svg xmlns="http://www.w3.org/2000/svg" enable-background="new 0 0 24 24" height="24px" viewBox="0 0 24 24" width="24px" fill="#000000"><g><rect fill="none" height="24" width="24"/></g><g><polygon points="11,6.83 9.41,8.41 8,7 12,3 16,7 14.59,8.41 13,6.83 13,21 11,21"/></g></svg></div>
-        <paper-tooltip
-        for="cavasGoUp"
-        position="bottom"
-        animation-delay="0"
-        fit-to-visible-bounds
-        >Cavans move up</paper-tooltip
-        >
-        <div id="cavasGoUp"><svg xmlns="http://www.w3.org/2000/svg" enable-background="new 0 0 24 24" height="24px" viewBox="0 0 24 24" width="24px" fill="#000000"><g><rect fill="none" height="24" width="24"/></g><g><polygon points="11,6.83 9.41,8.41 8,7 12,3 16,7 14.59,8.41 13,6.83 13,21 11,21"/></g></svg></div>
-        <paper-tooltip
-        for="cavasGoLeft"
-        position="bottom"
-        animation-delay="0"
-        fit-to-visible-bounds
-        >Cavans move Left</paper-tooltip
-        >
-        <div id="cavasGoLeft"><svg xmlns="http://www.w3.org/2000/svg" enable-background="new 0 0 24 24" height="24px" viewBox="0 0 24 24" width="24px" fill="#000000"><g><rect fill="none" height="24" width="24"/></g><g><polygon points="11,6.83 9.41,8.41 8,7 12,3 16,7 14.59,8.41 13,6.83 13,21 11,21"/></g></svg></div>
-        <paper-tooltip
-        for="cavasGoRight"
-        position="bottom"
-        animation-delay="0"
-        fit-to-visible-bounds
-        >Cavans move Right</paper-tooltip
-        >
-        <div id="cavasGoRight"><svg xmlns="http://www.w3.org/2000/svg" enable-background="new 0 0 24 24" height="24px" viewBox="0 0 24 24" width="24px" fill="#000000"><g><rect fill="none" height="24" width="24"/></g><g><polygon points="11,6.83 9.41,8.41 8,7 12,3 16,7 14.59,8.41 13,6.83 13,21 11,21"/></g></svg></div>
-        </div>  
+       
         <div class="status-bar-panel">
             <div class="status-bar-entry">
               Points: <span class="numDataPoints">Loading...</span>
@@ -438,6 +392,7 @@ export const template = html`
               >Reset zoom to fit all points</paper-tooltip
             >
           </div>
+          <div class="layers-checkbox">
           <paper-checkbox class="diff-layer-checkbox" id="label-points-toggle" checked="{{showlabeled}}">
             labeled
           </paper-checkbox>
@@ -448,6 +403,7 @@ export const template = html`
           <paper-checkbox class="diff-layer-checkbox" id="testing-points-toggle" checked="{{showTesting}}">
             testing
           </paper-checkbox>
+          </div>
         </div>
         <div class="stage">
           <div id="scatter">

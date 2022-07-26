@@ -352,6 +352,9 @@ export class ScatterPlot {
     }
     this.orbitCameraControls.minDistance = MIN_ZOOM;
     this.orbitCameraControls.maxDistance = MAX_ZOOM;
+    this.orbitCameraControls.screenSpacePanning = true
+    // console.log('orbitCameraControls',this.orbitCameraControls)
+    this.orbitCameraControls
     this.orbitCameraControls.update();
     if (this.orbitAnimationOnNextCameraCreation) {
       this.startOrbitAnimation();
@@ -400,43 +403,6 @@ export class ScatterPlot {
       this.orbitCameraControls.mouseButtons.ORBIT = THREE.MOUSE.RIGHT;
       this.orbitCameraControls.mouseButtons.PAN = THREE.MOUSE.LEFT;
     }
-  }
-
-  goDown() {
-    var factor = 1;
-    var vector = new THREE.Vector3(0, -3, 0.1);
-    vector.unproject(this.camera);
-    vector.sub(this.camera.position);
-    this.camera.position.subVectors(this.camera.position, vector.setLength(factor));
-    this.orbitCameraControls.target.subVectors(this.orbitCameraControls.target, vector.setLength(factor));
-    this.render();
-  }
-  goUp() {
-    var factor = 1;
-    var vector = new THREE.Vector3(0, 3, 0.1);
-    vector.unproject(this.camera);
-    vector.sub(this.camera.position);
-    this.camera.position.subVectors(this.camera.position, vector.setLength(factor));
-    this.orbitCameraControls.target.subVectors(this.orbitCameraControls.target, vector.setLength(factor));
-    this.render();
-  }
-  goLeft() {
-    var factor = 1;
-    var vector = new THREE.Vector3(-2, 0, 0.1);
-    vector.unproject(this.camera);
-    vector.sub(this.camera.position);
-    this.camera.position.subVectors(this.camera.position, vector.setLength(factor));
-    this.orbitCameraControls.target.subVectors(this.orbitCameraControls.target, vector.setLength(factor));
-    this.render();
-  }
-  goRight() {
-    var factor = 1;
-    var vector = new THREE.Vector3(2, 0, 0.1);
-    vector.unproject(this.camera);
-    vector.sub(this.camera.position);
-    this.camera.position.subVectors(this.camera.position, vector.setLength(factor));
-    this.orbitCameraControls.target.subVectors(this.orbitCameraControls.target, vector.setLength(factor));
-    this.render();
   }
   private resetCamera() {
     const def = this.cameraDef || this.makeDefaultCameraDef(3);
