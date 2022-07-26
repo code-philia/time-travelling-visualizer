@@ -14,6 +14,7 @@ limitations under the License.
 ==============================================================================*/
 import { PolymerElement, html } from '@polymer/polymer';
 import { customElement, observe, property } from '@polymer/decorators';
+import * as logging from './logging';
 
 import { LegacyElementMixin } from '../../../components/polymer/legacy_element_mixin';
 import '../../../components/polymer/irons_and_papers';
@@ -257,18 +258,31 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
       .then(data => { DVIServer = data.DVIServerIP + ":" + data.DVIServerPort; basePath = data.DVIsubjectModelPath })
 
     if (window.customSelection) {
-      for (let i = 0; i < window.customSelection.length; i++) {
-        await fetch(`http://${DVIServer}/sprite?index=${window.customSelection[i]}&path=${basePath}`, {
-          method: 'GET',
-          mode: 'cors'
+      const msgId = logging.setModalMessage('Update ing...');
+      await fetch(`http://${DVIServer}/spriteList`, {
+          method: 'POST',
+          mode: 'cors',
+          body: JSON.stringify({
+            "path": basePath, "index": window.customSelection,
+          }),
+          headers: headers,
         }).then(response => response.json()).then(data => {
-          let src = data.imgUrl;
-          let flag = points[window.customSelection[i]]?.metadata.label === points[window.customSelection[i]]?.current_prediction ? '' : '❗️'
-          metadata.push({ key: window.customSelection[i], value: points[window.customSelection[i]].metadata.label, src: src, prediction: points[window.customSelection[i]].current_prediction, flag: flag });
+          for (let i = 0; i < window.customSelection.length; i++) {
+            let src = data.urlList[window.customSelection[i]]
+            let flag = points[window.customSelection[i]]?.metadata.label === points[window.customSelection[i]]?.current_prediction ? '' : '❗️'
+            metadata.push({ key: window.customSelection[i], value: points[window.customSelection[i]].metadata.label, src: src, prediction: points[window.customSelection[i]].current_prediction, flag: flag });
+          }
+          logging.setModalMessage(null, msgId);
         }).catch(error => {
           console.log("error", error);
+          logging.setModalMessage(null, msgId);
+          for (let i = 0; i < window.customSelection.length; i++) {
+            let src = ''
+            let flag = points[window.customSelection[i]]?.metadata.label === points[window.customSelection[i]]?.current_prediction ? '' : '❗️'
+            metadata.push({ key: window.customSelection[i], value: points[window.customSelection[i]].metadata.label, src: src, prediction: points[window.customSelection[i]].current_prediction, flag: flag });
+          }
         });
-      }
+
     }
     window.customMetadata = metadata
     this.customMetadata = metadata;
