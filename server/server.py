@@ -127,6 +127,30 @@ def sprite_json():
        config = json.load(f)
     return make_response(jsonify({"imgUrl":config}), 200)
 
+@app.route('/spriteList', methods=["POST"])
+@cross_origin()
+def sprite_list_image():
+    data = request.get_json()
+    indices = data["index"]
+    path = data["path"]
+
+    CONTENT_PATH = os.path.normpath(path)
+
+    length = len(indices)
+
+    urlList = {}
+
+    for i in range(length):
+        idx = indices[i]
+        pic_save_dir_path = os.path.join(CONTENT_PATH, "sprites", "{}.png".format(idx))
+        img_stream = ''
+        with open(pic_save_dir_path, 'rb') as img_f:
+            img_stream = img_f.read()
+            img_stream = base64.b64encode(img_stream).decode()
+            urlList[idx] = 'data:image/png;base64,' + img_stream
+            # urlList.append('data:image/png;base64,' + img_stream)
+    return make_response(jsonify({"urlList":urlList}), 200)
+
 @app.route('/al_query', methods=["POST"])
 @cross_origin()
 def al_query():
