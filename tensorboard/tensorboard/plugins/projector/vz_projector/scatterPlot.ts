@@ -382,6 +382,7 @@ export class ScatterPlot {
     this.isDragSequence = false;
     this.mouseIsDown = true;
     if(this.isctrling === true){
+      this.container.style.cursor = 'move';
       return
     }
     if (this.selecting) {
@@ -418,6 +419,11 @@ export class ScatterPlot {
   /** When we stop dragging/zooming, return to normal behavior. */
   private onMouseUp(e: any) {
     if(this.isctrling === true){
+      if(this.selecting){
+        this.container.style.cursor = 'crosshair';
+      }else{
+        this.container.style.cursor = 'default';
+      }
       this.mouseIsDown = false;
       return
     }
@@ -457,6 +463,7 @@ export class ScatterPlot {
     // If ctrl is pressed, use left click to orbit
     if (e.keyCode === CTRL_KEY && this.sceneIs3D) {
       this.isctrling = true
+      this.container.style.cursor = 'move';
       this.orbitCameraControls.mouseButtons.ORBIT = THREE.MOUSE.RIGHT;
       this.orbitCameraControls.mouseButtons.PAN = THREE.MOUSE.LEFT;
     }
