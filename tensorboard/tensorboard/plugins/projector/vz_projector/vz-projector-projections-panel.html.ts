@@ -137,6 +137,7 @@ export const template = html`
 
       .container {
         padding: 20px;
+        padding-top: 0;
         overflow:auto;
       }
 
@@ -186,8 +187,8 @@ export const template = html`
       
     </style>
     <div id="main">
-      <div class="ink-panel-header">
-        <div class="ink-tab-group">
+      <div class="ink-panel-header" style="height:0">
+        <div class="ink-tab-group" style="visibility:hidden;">
 
           <div data-tab="tsne" id="tsne-tab" class="ink-tab projection-tab">
             DVI
@@ -325,7 +326,7 @@ export const template = html`
         >
         </paper-input>
     </div>-->
-        <div class="slider">
+        <!--<div class="slider">
             <label>Status</label>
             <div class="two-way-toggle">
               <span>Indices</span>
@@ -333,7 +334,7 @@ export const template = html`
                   Search Predicates
               </paper-toggle-button>
             </div>
-          </div>
+          </div>-->
           <!--
            <div class="two-rows">
               <div class="row">
