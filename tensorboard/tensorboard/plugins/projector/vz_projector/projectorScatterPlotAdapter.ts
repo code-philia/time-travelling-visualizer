@@ -44,8 +44,8 @@ const LABEL_FILL_COLOR_SELECTED = 16744192;
 const LABEL_STROKE_COLOR_SELECTED = 16744192;
 
 
-const LABEL_FILL_COLOR_HOVER = 7396243;
-const LABEL_STROKE_COLOR_HOVER = 7396243
+const LABEL_FILL_COLOR_HOVER = 0xFF560731;
+const LABEL_STROKE_COLOR_HOVER = 0xffffff;
 
 const LABEL_FILL_COLOR_NEIGHBOR = 0x000000;
 
@@ -964,7 +964,7 @@ export class ProjectorScatterPlotAdapter {
     }
     if (window.properties && window.properties[window.iteration]?.length) {
       if (window.properties[window.iteration][i] === 1) {
-        return `unlabeled${i}`
+        return `#${i}`
       }
     }
     return ds.points[i]?.metadata[accessor] !== undefined

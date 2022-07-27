@@ -381,7 +381,8 @@ export class ScatterPlot {
   private onMouseDown(e: MouseEvent) {
     this.isDragSequence = false;
     this.mouseIsDown = true;
-    if(this.isctrling === true){
+    if (this.isctrling === true) {
+      this.container.style.cursor = 'move';
       return
     }
     if (this.selecting) {
@@ -417,7 +418,12 @@ export class ScatterPlot {
   }
   /** When we stop dragging/zooming, return to normal behavior. */
   private onMouseUp(e: any) {
-    if(this.isctrling === true){
+    if (this.isctrling === true) {
+      if (this.selecting) {
+        this.container.style.cursor = 'crosshair';
+      } else {
+        this.container.style.cursor = 'default';
+      }
       this.mouseIsDown = false;
       return
     }
@@ -457,23 +463,29 @@ export class ScatterPlot {
     // If ctrl is pressed, use left click to orbit
     if (e.keyCode === CTRL_KEY && this.sceneIs3D) {
       this.isctrling = true
+      this.container.style.cursor = 'move';
       this.orbitCameraControls.mouseButtons.ORBIT = THREE.MOUSE.RIGHT;
       this.orbitCameraControls.mouseButtons.PAN = THREE.MOUSE.LEFT;
     }
-    var  keyCode = e.keyCode || e.which || e.charCode;
-    let  ctrlKey = e.ctrlKey || e.metaKey;
-  //   if (ctrlKey && keyCode == 83) {
-  //     alert( 'save' );
-  //  }
-   if (ctrlKey && keyCode == 90) {
-    if (window.selectedStack && window.selectedStack.length) {
-      if (window.customSelection) {
-        this.projectorEventContext.notifySelectionChanged(window.selectedStack, true, 'boundingbox');
-        alert('Withdrawn');
-        window.selectedStack = []
+    var keyCode = e.keyCode || e.which || e.charCode;
+    let ctrlKey = e.ctrlKey || e.metaKey;
+    //   if (ctrlKey && keyCode == 83) {
+    //     alert( 'save' );
+    //  }
+    if (ctrlKey && keyCode == 90) {
+      if (window.selectedStack && window.selectedStack.length) {
+        if (window.customSelection) {
+          this.projectorEventContext.notifySelectionChanged(window.selectedStack, true, 'boundingbox');
+          alert('Withdrawn');
+          if (!this.selecting) {
+            this.container.style.cursor = 'default';
+          } else {
+            this.container.style.cursor = 'crosshair';
+          }
+          window.selectedStack = []
+        }
       }
     }
-  }
     // If shift is pressed, start selecting
     // if (e.keyCode === SHIFT_KEY) {
     //   this.selecting = true;
