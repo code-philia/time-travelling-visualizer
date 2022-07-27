@@ -98,6 +98,7 @@ export class ScatterPlot {
   private pointColors: Float32Array;
   private pointScaleFactors: Float32Array;
   private labels: LabelRenderParams;
+  private isctrling: boolean;
   private polylineColors: {
     [polylineIndex: number]: Float32Array;
   };
@@ -380,6 +381,9 @@ export class ScatterPlot {
   private onMouseDown(e: MouseEvent) {
     this.isDragSequence = false;
     this.mouseIsDown = true;
+    if(this.isctrling === true){
+      return
+    }
     if (this.selecting) {
       this.orbitCameraControls.enabled = false;
       this.rectangleSelector.onMouseDown(e.offsetX, e.offsetY);
@@ -413,6 +417,10 @@ export class ScatterPlot {
   }
   /** When we stop dragging/zooming, return to normal behavior. */
   private onMouseUp(e: any) {
+    if(this.isctrling === true){
+      this.mouseIsDown = false;
+      return
+    }
     if (this.selecting) {
       this.orbitCameraControls.enabled = true;
       this.rectangleSelector.onMouseUp();
@@ -447,7 +455,8 @@ export class ScatterPlot {
   /** For using ctrl + left click as right click, and for circle select */
   private onKeyDown(e: any) {
     // If ctrl is pressed, use left click to orbit
-    if (e.keyCode === CTRL_KEY && this.sceneIs3D()) {
+    if (e.keyCode === CTRL_KEY && this.sceneIs3D) {
+      this.isctrling = true
       this.orbitCameraControls.mouseButtons.ORBIT = THREE.MOUSE.RIGHT;
       this.orbitCameraControls.mouseButtons.PAN = THREE.MOUSE.LEFT;
     }
@@ -466,13 +475,15 @@ export class ScatterPlot {
     }
   }
     // If shift is pressed, start selecting
-    if (e.keyCode === SHIFT_KEY) {
-      this.selecting = true;
-      this.container.style.cursor = 'crosshair';
-    }
+    // if (e.keyCode === SHIFT_KEY) {
+    //   this.selecting = true;
+    //   this.container.style.cursor = 'crosshair';
+    // }
+
   }
   /** For using ctrl + left click as right click, and for circle select */
   private onKeyUp(e: any) {
+    this.isctrling = false
     if (e.keyCode === CTRL_KEY && this.sceneIs3D()) {
       this.orbitCameraControls.mouseButtons.ORBIT = THREE.MOUSE.LEFT;
       this.orbitCameraControls.mouseButtons.PAN = THREE.MOUSE.RIGHT;
