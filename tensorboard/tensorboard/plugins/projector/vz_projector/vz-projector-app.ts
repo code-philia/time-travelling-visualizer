@@ -60,7 +60,7 @@ class VzProjectorApp extends PolymerElement {
 
     <div id="container">
       <div id="appbar">
-        <div>Embedding Projector</div>
+        <div>[[title]]</div>
         <div class="icons">
           <a
             title="Documentation"
@@ -118,5 +118,8 @@ class VzProjectorApp extends PolymerElement {
   documentationLink: string = '';
   @property({type: String})
   bugReportLink: string = '';
+
+  @property({type: String})
+  title:string = `Embedding Projector | ${window.sessionStorage.taskType}`
  
 }

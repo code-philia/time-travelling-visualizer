@@ -229,6 +229,13 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
     // this.invConfTest = this.$$('.inv_conf_test') as HTMLElement;
     this.accTrain = this.$$('.acc_train') as HTMLElement;
     this.accTest = this.$$('.acc_test') as HTMLElement;
+    if(window.sessionStorage.taskType == 'anormaly detection'){
+      this.subjectModelPathEditorInput = window.sessionStorage.unormaly_content_path
+    }else{
+      this.subjectModelPathEditorInput = window.sessionStorage.normal_content_path
+    }
+    window.modelMath = this.subjectModelPathEditorInput
+    this.dataSet.DVIsubjectModelPath = this.subjectModelPathEditorInput;
   }
   disablePolymerChangesTriggerReprojection() {
     this.polymerChangesTriggerReprojection = false;
