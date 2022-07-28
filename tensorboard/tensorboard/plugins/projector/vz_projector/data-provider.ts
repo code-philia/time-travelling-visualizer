@@ -100,6 +100,9 @@ export function retrieveTensorAsBytes(
   tensorsPath: string,
   callback: (ds: DataSet) => void
 ) {
+  if(!window.sessionStorage.taskType){
+     return
+  }
   // Get the tensor.
   logging.setModalMessage('Fetching tensor values...', TENSORS_MSG_ID);
   let xhr = new XMLHttpRequest();
