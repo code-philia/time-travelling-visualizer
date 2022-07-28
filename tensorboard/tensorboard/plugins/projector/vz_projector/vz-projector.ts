@@ -1174,7 +1174,7 @@ class Projector
     fetch(`http://${this.DVIServer}/query`, {
       method: 'POST',
       body: JSON.stringify({
-        "predicates": dummyCurrPredicates, "path": this.dataSet.DVIsubjectModelPath,
+        "predicates": dummyCurrPredicates, "content_path": this.dataSet.DVIsubjectModelPath,
         "iteration": iteration
       }),
       headers: headers,
@@ -1222,7 +1222,7 @@ class Projector
     fetch(`http://${this.DVIServer}/query`, {
       method: 'POST',
       body: JSON.stringify({
-        "predicates": predicates, "path": this.dataSet.DVIsubjectModelPath,
+        "predicates": predicates, "content_path": this.dataSet.DVIsubjectModelPath,
         "iteration": iteration
       }),
       headers: headers,
