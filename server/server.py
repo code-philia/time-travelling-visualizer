@@ -45,7 +45,7 @@ def update_projection():
 
     sys.path.remove(CONTENT_PATH)
 
-    return make_response(jsonify({'result': embedding_2d, 'grid_index': grid, 'grid_color': decision_view,
+    return make_response(jsonify({'result': embedding_2d, 'grid_index': grid, 'grid_color': 'data:image/png;base64,' + decision_view,
                                   'label_color_list': label_color_list, 'label_list': label_list,
                                   'maximum_iteration': max_iter, 
                                   'training_data': training_data_index,
@@ -219,7 +219,7 @@ def al_train():
     testing_data_index, eval_new, prediction_list, selected_points, properties = update_epoch_projection(timevis, NEW_ITERATION, dict())
 
     sys.path.remove(CONTENT_PATH)
-    return make_response(jsonify({'result': embedding_2d, 'grid_index': grid, 'grid_color': decision_view,
+    return make_response(jsonify({'result': embedding_2d, 'grid_index': grid, 'grid_color': 'data:image/png;base64,' + decision_view,
                                   'label_color_list': label_color_list, 'label_list': label_list,
                                   'maximum_iteration': NEW_ITERATION, 'training_data': training_data_index,
                                   'testing_data': testing_data_index, 'evaluation': eval_new,
