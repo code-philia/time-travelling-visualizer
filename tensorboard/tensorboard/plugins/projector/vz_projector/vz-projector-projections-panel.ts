@@ -235,7 +235,9 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
       this.subjectModelPathEditorInput = window.sessionStorage.normal_content_path
     }
     window.modelMath = this.subjectModelPathEditorInput
-    this.dataSet.DVIsubjectModelPath = this.subjectModelPathEditorInput;
+    if(this.dataSet){
+      this.dataSet.DVIsubjectModelPath = this.subjectModelPathEditorInput;
+    }
   }
   disablePolymerChangesTriggerReprojection() {
     this.polymerChangesTriggerReprojection = false;
