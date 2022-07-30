@@ -1052,9 +1052,9 @@ export class DataSet {
       this.DVIsubjectModelPath = window.modelMath
     }
     // const msgId = logging.setModalMessage('Fetching sprite image...');
-    await fetch("standalone_projector_config.json", { method: 'GET' })
-    .then(response => response.json())
-    .then(data => {  this.DVIsubjectModelPath = data.DVIsubjectModelPath })
+    // await fetch("standalone_projector_config.json", { method: 'GET' })
+    // .then(response => response.json())
+    // .then(data => {  this.DVIsubjectModelPath = data.DVIsubjectModelPath })
     
     await fetch(`http://${this.DVIServer}/sprite?index=${id}&path=${this.DVIsubjectModelPath}`, {
       method: 'GET',

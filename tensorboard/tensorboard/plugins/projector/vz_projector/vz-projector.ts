@@ -789,7 +789,7 @@ class Projector
   notifyHoverOverPoint(pointIndex: number) {
     this.hoverListeners.forEach((l) => l(pointIndex));
     let timeNow = new Date().getTime()
-    if (this.timer === null || timeNow - this.timer > 1000) {
+    if (this.timer === null || timeNow - this.timer > 100) {
       if (window.iteration && pointIndex !== undefined && pointIndex !== null && window.previousHover !== pointIndex) {
         console.log('get img')
         this.timer = timeNow
