@@ -243,7 +243,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     // TODO change them based on metadata fields
     this.searchFields = ["type", "label", "new_selection"]
     // active learning statergy
-    this.statergyList = ["random", "leastcondifence"]
+    this.statergyList = ["random", "LeastConfidence"]
     // anormaly detection statergy
     this.anormalyStatergyList = ['anormalyStageone', 'anormalyStageTwo', 'anormalyStageThree']
     // anormaly detcttion classes
@@ -595,9 +595,13 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     const displayPointIndex = String(pointIndex).length <= 3 ? (String(pointIndex).length === 1 ? "\xa0\xa0" + String(pointIndex) + "\xa0\xa0" : "\xa0" + String(pointIndex) + "\xa0\xa0") : String(pointIndex)
     // return String(pointIndex) + "Label: " + stringMetaData + " Prediction: " + prediction + " Original label: " + original_label;
     let prediction_res = stringMetaData === prediction ? ' ✅ ' : ' ❗️ '
+    if(suggest_label !== undefined){
+      return displayPointIndex + " | " + displayStringMetaData +`(${suggest_label})` + " | " + displayprediction + " | " + prediction_res + " | " + score
+    }else{
+      return displayPointIndex + " | " + displayStringMetaData + " | " + displayprediction + " | " + prediction_res + " | " + score
+    }
 
 
-    return displayPointIndex + " | " + displayStringMetaData +`(${suggest_label})` + " | " + displayprediction + " | " + prediction_res + " | " + score
   }
   private spriteImageRenderer() {
     const spriteImagePath = this.spriteMeta.imagePath;

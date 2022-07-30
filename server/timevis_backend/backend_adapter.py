@@ -6,6 +6,9 @@ import time
 import torch
 import numpy as np
 
+# if active learning warning
+os.environ["OMP_NUM_THREADS"] = "1"
+
 import torch.nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, Subset
@@ -15,7 +18,12 @@ import torchvision
 from scipy.special import softmax
 from sklearn.neighbors import NearestNeighbors
 
-timevis_path = "D:\\code-space\\DLVisDebugger" # timevis_path = "../../DLVisDebugger"
+# if:IOError: [Errno socket error] [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed (_ssl.c:727)
+#import ssl
+#ssl._create_default_https_context = ssl._create_unverified_context
+
+timevis_path = "D:\\code-space\\DLVisDebugger" #limy 
+# timevis_path = "../../DLVisDebugger" #xianglin#yvonne
 sys.path.append(timevis_path)
 from singleVis.utils import *
 from singleVis.SingleVisualizationModel import SingleVisualizationModel
@@ -29,7 +37,8 @@ from singleVis.edge_dataset import DataHandler
 from singleVis.eval.evaluator import Evaluator
 from singleVis.spatial_edge_constructor import SingleEpochSpatialEdgeConstructor
 
-active_learning_path = "D:\\code-space\\ActiveLearning"  #  active_learning_path = "../../ActiveLearning"
+active_learning_path = "D:\\code-space\\ActiveLearning"  # limy 
+# active_learning_path = "../../ActiveLearning"
 sys.path.append(active_learning_path)
 
 class TimeVisBackend:
@@ -347,6 +356,8 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         idxs_lb = np.concatenate((idxs_lb, curr_idxs), axis=0)
         
         state_dict = torch.load(os.path.join(resume_path, "subject_model.pth"))
+        # if if gpu is None
+        #state_dict = torch.load(os.path.join(resume_path, "subject_model.pth"),map_location=torch.device('cpu'))
         task_model.load_state_dict(state_dict)
         NUM_INIT_LB = len(idxs_lb)
 

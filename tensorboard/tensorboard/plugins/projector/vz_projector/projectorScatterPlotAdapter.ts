@@ -292,7 +292,7 @@ export class ProjectorScatterPlotAdapter {
   }
   updateBackground() {
     if (window.sceneBackgroundImg && window.sceneBackgroundImg[window.iteration]) {
-      this.scatterPlot.addbackgroundImg( window.sceneBackgroundImg[window.iteration])
+      this.scatterPlot.addbackgroundImg(window.sceneBackgroundImg[window.iteration])
     }
   }
   updateScatterPlotAttributes(isFilter?: boolean) {
@@ -872,23 +872,23 @@ export class ProjectorScatterPlotAdapter {
       // return colors
     }
     //
-    if(window.isAnimatating){
+    if (window.isAnimatating) {
       const n = ds.points.length;
       const c = new THREE.Color(POINT_COLOR_UNSELECTED);
-        for (let i = 0; i < n; ++i) {
-          if(selectedPointIndices.indexOf(i) === -1){
-            let dst = i * 3;
-            colors[dst++] = c.r;
-            colors[dst++] = c.g;
-            colors[dst++] = c.b;
-          }else{
-            const c = new THREE.Color(ds.points[i].color);
-            let dst = i * 3;
-            colors[dst++] = c.r;
-            colors[dst++] = c.g;
-            colors[dst++] = c.b;
-          }
+      for (let i = 0; i < n; ++i) {
+        if (selectedPointIndices.indexOf(i) === -1) {
+          let dst = i * 3;
+          colors[dst++] = c.r;
+          colors[dst++] = c.g;
+          colors[dst++] = c.b;
+        } else {
+          const c = new THREE.Color(ds.points[i].color);
+          let dst = i * 3;
+          colors[dst++] = c.r;
+          colors[dst++] = c.g;
+          colors[dst++] = c.b;
         }
+      }
     }
 
     if (window.customSelection?.length && window.isAdjustingSel) {
@@ -941,24 +941,31 @@ export class ProjectorScatterPlotAdapter {
         return `✅ ${i}`
       }
     }
-    if(window.queryResAnormalIndecates?.length){
+    if (window.queryResAnormalIndecates?.length) {
       if (window.queryResAnormalIndecates.indexOf(i) >= 0) {
         return `⭕️ ${i}`
       }
     }
-    if(window.queryResAnormalCleanIndecates?.length){
+    if (window.queryResAnormalCleanIndecates?.length) {
       if (window.queryResAnormalCleanIndecates.indexOf(i) >= 0) {
         return `🟢${i}`
       }
     }
-    
-    if (window.queryResPointIndices?.length) {
-      if (window.queryResPointIndices?.indexOf(i) !== -1) {
+
+    if (window.alQueryResPointIndices?.length) {
+      if (window.alQueryResPointIndices?.indexOf(i) !== -1) {
         return `👍 ${i}`
       }
     }
-    if(window.isAdjustingSel){
-      if(ds.points[i]?.metadata[accessor] !== undefined && ds.points[i]?.current_prediction !== ds.points[i]?.metadata[accessor]){
+    if (window.queryResPointIndices?.length) {
+      if (window.queryResPointIndices?.indexOf(i) !== -1) {
+        return ds.points[i]?.metadata[accessor] !== undefined
+          ? (ds.points[i]?.metadata[accessor] !== "background" ? String(ds.points[i]?.metadata[accessor]) : "")
+          : `Unknown #${i}`;
+      }
+    }
+    if (window.isAdjustingSel) {
+      if (ds.points[i]?.metadata[accessor] !== undefined && ds.points[i]?.current_prediction !== ds.points[i]?.metadata[accessor]) {
         return ` ❗${i}`
       }
     }

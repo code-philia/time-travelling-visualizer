@@ -36,6 +36,7 @@ declare global {
     customMetadata: any,
 
     queryResPointIndices: any,
+    alQueryResPointIndices:any,
     previousIndecates: any,
     previousAnormalIndecates: any,
     queryResAnormalIndecates: any,
@@ -593,6 +594,11 @@ class Projector
     if (selectionType === 'isALQuery' || selectionType === 'normal' || selectionType === 'isAnormalyQuery') {
       window.customSelection = []
       window.queryResPointIndices = newSelectedPointIndices
+      if(selectionType === 'isALQuery'){
+        window.alQueryResPointIndices = newSelectedPointIndices
+      }else{
+        window.alQueryResPointIndices = []
+      }
       this.metadataCard.updateCustomList(this.dataSet.points)
     }
     if (selectionType === 'isShowSelected') {
