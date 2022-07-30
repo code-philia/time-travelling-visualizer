@@ -1187,6 +1187,7 @@ class Projector
       mode: 'cors'
     }).then(response => response.json()).then(data => {
       const indices = data.selectedPoints;
+      window.alSuggestLabelList = []
       logging.setModalMessage(null, msgId);
       callback(indices);
     }).catch(error => {
@@ -1236,6 +1237,7 @@ class Projector
     }).then(response => response.json()).then(data => {
       const indices = data.selectedPoints;
       this.inspectorPanel.filteredPoints = indices;
+      window.alSuggestLabelList = []
     }).catch(error => {
       logging.setErrorMessage('querying for indices');
     });
