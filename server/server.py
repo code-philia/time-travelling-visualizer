@@ -241,7 +241,7 @@ def login():
     else:
         return make_response(jsonify({"message":"username or password is wrong"}), 200)
   
-@app.route('/all_result_list', methods=["GET"])
+@app.route('/all_result_list', methods=["POST"])
 @cross_origin()
 def get_res():
     data = request.get_json()

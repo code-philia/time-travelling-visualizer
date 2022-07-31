@@ -1205,8 +1205,13 @@ class Projector
     let headers = new Headers();
     headers.append('Content-Type', 'application/json');
     headers.append('Accept', 'application/json');
-    fetch(`http://${this.DVIServer}/all_result_list?content_path=${this.dataSet.DVIsubjectModelPath}&iteration_start=1&iteration_end=${window.tSNETotalIter}`, {
-      method: 'GET',
+    fetch(`http://${this.DVIServer}/all_result_list`, {
+      method: 'POST',
+      body: JSON.stringify({
+        "iteration_start":1,
+        "iteration_end":2,
+         "content_path": this.dataSet.DVIsubjectModelPath,
+      }),
       headers: headers,
       mode: 'cors'
     }).then(response => response.json()).then(data => {
