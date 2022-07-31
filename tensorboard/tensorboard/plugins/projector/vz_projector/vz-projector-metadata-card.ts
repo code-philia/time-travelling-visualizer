@@ -259,7 +259,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
 
     if (window.customSelection) {
       let msgId
-      if (window.customSelection.length > 50) {
+      if (window.customSelection.length > 1000) {
         msgId = logging.setModalMessage('Update ing...');
       }
 
