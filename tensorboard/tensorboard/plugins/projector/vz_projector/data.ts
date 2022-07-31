@@ -599,10 +599,6 @@ export class DataSet {
               dataPoint.projections['tsne-0'] = result[i][0];
               dataPoint.projections['tsne-1'] = result[i][1];
               dataPoint.projections['tsne-2'] = 0;
-              if (i == 1) {
-                console.log('label_color_list[i]', label_color_list[i])
-              }
-
               if (window.unLabelData?.length && window.unLabelData.indexOf(i) !== -1) {
                 // label_color_list[i] = [204, 204, 204]
                 dataPoint.color = rgbToHex(204, 204, 204);
