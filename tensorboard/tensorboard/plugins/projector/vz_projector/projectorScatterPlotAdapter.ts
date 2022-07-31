@@ -847,35 +847,35 @@ export class ProjectorScatterPlotAdapter {
     }
     // Color the unlabeled points.
 
-    if (window.isFilter) {
-      let dst = 0;
-      const c = new THREE.Color(POINT_COLOR_SELECTED);
-      const c_n = new THREE.Color(unselectedColor);
-      const c_w = new THREE.Color(0xffffff);
-      for (let i = 0; i < ds.points.length; ++i) {
-        const point = ds.points[i];
-        colors[dst++] = c.r;
-        colors[dst++] = c.g;
-        colors[dst++] = c.b;
-        if (point.metadata[this.labelPointAccessor]) {
-          let hoverText = point.metadata[this.labelPointAccessor].toString();
-          if (hoverText == 'background') {
-            if (window.hiddenBackground) {
-              let dst = i * 3
-              colors[dst++] = c_w.r;
-              colors[dst++] = c_w.g;
-              colors[dst++] = c_w.b;
-            } else {
-              let dst = i * 3
-              colors[dst++] = c_n.r;
-              colors[dst++] = c_n.g;
-              colors[dst++] = c_n.b;
-            }
-          }
-        }
-      }
-      // return colors
-    }
+//     if (window.isFilter) {
+//       let dst = 0;
+//       const c = new THREE.Color(POINT_COLOR_SELECTED);
+//       const c_n = new THREE.Color(unselectedColor);
+//       const c_w = new THREE.Color(0xffffff);
+//       for (let i = 0; i < ds.points.length; ++i) {
+//         const point = ds.points[i];
+//         colors[dst++] = c.r;
+//         colors[dst++] = c.g;
+//         colors[dst++] = c.b;
+//         if (point.metadata[this.labelPointAccessor]) {
+//           let hoverText = point.metadata[this.labelPointAccessor].toString();
+//           if (hoverText == 'background') {
+//             if (window.hiddenBackground) {
+//               let dst = i * 3
+//               colors[dst++] = c_w.r;
+//               colors[dst++] = c_w.g;
+//               colors[dst++] = c_w.b;
+//             } else {
+//               let dst = i * 3
+//               colors[dst++] = c_n.r;
+//               colors[dst++] = c_n.g;
+//               colors[dst++] = c_n.b;
+//             }
+//           }
+//         }
+//       }
+//       // return colors
+//     }
     //
     if (window.isAnimatating) {
       const n = ds.points.length;
