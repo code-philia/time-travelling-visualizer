@@ -778,7 +778,12 @@ export class ProjectorScatterPlotAdapter {
       else {
         if (legendPointColorer != null) {
           for (let i = 0; i < n; ++i) {
-            const c = new THREE.Color(legendPointColorer(ds, i));
+            let c = new THREE.Color(legendPointColorer(ds, i));
+            // if (window.unLabelData?.length) {
+            //   if (window.unLabelData.indexOf(i) !== -1) {
+            //     c = new THREE.Color(POINT_COLOR_UNSELECTED);
+            //   }
+            // }
             colors[dst++] = c.r;
             colors[dst++] = c.g;
             colors[dst++] = c.b;
@@ -794,18 +799,18 @@ export class ProjectorScatterPlotAdapter {
         }
       }
     }
-    if (window.unLabelData?.length) {
-      const n = ds.points.length;
-      let c = new THREE.Color(POINT_COLOR_UNSELECTED);
-      for (let i = 0; i < n; i++) {
-        if (window.unLabelData.indexOf(i) >= 0) {
-          let dst = i * 3
-          colors[dst++] = c.r;
-          colors[dst++] = c.g;
-          colors[dst++] = c.b;
-        }
-      }
-    }
+    // if (window.unLabelData?.length) {
+    //   const n = ds.points.length;
+    //   let c = new THREE.Color(POINT_COLOR_UNSELECTED);
+    //   for (let i = 0; i < n; i++) {
+    //     if (window.unLabelData.indexOf(i) >= 0) {
+    //       let dst = i * 3
+    //       colors[dst++] = c.r;
+    //       colors[dst++] = c.g;
+    //       colors[dst++] = c.b;
+    //     }
+    //   }
+    // }
     // Color the selected points.
     {
       const n = selectedPointCount;
@@ -905,18 +910,8 @@ export class ProjectorScatterPlotAdapter {
     }
 
     // Color the hover point.
-    if (hoverPointIndex != null
-      && (!window.hiddenBackground
-        || (window.hiddenBackground
-          && ds.points[hoverPointIndex].metadata[this.labelPointAccessor].toString() !== 'background'))) {
+    if (hoverPointIndex != null) {
       let c = new THREE.Color(POINT_COLOR_HOVER);
-      if (window.properties && window.properties[window.iteration]) {
-        if (window.properties[window.iteration]?.length) {
-          if (window.properties[window.iteration][hoverPointIndex] === 1) {
-            c = new THREE.Color(POINT_COLOR_UNLABELED);
-          }
-        }
-      }
       let dst = hoverPointIndex * 3;
       colors[dst++] = c.r;
       colors[dst++] = c.g;
