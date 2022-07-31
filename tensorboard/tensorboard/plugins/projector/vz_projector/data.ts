@@ -467,7 +467,7 @@ export class DataSet {
           const ip_address = data.DVIServerIP + ":" + data.DVIServerPort;
           this.DVIServer = ip_address;
 
-          if(window.modelMath){
+          if (window.modelMath) {
             this.DVIsubjectModelPath = window.modelMath
           }
 
@@ -483,9 +483,9 @@ export class DataSet {
           }).then(response => response.json()).then(data => {
             const result = data.result;
 
-            const grid_index = [[data.grid_index[0],data.grid_index[1]],[data.grid_index[2],data.grid_index[3]]];
-            const grid_color = [ [137, 120, 117],[136, 119, 116],[136, 118, 115],[135, 117, 114]];
-            if(!window.sceneBackgroundImg){
+            const grid_index = [[data.grid_index[0], data.grid_index[1]], [data.grid_index[2], data.grid_index[3]]];
+            const grid_color = [[137, 120, 117], [136, 119, 116], [136, 118, 115], [135, 117, 114]];
+            if (!window.sceneBackgroundImg) {
               window.sceneBackgroundImg = []
             }
             window.sceneBackgroundImg[window.iteration] = data.grid_color
@@ -498,7 +498,7 @@ export class DataSet {
             const prediction_list = data.prediction_list;
 
             const background_point_number = grid_index.length;
- 
+
             const real_data_number = label_color_list.length;
             this.tSNETotalIter = data.maximum_iteration;
             window.tSNETotalIter = data.maximum_iteration
@@ -526,13 +526,13 @@ export class DataSet {
             window.testingData = []
             window.labeledData = []
             window.nowShowIndicates = []
-            
+
             for (let i = 0; i < data.properties.length; i++) {
               if (data.properties[i] === 1) {
                 window.unLabelData.push(i)
-              }else if(data.properties[i] === 2){
+              } else if (data.properties[i] === 2) {
                 window.testingData.push(i)
-              }else{
+              } else {
                 window.labeledData.push(i)
               }
               window.nowShowIndicates.push(i)
@@ -599,7 +599,18 @@ export class DataSet {
               dataPoint.projections['tsne-0'] = result[i][0];
               dataPoint.projections['tsne-1'] = result[i][1];
               dataPoint.projections['tsne-2'] = 0;
-              dataPoint.color = rgbToHex(label_color_list[i][0], label_color_list[i][1], label_color_list[i][2]);
+              if (i == 1) {
+                console.log('label_color_list[i]', label_color_list[i])
+              }
+
+              if (window.unLabelData?.length && window.unLabelData.indexOf(i) !== -1) {
+                // label_color_list[i] = [204, 204, 204]
+                dataPoint.color = rgbToHex(204, 204, 204);
+              } else{
+                dataPoint.color = rgbToHex(label_color_list[i][0], label_color_list[i][1], label_color_list[i][2]);
+              }
+
+
               dataPoint.DVI_projections[iteration] = [result[i][0], result[i][1]];
               dataPoint.DVI_color[iteration] = dataPoint.color;
               dataPoint.training_data[iteration] = false;
@@ -780,7 +791,7 @@ export class DataSet {
     await fetch("standalone_projector_config.json", { method: 'GET' })
       .then(response => response.json())
       .then(data => {
-        if(window.modelMath){
+        if (window.modelMath) {
           this.DVIsubjectModelPath = window.modelMath
         }
         const ip_address = data.DVIServerIP + ":" + data.DVIServerPort;
@@ -797,8 +808,8 @@ export class DataSet {
         }).then(response => response.json()).then(data => {
           iteration++
           const result = data.result;
-          const grid_index = [[data.grid_index[0],data.grid_index[1]],[data.grid_index[2],data.grid_index[3]]];
-          const grid_color = [ [137, 120, 117],[136, 119, 116],[136, 118, 115],[135, 117, 114]];
+          const grid_index = [[data.grid_index[0], data.grid_index[1]], [data.grid_index[2], data.grid_index[3]]];
+          const grid_color = [[137, 120, 117], [136, 119, 116], [136, 118, 115], [135, 117, 114]];
           window.sceneBackgroundImg[window.iteration] = data.grid_color
 
           const label_color_list = data.label_color_list;
@@ -835,13 +846,13 @@ export class DataSet {
           window.testingData = []
           window.labeledData = []
           window.nowShowIndicates = []
-          
+
           for (let i = 0; i < data.properties.length; i++) {
             if (data.properties[i] === 1) {
               window.unLabelData.push(i)
-            }else if(data.properties[i] === 2){
+            } else if (data.properties[i] === 2) {
               window.testingData.push(i)
-            }else{
+            } else {
               window.labeledData.push(i)
             }
             window.nowShowIndicates.push(i)
@@ -1048,14 +1059,14 @@ export class DataSet {
     let headers = new Headers();
     headers.append('Content-Type', 'application/json');
     headers.append('Accept', 'application/json');
-    if(window.modelMath){
+    if (window.modelMath) {
       this.DVIsubjectModelPath = window.modelMath
     }
     // const msgId = logging.setModalMessage('Fetching sprite image...');
     // await fetch("standalone_projector_config.json", { method: 'GET' })
     // .then(response => response.json())
     // .then(data => {  this.DVIsubjectModelPath = data.DVIsubjectModelPath })
-    
+
     await fetch(`http://${this.DVIServer}/sprite?index=${id}&path=${this.DVIsubjectModelPath}`, {
       method: 'GET',
       mode: 'cors'
@@ -1070,18 +1081,18 @@ export class DataSet {
 
 
 
-  iterationChangeReset(){
+  iterationChangeReset() {
     window.queryResPointIndices = [],
-    window.previousIndecates = []
+      window.previousIndecates = []
     // previousAnormalIndecates: any,
     // queryResAnormalIndecates: any,
     window.alSuggestionIndicates = []
-    window.alSuggestLabelList= [],
-    window.alSuggestScoreList= []
+    window.alSuggestLabelList = [],
+      window.alSuggestScoreList = []
   }
 
 
- 
+
   setSupervision(superviseColumn: string, superviseInput?: string) {
     if (superviseColumn != null) {
       this.superviseLabels = this.shuffledDataIndices
