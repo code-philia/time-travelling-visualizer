@@ -2,4 +2,3 @@ data/
 .DS_Store
 .vscode
 server/timevis_backend/__pycache__/
-tensorboard/tensorboard/plugins/projector/vz_projector/standalone_projector_config.json
