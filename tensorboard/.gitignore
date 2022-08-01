@@ -5,4 +5,4 @@
 *.egg-info/
 *.swp
 node_modules
-tensorboard/*.json
+/tensorboard//plugins/projector/vz_projector/*.json
