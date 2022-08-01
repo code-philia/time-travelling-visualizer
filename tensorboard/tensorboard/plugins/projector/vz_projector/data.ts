@@ -454,10 +454,9 @@ export class DataSet {
     function rgbToHex(r: number, g: number, b: number) {
       return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
     }
-        
-    window.alQueryResPointIndices = []
-    window.queryResPointIndices = []
 
+
+    this.iterationChangeReset()
 
     if (this.DVIAvailableIteration.indexOf(iteration) == -1) {
 
@@ -492,9 +491,7 @@ export class DataSet {
               window.sceneBackgroundImg = []
             }
             window.sceneBackgroundImg[window.iteration] = data.grid_color
-            window.customSelection = []
 
-            this.iterationChangeReset()
 
             const label_color_list = data.label_color_list;
             const label_list = data.label_list;
@@ -605,7 +602,7 @@ export class DataSet {
               if (window.unLabelData?.length && window.unLabelData.indexOf(i) !== -1) {
                 // label_color_list[i] = [204, 204, 204]
                 dataPoint.color = rgbToHex(204, 204, 204);
-              } else{
+              } else {
                 dataPoint.color = rgbToHex(label_color_list[i][0], label_color_list[i][1], label_color_list[i][2]);
               }
 
@@ -697,8 +694,8 @@ export class DataSet {
       const validDataNumber = this.DVIValidPointNumber[iteration];
       const evaluation = this.DVIEvaluation[iteration];
       this.tSNEIteration = iteration;
-        
-       window.iteration = iteration
+
+      window.iteration = iteration
 
       const newSelection = [];
       for (let i = 0; i < validDataNumber; i++) {
@@ -1083,13 +1080,15 @@ export class DataSet {
 
 
   iterationChangeReset() {
-    window.queryResPointIndices = [],
-      window.previousIndecates = []
-    // previousAnormalIndecates: any,
-    // queryResAnormalIndecates: any,
+    window.alQueryResPointIndices = []
+    window.queryResPointIndices = []
+    window.queryResPointIndices = []
+    window.previousIndecates = []
+
     window.alSuggestionIndicates = []
-    window.alSuggestLabelList = [],
-      window.alSuggestScoreList = []
+    window.alSuggestLabelList = []
+    window.alSuggestScoreList = []
+    window.customSelection = []
   }
 
 
