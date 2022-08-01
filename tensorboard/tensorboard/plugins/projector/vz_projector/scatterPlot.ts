@@ -498,6 +498,11 @@ export class ScatterPlot {
   /** For using ctrl + left click as right click, and for circle select */
   private onKeyUp(e: any) {
     this.isctrling = false
+    if (this.selecting) {
+      this.container.style.cursor = 'crosshair';
+    } else {
+      this.container.style.cursor = 'default';
+    }
     if (e.keyCode === CTRL_KEY && this.sceneIs3D()) {
       this.orbitCameraControls.mouseButtons.ORBIT = THREE.MOUSE.LEFT;
       this.orbitCameraControls.mouseButtons.PAN = THREE.MOUSE.RIGHT;
