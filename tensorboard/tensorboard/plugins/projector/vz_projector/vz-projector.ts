@@ -142,6 +142,9 @@ class Projector
   @property({ type: Boolean })
   eventLogging: boolean;
 
+  @property( {type: Object})
+  metadataStyle:any
+
   /**
    * DVI properties
    */
@@ -201,6 +204,9 @@ class Projector
 
   private intervalFlag: boolean
 
+  private registered: boolean
+
+
 
 
 
@@ -248,8 +254,15 @@ class Projector
     this.showUnlabeled = true
     this.showTesting = true
 
+    this.registered = false
+
 
     this.intervalFlag = true
+
+    this.metadataStyle = {
+      left:'320px',
+      top:'120px'
+    }
 
     let headers = new Headers();
     headers.append('Content-Type', 'application/json');
@@ -258,6 +271,93 @@ class Projector
       .then(response => response.json())
       .then(data => { this.DVIServer = data.DVIServerIP + ":" + data.DVIServerPort; })
   };
+
+  readyregis() {
+    let el: any = this.$$('#metadata-card')
+    console.log('elel',el)
+    if(!el){
+      return
+    }
+    let that  = this
+    this.registered = true
+    el.onmousedown = function (e: any) {
+      e = e || window.event;
+      document.body.style.cursor = 'move'
+     
+      // 初始位置
+      let offleft =  Number(that.metadataStyle.left.replace('px','')) || 0;
+      let offTop =  Number(that.metadataStyle.top.replace('px','')) || 0;
+      // 鼠标点击位置
+      let startX = e.clientX;
+      let startY = e.clientY;
+
+      console.log(startX, startY,offleft,offTop,that.metadataStyle);
+
+      el.setCapture && el.setCapture();
+
+
+      const handler = function (event: any) {
+        event = event || window.event;
+
+        // 鼠标停止位置
+        let endX = event.clientX;
+        let endY = event.clientY;
+
+        // 移动距离
+        let moveX = endX - startX;
+        let moveY = endY - startY;
+
+        // 元素最终位置
+        let lastX = offleft + moveX;
+        let lastY = offTop + moveY;
+
+        // console.log(moveX, moveY, lastX, lastY);
+
+        //边界处理
+        if (
+          lastX >
+          document.documentElement.clientWidth - el.clientWidth - 20
+        ) {
+          lastX = document.documentElement.clientWidth - el.clientWidth - 20;
+        } else if (lastX < 20) {
+          lastX = 0;
+        }
+
+        if (
+          lastY >
+          document.documentElement.clientWidth - el.clientWidth - 20
+        ) {
+          lastY =
+            document.documentElement.clientHeight - el.clientHeight - 20;
+        } else if (lastY < 20) {
+          lastY = 0;
+        }
+
+        el.style.left = lastX + "px";
+        el.style.top = lastY + "px";
+        that.metadataStyle = {
+          left : lastX + "px",
+          top : lastY + "px"
+        }
+      };
+      document.addEventListener('mousemove', handler, false);
+      document.addEventListener(
+        'mouseup',
+        () => {
+          document.body.style.cursor = 'default'
+          document.removeEventListener('mousemove', handler);
+        },
+        false,
+      );
+      //
+      document.onmouseup = function () {
+        document.ontouchmove = null;
+        //@ts-ignore
+        document.releaseCapture && document.releaseCapture();
+      };
+      return false;
+    }
+  }
 
   @observe('showlabeled')
   _labeledChanged() {
@@ -429,6 +529,7 @@ class Projector
     if (metadataFile != null) {
       this.metadataFile = metadataFile;
     }
+    
     this.dataSet.spriteAndMetadataInfo = spriteAndMetadata;
     this.projectionsPanel.metadataChanged(spriteAndMetadata);
     this.inspectorPanel.metadataChanged(spriteAndMetadata);
@@ -603,7 +704,9 @@ class Projector
    * Used by clients to indicate that a selection has occurred.
    */
   notifySelectionChanged(newSelectedPointIndices: number[], selectMode?: boolean, selectionType?: string) {
-
+    if(!this.registered){
+      this.readyregis()
+    }
     if (selectionType === 'isALQuery' || selectionType === 'normal' || selectionType === 'isAnormalyQuery') {
       window.customSelection = []
       window.queryResPointIndices = newSelectedPointIndices
