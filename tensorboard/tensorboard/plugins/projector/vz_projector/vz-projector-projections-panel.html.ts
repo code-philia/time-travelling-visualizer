@@ -105,7 +105,9 @@ export const template = html`
         margin-bottom: -8px;
       }
       .colorlabel-container{
-        display:flex
+        display:flex;
+        height: 0;
+        visibility: hidden;
       }
       #labelby {
         width: 100px;

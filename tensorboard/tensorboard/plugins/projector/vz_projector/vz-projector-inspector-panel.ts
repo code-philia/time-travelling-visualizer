@@ -50,7 +50,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   dataSet: DataSet;
 
   @property({ type: String })
-  selectedStratergy: string;
+  selectedStratergy: string = 'random';
 
   @property({ type: String })
   selectedAnormalyStratergy: string;

@@ -36,7 +36,7 @@ declare global {
     customMetadata: any,
 
     queryResPointIndices: any,
-    alQueryResPointIndices:any,
+    alQueryResPointIndices: any,
     previousIndecates: any,
     previousAnormalIndecates: any,
     queryResAnormalIndecates: any,
@@ -50,7 +50,7 @@ declare global {
     modelMath: string,
     tSNETotalIter: number,
     taskType: string,
-    selectedStack:any
+    selectedStack: any
   }
 }
 
@@ -199,6 +199,8 @@ class Projector
 
   private timer: any;
 
+  private intervalFlag: boolean
+
 
 
 
@@ -245,6 +247,9 @@ class Projector
     this.showlabeled = true
     this.showUnlabeled = true
     this.showTesting = true
+
+
+    this.intervalFlag = true
 
     let headers = new Headers();
     headers.append('Content-Type', 'application/json');
@@ -520,32 +525,36 @@ class Projector
     }
     current = Number(interationList[0])
     let count = 0
-    this.timer = window.setInterval(() => {
-      this.inspectorPanel.updateCurrentPlayEpoch(current)
-      window.iteration = current;
-      for (let i = 0; i < this.dataSet.points.length; i++) {
-        const point = this.dataSet.points[i];
-        if (!this.selectedPointIndices.length || this.selectedPointIndices.indexOf(i) !== -1) {
-          point.projections['tsne-0'] = positions[current][i][0];
-          point.projections['tsne-1'] = positions[current][i][1];
-          point.projections['tsne-2'] = 0;
+    if (this.intervalFlag) {
+      this.timer = window.setInterval(() => {
+        this.intervalFlag = false
+        this.inspectorPanel.updateCurrentPlayEpoch(current)
+        window.iteration = current;
+        for (let i = 0; i < this.dataSet.points.length; i++) {
+          const point = this.dataSet.points[i];
+          if (!this.selectedPointIndices.length || this.selectedPointIndices.indexOf(i) !== -1) {
+            point.projections['tsne-0'] = positions[current][i][0];
+            point.projections['tsne-1'] = positions[current][i][1];
+            point.projections['tsne-2'] = 0;
+          }
         }
-      }
-      // this.dataSet.updateProjection(current)
-      this.projectorScatterPlotAdapter.updateScatterPlotPositions();
-      this.projectorScatterPlotAdapter.updateScatterPlotAttributes();
-      this.updateBackgroundImg();
-      this.onIterationChange(current);
-      // this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
-      this.projectorScatterPlotAdapter.render()
-      if (count < interationList.length - 1) {
-        current = interationList[++count]
-      } else {
-        current = interationList[0]
-        count = 0
-        this.setDynamicStop()
-      }
-    }, 1500)
+        // this.dataSet.updateProjection(current)
+        this.projectorScatterPlotAdapter.updateScatterPlotPositions();
+        this.projectorScatterPlotAdapter.updateScatterPlotAttributes();
+        this.updateBackgroundImg();
+        this.onIterationChange(current);
+        // this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
+        this.projectorScatterPlotAdapter.render()
+        if (count < interationList.length - 1) {
+          current = interationList[++count]
+        } else {
+          current = interationList[0]
+          count = 0
+          this.setDynamicStop()
+        }
+      }, 1500)
+    }
+
   }
 
   updatePosByIndicates(current: number) {
@@ -566,10 +575,12 @@ class Projector
   }
   setDynamicStop() {
     console.log('this.timer', this.timer)
-    if (this.timer) {
+    if (this.timer && !this.intervalFlag) {
+      console.log('ccclea')
       window.clearInterval(this.timer)
+      this.intervalFlag = true
     }
-    
+
     this.iteration = this.currentIteration
     window.iteration = this.currentIteration
     this.updatePosByIndicates(window.iteration)
@@ -590,13 +601,13 @@ class Projector
    * Used by clients to indicate that a selection has occurred.
    */
   notifySelectionChanged(newSelectedPointIndices: number[], selectMode?: boolean, selectionType?: string) {
-    
+
     if (selectionType === 'isALQuery' || selectionType === 'normal' || selectionType === 'isAnormalyQuery') {
       window.customSelection = []
       window.queryResPointIndices = newSelectedPointIndices
-      if(selectionType === 'isALQuery'){
+      if (selectionType === 'isALQuery') {
         window.alQueryResPointIndices = newSelectedPointIndices
-      }else{
+      } else {
         window.alQueryResPointIndices = []
       }
       this.metadataCard.updateCustomList(this.dataSet.points)
@@ -1073,6 +1084,7 @@ class Projector
   // }
   notifyProjectionPositionsUpdated() {
     this.projectorScatterPlotAdapter.notifyProjectionPositionsUpdated();
+    this.metadataCard.updateCustomList(this.dataSet.points)
   }
   /**
    * Gets the current view of the embedding and saves it as a State object.
@@ -1208,9 +1220,9 @@ class Projector
     fetch(`http://${this.DVIServer}/all_result_list`, {
       method: 'POST',
       body: JSON.stringify({
-        "iteration_start":1,
-        "iteration_end":2,
-         "content_path": this.dataSet.DVIsubjectModelPath,
+        "iteration_start": 1,
+        "iteration_end": 2,
+        "content_path": this.dataSet.DVIsubjectModelPath,
       }),
       headers: headers,
       mode: 'cors'
