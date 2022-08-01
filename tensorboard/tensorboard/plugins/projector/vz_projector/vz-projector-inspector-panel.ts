@@ -966,6 +966,8 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       }
     }
 
+
+
     // this.setFilterButton.onclick = () => {
     //   window.isFilter = true
     //   var indices = this.selectedPointIndices.concat(
@@ -1066,6 +1068,11 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     window.isAdjustingSel = false
   }
 
+  playAnimationFinished(){
+    this.noisyBtn.disabled = false;
+    this.stopBtn.disabled = true;
+  }
+
   public showTab(id: string) {
     this.currentFilterType = id;
     const tab = this.$$('.ink-tab[data-tab="' + id + '"]') as HTMLElement;
@@ -1094,6 +1101,9 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     }
     console.log(id);
   }
+
+
+
   updateBoundingBoxSelection(indices: number[]) {
     this.currentBoundingBoxSelection = indices;
     if (!window.customSelection) {

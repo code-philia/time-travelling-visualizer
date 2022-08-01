@@ -818,8 +818,9 @@ export class ProjectorScatterPlotAdapter {
     {
       const n = selectedPointCount;
       const c = new THREE.Color(POINT_COLOR_SELECTED);
-      if (!renderInTriangle && !renderInTraceLine) {
+      if (window.isAnimatating) {
         for (let i = 0; i < n; ++i) {
+          const c = new THREE.Color(ds.points[i].color);
           let dst = selectedPointIndices[i] * 3;
           colors[dst++] = c.r;
           colors[dst++] = c.g;
@@ -880,24 +881,24 @@ export class ProjectorScatterPlotAdapter {
 //       // return colors
 //     }
     //
-    if (window.isAnimatating) {
-      const n = ds.points.length;
-      const c = new THREE.Color(POINT_COLOR_UNSELECTED);
-      for (let i = 0; i < n; ++i) {
-        if (selectedPointIndices.indexOf(i) === -1) {
-          let dst = i * 3;
-          colors[dst++] = c.r;
-          colors[dst++] = c.g;
-          colors[dst++] = c.b;
-        } else {
-          const c = new THREE.Color(ds.points[i].color);
-          let dst = i * 3;
-          colors[dst++] = c.r;
-          colors[dst++] = c.g;
-          colors[dst++] = c.b;
-        }
-      }
-    }
+    // if (window.isAnimatating) {
+    //   const n = ds.points.length;
+    //   const c = new THREE.Color(POINT_COLOR_UNSELECTED);
+    //   for (let i = 0; i < n; ++i) {
+    //     if (selectedPointIndices.indexOf(i) === -1) {
+    //       let dst = i * 3;
+    //       colors[dst++] = c.r;
+    //       colors[dst++] = c.g;
+    //       colors[dst++] = c.b;
+    //     } else {
+    //       const c = new THREE.Color(ds.points[i].color);
+    //       let dst = i * 3;
+    //       colors[dst++] = c.r;
+    //       colors[dst++] = c.g;
+    //       colors[dst++] = c.b;
+    //     }
+    //   }
+    // }
 
     if (window.customSelection?.length && window.isAdjustingSel) {
       const n = ds.points.length;

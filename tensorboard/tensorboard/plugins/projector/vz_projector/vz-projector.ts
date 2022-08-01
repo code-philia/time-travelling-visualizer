@@ -511,7 +511,7 @@ class Projector
   ///
   setDynamicNoisy() {
     // this.setDynamicStop()
-
+    this.filterDataset(this.selectedPointIndices)
     this.currentIteration = window.iteration
 
     let current = 1
@@ -545,12 +545,14 @@ class Projector
         this.onIterationChange(current);
         // this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
         this.projectorScatterPlotAdapter.render()
-        if (count < interationList.length - 1) {
-          current = interationList[++count]
-        } else {
+        if (count == interationList.length - 1) {
+          this.inspectorPanel.playAnimationFinished()
+          this.setDynamicStop()
           current = interationList[0]
           count = 0
-          this.setDynamicStop()
+       
+        } else {
+          current = interationList[++count]
         }
       }, 1500)
     }
@@ -576,9 +578,9 @@ class Projector
   setDynamicStop() {
     console.log('this.timer', this.timer)
     if (this.timer && !this.intervalFlag) {
-      console.log('ccclea')
       window.clearInterval(this.timer)
       this.intervalFlag = true
+      this.resetFilterDataset()
     }
 
     this.iteration = this.currentIteration
