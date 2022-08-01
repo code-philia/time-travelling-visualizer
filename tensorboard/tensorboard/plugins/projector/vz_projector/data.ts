@@ -694,6 +694,8 @@ export class DataSet {
       const validDataNumber = this.DVIValidPointNumber[iteration];
       const evaluation = this.DVIEvaluation[iteration];
       this.tSNEIteration = iteration;
+        
+       window.iteration = iteration
 
       const newSelection = [];
       for (let i = 0; i < validDataNumber; i++) {
