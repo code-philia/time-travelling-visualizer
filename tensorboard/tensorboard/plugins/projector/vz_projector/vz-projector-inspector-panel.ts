@@ -479,14 +479,12 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     indices = indices.slice(0, LIMIT_RESULTS);
     // const msgId = logging.setModalMessage('Fetching sprite image...');
 
-    let DVIServer = '';
-    let basePath = ''
+    let DVIServer = 'localhost:5001';
+    let basePath = window.modelMath
     let headers = new Headers();
     headers.append('Content-Type', 'application/json');
     headers.append('Accept', 'application/json');
-    await fetch("standalone_projector_config.json", { method: 'GET' })
-      .then(response => response.json())
-      .then(data => { DVIServer = data.DVIServerIP + ":" + data.DVIServerPort; basePath = data.DVIsubjectModelPath })
+
     window.suggestionIndicates = []
     window.checkboxDom = []
     for (let i = 0; i < indices.length; i++) {

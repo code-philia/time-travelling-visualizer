@@ -267,9 +267,10 @@ class Projector
     let headers = new Headers();
     headers.append('Content-Type', 'application/json');
     headers.append('Accept', 'application/json');
-    await fetch("standalone_projector_config.json", { method: 'GET' })
-      .then(response => response.json())
-      .then(data => { this.DVIServer = data.DVIServerIP + ":" + data.DVIServerPort; })
+    // await fetch("standalone_projector_config.json", { method: 'GET' })
+    //   .then(response => response.json())
+    //   .then(data => { this.DVIServer = data.DVIServerIP + ":" + data.DVIServerPort; })
+    this.DVIServer = 'localhost:5001'
   };
 
   readyregis() {

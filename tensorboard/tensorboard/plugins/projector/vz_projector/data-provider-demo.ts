@@ -50,27 +50,52 @@ export class DemoDataProvider implements DataProvider {
     run: string,
     callback: (d: ProjectorConfig) => void
   ): void {
-    const msgId = logging.setModalMessage('Fetching projector config...');
-    const xhr = new XMLHttpRequest();
-    xhr.open('GET', this.projectorConfigPath);
-    xhr.onerror = (err: any) => {
-      let errorMessage = err.message;
-      // If the error is a valid XMLHttpResponse, it's possible this is a
-      // cross-origin error.
-      if (xhr.responseText != null) {
-        errorMessage =
-          'Cannot fetch projector config, possibly a ' +
-          'Cross-Origin request error.';
-      }
-      logging.setErrorMessage(errorMessage, 'fetching projector config');
-    };
-    xhr.onload = () => {
-      const projectorConfig = JSON.parse(xhr.responseText) as ProjectorConfig;
-      logging.setModalMessage(null, msgId);
-      this.projectorConfig = projectorConfig;
-      callback(projectorConfig);
-    };
-    xhr.send();
+    // console.log('ssssss',this.projectorConfigPath)
+    // const msgId = logging.setModalMessage('Fetching projector config...');
+    // const xhr = new XMLHttpRequest();
+    // xhr.open('GET', this.projectorConfigPath);
+    // xhr.onerror = (err: any) => {
+    //   let errorMessage = err.message;
+    //   // If the error is a valid XMLHttpResponse, it's possible this is a
+    //   // cross-origin error.
+    //   if (xhr.responseText != null) {
+    //     errorMessage =
+    //       'Cannot fetch projector config, possibly a ' +
+    //       'Cross-Origin request error.';
+    //   }
+    //   logging.setErrorMessage(errorMessage, 'fetching projector config');
+    // };
+    // xhr.onload = () => {
+    //   const projectorConfig = JSON.parse(xhr.responseText) as ProjectorConfig;
+    //   logging.setModalMessage(null, msgId);
+    //   this.projectorConfig = projectorConfig;
+    //   callback(projectorConfig);
+    // };
+    // xhr.send();
+    this.projectorConfig = {
+      "embeddings": [
+        {
+          "tensorName": "CIFAR10 with images",
+          "tensorShape": [
+            10000,
+            784
+          ],
+          "tensorPath": "https://storage.googleapis.com/embedding-projector/data/mnist_10k_784d_tensors.bytes",
+          "metadataPath": "https://gist.githubusercontent.com/hzf1174/3a7e85af7d09ebdfafac3d4d3ba5e71f/raw/502ad8aedc40fab7e56db917c57b48eaf0bd28fa/metadata.csv",
+          "sprite": {
+            "imagePath": "cifar10.png",
+            "singleImageDim": [
+              32,
+              32
+            ]
+          }
+        }
+      ],
+      "modelCheckpointPath": "Demo datasets",
+      "DVIServerIP": "localhost",
+      "DVIServerPort": "5001"
+    } as ProjectorConfig
+    callback(this.projectorConfig)
   }
   retrieveTensor(
     run: string,
@@ -112,16 +137,32 @@ export class DemoDataProvider implements DataProvider {
     tensorName: string,
     callback: (r: SpriteAndMetadataInfo) => void
   ) {
-    let embedding = this.getEmbeddingInfo(tensorName);
+    let embedding = {
+      "tensorName": "CIFAR10 with images",
+      "tensorShape": [
+        10000,
+        784
+      ],
+      "tensorPath": "http://127.0.0.1/mnist_10k_784d_tensors.bytes",
+      "metadataPath": "http://127.0.0.1/metadata.csv",
+    };
     let spriteImagePath = null;
-    if (embedding.sprite && embedding.sprite.imagePath) {
-      spriteImagePath = embedding.sprite.imagePath;
-      spriteImagePath = `${spriteImagePath}`
-    }
+    // if (embedding.sprite && embedding.sprite.imagePath) {
+    //   spriteImagePath = embedding.sprite.imagePath;
+    //   spriteImagePath = `${spriteImagePath}`
+    // }
+    console.log('90909099999')
+    //@ts-ignore
     retrieveSpriteAndMetadataInfo(
       embedding.metadataPath,
       spriteImagePath,
-      embedding.sprite,
+      {
+        "imagePath": "cifar10.png",
+        "singleImageDim": [
+          32,
+          32
+        ]
+      },
       callback
     );
   }
