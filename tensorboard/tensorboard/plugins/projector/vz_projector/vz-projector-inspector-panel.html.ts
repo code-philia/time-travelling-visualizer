@@ -141,11 +141,16 @@ export const template = html`
     color: #560731;
     font-weight: 600;
   }
+
   .row-img{
     display:flex;
     margin-bottom: 8px;
     align-items: center;
     cursor: pointer;
+  }
+  .row-img:hover {
+    color: #560731;
+    font-weight: 600;
   }
 
   .nn-list .value,
@@ -349,6 +354,18 @@ export const template = html`
   .nn,
   .nn-list {
     flex: 1 0 100px;
+  }
+  .queryResColumn{
+    width: 60px;
+  }
+  .inputColumn{
+    width: 26px;
+    text-align: left;
+  }
+  .queryResColumnHeader{
+    width: 60px;
+    display: inline-block;
+    text-align: center;
   }
 
   [hidden] {
@@ -607,9 +624,9 @@ export const template = html`
      </div>-->
      <div class="matches-list-title"> 
      <template is="dom-if" if="[[showCheckAllQueryRes]]">
-     <paper-checkbox id="label-points-toggle" checked="{{checkAllQueryRes}}"></paper-checkbox>
+     <paper-checkbox style="margin: 0px -2px 0px 5px;" id="label-points-toggle" checked="{{checkAllQueryRes}}"></paper-checkbox>
      </template>
-     <span>| </span><span>index｜</span><span>label｜</span><span> predict｜</span><span>result｜</span> <template is="dom-if" if="[[showCheckAllQueryRes]]"><span>score</span></template></div>
+     <span class="queryResColumnHeader">index</span><span class="queryResColumnHeader">predict</span><span class="queryResColumnHeader">result</span> <template is="dom-if" if="[[showCheckAllQueryRes]]"><span class="queryResColumnHeader">score</span></template></div>
       <div class="list"></div>
       <div class="limit-msg">Showing only the first 100 results...</div>
     </div>

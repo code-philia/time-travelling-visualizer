@@ -256,15 +256,11 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
     this.hasMetadata = window.customSelection?.length;
     this.selectedNum = window.customSelection?.length
     let metadata = [];
-    let DVIServer = '';
-    let basePath = ''
+    let DVIServer = window.sessionStorage.ipAddress;
+    let basePath = window.modelMath
     let headers = new Headers();
     headers.append('Content-Type', 'application/json');
     headers.append('Accept', 'application/json');
-    await fetch("standalone_projector_config.json", { method: 'GET' })
-      .then(response => response.json())
-      .then(data => { DVIServer = data.DVIServerIP + ":" + data.DVIServerPort; basePath = data.DVIsubjectModelPath })
-
     if (window.customSelection) {
       let msgId
       if (window.customSelection.length > 1000) {
