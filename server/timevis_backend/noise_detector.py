@@ -62,12 +62,14 @@ class NoiseTrajectoryDetector:
         self.repr_dim = repr_dim
         self.classes_num = np.max(self.labels)+1
         self.threshold = .4
+        self.lambd = .5
 
         # init centers dict
         self.trajectory_embedding = dict()  # 2d embedding of trajectories
         self.trajectory_eval = dict()   # silhouette_scores and calinski_harabasz_scores
 
         self.clean_centers = dict()
+        self.noise_centers = dict()
         self.sub_centers = dict()   
         self.sub_centers_labels = dict()
         self.sub_center_verified = dict()
@@ -141,9 +143,10 @@ class NoiseTrajectoryDetector:
             clean_center = embedding[labels==0].mean(axis=0)
             id = select_closest([clean_center], embedding)
             self.clean_centers[str(cls_num)] = np.array(embedding[id])
+            self.noise_centers[str(cls_num)] = None
 
             umap_scores = closest_dists(embedding, self.clean_centers[str(cls_num)])
-            self.umap_scores[str(cls_num)] = umap_scores
+            # self.umap_scores[str(cls_num)] = umap_scores
             self.umap_norm[str(cls_num)] = umap_scores.max()
 
             # # calculate pca scores
@@ -196,9 +199,9 @@ class NoiseTrajectoryDetector:
             self.clean_centers[str(cls_num)] = np.concatenate((self.clean_centers[str(cls_num)], [centroid]), axis=0)
 
             # recalculate scores
-            umap_scores = closest_dists(embeddings, self.clean_centers[str(cls_num)])
+            # umap_scores = closest_dists(embeddings, self.clean_centers[str(cls_num)])
             # umap_scores = umap_scores/umap_scores.max()
-            self.umap_scores[str(cls_num)] = umap_scores
+            # self.umap_scores[str(cls_num)] = umap_scores
 
             # # update labels of each sub centers
             # scores = self.query_noise_score(cls_num)
@@ -208,10 +211,25 @@ class NoiseTrajectoryDetector:
             # not_verified = np.logical_not(self.sub_center_verified[str(cls_num)])
 
             # self.sub_centers_labels[str(cls_num)][not_verified] = labels[not_verified]
+        else:
+            if self.noise_centers[str(cls_num)] is None:
+                self.noise_centers[str(cls_num)] = np.array([centroid])
+            else:
+                self.noise_centers[str(cls_num)] = np.concatenate((self.noise_centers[str(cls_num)], [centroid]), axis=0)
+
         
     
     def query_noise_score(self, cls_num):
-        s1 = self.umap_scores[str(cls_num)]/self.umap_norm[str(cls_num)]
+        # recalculate scores
+        normed = self.umap_norm[str(cls_num)]
+        embeddings = self.trajectory_embedding[str(cls_num)]
+        
+        clean_scores = closest_dists(embeddings, self.clean_centers[str(cls_num)])
+        if self.noise_centers[str(cls_num)] is None:
+            noise_scores = np.array([0.]*len(embeddings))
+        else:
+            noise_scores = closest_dists(embeddings, self.noise_centers[str(cls_num)])
+        s1 = clean_scores- noise_scores
         # s2 = self.pca_scores[str(cls_num)]/self.pca_norm[str(cls_num)]
         return s1
     
@@ -243,7 +261,7 @@ class NoiseTrajectoryDetector:
                 embeddings[:, 0],
                 embeddings[:, 1],
                 s=.3,
-                c=[1 for _ in range(len(embedding))],
+                c=[1 for _ in range(len(embeddings))],
                 cmap="Pastel2")
 
             plt.scatter(
@@ -253,7 +271,7 @@ class NoiseTrajectoryDetector:
                 c='black' if s>self.threshold else "red" )
             plt.title('Trajectories Visualization of class {}'.format(cls_num), fontsize=24)
             plt.show()
-        return suggest_idx, center_idxs[suggest_idx], self.trajectory_embedding[str(cls_num)][center_idxs[suggest_idx]]
+        return suggest_idx, center_idxs[suggest_idx], s, self.trajectory_embedding[str(cls_num)][center_idxs[suggest_idx]]
     
     def show(self, cls_num, save_path=None):
         embedding = self.trajectory_embedding[str(cls_num)]
