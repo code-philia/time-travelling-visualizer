@@ -430,7 +430,7 @@ export const template = html`
           </template>
         </paper-listbox>
       </paper-dropdown-menu>
-      <paper-input value="{{budget}}" label="budget" style="margin-right: 10px;"></paper-input>
+      <paper-input value="{{budget}}" label="number of query" style="margin-right: 10px;"></paper-input>
       <paper-tooltip position="bottom" animation-delay="0" fit-to-visible-bounds>
       query By active Learning
       </paper-tooltip>
@@ -463,7 +463,7 @@ export const template = html`
         </template>
       </paper-listbox>
     </paper-dropdown-menu>
-      <paper-input value="{{budget}}" label="budget" style="margin-right: 10px;"></paper-input>
+      <paper-input value="{{budget}}" label="number of query" style="margin-right: 10px;"></paper-input>
       <button style="width: 100px;" class="query-anomaly search-button search">Query</button>
     </div>
     <paper-tooltip position="bottom" animation-delay="0" fit-to-visible-bounds>
@@ -599,15 +599,17 @@ export const template = html`
       <div class="metadata-list"></div>
     </div>
     <div class="matches-list" style="display: none">
-     <div class="matches-list-title">Query Result List:</div>
+     <div class="matches-list-title">[[queryResultListTitle]]</div>
      <!--<div class="buttons">
      <button class="button reset-filter">Show All</button>
      <button class="button set-filter">Filter query result</button>
      <button class="button clear-selection">Clear Selection</button>
      </div>-->
      <div class="matches-list-title"> 
+     <template is="dom-if" if="[[showCheckAllQueryRes]]">
      <paper-checkbox id="label-points-toggle" checked="{{checkAllQueryRes}}"></paper-checkbox>
-     <span>| </span><span>index｜</span><span>label｜</span><span> predict｜</span><span>result｜</span><span>score</span></div>
+     </template>
+     <span>| </span><span>index｜</span><span>label｜</span><span> predict｜</span><span>result｜</span> <template is="dom-if" if="[[showCheckAllQueryRes]]"><span>score</span></template></div>
       <div class="list"></div>
       <div class="limit-msg">Showing only the first 100 results...</div>
     </div>

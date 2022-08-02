@@ -856,7 +856,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
       // and those based on metadata columns.
       standardColorOption.push({ name: 'Metadata', isSeparator: true });
     }
-    this.colorOptions = standardColorOption.concat(metadataColorOption);
+    this.colorOptions = metadataColorOption.concat(standardColorOption);
   }
   public showTab(id: ProjectionType) {
     this.currentProjection = id;

@@ -554,7 +554,7 @@ class DataPanel extends LegacyElementMixin(PolymerElement) {
         thresholds: colorOption.thresholds,
       };
     }
-    this.projector.setSelectedColorOption(colorOption);
+    // this.projector.setSelectedColorOption(colorOption);
   }
   private tensorWasReadFromFile(rawContents: ArrayBuffer, fileName: string) {
     parseRawTensors(rawContents, (ds) => {

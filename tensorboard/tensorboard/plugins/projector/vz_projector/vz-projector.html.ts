@@ -223,9 +223,10 @@ export const template = html`
       }
 
       #metadata-card {
-        position: absolute;
-        right: 5px;
+        position: fixed;
+        left: 320px;
         top: 25px;
+        z-index:99;
       }
 
       #help-3d-icon {
@@ -411,6 +412,7 @@ export const template = html`
           </div>
           <vz-projector-metadata-card
             id="metadata-card"
+            style="left: [[metadataStyle.left]]; top:[[metadataStyle.top]];"
           ></vz-projector-metadata-card>
           <paper-icon-button
             raised

@@ -469,21 +469,23 @@ export class ScatterPlot {
     }
     var keyCode = e.keyCode || e.which || e.charCode;
     let ctrlKey = e.ctrlKey || e.metaKey;
-    //   if (ctrlKey && keyCode == 83) {
-    //     alert( 'save' );
-    //  }
+
     if (ctrlKey && keyCode == 90) {
+      if (!this.selecting) {
+        this.container.style.cursor = 'default';
+      } else {
+        this.container.style.cursor = 'crosshair';
+      }
       if (window.selectedStack && window.selectedStack.length) {
         if (window.customSelection) {
           this.projectorEventContext.notifySelectionChanged(window.selectedStack, true, 'boundingbox');
-          alert('Withdrawn');
-          if (!this.selecting) {
-            this.container.style.cursor = 'default';
-          } else {
-            this.container.style.cursor = 'crosshair';
-          }
+          this.isctrling = false
+        
           window.selectedStack = []
         }
+      }else{
+        alert('You can only go back one step');
+        this.isctrling = false
       }
     }
     // If shift is pressed, start selecting
@@ -496,6 +498,11 @@ export class ScatterPlot {
   /** For using ctrl + left click as right click, and for circle select */
   private onKeyUp(e: any) {
     this.isctrling = false
+    if (this.selecting) {
+      this.container.style.cursor = 'crosshair';
+    } else {
+      this.container.style.cursor = 'default';
+    }
     if (e.keyCode === CTRL_KEY && this.sceneIs3D()) {
       this.orbitCameraControls.mouseButtons.ORBIT = THREE.MOUSE.LEFT;
       this.orbitCameraControls.mouseButtons.PAN = THREE.MOUSE.RIGHT;

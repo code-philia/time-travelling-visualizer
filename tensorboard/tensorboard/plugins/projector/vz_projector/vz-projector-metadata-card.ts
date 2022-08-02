@@ -196,6 +196,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
   private resultImg: HTMLElement;
 
 
+
   /** Handles toggle of metadata-container. */
   _toggleMetadataContainer() {
     (this.$$('#metadata-container') as any).toggle();
@@ -207,6 +208,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
   _remove() {
     console.log('111', this.currentRemove)
   }
+
 
 
   updateMetadata(pointMetadata?: PointMetadata, src?: string, point?: any, indicate?: number) {
@@ -224,7 +226,13 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
           continue;
         }
 
-        metadata.push({ key: metadataKey, value: pointMetadata[metadataKey], prediction: point['current_prediction'], possibelWroung: pointMetadata[metadataKey] !== point['current_prediction'], isSelected: window.previousIndecates?.indexOf(indicate) !== -1 });
+        let value = pointMetadata[metadataKey]
+        if (window.properties[window.iteration] && indicate !== undefined) {
+          if (window.properties[window.iteration][indicate] === 1) {
+            value = 'unlabeled'
+          }
+        }
+        metadata.push({ key: metadataKey, value: value, prediction: point['current_prediction'], possibelWroung: value !== point['current_prediction'], isSelected: window.previousIndecates?.indexOf(indicate) !== -1 });
       }
       this.metadata = metadata;
       this.label = '' + this.pointMetadata[this.labelOption];
@@ -259,7 +267,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
 
     if (window.customSelection) {
       let msgId
-      if (window.customSelection.length > 50) {
+      if (window.customSelection.length > 1000) {
         msgId = logging.setModalMessage('Update ing...');
       }
 

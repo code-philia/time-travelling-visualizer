@@ -36,6 +36,7 @@ declare global {
     customMetadata: any,
 
     queryResPointIndices: any,
+    alQueryResPointIndices: any,
     previousIndecates: any,
     previousAnormalIndecates: any,
     queryResAnormalIndecates: any,
@@ -49,7 +50,7 @@ declare global {
     modelMath: string,
     tSNETotalIter: number,
     taskType: string,
-    selectedStack:any
+    selectedStack: any
   }
 }
 
@@ -141,6 +142,9 @@ class Projector
   @property({ type: Boolean })
   eventLogging: boolean;
 
+  @property( {type: Object})
+  metadataStyle:any
+
   /**
    * DVI properties
    */
@@ -198,6 +202,11 @@ class Projector
 
   private timer: any;
 
+  private intervalFlag: boolean
+
+  private registered: boolean
+
+
 
 
 
@@ -245,6 +254,16 @@ class Projector
     this.showUnlabeled = true
     this.showTesting = true
 
+    this.registered = false
+
+
+    this.intervalFlag = true
+
+    this.metadataStyle = {
+      left:'320px',
+      top:'120px'
+    }
+
     let headers = new Headers();
     headers.append('Content-Type', 'application/json');
     headers.append('Accept', 'application/json');
@@ -252,6 +271,93 @@ class Projector
       .then(response => response.json())
       .then(data => { this.DVIServer = data.DVIServerIP + ":" + data.DVIServerPort; })
   };
+
+  readyregis() {
+    let el: any = this.$$('#metadata-card')
+    console.log('elel',el)
+    if(!el){
+      return
+    }
+    let that  = this
+    this.registered = true
+    el.onmousedown = function (e: any) {
+      e = e || window.event;
+      document.body.style.cursor = 'move'
+     
+      // 初始位置
+      let offleft =  Number(that.metadataStyle.left.replace('px','')) || 0;
+      let offTop =  Number(that.metadataStyle.top.replace('px','')) || 0;
+      // 鼠标点击位置
+      let startX = e.clientX;
+      let startY = e.clientY;
+
+      console.log(startX, startY,offleft,offTop,that.metadataStyle);
+
+      el.setCapture && el.setCapture();
+
+
+      const handler = function (event: any) {
+        event = event || window.event;
+
+        // 鼠标停止位置
+        let endX = event.clientX;
+        let endY = event.clientY;
+
+        // 移动距离
+        let moveX = endX - startX;
+        let moveY = endY - startY;
+
+        // 元素最终位置
+        let lastX = offleft + moveX;
+        let lastY = offTop + moveY;
+
+        // console.log(moveX, moveY, lastX, lastY);
+
+        //边界处理
+        if (
+          lastX >
+          document.documentElement.clientWidth - el.clientWidth - 20
+        ) {
+          lastX = document.documentElement.clientWidth - el.clientWidth - 20;
+        } else if (lastX < 20) {
+          lastX = 0;
+        }
+
+        if (
+          lastY >
+          document.documentElement.clientWidth - el.clientWidth - 20
+        ) {
+          lastY =
+            document.documentElement.clientHeight - el.clientHeight - 20;
+        } else if (lastY < 20) {
+          lastY = 0;
+        }
+
+        el.style.left = lastX + "px";
+        el.style.top = lastY + "px";
+        that.metadataStyle = {
+          left : lastX + "px",
+          top : lastY + "px"
+        }
+      };
+      document.addEventListener('mousemove', handler, false);
+      document.addEventListener(
+        'mouseup',
+        () => {
+          document.body.style.cursor = 'default'
+          document.removeEventListener('mousemove', handler);
+        },
+        false,
+      );
+      //
+      document.onmouseup = function () {
+        document.ontouchmove = null;
+        //@ts-ignore
+        document.releaseCapture && document.releaseCapture();
+      };
+      return false;
+    }
+  }
 
   @observe('showlabeled')
   _labeledChanged() {
@@ -423,6 +529,7 @@ class Projector
     if (metadataFile != null) {
       this.metadataFile = metadataFile;
     }
+    
     this.dataSet.spriteAndMetadataInfo = spriteAndMetadata;
     this.projectionsPanel.metadataChanged(spriteAndMetadata);
     this.inspectorPanel.metadataChanged(spriteAndMetadata);
@@ -505,7 +612,7 @@ class Projector
   ///
   setDynamicNoisy() {
     // this.setDynamicStop()
-
+    this.filterDataset(this.selectedPointIndices)
     this.currentIteration = window.iteration
 
     let current = 1
@@ -519,32 +626,38 @@ class Projector
     }
     current = Number(interationList[0])
     let count = 0
-    this.timer = window.setInterval(() => {
-      this.inspectorPanel.updateCurrentPlayEpoch(current)
-      window.iteration = current;
-      for (let i = 0; i < this.dataSet.points.length; i++) {
-        const point = this.dataSet.points[i];
-        if (!this.selectedPointIndices.length || this.selectedPointIndices.indexOf(i) !== -1) {
-          point.projections['tsne-0'] = positions[current][i][0];
-          point.projections['tsne-1'] = positions[current][i][1];
-          point.projections['tsne-2'] = 0;
+    if (this.intervalFlag) {
+      this.timer = window.setInterval(() => {
+        this.intervalFlag = false
+        this.inspectorPanel.updateCurrentPlayEpoch(current)
+        window.iteration = current;
+        for (let i = 0; i < this.dataSet.points.length; i++) {
+          const point = this.dataSet.points[i];
+          if (!this.selectedPointIndices.length || this.selectedPointIndices.indexOf(i) !== -1) {
+            point.projections['tsne-0'] = positions[current][i][0];
+            point.projections['tsne-1'] = positions[current][i][1];
+            point.projections['tsne-2'] = 0;
+          }
         }
-      }
-      // this.dataSet.updateProjection(current)
-      this.projectorScatterPlotAdapter.updateScatterPlotPositions();
-      this.projectorScatterPlotAdapter.updateScatterPlotAttributes();
-      this.updateBackgroundImg();
-      this.onIterationChange(current);
-      // this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
-      this.projectorScatterPlotAdapter.render()
-      if (count < interationList.length - 1) {
-        current = interationList[++count]
-      } else {
-        current = interationList[0]
-        count = 0
-        this.setDynamicStop()
-      }
-    }, 1500)
+        // this.dataSet.updateProjection(current)
+        this.projectorScatterPlotAdapter.updateScatterPlotPositions();
+        this.projectorScatterPlotAdapter.updateScatterPlotAttributes();
+        this.updateBackgroundImg();
+        this.onIterationChange(current);
+        // this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
+        this.projectorScatterPlotAdapter.render()
+        if (count == interationList.length - 1) {
+          this.inspectorPanel.playAnimationFinished()
+          this.setDynamicStop()
+          current = interationList[0]
+          count = 0
+       
+        } else {
+          current = interationList[++count]
+        }
+      }, 1500)
+    }
+
   }
 
   updatePosByIndicates(current: number) {
@@ -565,10 +678,12 @@ class Projector
   }
   setDynamicStop() {
     console.log('this.timer', this.timer)
-    if (this.timer) {
+    if (this.timer && !this.intervalFlag) {
       window.clearInterval(this.timer)
+      this.intervalFlag = true
+      this.resetFilterDataset()
     }
-    
+
     this.iteration = this.currentIteration
     window.iteration = this.currentIteration
     this.updatePosByIndicates(window.iteration)
@@ -589,10 +704,17 @@ class Projector
    * Used by clients to indicate that a selection has occurred.
    */
   notifySelectionChanged(newSelectedPointIndices: number[], selectMode?: boolean, selectionType?: string) {
-    
+    if(!this.registered){
+      this.readyregis()
+    }
     if (selectionType === 'isALQuery' || selectionType === 'normal' || selectionType === 'isAnormalyQuery') {
       window.customSelection = []
       window.queryResPointIndices = newSelectedPointIndices
+      if (selectionType === 'isALQuery') {
+        window.alQueryResPointIndices = newSelectedPointIndices
+      } else {
+        window.alQueryResPointIndices = []
+      }
       this.metadataCard.updateCustomList(this.dataSet.points)
     }
     if (selectionType === 'isShowSelected') {
@@ -789,7 +911,7 @@ class Projector
   notifyHoverOverPoint(pointIndex: number) {
     this.hoverListeners.forEach((l) => l(pointIndex));
     let timeNow = new Date().getTime()
-    if (this.timer === null || timeNow - this.timer > 1000) {
+    if (this.timer === null || timeNow - this.timer > 700) {
       if (window.iteration && pointIndex !== undefined && pointIndex !== null && window.previousHover !== pointIndex) {
         console.log('get img')
         this.timer = timeNow
@@ -1067,6 +1189,7 @@ class Projector
   // }
   notifyProjectionPositionsUpdated() {
     this.projectorScatterPlotAdapter.notifyProjectionPositionsUpdated();
+    this.metadataCard.updateCustomList(this.dataSet.points)
   }
   /**
    * Gets the current view of the embedding and saves it as a State object.
@@ -1181,6 +1304,7 @@ class Projector
       mode: 'cors'
     }).then(response => response.json()).then(data => {
       const indices = data.selectedPoints;
+      window.alSuggestLabelList = []
       logging.setModalMessage(null, msgId);
       callback(indices);
     }).catch(error => {
@@ -1198,8 +1322,13 @@ class Projector
     let headers = new Headers();
     headers.append('Content-Type', 'application/json');
     headers.append('Accept', 'application/json');
-    fetch(`http://${this.DVIServer}/all_result_list?content_path=${this.dataSet.DVIsubjectModelPath}&iteration_start=1&iteration_end=${window.tSNETotalIter}`, {
-      method: 'GET',
+    fetch(`http://${this.DVIServer}/all_result_list`, {
+      method: 'POST',
+      body: JSON.stringify({
+        "iteration_start": 1,
+        "iteration_end": 2,
+        "content_path": this.dataSet.DVIsubjectModelPath,
+      }),
       headers: headers,
       mode: 'cors'
     }).then(response => response.json()).then(data => {
@@ -1230,6 +1359,7 @@ class Projector
     }).then(response => response.json()).then(data => {
       const indices = data.selectedPoints;
       this.inspectorPanel.filteredPoints = indices;
+      window.alSuggestLabelList = []
     }).catch(error => {
       logging.setErrorMessage('querying for indices');
     });
