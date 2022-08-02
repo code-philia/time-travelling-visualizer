@@ -56,6 +56,8 @@ limitations under the License.
       headers.append('Accept', 'application/json');
 
       const DVIServer = 'localhost:5001';
+      window.ipAddress = 'localhost:5001'
+      window.sessionStorage.setItem('ipAddress', 'localhost:5001')
       fetch("http://" + DVIServer + "/login", {
         method: 'POST',
         body: JSON.stringify({

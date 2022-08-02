@@ -214,7 +214,7 @@ export class DataSet {
    */
   DVIsubjectModelPath = "";
   DVIResolution = 400;
-  DVIServer = "localhost:5001";
+  DVIServer = window.sessionStorage.ipAddress || 'localhost:5001';
   DVIValidPointNumber: {
     [iteration: number]: number;
   } = [];
@@ -794,6 +794,7 @@ export class DataSet {
         if (window.modelMath) {
           this.DVIsubjectModelPath = window.modelMath
         }
+        
         await fetch("http://" + this.DVIServer + "/al_train", {
           method: 'POST',
           body: JSON.stringify({

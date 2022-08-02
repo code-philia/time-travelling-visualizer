@@ -143,8 +143,8 @@ export class DemoDataProvider implements DataProvider {
         10000,
         784
       ],
-      "tensorPath": "http://127.0.0.1/mnist_10k_784d_tensors.bytes",
-      "metadataPath": "http://127.0.0.1/metadata.csv",
+      "tensorPath": "https://storage.googleapis.com/embedding-projector/data/mnist_10k_784d_tensors.bytes",
+      "metadataPath": "https://gist.githubusercontent.com/hzf1174/3a7e85af7d09ebdfafac3d4d3ba5e71f/raw/502ad8aedc40fab7e56db917c57b48eaf0bd28fa/metadata.csv",
     };
     let spriteImagePath = null;
     // if (embedding.sprite && embedding.sprite.imagePath) {

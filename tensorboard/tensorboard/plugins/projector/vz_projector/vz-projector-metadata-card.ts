@@ -256,7 +256,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
     this.hasMetadata = window.customSelection?.length;
     this.selectedNum = window.customSelection?.length
     let metadata = [];
-    let DVIServer = 'localhost:5001';
+    let DVIServer = window.sessionStorage.ipAddress;
     let basePath = window.modelMath
     let headers = new Headers();
     headers.append('Content-Type', 'application/json');

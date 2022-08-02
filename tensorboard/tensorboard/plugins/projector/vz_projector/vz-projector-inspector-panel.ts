@@ -479,7 +479,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     indices = indices.slice(0, LIMIT_RESULTS);
     // const msgId = logging.setModalMessage('Fetching sprite image...');
 
-    let DVIServer = 'localhost:5001';
+    let DVIServer = window.sessionStorage.ipAddress;
     let basePath = window.modelMath
     let headers = new Headers();
     headers.append('Content-Type', 'application/json');
@@ -487,15 +487,16 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
     window.suggestionIndicates = []
     window.checkboxDom = []
+    const queryListTable = document.createElement('table');
     for (let i = 0; i < indices.length; i++) {
       const index = indices[i];
-      const row = document.createElement('div');
+      const row = document.createElement('th');
       row.className = 'row';
-      const label = this.getLabelFromIndex(index);
-      const rowLink = document.createElement('a');
-      rowLink.className = 'label';
-      rowLink.title = label;
-      rowLink.innerText = label;
+     
+      // const rowLink = document.createElement('a');
+      // rowLink.className = 'label';
+      // rowLink.title = label;
+      // rowLink.innerHTML = label;
       row.onmouseenter = () => {
         this.projectorEventContext.notifyHoverOverPoint(index);
       };
@@ -526,9 +527,21 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
           }
           this.projectorEventContext.notifyHoverOverPoint(indices[i]);
         })
-        row.appendChild(input);
+        let newtd = document.createElement('td')
+        newtd.className = 'inputColumn'
+        newtd.appendChild(input)
+        row.appendChild(newtd)
+
+        // row.appendChild(input);
       }
-      
+      const label = this.getLabelFromIndex(index);
+      let arr = label.split("|")
+      for(let i=0;i<arr.length;i++){
+        let newtd = document.createElement('td');
+        newtd.className = 'queryResColumn';
+        newtd.innerText = arr[i]
+        row.appendChild(newtd)
+      }
       // await fetch(`http://${DVIServer}/sprite?index=${indices[i]}&path=${basePath}`, {
       //   method: 'GET',
       //   mode: 'cors'
@@ -567,12 +580,10 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         this.projectorEventContext.notifyHoverOverPoint(null);
       };
 
-
       row.className = 'row-img';
-
-
-      row.appendChild(rowLink);
-      list.appendChild(row);
+      // row.appendChild(rowLink);
+      queryListTable.appendChild(row)
+      list.appendChild(queryListTable);
     }
   }
   private getLabelFromIndex(pointIndex: number): string {
@@ -597,19 +608,20 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     let score = window.alSuggestScoreList[index]?.toFixed(3)
     const stringMetaData = metadata !== undefined ? String(metadata) : `Unknown #${pointIndex}`;
 
-    const displayprediction = prediction.length > 5 ? prediction : (prediction.length <= 4 ? "\xa0\xa0\xa0" + prediction + "\xa0\xa0\xa0" : "\xa0" + prediction + "\xa0\xa0")
-    const displayStringMetaData = stringMetaData.length > 5 ? stringMetaData : (stringMetaData.length <= 3 ? "\xa0\xa0\xa0" + stringMetaData + "\xa0\xa0\xa0" : "\xa0" + stringMetaData + "\xa0\xa0")
-    const displayPointIndex = String(pointIndex).length <= 3 ? (String(pointIndex).length === 1 ? "\xa0\xa0" + String(pointIndex) + "\xa0\xa0" : "\xa0" + String(pointIndex) + "\xa0\xa0") : String(pointIndex)
+    const displayprediction = prediction
+    const displayStringMetaData = stringMetaData
+    
+    const displayPointIndex = String(pointIndex)
     // return String(pointIndex) + "Label: " + stringMetaData + " Prediction: " + prediction + " Original label: " + original_label;
-    let prediction_res = stringMetaData === prediction ? ' ✅ ' : ' ❗️ '
+    let prediction_res = stringMetaData === prediction ? ' - ' : ' ❗️ '
     if(this.showCheckAllQueryRes == false){
-      return displayPointIndex + " | " + displayStringMetaData + " | " + displayprediction + " | " + prediction_res + " | "
+      return `${displayPointIndex}|${displayprediction}|${prediction_res}`
     }
-    if (suggest_label !== undefined) {
-      return displayPointIndex + " | " + displayStringMetaData + `(${suggest_label})` + " | " + displayprediction + " | " + prediction_res + " | " + score
-    } else {
-      return displayPointIndex + " | " + displayStringMetaData + " | " + displayprediction + " | " + prediction_res + " | " + score
-    }
+    // if (suggest_label !== undefined) {
+    //   return displayPointIndex + " | " + displayStringMetaData + `(${suggest_label})` + " | " + displayprediction + " | " + prediction_res + " | " + score
+    // } else {
+    return `${displayPointIndex}|${displayprediction}|${prediction_res}|${score}`
+    // }
 
 
   }

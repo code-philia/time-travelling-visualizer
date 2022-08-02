@@ -50,7 +50,8 @@ declare global {
     modelMath: string,
     tSNETotalIter: number,
     taskType: string,
-    selectedStack: any
+    selectedStack: any,
+    ipAddress: string
   }
 }
 
@@ -270,7 +271,7 @@ class Projector
     // await fetch("standalone_projector_config.json", { method: 'GET' })
     //   .then(response => response.json())
     //   .then(data => { this.DVIServer = data.DVIServerIP + ":" + data.DVIServerPort; })
-    this.DVIServer = 'localhost:5001'
+    this.DVIServer = window.sessionStorage.ipAddress
   };
 
   readyregis() {
