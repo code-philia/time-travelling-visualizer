@@ -35,7 +35,7 @@ def update_projection():
     CONTENT_PATH = os.path.normpath(res['path'])
     iteration = int(res['iteration'])
     predicates = res["predicates"]
-
+    
     sys.path.append(CONTENT_PATH)
     timevis = initialize_backend(CONTENT_PATH, iteration)
     EPOCH = (iteration-1)*timevis.data_provider.p + timevis.data_provider.s
@@ -243,6 +243,49 @@ def login():
     else:
         return make_response(jsonify({"message":"username or password is wrong"}), 200)
   
+# @app.route('/all_result_list', methods=["POST"])
+# @cross_origin()
+# def get_res():
+#     data = request.get_json()
+#     CONTENT_PATH = os.path.normpath(data['content_path'])
+#     iteration_s = data["iteration_start"]
+#     iteration_e = data["iteration_end"]
+#     predicates = dict() # placeholder
+
+#     results = dict()
+#     imglist = dict()
+#     gridlist = dict()
+
+#     from config import config
+#     EPOCH_START = config["EPOCH_START"]
+#     EPOCH_PERIOD = config["EPOCH_START"]
+
+
+#     for i in range(iteration_s, iteration_e+1, 1):
+#         EPOCH = (i-1)*EPOCH_PERIOD + EPOCH_START
+
+#         sys.path.append(CONTENT_PATH)
+#         timevis = initialize_backend(CONTENT_PATH, EPOCH)
+
+#         # detect whether we have query before
+#         fname = "Epoch" if timevis.data_provider.mode == "normal" else "Iteration"
+#         bgimg_path = os.path.join(timevis.data_provider.model_path, "{}_{}".format(fname, EPOCH), "bgimg.png")
+#         if os.path.exists(bgimg_path):
+#             path = os.path.join(timevis.data_provider.model_path, "{}_{}".format(fname, EPOCH))
+#             result_path = os.path.join(path,"embedding.npy")
+#             results[str(i)] = np.load(result_path)
+#             with open(os.path.join(path, "grid.bin"), "wb") as f:
+#                 grid = pickle.load(f)
+#             gridlist[str(i)] = grid
+#         else:
+#             embedding_2d, grid, _, _, _, _, _, _, _, _, _, _ = update_epoch_projection(timevis, EPOCH, predicates)
+#             results[str(i)] = embedding_2d
+#             gridlist[str(i)] = grid
+#         imglist[str(i)] = "http://{}{}".format(ip_adress, bgimg_path)
+#         sys.path.remove(CONTENT_PATH)
+        
+#     return make_response(jsonify({"results":results,"bgimgList":imglist, "grid": gridlist}), 200)
+#mock toy_model
 @app.route('/all_result_list', methods=["POST"])
 @cross_origin()
 def get_res():
@@ -250,41 +293,22 @@ def get_res():
     CONTENT_PATH = os.path.normpath(data['content_path'])
     iteration_s = data["iteration_start"]
     iteration_e = data["iteration_end"]
-    predicates = dict() # placeholder
-
-    results = dict()
-    imglist = dict()
-    gridlist = dict()
-
-    from config import config
-    EPOCH_START = config["EPOCH_START"]
-    EPOCH_PERIOD = config["EPOCH_START"]
-
-
-    for i in range(iteration_s, iteration_e+1, 1):
-        EPOCH = (i-1)*EPOCH_PERIOD + EPOCH_START
-
-        sys.path.append(CONTENT_PATH)
-        timevis = initialize_backend(CONTENT_PATH, EPOCH)
-
-        # detect whether we have query before
-        fname = "Epoch" if timevis.data_provider.mode == "normal" else "Iteration"
-        bgimg_path = os.path.join(timevis.data_provider.model_path, "{}_{}".format(fname, EPOCH), "bgimg.png")
-        if os.path.exists(bgimg_path):
-            path = os.path.join(timevis.data_provider.model_path, "{}_{}".format(fname, EPOCH))
-            result_path = os.path.join(path,"embedding.npy")
-            results[str(i)] = np.load(result_path)
-            with open(os.path.join(path, "grid.bin"), "wb") as f:
-                grid = pickle.load(f)
-            gridlist[str(i)] = grid
-        else:
-            embedding_2d, grid, _, _, _, _, _, _, _, _, _, _ = update_epoch_projection(timevis, EPOCH, predicates)
-            results[str(i)] = embedding_2d
-            gridlist[str(i)] = grid
-        imglist[str(i)] = "http://{}{}".format(ip_adress, bgimg_path)
-        sys.path.remove(CONTENT_PATH)
-        
-    return make_response(jsonify({"results":results,"bgimgList":imglist, "grid": gridlist}), 200)
+    imglist = {}
+    for i in range(10):
+        pic_save_dir_path = os.path.join(CONTENT_PATH, "noisy","bgimgs", "bgimg{}.png".format(i+1),)
+        with open(pic_save_dir_path, 'rb') as img_f:
+            img_stream = img_f.read()
+            img_stream = base64.b64encode(img_stream).decode()
+            index = i+1
+            imglist[index] = 'data:image/png;base64,' + img_stream
+            # imglist.append({index:'data:image/png;base64,' + img_stream})
+    # pic_save_dir_path = os.path.join(CONTENT_PATH, "Model", "Epoch_1","bgimg.png")
+    res_json_path = os.path.join(CONTENT_PATH, "noisy", "res.json")
+    with open(res_json_path,encoding='utf8')as fp:
+        json_data = json.load(fp)
+   
+    
+    return make_response(jsonify({"results":json_data,"bgimgList":imglist}), 200)
 
 
 if __name__ == "__main__":
