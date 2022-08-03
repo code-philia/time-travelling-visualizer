@@ -99,6 +99,7 @@ export class ScatterPlot {
   private pointScaleFactors: Float32Array;
   private labels: LabelRenderParams;
   private isctrling: boolean;
+  private isShifting: boolean;
   private polylineColors: {
     [polylineIndex: number]: Float32Array;
   };
@@ -385,7 +386,7 @@ export class ScatterPlot {
       this.container.style.cursor = 'move';
       return
     }
-    if (this.selecting) {
+    if (this.selecting && this.isShifting) {
       this.orbitCameraControls.enabled = false;
       this.rectangleSelector.onMouseDown(e.offsetX, e.offsetY);
       this.setNearestPointToMouse(e);
@@ -407,6 +408,8 @@ export class ScatterPlot {
       // Similarly to the situation above.
       this.orbitCameraControls.mouseButtons.ORBIT = THREE.MOUSE.RIGHT;
       this.orbitCameraControls.mouseButtons.PAN = THREE.MOUSE.LEFT;
+    }else{
+      // this.onKeyDown({keyCode:CTRL_KEY})
     }
   }
   private resetCamera() {
@@ -427,7 +430,7 @@ export class ScatterPlot {
       this.mouseIsDown = false;
       return
     }
-    if (this.selecting) {
+    if (this.selecting && this.isShifting) {
       this.orbitCameraControls.enabled = true;
       this.rectangleSelector.onMouseUp();
       this.render();
@@ -489,15 +492,17 @@ export class ScatterPlot {
       }
     }
     // If shift is pressed, start selecting
-    // if (e.keyCode === SHIFT_KEY) {
-    //   this.selecting = true;
-    //   this.container.style.cursor = 'crosshair';
-    // }
+    if (e.keyCode === SHIFT_KEY) {
+      this.isShifting = true
+      this.selecting = true;
+      this.container.style.cursor = 'crosshair';
+    }
 
   }
   /** For using ctrl + left click as right click, and for circle select */
   private onKeyUp(e: any) {
     this.isctrling = false
+    this.isShifting = false
     if (this.selecting) {
       this.container.style.cursor = 'crosshair';
     } else {
