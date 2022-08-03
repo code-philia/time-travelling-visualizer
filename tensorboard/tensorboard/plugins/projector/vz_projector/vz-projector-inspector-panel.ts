@@ -479,25 +479,24 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     indices = indices.slice(0, LIMIT_RESULTS);
     // const msgId = logging.setModalMessage('Fetching sprite image...');
 
-    let DVIServer = '';
-    let basePath = ''
+    let DVIServer = window.sessionStorage.ipAddress;
+    let basePath = window.modelMath
     let headers = new Headers();
     headers.append('Content-Type', 'application/json');
     headers.append('Accept', 'application/json');
-    await fetch("standalone_projector_config.json", { method: 'GET' })
-      .then(response => response.json())
-      .then(data => { DVIServer = data.DVIServerIP + ":" + data.DVIServerPort; basePath = data.DVIsubjectModelPath })
+
     window.suggestionIndicates = []
     window.checkboxDom = []
+    const queryListTable = document.createElement('table');
     for (let i = 0; i < indices.length; i++) {
       const index = indices[i];
-      const row = document.createElement('div');
+      const row = document.createElement('th');
       row.className = 'row';
-      const label = this.getLabelFromIndex(index);
-      const rowLink = document.createElement('a');
-      rowLink.className = 'label';
-      rowLink.title = label;
-      rowLink.innerText = label;
+     
+      // const rowLink = document.createElement('a');
+      // rowLink.className = 'label';
+      // rowLink.title = label;
+      // rowLink.innerHTML = label;
       row.onmouseenter = () => {
         this.projectorEventContext.notifyHoverOverPoint(index);
       };
@@ -528,9 +527,21 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
           }
           this.projectorEventContext.notifyHoverOverPoint(indices[i]);
         })
-        row.appendChild(input);
+        let newtd = document.createElement('td')
+        newtd.className = 'inputColumn'
+        newtd.appendChild(input)
+        row.appendChild(newtd)
+
+        // row.appendChild(input);
       }
-      
+      const label = this.getLabelFromIndex(index);
+      let arr = label.split("|")
+      for(let i=0;i<arr.length;i++){
+        let newtd = document.createElement('td');
+        newtd.className = 'queryResColumn';
+        newtd.innerText = arr[i]
+        row.appendChild(newtd)
+      }
       // await fetch(`http://${DVIServer}/sprite?index=${indices[i]}&path=${basePath}`, {
       //   method: 'GET',
       //   mode: 'cors'
@@ -569,12 +580,10 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         this.projectorEventContext.notifyHoverOverPoint(null);
       };
 
-
       row.className = 'row-img';
-
-
-      row.appendChild(rowLink);
-      list.appendChild(row);
+      // row.appendChild(rowLink);
+      queryListTable.appendChild(row)
+      list.appendChild(queryListTable);
     }
   }
   private getLabelFromIndex(pointIndex: number): string {
@@ -599,21 +608,43 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     let score = window.alSuggestScoreList[index]?.toFixed(3)
     const stringMetaData = metadata !== undefined ? String(metadata) : `Unknown #${pointIndex}`;
 
-    const displayprediction = prediction.length > 5 ? prediction : (prediction.length <= 4 ? "\xa0\xa0\xa0" + prediction + "\xa0\xa0\xa0" : "\xa0" + prediction + "\xa0\xa0")
-    const displayStringMetaData = stringMetaData.length > 5 ? stringMetaData : (stringMetaData.length <= 3 ? "\xa0\xa0\xa0" + stringMetaData + "\xa0\xa0\xa0" : "\xa0" + stringMetaData + "\xa0\xa0")
-    const displayPointIndex = String(pointIndex).length <= 3 ? (String(pointIndex).length === 1 ? "\xa0\xa0" + String(pointIndex) + "\xa0\xa0" : "\xa0" + String(pointIndex) + "\xa0\xa0") : String(pointIndex)
+    const displayprediction = prediction
+    const displayStringMetaData = stringMetaData
+    
+    const displayPointIndex = String(pointIndex)
     // return String(pointIndex) + "Label: " + stringMetaData + " Prediction: " + prediction + " Original label: " + original_label;
-    let prediction_res = stringMetaData === prediction ? ' ✅ ' : ' ❗️ '
+    let prediction_res = stringMetaData === prediction ? ' - ' : ' ❗️ '
     if(this.showCheckAllQueryRes == false){
-      return displayPointIndex + " | " + displayStringMetaData + " | " + displayprediction + " | " + prediction_res + " | "
+      return `${displayPointIndex}|${displayprediction}|${prediction_res}`
     }
-    if (suggest_label !== undefined) {
-      return displayPointIndex + " | " + displayStringMetaData + `(${suggest_label})` + " | " + displayprediction + " | " + prediction_res + " | " + score
-    } else {
-      return displayPointIndex + " | " + displayStringMetaData + " | " + displayprediction + " | " + prediction_res + " | " + score
+    // if (suggest_label !== undefined) {
+    //   return displayPointIndex + " | " + displayStringMetaData + `(${suggest_label})` + " | " + displayprediction + " | " + prediction_res + " | " + score
+    // } else {
+    return `${displayPointIndex}|${displayprediction}|${prediction_res}|${score!==undefined?score:'-'}`
+    // }
+  }
+  private getnnLabelFromIndex(pointIndex: number): string {
+    const metadata = this.projector.dataSet.points[pointIndex].metadata[
+      this.selectedMetadataField
+    ];
+    let prediction = this.projector.dataSet.points[pointIndex]?.current_prediction;
+    if (prediction == undefined) {
+      prediction = `Unknown`;
     }
-
-
+    let original_label = this.projector.dataSet.points[pointIndex].original_label;
+    if (original_label == undefined) {
+      original_label = `Unknown`;
+    }
+    if (original_label == undefined) {
+      original_label = `Unknown`;
+    }
+    const stringMetaData = metadata !== undefined ? String(metadata) : `Unknown #${pointIndex}`;
+    const displayprediction = prediction
+    const displayStringMetaData = stringMetaData
+    const displayPointIndex = String(pointIndex)
+    // return String(pointIndex) + "Label: " + stringMetaData + " Prediction: " + prediction + " Original label: " + original_label;
+    let prediction_res = stringMetaData === prediction ? ' - ' : ' ❗️ '
+    return `index:${displayPointIndex} | label:${displayStringMetaData}| prediction:${displayprediction} | ${prediction_res}`
   }
   private spriteImageRenderer() {
     const spriteImagePath = this.spriteMeta.imagePath;
@@ -666,7 +697,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       neighborElement.className = 'neighbor';
       const neighborElementLink = document.createElement('a');
       neighborElementLink.className = 'neighbor-link';
-      neighborElementLink.title = this.getLabelFromIndex(neighbor.index);
+      neighborElementLink.title = this.getnnLabelFromIndex(neighbor.index);
       const labelValueElement = document.createElement('div');
       labelValueElement.className = 'label-and-value';
       const labelElement = document.createElement('div');
@@ -676,7 +707,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         neighbor.dist,
         minDist
       );
-      labelElement.innerText = this.getLabelFromIndex(neighbor.index);
+      labelElement.innerText = this.getnnLabelFromIndex(neighbor.index);
       const valueElement = document.createElement('div');
       valueElement.className = 'value';
       valueElement.innerText = this.projector.dataSet.points[neighbor.index]?.current_inv_acc?.toFixed(3);
@@ -824,7 +855,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     this.queryAnomalyBtn.onclick = () => {
       projector.queryAnormalyStrategy(
         '',
-        Number(this.budget), this.selectedAnormalyClass, [], [],
+        Number(this.budget), this.selectedAnormalyClass, window.customSelection, window.customSelection,
         (indices: any, cleansIndices: any) => {
           if (indices != null) {
             // this.queryIndices = indices;

@@ -546,6 +546,7 @@ export class ProjectorScatterPlotAdapter {
           this.getLabelText(ds, labelIndex, this.labelPointAccessor)
         );
         visibleLabels[dst] = labelIndex;
+        scale[dst] = LABEL_SCALE_LARGE;
         packRgbIntoUint8Array(
           fillColors,
           dst,
