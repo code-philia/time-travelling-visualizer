@@ -589,6 +589,10 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
           }
           this.projectorEventContext.notifyHoverOverPoint(indices[i]);
         })
+
+        if (window.customSelection.indexOf(indices[i]) !== -1 && !input.checked) {
+          input.checked = true
+        }
         let newtd = document.createElement('td')
         newtd.className = 'inputColumn'
         newtd.appendChild(input)

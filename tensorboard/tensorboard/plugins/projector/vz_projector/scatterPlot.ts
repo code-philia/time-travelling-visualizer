@@ -159,7 +159,6 @@ export class ScatterPlot {
     if (!imgUrl) {
       return
     }
-    console.log('this.scene', this.scene)
     // 2，使用canvas画图作为纹理贴图
     // 先使用canvas画图
     let canvas = document.createElement('canvas');

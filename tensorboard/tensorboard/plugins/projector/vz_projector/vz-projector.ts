@@ -614,7 +614,10 @@ class Projector
   ///
   setDynamicNoisy() {
     // this.setDynamicStop()
-    this.filterDataset(this.selectedPointIndices)
+    if(window.customSelection){
+      this.filterDataset(window.customSelection)
+    }
+    // this.filterDataset(this.selectedPointIndices)
     this.currentIteration = window.iteration
 
     let current = 1
@@ -635,7 +638,7 @@ class Projector
         window.iteration = current;
         for (let i = 0; i < this.dataSet.points.length; i++) {
           const point = this.dataSet.points[i];
-          if (!this.selectedPointIndices.length || this.selectedPointIndices.indexOf(i) !== -1) {
+          if (!window.customSelection || window.customSelection.indexOf(i) !== -1) {
             point.projections['tsne-0'] = positions[current][i][0];
             point.projections['tsne-1'] = positions[current][i][1];
             point.projections['tsne-2'] = 0;
