@@ -196,7 +196,7 @@ def anomaly_query():
     labels = np.arange(10)
 
     sys.path.remove(CONTENT_PATH)
-    return make_response(jsonify({"selectedPoints": indices.tolist(), "scores": scores.tolist(), "suggestLabels":labels.tolist()}), 200)
+    return make_response(jsonify({"selectedPoints": indices.tolist(), "scores": scores.tolist(), "suggestLabels":labels.tolist(),"cleanList":[100,101,102]}), 200)
 
 @app.route('/al_train', methods=["POST"])
 @cross_origin()
