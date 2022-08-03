@@ -794,12 +794,16 @@ export class DataSet {
         if (window.modelMath) {
           this.DVIsubjectModelPath = window.modelMath
         }
+        let indices = newIndices.filter((item, i, arr) => {
+          //函数自身返回的是一个布尔值，只当返回值为true时，当前元素才会存入新的数组中。            
+          return item <= 49999
+        })
         
         await fetch("http://" + this.DVIServer + "/al_train", {
           method: 'POST',
           body: JSON.stringify({
             "iteration": this.tSNEIteration,
-            "newIndices": newIndices,
+            "newIndices": indices,
             "content_path": this.DVIsubjectModelPath,
           }),
           headers: headers,
