@@ -195,7 +195,7 @@ export class ScatterPlot {
     this.container.addEventListener('mousedown', this.onMouseDown.bind(this));
     this.container.addEventListener('mouseup', this.onMouseUp.bind(this));
     // this.container.addEventListener('mouseup', this.onMousewheel.bind(this));
-    this.container.addEventListener('click', this.onClick.bind(this));
+    this.container.addEventListener('dblclick', this.onClick.bind(this));
     window.addEventListener('keydown', this.onKeyDown.bind(this), false);
     window.addEventListener('keyup', this.onKeyUp.bind(this), false);
   }

@@ -247,8 +247,12 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
   }
 
   private subjectModelPathEditorInputChange() {
-    console.log('this.subjectModelPathEditorInput',this.subjectModelPathEditorInput)
     window.modelMath = this.subjectModelPathEditorInput
+    if(window.sessionStorage.taskType == 'anormaly detection'){
+      window.sessionStorage.setItem('unormaly_content_path',this.subjectModelPathEditorInput)
+    }else{
+      window.sessionStorage.setItem('normal_content_path',this.subjectModelPathEditorInput)
+    }
     this.dataSet.DVIsubjectModelPath = this.subjectModelPathEditorInput;
   }
   private resolutionEditorInputChange() {

@@ -622,8 +622,29 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     // } else {
     return `${displayPointIndex}|${displayprediction}|${prediction_res}|${score}`
     // }
-
-
+  }
+  private getnnLabelFromIndex(pointIndex: number): string {
+    const metadata = this.projector.dataSet.points[pointIndex].metadata[
+      this.selectedMetadataField
+    ];
+    let prediction = this.projector.dataSet.points[pointIndex]?.current_prediction;
+    if (prediction == undefined) {
+      prediction = `Unknown`;
+    }
+    let original_label = this.projector.dataSet.points[pointIndex].original_label;
+    if (original_label == undefined) {
+      original_label = `Unknown`;
+    }
+    if (original_label == undefined) {
+      original_label = `Unknown`;
+    }
+    const stringMetaData = metadata !== undefined ? String(metadata) : `Unknown #${pointIndex}`;
+    const displayprediction = prediction
+    const displayStringMetaData = stringMetaData
+    const displayPointIndex = String(pointIndex)
+    // return String(pointIndex) + "Label: " + stringMetaData + " Prediction: " + prediction + " Original label: " + original_label;
+    let prediction_res = stringMetaData === prediction ? ' - ' : ' ❗️ '
+    return `index:${displayPointIndex} | label:${displayStringMetaData}| prediction:${displayprediction} | ${prediction_res}`
   }
   private spriteImageRenderer() {
     const spriteImagePath = this.spriteMeta.imagePath;
@@ -676,7 +697,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       neighborElement.className = 'neighbor';
       const neighborElementLink = document.createElement('a');
       neighborElementLink.className = 'neighbor-link';
-      neighborElementLink.title = this.getLabelFromIndex(neighbor.index);
+      neighborElementLink.title = this.getnnLabelFromIndex(neighbor.index);
       const labelValueElement = document.createElement('div');
       labelValueElement.className = 'label-and-value';
       const labelElement = document.createElement('div');
@@ -686,7 +707,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         neighbor.dist,
         minDist
       );
-      labelElement.innerText = this.getLabelFromIndex(neighbor.index);
+      labelElement.innerText = this.getnnLabelFromIndex(neighbor.index);
       const valueElement = document.createElement('div');
       valueElement.className = 'value';
       valueElement.innerText = this.projector.dataSet.points[neighbor.index]?.current_inv_acc?.toFixed(3);
@@ -834,7 +855,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     this.queryAnomalyBtn.onclick = () => {
       projector.queryAnormalyStrategy(
         '',
-        Number(this.budget), this.selectedAnormalyClass, [], [],
+        Number(this.budget), this.selectedAnormalyClass, window.customSelection, window.customSelection,
         (indices: any, cleansIndices: any) => {
           if (indices != null) {
             // this.queryIndices = indices;
