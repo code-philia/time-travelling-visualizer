@@ -430,10 +430,9 @@ export const template = html`
           </paper-input>
           <paper-input value="{{confidenceThresholdTo}}" label="confidence to:">
           </paper-input>
-          <button style="width: 100px;" class="search-button search" style="margin-top:0px;">Query</button>
+          <button style="width: 100px; margin-top:14px;margin-left:10px;" class="search-button search">Query</button>
         </div>
       </div>
-
       <div>
       </div>
     </div>
@@ -455,7 +454,7 @@ export const template = html`
       <paper-tooltip position="bottom" animation-delay="0" fit-to-visible-bounds>
       query By active Learning
       </paper-tooltip>
-      <button style="width: 100px;" class="query-by-stratergy search-button search">Query</button>
+      <button style="width: 100px; margin-top: 14px;" class="query-by-stratergy search-button search">Query</button>
     </div>
 
     <!--<div style="display:flex;">

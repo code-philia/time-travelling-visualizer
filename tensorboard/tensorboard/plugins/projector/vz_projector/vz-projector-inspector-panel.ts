@@ -147,6 +147,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   private searchBox: any; // ProjectorInput; type omitted b/c LegacyElement
 
   private queryByStrategtBtn: HTMLButtonElement;
+  private moreRecommend: HTMLButtonElement;
   private queryAnomalyBtn: HTMLButtonElement;
   private showSelectionBtn: HTMLButtonElement;
 
@@ -200,6 +201,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     this.shownormal = window.sessionStorage.taskType == 'active learning' || window.taskType == 'active learning'
 
     this.queryByStrategtBtn = this.$$('.query-by-stratergy') as HTMLButtonElement;
+    this.moreRecommend = this.$$('.query-by-sel-btn') as HTMLButtonElement;
     this.showSelectionBtn = this.$$('.show-selection') as HTMLButtonElement
     this.queryAnomalyBtn = this.$$('.query-anomaly') as HTMLButtonElement;
     // this.boundingSelectionBtn = this.$$('.bounding-selection') as HTMLButtonElement;
@@ -482,8 +484,63 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     this.limitMessage.style.display =
       indices.length <= LIMIT_RESULTS ? 'none' : null;
     indices = indices.slice(0, LIMIT_RESULTS);
+    this.moreRecommend = container.querySelector('.query-by-sel-btn') as HTMLButtonElement
+    // console.log('90999',this.moreRecommend)
     // const msgId = logging.setModalMessage('Fetching sprite image...');
+    if (this.moreRecommend) {
+      this.moreRecommend.onclick = () => {
+        if (window.sessionStorage.taskType === 'active learning') {
+          let currentIndices = []
+          let previoustIIndices = []
+          if (!window.previousIndecates) {
+            window.previousIndecates = []
+          }
+          if (!window.customSelection) {
+            window.customSelection = []
+          } else {
+            for (let i = 0; i < window.customSelection.length; i++) {
+              if (window.previousIndecates.indexOf(window.customSelection[i]) == -1) {
+                currentIndices.push(window.customSelection[i])
+              } else {
+                previoustIIndices.push(window.customSelection[i])
+              }
+            }
+          }
+          this.queryByAl(this.projector, currentIndices, previoustIIndices)
+        } else if (window.sessionStorage.taskType === 'anormaly detection') {
+          this.projector.queryAnormalyStrategy(
+            '',
+            Number(this.anomalyRecNum), this.selectedAnormalyClass, window.customSelection, window.customSelection,
+            (indices: any, cleansIndices: any) => {
+              if (indices != null) {
+                // this.queryIndices = indices;
+                if (this.queryIndices.length == 0) {
+                  this.searchBox.message = '0 matches.';
+                } else {
+                  this.searchBox.message = `${this.queryIndices.length} matches.`;
+                }
 
+                window.queryResAnormalIndecates = indices
+                window.queryResAnormalCleanIndecates = cleansIndices
+
+                this.queryIndices = indices.concat(window.queryResAnormalCleanIndecates)
+                this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isAnormalyQuery');
+                // if (!this.isAlSelecting) {
+                //   this.isAlSelecting = true
+                //   window.isAdjustingSel = true
+                //   // this.boundingSelectionBtn.classList.add('actived')
+                //   this.projectorEventContext.setMouseMode(MouseMode.AREA_SELECT)
+                // }
+                // this.projectorScatterPlotAdapter.scatterPlot.setMouseMode(MouseMode.AREA_SELECT);
+                this.showCheckAllQueryRes = true
+                this.queryResultListTitle = 'Possible Abnormal Point List'
+
+              }
+            })
+
+        }
+      }
+    }
     let DVIServer = window.sessionStorage.ipAddress;
     let basePath = window.modelMath
     let headers = new Headers();
@@ -804,56 +861,43 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     // }
 
     this.queryByStrategtBtn.onclick = () => {
-      let currentIndices = []
-      let previoustIIndices = []
-      if (!window.previousIndecates) {
-        window.previousIndecates = []
-      }
-      if (!window.customSelection) {
-        window.customSelection = []
-      } else {
-        for (let i = 0; i < window.customSelection.length; i++) {
-          if (window.previousIndecates.indexOf(window.customSelection[i]) == -1) {
-            currentIndices.push(window.customSelection[i])
-          } else {
-            previoustIIndices.push(window.customSelection[i])
-          }
-        }
-      }
-      projector.queryByAL(
-        this.projector.iteration,
-        this.selectedStratergy,
-        Number(this.budget),
-        currentIndices,
-        previoustIIndices,
-        (indices: any, scores: any, labels: any) => {
-          if (indices != null) {
-            this.queryIndices = indices;
-            if (this.queryIndices.length == 0) {
-              this.searchBox.message = '0 matches.';
-            } else {
-              this.searchBox.message = `${this.queryIndices.length} matches.`;
-            }
+      this.queryByAl(projector, [], [])
 
-            window.alSuggestScoreList = scores
-            window.alSuggestLabelList = labels
+      // projector.queryByAL(
+      //   this.projector.iteration,
+      //   this.selectedStratergy,
+      //   Number(this.budget),
+      //   currentIndices,
+      //   previoustIIndices,
+      //   (indices: any, scores: any, labels: any) => {
+      //     if (indices != null) {
+      //       this.queryIndices = indices;
+      //       if (this.queryIndices.length == 0) {
+      //         this.searchBox.message = '0 matches.';
+      //       } else {
+      //         this.searchBox.message = `${this.queryIndices.length} matches.`;
+      //       }
 
-            this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isALQuery');
-            if (!this.isAlSelecting) {
-              this.isAlSelecting = true
-              window.isAdjustingSel = true
-              // this.boundingSelectionBtn.classList.add('actived')
-              this.projectorEventContext.setMouseMode(MouseMode.AREA_SELECT)
-            }
-            this.showCheckAllQueryRes = true
-            this.checkAllQueryRes = false
-            this.queryResultListTitle = 'Active Learning suggestion'
-            // this.projectorScatterPlotAdapter.scatterPlot.setMouseMode(MouseMode.AREA_SELECT);
+      //       window.alSuggestScoreList = scores
+      //       window.alSuggestLabelList = labels
 
-          }
-        }
-      );
+      //       this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isALQuery');
+      //       if (!this.isAlSelecting) {
+      //         this.isAlSelecting = true
+      //         window.isAdjustingSel = true
+      //         // this.boundingSelectionBtn.classList.add('actived')
+      //         this.projectorEventContext.setMouseMode(MouseMode.AREA_SELECT)
+      //       }
+      //       this.showCheckAllQueryRes = true
+      //       this.checkAllQueryRes = false
+      //       this.queryResultListTitle = 'Active Learning suggestion'
+      //       // this.projectorScatterPlotAdapter.scatterPlot.setMouseMode(MouseMode.AREA_SELECT);
+
+      //     }
+      //   }
+      // );
     }
+
 
     this.showSelectionBtn.onclick = () => {
       for (let i = 0; i < window.previousIndecates?.length; i++) {
@@ -868,7 +912,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     this.queryAnomalyBtn.onclick = () => {
       projector.queryAnormalyStrategy(
         '',
-        Number(this.anomalyRecNum), this.selectedAnormalyClass, window.customSelection, window.customSelection,
+        Number(this.anomalyRecNum), this.selectedAnormalyClass, [], [],
         (indices: any, cleansIndices: any) => {
           if (indices != null) {
             // this.queryIndices = indices;
@@ -1081,7 +1125,6 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             this.showCheckAllQueryRes = false
             this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'normal');
             this.queryResultListTitle = 'Query Result List'
-
           }
         }
       );
@@ -1106,6 +1149,63 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     // this.showButton.onclick = () => {
     //   this.projectorEventContext.notifySelectionChanged(this.boundingBoxSelection, true);
     // }
+  }
+
+
+  private queryByAl(projector, currentIndices, previoustIIndices) {
+    projector.queryByAL(
+      this.projector.iteration,
+      this.selectedStratergy,
+      Number(this.budget),
+      currentIndices,
+      previoustIIndices,
+      (indices: any, scores: any, labels: any) => {
+        if (indices != null) {
+          this.queryIndices = indices;
+          if (this.queryIndices.length == 0) {
+            this.searchBox.message = '0 matches.';
+          } else {
+            this.searchBox.message = `${this.queryIndices.length} matches.`;
+          }
+
+          window.alSuggestScoreList = scores
+          window.alSuggestLabelList = labels
+
+          this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isALQuery');
+          if (!this.isAlSelecting) {
+            this.isAlSelecting = true
+            window.isAdjustingSel = true
+            // this.boundingSelectionBtn.classList.add('actived')
+            this.projectorEventContext.setMouseMode(MouseMode.AREA_SELECT)
+          }
+          this.showCheckAllQueryRes = true
+          this.checkAllQueryRes = false
+          this.queryResultListTitle = 'Active Learning suggestion'
+          // this.projectorScatterPlotAdapter.scatterPlot.setMouseMode(MouseMode.AREA_SELECT);
+
+        }
+      }
+    );
+  }
+  recommendBysel() {
+    let currentIndices = []
+    let previoustIIndices = []
+    if (!window.previousIndecates) {
+      window.previousIndecates = []
+    }
+    if (!window.customSelection) {
+      window.customSelection = []
+    } else {
+      for (let i = 0; i < window.customSelection.length; i++) {
+        if (window.previousIndecates.indexOf(window.customSelection[i]) == -1) {
+          currentIndices.push(window.customSelection[i])
+        } else {
+          previoustIIndices.push(window.customSelection[i])
+        }
+      }
+    }
+    this.queryByAl(this.projector, currentIndices, previoustIIndices)
+
   }
   resetStatus() {
     this.isAlSelecting = false
