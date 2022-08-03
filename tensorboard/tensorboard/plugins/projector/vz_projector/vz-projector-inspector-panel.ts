@@ -56,10 +56,13 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   selectedAnormalyStratergy: string;
 
   @property({ type: Number })
-  selectedAnormalyClass: number
+  selectedAnormalyClass: number = 0;
 
   @property({ type: Number })
   budget: number
+
+  @property({ type: Number })
+  anomalyRecNum: number
 
   @property({ type: Number })
   suggestKNum: number
@@ -185,6 +188,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   private currentFilterType: string
 
 
+
   ready() {
     super.ready();
 
@@ -237,6 +241,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     this.checkAllQueryRes = false
 
     this.budget = 1000
+    this.anomalyRecNum = 10
     this.suggestKNum = 10
   }
   initialize(projector: any, projectorEventContext: ProjectorEventContext) {
@@ -249,7 +254,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     // TODO change them based on metadata fields
     this.searchFields = ["type", "label", "new_selection"]
     // active learning statergy
-    this.statergyList = ["random", "LeastConfidence","coreset","badge"]
+    this.statergyList = ["random", "LeastConfidence", "coreset", "badge"]
     // anormaly detection statergy
     this.anormalyStatergyList = ['anormalyStageone', 'anormalyStageTwo', 'anormalyStageThree']
     // anormaly detcttion classes
@@ -492,7 +497,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       const index = indices[i];
       const row = document.createElement('th');
       row.className = 'row';
-     
+
       // const rowLink = document.createElement('a');
       // rowLink.className = 'label';
       // rowLink.title = label;
@@ -536,7 +541,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       }
       const label = this.getLabelFromIndex(index);
       let arr = label.split("|")
-      for(let i=0;i<arr.length;i++){
+      for (let i = 0; i < arr.length; i++) {
         let newtd = document.createElement('td');
         newtd.className = 'queryResColumn';
         newtd.innerText = arr[i]
@@ -610,17 +615,17 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
     const displayprediction = prediction
     const displayStringMetaData = stringMetaData
-    
+
     const displayPointIndex = String(pointIndex)
     // return String(pointIndex) + "Label: " + stringMetaData + " Prediction: " + prediction + " Original label: " + original_label;
     let prediction_res = stringMetaData === prediction ? ' - ' : ' ❗️ '
-    if(this.showCheckAllQueryRes == false){
+    if (this.showCheckAllQueryRes == false) {
       return `${displayPointIndex}|${displayprediction}|${prediction_res}`
     }
     // if (suggest_label !== undefined) {
     //   return displayPointIndex + " | " + displayStringMetaData + `(${suggest_label})` + " | " + displayprediction + " | " + prediction_res + " | " + score
     // } else {
-    return `${displayPointIndex}|${displayprediction}|${prediction_res}|${score!==undefined?score:'-'}`
+    return `${displayPointIndex}|${displayprediction}|${prediction_res}|${score !== undefined ? score : '-'}`
     // }
   }
   private getnnLabelFromIndex(pointIndex: number): string {
@@ -773,7 +778,15 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         self.showTab(id);
       });
     }
-    self.showTab('normal');
+    if (window)
+      if (window.sessionStorage.taskType === 'anormaly detection') {
+        self.showTab('anomaly');
+      } else if (window.sessionStorage.taskType === 'active learning') {
+        self.showTab('advanced');
+      }
+      else {
+        self.showTab('normal');
+      }
 
     // this.boundingSelectionBtn.onclick = (e: any) => {
 
@@ -855,7 +868,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     this.queryAnomalyBtn.onclick = () => {
       projector.queryAnormalyStrategy(
         '',
-        Number(this.budget), this.selectedAnormalyClass, window.customSelection, window.customSelection,
+        Number(this.anomalyRecNum), this.selectedAnormalyClass, window.customSelection, window.customSelection,
         (indices: any, cleansIndices: any) => {
           if (indices != null) {
             // this.queryIndices = indices;
@@ -1099,7 +1112,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     window.isAdjustingSel = false
   }
 
-  playAnimationFinished(){
+  playAnimationFinished() {
     this.noisyBtn.disabled = false;
     this.stopBtn.disabled = true;
   }
