@@ -191,12 +191,12 @@ def anomaly_query():
     # indices, labels = timevis.al_query(iteration, budget, strategy)
 
     # dummy input
-    indices = np.arange(10)
-    scores = np.random.rand(10)
-    labels = np.arange(10)
+    indices = np.arange(budget)
+    scores = np.random.rand(budget)
+    labels = np.arange(budget)
 
     sys.path.remove(CONTENT_PATH)
-    return make_response(jsonify({"selectedPoints": indices.tolist(), "scores": scores.tolist(), "suggestLabels":labels.tolist(),"cleanList":[100,101,102]}), 200)
+    return make_response(jsonify({"selectedPoints": indices.tolist(), "scores": scores.tolist(), "suggestLabels":labels.tolist(),"cleanList":[10000,10001,10002]}), 200)
 
 @app.route('/al_train', methods=["POST"])
 @cross_origin()

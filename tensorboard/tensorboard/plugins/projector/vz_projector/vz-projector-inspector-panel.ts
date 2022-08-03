@@ -620,7 +620,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     // if (suggest_label !== undefined) {
     //   return displayPointIndex + " | " + displayStringMetaData + `(${suggest_label})` + " | " + displayprediction + " | " + prediction_res + " | " + score
     // } else {
-    return `${displayPointIndex}|${displayprediction}|${prediction_res}|${score}`
+    return `${displayPointIndex}|${displayprediction}|${prediction_res}|${score!==undefined?score:'-'}`
     // }
   }
   private getnnLabelFromIndex(pointIndex: number): string {

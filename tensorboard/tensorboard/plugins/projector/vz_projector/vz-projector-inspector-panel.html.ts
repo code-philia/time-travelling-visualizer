@@ -144,9 +144,10 @@ export const template = html`
 
   .row-img{
     display:flex;
-    margin-bottom: 8px;
     align-items: center;
     cursor: pointer;
+    height: 36px;
+    border-bottom: 1px solid #bcb8b8;
   }
   .row-img:hover {
     color: #560731;
@@ -311,6 +312,7 @@ export const template = html`
   .matches-list-title{
     line-height: 40px;
     font-weight: 600;
+    border-bottom: 1px solid #ccc;
   }
 
   .matches-list .row {
@@ -622,7 +624,7 @@ export const template = html`
      <button class="button set-filter">Filter query result</button>
      <button class="button clear-selection">Clear Selection</button>
      </div>-->
-     <div class="matches-list-title"> 
+     <div class="matches-list-title" style="background:#eaeaea; line-height:40px;"> 
      <template is="dom-if" if="[[showCheckAllQueryRes]]">
      <paper-checkbox style="margin: 0px -2px 0px 5px;" id="label-points-toggle" checked="{{checkAllQueryRes}}"></paper-checkbox>
      </template>
