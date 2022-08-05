@@ -489,6 +489,10 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     // const msgId = logging.setModalMessage('Fetching sprite image...');
     if (this.moreRecommend) {
       this.moreRecommend.onclick = () => {
+        if(!window.customSelection || !window.customSelection.length){
+          logging.setErrorMessage('Please confirm some selection first');
+          return
+        }
         if (window.sessionStorage.taskType === 'active learning') {
           let currentIndices = []
           let previoustIIndices = []

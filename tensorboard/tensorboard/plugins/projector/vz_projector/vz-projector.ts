@@ -577,7 +577,8 @@ class Projector
     this.projectorScatterPlotAdapter.updateScatterPlotPositions();
     this.projectorScatterPlotAdapter.updateScatterPlotAttributes(filter);
     this.projectorScatterPlotAdapter.updateBackground()
-    this.adjustSelectionAndHover(util.range(selectionSize));
+    // this.adjustSelectionAndHover(util.range(selectionSize));
+
     if (window.isAdjustingSel) {
       // this.boundingSelectionBtn.classList.add('actived')
       this.setMouseMode(MouseMode.AREA_SELECT)
@@ -614,7 +615,7 @@ class Projector
   ///
   setDynamicNoisy() {
     // this.setDynamicStop()
-    if(window.customSelection){
+    if(window.customSelection && window.customSelection.length){
       this.filterDataset(window.customSelection)
     }
     // this.filterDataset(this.selectedPointIndices)
@@ -638,7 +639,7 @@ class Projector
         window.iteration = current;
         for (let i = 0; i < this.dataSet.points.length; i++) {
           const point = this.dataSet.points[i];
-          if (!window.customSelection || window.customSelection.indexOf(i) !== -1) {
+          if (!window.customSelection || !window.customSelection.length || window.customSelection.indexOf(i) !== -1) {
             point.projections['tsne-0'] = positions[current][i][0];
             point.projections['tsne-1'] = positions[current][i][1];
             point.projections['tsne-2'] = 0;
