@@ -686,6 +686,7 @@ export class DataSet {
         stepCallback(this.tSNEIteration, evaluation, new_selection, filterIndices, this.tSNETotalIter);
       }).catch(error => {
         console.log(error);
+        logging.setErrorMessage('error');
         stepCallback(null, null, null, null, null);
       });
 
@@ -1049,7 +1050,7 @@ export class DataSet {
           window.DVIDataList = this.DVIDataList
           stepCallback(this.tSNEIteration, evaluation, new_selection, filterIndices, this.tSNETotalIter);
         }).catch(error => {
-          // logging.setErrorMessage('querying for indices');
+          logging.setErrorMessage('Error');
           console.log(error);
           stepCallback(null, null, null, null, null);
         });

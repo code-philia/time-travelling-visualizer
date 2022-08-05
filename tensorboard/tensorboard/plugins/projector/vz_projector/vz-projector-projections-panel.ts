@@ -386,6 +386,10 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
            * get filter index
            */
           //get search predicates or indices
+          if(iteration== null && evaluation == null){
+            this.nextDVIButton.disabled = false;
+            return
+          }
           var filterIndices: number[];
           filterIndices = []
           if (this.temporalStatus) {

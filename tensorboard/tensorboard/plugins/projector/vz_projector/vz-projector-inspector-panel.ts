@@ -134,6 +134,9 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   @property({ type: Boolean })
   showCheckAllQueryRes: boolean = true
 
+  @property({type: Number})
+  moreRecommednNum: number = 10
+
 
   distFunc: DistanceFunction;
 
@@ -510,11 +513,11 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
               }
             }
           }
-          this.queryByAl(this.projector, currentIndices, previoustIIndices)
+          this.queryByAl(this.projector, currentIndices, previoustIIndices,this.moreRecommednNum)
         } else if (window.sessionStorage.taskType === 'anormaly detection') {
           this.projector.queryAnormalyStrategy(
             '',
-            Number(this.anomalyRecNum), this.selectedAnormalyClass, window.customSelection, window.customSelection,
+            Number(this.moreRecommednNum), this.selectedAnormalyClass, window.customSelection, window.customSelection,
             (indices: any, cleansIndices: any) => {
               if (indices != null) {
                 // this.queryIndices = indices;
@@ -1160,11 +1163,15 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   }
 
 
-  private queryByAl(projector, currentIndices, previoustIIndices) {
+  private queryByAl(projector, currentIndices, previoustIIndices,querNum?) {
+    let num = Number(this.budget)
+    if(querNum){
+      num = Number(querNum)
+    }
     projector.queryByAL(
       this.projector.iteration,
       this.selectedStratergy,
-      Number(this.budget),
+      num,
       currentIndices,
       previoustIIndices,
       (indices: any, scores: any, labels: any) => {

@@ -624,8 +624,13 @@ export const template = html`
     <div class="matches-list-title">[[queryResultListTitle]]</div>
     
      <template is="dom-if" if="[[showCheckAllQueryRes]]">
+     <div style="display:flex;">
+     <paper-input value="{{moreRecommednNum}}" label="more recommend num:">
+     </paper-input>
      <button style="margin:10px 0;" class="button query-by-sel-btn">More Recommend</button>
+     </div>
      </template>
+
      <!--<div class="buttons">
      <button class="button reset-filter">Show All</button>
      <button class="button set-filter">Filter query result</button>
