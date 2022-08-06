@@ -241,6 +241,8 @@ export class ScatterPlot {
       occ.mouseButtons.ORBIT = null;
       occ.mouseButtons.PAN = THREE.MOUSE.LEFT;
     }
+    occ.mouseButtons.LEFT = THREE.MOUSE.PAN
+    occ.mouseButtons.RIGHT = null
     occ.reset();
     this.camera = camera;
     this.orbitCameraControls = occ;
@@ -381,10 +383,10 @@ export class ScatterPlot {
   private onMouseDown(e: MouseEvent) {
     this.isDragSequence = false;
     this.mouseIsDown = true;
-    if (this.isctrling === true) {
-      this.container.style.cursor = 'move';
-      return
-    }
+    // if (this.isctrling === true) {
+    //   this.container.style.cursor = 'move';
+    //   return
+    // }
     if (this.selecting && this.isShifting) {
       this.orbitCameraControls.enabled = false;
       this.rectangleSelector.onMouseDown(e.offsetX, e.offsetY);
@@ -408,6 +410,7 @@ export class ScatterPlot {
       this.orbitCameraControls.mouseButtons.ORBIT = THREE.MOUSE.RIGHT;
       this.orbitCameraControls.mouseButtons.PAN = THREE.MOUSE.LEFT;
     }else{
+      this.container.style.cursor = 'move';
       // this.onKeyDown({keyCode:CTRL_KEY})
     }
   }
@@ -420,15 +423,15 @@ export class ScatterPlot {
   }
   /** When we stop dragging/zooming, return to normal behavior. */
   private onMouseUp(e: any) {
-    if (this.isctrling === true) {
+    // if (this.isctrling === true) {
       if (this.selecting) {
         this.container.style.cursor = 'crosshair';
       } else {
         this.container.style.cursor = 'default';
       }
       this.mouseIsDown = false;
-      return
-    }
+      // return
+    // }
     if (this.selecting && this.isShifting) {
       this.orbitCameraControls.enabled = true;
       this.rectangleSelector.onMouseUp();
@@ -465,7 +468,7 @@ export class ScatterPlot {
     // If ctrl is pressed, use left click to orbit
     if (e.keyCode === CTRL_KEY && this.sceneIs3D) {
       this.isctrling = true
-      this.container.style.cursor = 'move';
+      // this.container.style.cursor = 'move';
       this.orbitCameraControls.mouseButtons.ORBIT = THREE.MOUSE.RIGHT;
       this.orbitCameraControls.mouseButtons.PAN = THREE.MOUSE.LEFT;
     }
@@ -491,7 +494,7 @@ export class ScatterPlot {
       }
     }
     // If shift is pressed, start selecting
-    if (e.keyCode === SHIFT_KEY) {
+    if (e.keyCode === SHIFT_KEY && this.selecting) {
       this.isShifting = true
       this.selecting = true;
       this.container.style.cursor = 'crosshair';
