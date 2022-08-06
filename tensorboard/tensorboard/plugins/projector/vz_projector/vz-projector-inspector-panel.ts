@@ -475,7 +475,11 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   clearQueryResList() {
     this.updateSearchResults([])
   }
+  refreshSearchResult(){
+    this.updateSearchResults(this.queryIndices)
+  }
   private async updateSearchResults(indices: number[]) {
+    
     const container = this.$$('.matches-list') as HTMLDivElement;
     const list = container.querySelector('.list') as HTMLDivElement;
     list.textContent = '';
