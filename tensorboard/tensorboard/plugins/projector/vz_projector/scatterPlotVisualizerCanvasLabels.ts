@@ -77,7 +77,7 @@ export class ScatterPlotVisualizerCanvasLabels
     this.gc.textBaseline = 'middle';
     this.gc.miterLimit = 2;
     // Have extra space between neighboring labels. Don't pack too tightly.
-    const labelMargin = 2;
+    const labelMargin = 0;
     // Shift the label to the right of the point circle.
     const xShift = 4;
     const n = Math.min(MAX_LABELS_ON_SCREEN, lrc.pointIndices.length);
