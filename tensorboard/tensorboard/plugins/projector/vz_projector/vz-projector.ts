@@ -143,8 +143,8 @@ class Projector
   @property({ type: Boolean })
   eventLogging: boolean;
 
-  @property( {type: Object})
-  metadataStyle:any
+  @property({ type: Object })
+  metadataStyle: any
 
   /**
    * DVI properties
@@ -261,8 +261,8 @@ class Projector
     this.intervalFlag = true
 
     this.metadataStyle = {
-      left:'320px',
-      top:'120px'
+      left: '320px',
+      top: '120px'
     }
 
     let headers = new Headers();
@@ -276,24 +276,24 @@ class Projector
 
   readyregis() {
     let el: any = this.$$('#metadata-card')
-    console.log('elel',el)
-    if(!el){
+    console.log('elel', el)
+    if (!el) {
       return
     }
-    let that  = this
+    let that = this
     this.registered = true
     el.onmousedown = function (e: any) {
       e = e || window.event;
       document.body.style.cursor = 'move'
-     
+
       // 初始位置
-      let offleft =  Number(that.metadataStyle.left.replace('px','')) || 0;
-      let offTop =  Number(that.metadataStyle.top.replace('px','')) || 0;
+      let offleft = Number(that.metadataStyle.left.replace('px', '')) || 0;
+      let offTop = Number(that.metadataStyle.top.replace('px', '')) || 0;
       // 鼠标点击位置
       let startX = e.clientX;
       let startY = e.clientY;
 
-      console.log(startX, startY,offleft,offTop,that.metadataStyle);
+      console.log(startX, startY, offleft, offTop, that.metadataStyle);
 
       el.setCapture && el.setCapture();
 
@@ -338,8 +338,8 @@ class Projector
         el.style.left = lastX + "px";
         el.style.top = lastY + "px";
         that.metadataStyle = {
-          left : lastX + "px",
-          top : lastY + "px"
+          left: lastX + "px",
+          top: lastY + "px"
         }
       };
       document.addEventListener('mousemove', handler, false);
@@ -531,7 +531,7 @@ class Projector
     if (metadataFile != null) {
       this.metadataFile = metadataFile;
     }
-    
+
     this.dataSet.spriteAndMetadataInfo = spriteAndMetadata;
     this.projectionsPanel.metadataChanged(spriteAndMetadata);
     this.inspectorPanel.metadataChanged(spriteAndMetadata);
@@ -577,7 +577,8 @@ class Projector
     this.projectorScatterPlotAdapter.updateScatterPlotPositions();
     this.projectorScatterPlotAdapter.updateScatterPlotAttributes(filter);
     this.projectorScatterPlotAdapter.updateBackground()
-    this.adjustSelectionAndHover(util.range(selectionSize));
+    // this.adjustSelectionAndHover(util.range(selectionSize));
+
     if (window.isAdjustingSel) {
       // this.boundingSelectionBtn.classList.add('actived')
       this.setMouseMode(MouseMode.AREA_SELECT)
@@ -614,7 +615,10 @@ class Projector
   ///
   setDynamicNoisy() {
     // this.setDynamicStop()
-    this.filterDataset(this.selectedPointIndices)
+    if(window.customSelection && window.customSelection.length){
+      this.filterDataset(window.customSelection)
+    }
+    // this.filterDataset(this.selectedPointIndices)
     this.currentIteration = window.iteration
 
     let current = 1
@@ -635,7 +639,7 @@ class Projector
         window.iteration = current;
         for (let i = 0; i < this.dataSet.points.length; i++) {
           const point = this.dataSet.points[i];
-          if (!this.selectedPointIndices.length || this.selectedPointIndices.indexOf(i) !== -1) {
+          if (!window.customSelection || !window.customSelection.length || window.customSelection.indexOf(i) !== -1) {
             point.projections['tsne-0'] = positions[current][i][0];
             point.projections['tsne-1'] = positions[current][i][1];
             point.projections['tsne-2'] = 0;
@@ -653,7 +657,7 @@ class Projector
           this.setDynamicStop()
           current = interationList[0]
           count = 0
-       
+
         } else {
           current = interationList[++count]
         }
@@ -697,8 +701,14 @@ class Projector
 
   refresh() {
     // this.projectorScatterPlotAdapter.scatterPlot.render()
-    this.metadataCard.updateCustomList(this.dataSet.points)
+    this.metadataCard.updateCustomList(this.dataSet.points,this as ProjectorEventContext)
     // this.projectorScatterPlotAdapter.scatterPlot.render()
+    this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
+    this.projectorScatterPlotAdapter.render()
+  }
+  removecustomInMetaCard(){
+    this.metadataCard.updateCustomList(this.dataSet.points,this as ProjectorEventContext)
+    this.inspectorPanel.refreshSearchResult()
     this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
     this.projectorScatterPlotAdapter.render()
   }
@@ -706,7 +716,7 @@ class Projector
    * Used by clients to indicate that a selection has occurred.
    */
   notifySelectionChanged(newSelectedPointIndices: number[], selectMode?: boolean, selectionType?: string) {
-    if(!this.registered){
+    if (!this.registered) {
       this.readyregis()
     }
     if (selectionType === 'isALQuery' || selectionType === 'normal' || selectionType === 'isAnormalyQuery') {
@@ -717,7 +727,7 @@ class Projector
       } else {
         window.alQueryResPointIndices = []
       }
-      this.metadataCard.updateCustomList(this.dataSet.points)
+      this.metadataCard.updateCustomList(this.dataSet.points,this as ProjectorEventContext)
     }
     if (selectionType === 'isShowSelected') {
       for (let i = 0; i < window.previousIndecates?.length; i++) {
@@ -728,7 +738,7 @@ class Projector
         }
         // }
       }
-      this.metadataCard.updateCustomList(this.dataSet.points)
+      this.metadataCard.updateCustomList(this.dataSet.points,this as ProjectorEventContext)
       this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
       this.projectorScatterPlotAdapter.render()
       return
@@ -754,7 +764,7 @@ class Projector
           }
         }
       }
-      this.metadataCard.updateCustomList(this.dataSet.points)
+      this.metadataCard.updateCustomList(this.dataSet.points,this as ProjectorEventContext)
       this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
       this.projectorScatterPlotAdapter.render()
       return
@@ -1191,7 +1201,7 @@ class Projector
   // }
   notifyProjectionPositionsUpdated() {
     this.projectorScatterPlotAdapter.notifyProjectionPositionsUpdated();
-    this.metadataCard.updateCustomList(this.dataSet.points)
+    this.metadataCard.updateCustomList(this.dataSet.points,this as ProjectorEventContext)
   }
   /**
    * Gets the current view of the embedding and saves it as a State object.
@@ -1373,6 +1383,12 @@ class Projector
     let headers = new Headers();
     headers.append('Content-Type', 'application/json');
     headers.append('Accept', 'application/json');
+    console.log('currentIndices',currentIndices)
+    let indices = currentIndices.filter((item, i, arr) => {
+      //函数自身返回的是一个布尔值，只当返回值为true时，当前元素才会存入新的数组中。            
+      return item <= 49999
+    })
+    console.log('indices',indices)
     fetch(`http://${this.DVIServer}/al_query`, {
       method: 'POST',
       body: JSON.stringify({
@@ -1380,7 +1396,7 @@ class Projector
         "strategy": strategy,
         "budget": budget,
         "content_path": this.dataSet.DVIsubjectModelPath,
-        "currentIndices": currentIndices,
+        "currentIndices": indices,
         "previousIndices": previousIndices
       }),
       headers: headers,

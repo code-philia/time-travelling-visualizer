@@ -99,6 +99,7 @@ export class ScatterPlot {
   private pointScaleFactors: Float32Array;
   private labels: LabelRenderParams;
   private isctrling: boolean;
+  private isShifting: boolean;
   private polylineColors: {
     [polylineIndex: number]: Float32Array;
   };
@@ -158,7 +159,6 @@ export class ScatterPlot {
     if (!imgUrl) {
       return
     }
-    console.log('this.scene', this.scene)
     // 2，使用canvas画图作为纹理贴图
     // 先使用canvas画图
     let canvas = document.createElement('canvas');
@@ -194,7 +194,7 @@ export class ScatterPlot {
     this.container.addEventListener('mousedown', this.onMouseDown.bind(this));
     this.container.addEventListener('mouseup', this.onMouseUp.bind(this));
     // this.container.addEventListener('mouseup', this.onMousewheel.bind(this));
-    this.container.addEventListener('click', this.onClick.bind(this));
+    this.container.addEventListener('dblclick', this.onClick.bind(this));
     window.addEventListener('keydown', this.onKeyDown.bind(this), false);
     window.addEventListener('keyup', this.onKeyUp.bind(this), false);
   }
@@ -241,6 +241,8 @@ export class ScatterPlot {
       occ.mouseButtons.ORBIT = null;
       occ.mouseButtons.PAN = THREE.MOUSE.LEFT;
     }
+    occ.mouseButtons.LEFT = THREE.MOUSE.PAN
+    occ.mouseButtons.RIGHT = null
     occ.reset();
     this.camera = camera;
     this.orbitCameraControls = occ;
@@ -381,11 +383,11 @@ export class ScatterPlot {
   private onMouseDown(e: MouseEvent) {
     this.isDragSequence = false;
     this.mouseIsDown = true;
-    if (this.isctrling === true) {
-      this.container.style.cursor = 'move';
-      return
-    }
-    if (this.selecting) {
+    // if (this.isctrling === true) {
+    //   this.container.style.cursor = 'move';
+    //   return
+    // }
+    if (this.selecting && this.isShifting) {
       this.orbitCameraControls.enabled = false;
       this.rectangleSelector.onMouseDown(e.offsetX, e.offsetY);
       this.setNearestPointToMouse(e);
@@ -407,6 +409,9 @@ export class ScatterPlot {
       // Similarly to the situation above.
       this.orbitCameraControls.mouseButtons.ORBIT = THREE.MOUSE.RIGHT;
       this.orbitCameraControls.mouseButtons.PAN = THREE.MOUSE.LEFT;
+    }else{
+      this.container.style.cursor = 'move';
+      // this.onKeyDown({keyCode:CTRL_KEY})
     }
   }
   private resetCamera() {
@@ -418,16 +423,16 @@ export class ScatterPlot {
   }
   /** When we stop dragging/zooming, return to normal behavior. */
   private onMouseUp(e: any) {
-    if (this.isctrling === true) {
+    // if (this.isctrling === true) {
       if (this.selecting) {
         this.container.style.cursor = 'crosshair';
       } else {
         this.container.style.cursor = 'default';
       }
       this.mouseIsDown = false;
-      return
-    }
-    if (this.selecting) {
+      // return
+    // }
+    if (this.selecting && this.isShifting) {
       this.orbitCameraControls.enabled = true;
       this.rectangleSelector.onMouseUp();
       this.render();
@@ -463,7 +468,7 @@ export class ScatterPlot {
     // If ctrl is pressed, use left click to orbit
     if (e.keyCode === CTRL_KEY && this.sceneIs3D) {
       this.isctrling = true
-      this.container.style.cursor = 'move';
+      // this.container.style.cursor = 'move';
       this.orbitCameraControls.mouseButtons.ORBIT = THREE.MOUSE.RIGHT;
       this.orbitCameraControls.mouseButtons.PAN = THREE.MOUSE.LEFT;
     }
@@ -489,15 +494,17 @@ export class ScatterPlot {
       }
     }
     // If shift is pressed, start selecting
-    // if (e.keyCode === SHIFT_KEY) {
-    //   this.selecting = true;
-    //   this.container.style.cursor = 'crosshair';
-    // }
+    if (e.keyCode === SHIFT_KEY && this.selecting) {
+      this.isShifting = true
+      this.selecting = true;
+      this.container.style.cursor = 'crosshair';
+    }
 
   }
   /** For using ctrl + left click as right click, and for circle select */
   private onKeyUp(e: any) {
     this.isctrling = false
+    this.isShifting = false
     if (this.selecting) {
       this.container.style.cursor = 'crosshair';
     } else {

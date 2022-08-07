@@ -20,7 +20,7 @@ import { LegacyElementMixin } from '../../../components/polymer/legacy_element_m
 import '../../../components/polymer/irons_and_papers';
 
 import { PointMetadata } from './data';
-import { ProjectorEventContext } from './projectorEventContext';
+import {ProjectorEventContext} from './projectorEventContext';
 
 @customElement('vz-projector-metadata-card')
 class MetadataCard extends LegacyElementMixin(PolymerElement) {
@@ -30,7 +30,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
         background-color: rgba(255, 255, 255, 0.9);
         box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14),
           0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
-        width: 200px;
+        width: 230px;
       }
 
       #header {
@@ -59,6 +59,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
 
       .metadata-row {
         display: table-row;
+        position: relative;
       }
 
       .metadata-key {
@@ -81,6 +82,18 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
         margin-bottom: 10px;
         background: #e9e9e9;
         padding: 8px;
+      }
+      .remove-btn{
+        position: absolute;
+        right: -40px;
+        top: 15px;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        text-align: center;
+        padding: 0;
+        border: 1px solid #ddd;
+        cursor:pointer;
       }
 
       .metadata-value {
@@ -137,19 +150,20 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
         </template>
           <div class="custom-list-header">custom selected list | [[selectedNum]]</div>
           <div class="metadata-row">
-          <div class="metadata-key">| img |</div>
+          <div class="metadata-key" style="padding-left: 15px;">| img |</div>
           <div class="metadata-key">index |</div>
-          <div class="metadata-key">label |</div>
+          <div class="metadata-key" style="width: 40px;text-align: right;">label |</div>
           <div class="metadata-key">predict |</div>
           </div>
-          <div style="max-height: calc(100vh - 440px);overflow: auto; padding: 0 10px;">
+          <div style="max-height: calc(100vh - 440px);overflow: auto; padding: 0 15px;">
           <template is="dom-repeat" items="[[customMetadata]]">
           <div class="metadata-row custom-list-Row" id=[[item.key]]>
+            <div style="text-align: center;display: inline-block;position: absolute;left: -16px;" class="metadata-value">[[item.flag]]</div>
             <img src="[[item.src]]" />
-            <div class="metadata-key">[[item.key]]</div>
-            <div class="metadata-value">[[item.value]]</div>
+            <div class="metadata-key" style="width:40px;">[[item.key]]</div>
+            <div class="metadata-value" style="width:40px;">[[item.value]]</div>
             <div class="metadata-value">[[item.prediction]]</div>
-            <div class="metadata-value">[[item.flag]]</div>
+            <button class="remove-btn" id="[[item.key]]" on-click="removeCustomSelItem">✖️</button>
           </div>
           </div>
         </template>
@@ -194,7 +208,8 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
   private labelOption: string;
   private pointMetadata: PointMetadata;
   private resultImg: HTMLElement;
-
+  private points:any
+  private projectorEventContext: ProjectorEventContext
 
 
   /** Handles toggle of metadata-container. */
@@ -249,7 +264,13 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
     }
   }
 
-  async updateCustomList(points) {
+  async updateCustomList(points:any,projectorEventContext?:ProjectorEventContext) {
+    this.projectorEventContext = projectorEventContext
+    if(points){
+      this.points = points
+    }
+
+ 
     if (!window.customSelection || window.customSelection.length === 0) {
       this.customMetadata = []
     }
@@ -324,5 +345,14 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
     if (this.pointMetadata) {
       this.label = '' + this.pointMetadata[this.labelOption];
     }
+  }
+  removeCustomSelItem(e:any) {
+    let index = window.customSelection.indexOf(Number(e.target.id))
+    // window.customSelection.indexOf(7893)
+    if(index>=0){
+      window.customSelection.splice(index,1)
+    }
+    this.projectorEventContext.removecustomInMetaCard()
+    console.log(this.projectorEventContext)
   }
 }

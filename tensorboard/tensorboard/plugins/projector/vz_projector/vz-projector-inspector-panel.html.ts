@@ -24,7 +24,7 @@ export const template = html`
     /* Account for the bookmark pane at the bottom */
   }
   .query-content.active{
-    height: 200px;
+    height: 150px;
     margin-bottom: 20px;
     border-bottom: 1px solid #ccc;
   }
@@ -144,9 +144,10 @@ export const template = html`
 
   .row-img{
     display:flex;
-    margin-bottom: 8px;
     align-items: center;
     cursor: pointer;
+    height: 36px;
+    border-bottom: 1px solid #bcb8b8;
   }
   .row-img:hover {
     color: #560731;
@@ -311,6 +312,7 @@ export const template = html`
   .matches-list-title{
     line-height: 40px;
     font-weight: 600;
+    border-bottom: 1px solid #ccc;
   }
 
   .matches-list .row {
@@ -377,12 +379,6 @@ export const template = html`
 
   <div class="ink-panel-header">
     <div class="ink-tab-group">
-      <div data-tab="normal" id="normal-filter-tab" class="ink-tab projection-tab">
-        Normal Query
-      </div>
-      <paper-tooltip for="normal-filter-tab" position="bottom" animation-delay="0" fit-to-visible-bounds>
-        Normal Query
-      </paper-tooltip>
       <template is="dom-if" if="[[shownormal]]">
       <div data-tab="advanced" id="al-filter-tab" class="ink-tab projection-tab">
         Active Learning
@@ -401,6 +397,13 @@ export const template = html`
      <paper-tooltip for="al-filter-tab" position="bottom" animation-delay="0" fit-to-visible-bounds>
       Query By Actived Learning
      </paper-tooltip>
+
+     <div data-tab="normal" id="normal-filter-tab" class="ink-tab projection-tab">
+      Normal Query
+     </div>
+    <paper-tooltip for="normal-filter-tab" position="bottom" animation-delay="0" fit-to-visible-bounds>
+       Normal Query
+    </paper-tooltip>
     </div>
   </div>
 
@@ -427,9 +430,9 @@ export const template = html`
           </paper-input>
           <paper-input value="{{confidenceThresholdTo}}" label="confidence to:">
           </paper-input>
+          <button style="width: 100px; margin-top:14px;margin-left:10px;" class="search-button search">Query</button>
         </div>
       </div>
-      <button style="width: 320px;" class="search-button search" style="margin-top:0px;">Query By Condition</button>
       <div>
       </div>
     </div>
@@ -451,8 +454,9 @@ export const template = html`
       <paper-tooltip position="bottom" animation-delay="0" fit-to-visible-bounds>
       query By active Learning
       </paper-tooltip>
+      <button style="width: 100px; margin-top: 14px;" class="query-by-stratergy search-button search">Query</button>
     </div>
-    <button style="width: 320px;" class="query-by-stratergy search-button search">Query By Strategy(& Selection)</button>
+
     <!--<div style="display:flex;">
       <paper-input style="width: 120px; margin-right:10px;" value="{{suggestKNum}}" label="k number"></paper-input>
       <button style="width: 140px;" class="query-suggestion search-button search">Query Similar</button>
@@ -480,7 +484,7 @@ export const template = html`
         </template>
       </paper-listbox>
     </paper-dropdown-menu>
-      <paper-input value="{{budget}}" label="number of query" style="margin-right: 10px;"></paper-input>
+      <paper-input value="{{anomalyRecNum}}" label="number of query" style="margin-right: 10px;"></paper-input>
       <button style="width: 100px;" class="query-anomaly search-button search">Query</button>
     </div>
     <paper-tooltip position="bottom" animation-delay="0" fit-to-visible-bounds>
@@ -498,7 +502,7 @@ export const template = html`
       <paper-input value="{{epochTo}}" label="iteration to:">
       </paper-input>
     </div>-->
-    <div class="flex-container" style="justify-content:space-around;">
+    <div class="flex-container" style="justify-content:space-around;height: 30px;">
       <p class="total-epoch" style="margin-top:26px;">total: {{totalEpoch}}</p>
       <p class="current-epoch" style="margin-top:26px;">iteration: {{currentPlayedEpoch}}</p>
     </div>
@@ -616,17 +620,27 @@ export const template = html`
       <div class="metadata-list"></div>
     </div>
     <div class="matches-list" style="display: none">
-     <div class="matches-list-title">[[queryResultListTitle]]</div>
+   
+    <div class="matches-list-title">[[queryResultListTitle]]</div>
+    
+     <template is="dom-if" if="[[showCheckAllQueryRes]]">
+     <div style="display:flex;">
+     <paper-input value="{{moreRecommednNum}}" label="more recommend num:">
+     </paper-input>
+     <button style="margin:10px 0;" class="button query-by-sel-btn">More Recommend</button>
+     </div>
+     </template>
+
      <!--<div class="buttons">
      <button class="button reset-filter">Show All</button>
      <button class="button set-filter">Filter query result</button>
      <button class="button clear-selection">Clear Selection</button>
      </div>-->
-     <div class="matches-list-title"> 
+     <div class="matches-list-title" style="background:#eaeaea; line-height:40px;"> 
      <template is="dom-if" if="[[showCheckAllQueryRes]]">
      <paper-checkbox style="margin: 0px -2px 0px 5px;" id="label-points-toggle" checked="{{checkAllQueryRes}}"></paper-checkbox>
      </template>
-     <span class="queryResColumnHeader">index</span><span class="queryResColumnHeader">predict</span><span class="queryResColumnHeader">result</span> <template is="dom-if" if="[[showCheckAllQueryRes]]"><span class="queryResColumnHeader">score</span></template></div>
+     <span class="queryResColumnHeader">index</span><span class="queryResColumnHeader">predict</span><span class="queryResColumnHeader">estimation</span> <template is="dom-if" if="[[showCheckAllQueryRes]]"><span class="queryResColumnHeader">score</span></template></div>
       <div class="list"></div>
       <div class="limit-msg">Showing only the first 100 results...</div>
     </div>

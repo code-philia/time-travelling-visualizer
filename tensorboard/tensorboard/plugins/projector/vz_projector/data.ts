@@ -686,6 +686,7 @@ export class DataSet {
         stepCallback(this.tSNEIteration, evaluation, new_selection, filterIndices, this.tSNETotalIter);
       }).catch(error => {
         console.log(error);
+        logging.setErrorMessage('error');
         stepCallback(null, null, null, null, null);
       });
 
@@ -794,12 +795,16 @@ export class DataSet {
         if (window.modelMath) {
           this.DVIsubjectModelPath = window.modelMath
         }
+        let indices = newIndices.filter((item, i, arr) => {
+          //函数自身返回的是一个布尔值，只当返回值为true时，当前元素才会存入新的数组中。            
+          return item <= 49999
+        })
         
         await fetch("http://" + this.DVIServer + "/al_train", {
           method: 'POST',
           body: JSON.stringify({
             "iteration": this.tSNEIteration,
-            "newIndices": newIndices,
+            "newIndices": indices,
             "content_path": this.DVIsubjectModelPath,
           }),
           headers: headers,
@@ -1045,7 +1050,7 @@ export class DataSet {
           window.DVIDataList = this.DVIDataList
           stepCallback(this.tSNEIteration, evaluation, new_selection, filterIndices, this.tSNETotalIter);
         }).catch(error => {
-          // logging.setErrorMessage('querying for indices');
+          logging.setErrorMessage('Error');
           console.log(error);
           stepCallback(null, null, null, null, null);
         });
