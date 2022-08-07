@@ -194,4 +194,4 @@ def update_epoch_projection(timevis, EPOCH, predicates):
     ulb = np.setdiff1d(training_data_index, lb)
     properties[ulb] = 1
     
-    return embedding_2d, grid, b_fig, label_color_list, label_list, max_iter, training_data_index, testing_data_index, eval_new, prediction_list, selected_points, properties
+    return embedding_2d.tolist(), grid, b_fig, label_color_list, label_list, max_iter, training_data_index, testing_data_index, eval_new, prediction_list, selected_points, properties
