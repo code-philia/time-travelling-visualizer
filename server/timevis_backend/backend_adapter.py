@@ -10,41 +10,29 @@ import numpy as np
 # os.environ["OMP_NUM_THREADS"] = "1"
 
 import torch.nn
-import torch.optim as optim
-from torch.utils.data import DataLoader, Subset
+from torch.utils.data import DataLoader
 from torch.utils.data import WeightedRandomSampler
 import torchvision
 
 from scipy.special import softmax
 from sklearn.neighbors import NearestNeighbors
 
-# if:IOError: [Errno socket error] [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed (_ssl.c:727)
-#import ssl
-#ssl._create_default_https_context = ssl._create_unverified_context
-
-timevis_path = "D:\\code-space\\DLVisDebugger" #limy 
-# timevis_path = "../../DLVisDebugger" #xianglin#yvonne
+# timevis_path = "D:\\code-space\\DLVisDebugger" #limy 
+timevis_path = "../../DLVisDebugger" #xianglin#yvonne
 sys.path.append(timevis_path)
 from singleVis.utils import *
-from singleVis.SingleVisualizationModel import SingleVisualizationModel
-from singleVis.data import DataProvider
-from singleVis.eval.evaluator import Evaluator
-from singleVis.trainer import SingleVisTrainer
-from singleVis.losses import ReconstructionLoss, UmapLoss, SingleVisLoss
-from singleVis.visualizer import visualizer
 from singleVis.custom_weighted_random_sampler import CustomWeightedRandomSampler
 from singleVis.edge_dataset import DataHandler
-from singleVis.eval.evaluator import Evaluator
 from singleVis.spatial_edge_constructor import SingleEpochSpatialEdgeConstructor
 
-active_learning_path = "D:\\code-space\\ActiveLearning"  # limy 
-# active_learning_path = "../../ActiveLearning"
+# active_learning_path = "D:\\code-space\\ActiveLearning"  # limy 
+active_learning_path = "../../ActiveLearning"
 sys.path.append(active_learning_path)
 
 class TimeVisBackend:
-    def __init__(self, data_provider, trainer, vis, evaluator, **hyperparameters) -> None:
+    def __init__(self, data_provider, projector, vis, evaluator, **hyperparameters) -> None:
         self.data_provider = data_provider
-        self.trainer = trainer
+        self.projector = projector
         self.vis = vis
         self.evaluator = evaluator
         self.hyperparameters = hyperparameters
@@ -54,22 +42,6 @@ class TimeVisBackend:
     #                                                                                                               #
     #################################################################################################################
 
-    def batch_project(self, data):
-        embedding = self.trainer.model.encoder(torch.from_numpy(data).to(dtype=torch.float32, device=self.trainer.DEVICE)).cpu().detach().numpy()
-        return embedding
-    
-    def individual_project(self, data):
-        embedding = self.trainer.model.encoder(torch.from_numpy(np.expand_dims(data, axis=0)).to(dtype=torch.float32, device=self.trainer.DEVICE)).cpu().detach().numpy()
-        return embedding.squeeze(axis=0)
-    
-    def batch_inverse(self, embedding):
-        data = self.trainer.model.decoder(torch.from_numpy(embedding).to(dtype=torch.float32, device=self.trainer.DEVICE)).cpu().detach().numpy()
-        return data
-    
-    def individual_inverse(self, embedding):
-        data = self.trainer.model.decoder(torch.from_numpy(np.expand_dims(embedding, axis=0)).to(dtype=torch.float32, device=self.trainer.DEVICE)).cpu().detach().numpy()
-        return data.squeeze(axis=0)
-
     def batch_inv_preserve(self, epoch, data):
         """
         get inverse confidence for a single point
@@ -78,9 +50,8 @@ class TimeVisBackend:
         :return l: boolean, whether reconstruction data have the same prediction
         :return conf_diff: float, (0, 1), confidence difference
         """
-        self.trainer.model.eval()
-        embedding = self.batch_project(data)
-        recon = self.batch_inverse(embedding)
+        embedding = self.projector.batch_project(epoch, data)
+        recon = self.projector.batch_inverse(epoch, embedding)
     
         ori_pred = self.data_provider.get_pred(epoch, data)
         new_pred = self.data_provider.get_pred(epoch, recon)
@@ -139,165 +110,26 @@ class TimeVisBackend:
             res = list(range(0, train_num + test_num, 1))
         return res
     
-    def detect_noise(self, cls_num):
-        # extract samples
-        train_num = self.train_num
-        repr_dim = self.representation_dim
-        epoch_num = (self.e - self.s)//self.p + 1
-        samples = np.zeros((epoch_num, train_num, repr_dim))
-        for i in range(self.s, self.e+1, self.p):
-            samples[(i-self.s)//self.p] = self.train_representation(i)
+    # def detect_noise(self, cls_num):
+    #     # extract samples
+    #     train_num = self.train_num
+    #     repr_dim = self.representation_dim
+    #     epoch_num = (self.e - self.s)//self.p + 1
+    #     samples = np.zeros((epoch_num, train_num, repr_dim))
+    #     for i in range(self.s, self.e+1, self.p):
+    #         samples[(i-self.s)//self.p] = self.train_representation(i)
         
-        # embeddings
-        embeddings_2d = np.zeros((train_num, epoch_num, 2))
-        for i in range(train_num):
-            embedding_2d = self.trainer.model.encoder(torch.from_numpy(samples[:,i,:]).to(device=self.data_provider.DEVICE, dtype=torch.float)).cpu().detach().numpy()
-            embeddings_2d[i] = embedding_2d
+    #     # embeddings
+    #     embeddings_2d = np.zeros((train_num, epoch_num, 2))
+    #     for i in range(train_num):
+    #         embedding_2d = self.trainer.model.encoder(torch.from_numpy(samples[:,i,:]).to(device=self.data_provider.DEVICE, dtype=torch.float)).cpu().detach().numpy()
+    #         embeddings_2d[i] = embedding_2d
         
-        train_labels = self.data_provider.train_labels(self.s)
+    #     train_labels = self.data_provider.train_labels(self.s)
 
-        cls = np.argwhere(train_labels == cls_num).squeeze()
-        high_data = embeddings_2d[cls].reshape(len(cls), -1)
-        labels, scores, centroid, centroid_labels, embedding = test_abnormal(high_data)
-
-
-
-
-    #################################################################################################################
-    #                                                                                                               #
-    #                                             Helper Functions                                                  #
-    #                                                                                                               #
-    #################################################################################################################
-
-    def get_epoch_index(self, epoch_id):
-        """get the training data index for an epoch"""
-        index_file = os.path.join(self.data_provider.model_path, "Epoch_{:d}".format(epoch_id), "index.json")
-        index = load_labelled_data_index(index_file)
-        return index
-
-
-class HybridTimeVisBackend(TimeVisBackend):
-
-    def __init__(self, data_provider, trainer, vis, evaluator, **hyperparameters) -> None:
-        self.data_provider = data_provider
-        self.trainer = trainer
-        self.trainer.model.eval()
-        self.vis = vis
-        self.evaluator = evaluator
-        self.hyperparameters = hyperparameters
-    #################################################################################################################
-    #                                                                                                               #
-    #                                                data Panel                                                     #
-    #                                                                                                               #
-    #################################################################################################################
-
-    def batch_project(self, data):
-        embedding = self.trainer.model.encoder(torch.from_numpy(data).to(dtype=torch.float32, device=self.trainer.DEVICE)).cpu().detach().numpy()
-        return embedding
-    
-    def individual_project(self, data):
-        embedding = self.trainer.model.encoder(torch.from_numpy(np.expand_dims(data, axis=0)).to(dtype=torch.float32, device=self.trainer.DEVICE)).cpu().detach().numpy()
-        return embedding.squeeze(axis=0)
-    
-    def batch_inverse(self, embedding):
-        data = self.trainer.model.decoder(torch.from_numpy(embedding).to(dtype=torch.float32, device=self.trainer.DEVICE)).cpu().detach().numpy()
-        return data
-    
-    def individual_inverse(self, embedding):
-        data = self.trainer.model.decoder(torch.from_numpy(np.expand_dims(embedding, axis=0)).to(dtype=torch.float32, device=self.trainer.DEVICE)).cpu().detach().numpy()
-        return data.squeeze(axis=0)
-
-    def batch_inv_preserve(self, epoch, data):
-        """
-        get inverse confidence for a single point
-        :param epoch: int
-        :param data: numpy.ndarray
-        :return l: boolean, whether reconstruction data have the same prediction
-        :return conf_diff: float, (0, 1), confidence difference
-        """
-        self.trainer.model.eval()
-        embedding = self.batch_project(data)
-        recon = self.batch_inverse(embedding)
-    
-        ori_pred = self.data_provider.get_pred(epoch, data)
-        new_pred = self.data_provider.get_pred(epoch, recon)
-        ori_pred = softmax(ori_pred, axis=1)
-        new_pred = softmax(new_pred, axis=1)
-
-        old_label = ori_pred.argmax(-1)
-        new_label = new_pred.argmax(-1)
-        l = old_label == new_label
-
-        old_conf = [ori_pred[i, old_label[i]] for i in range(len(old_label))]
-        new_conf = [new_pred[i, old_label[i]] for i in range(len(old_label))]
-        old_conf = np.array(old_conf)
-        new_conf = np.array(new_conf)
-
-        conf_diff = old_conf - new_conf
-        return l, conf_diff
-    
-    #################################################################################################################
-    #                                                                                                               #
-    #                                                Search Panel                                                   #
-    #                                                                                                               #
-    #################################################################################################################
-
-    # TODO: fix bugs accroding to new api
-    # customized features
-    def filter_label(self, label, epoch_id):
-        try:
-            index = self.data_provider.classes.index(label)
-        except:
-            index = -1
-        train_labels = self.data_provider.train_labels(epoch_id)
-        test_labels = self.data_provider.test_labels(epoch_id)
-        labels = np.concatenate((train_labels, test_labels), 0)
-        idxs = np.argwhere(labels == index)
-        idxs = np.squeeze(idxs)
-        return idxs
-
-    def filter_type(self, type, epoch_id):
-        if type == "train":
-            res = self.get_epoch_index(epoch_id)
-        elif type == "test":
-            train_num = self.data_provider.train_num
-            test_num = self.data_provider.test_num
-            res = list(range(train_num, test_num, 1))
-        elif type == "unlabel":
-            labeled = np.array(self.get_epoch_index(epoch_id))
-            train_num = self.data_provider.train_num
-            all_data = np.arange(train_num)
-            unlabeled = np.setdiff1d(all_data, labeled)
-            res = unlabeled.tolist()
-        else:
-            # all data
-            train_num = self.data_provider.train_num
-            test_num = self.data_provider.test_num
-            res = list(range(0, train_num + test_num, 1))
-        return res
-    
-    def detect_noise(self, cls_num):
-        # extract samples
-        train_num = self.train_num
-        repr_dim = self.representation_dim
-        epoch_num = (self.e - self.s)//self.p + 1
-        samples = np.zeros((epoch_num, train_num, repr_dim))
-        for i in range(self.s, self.e+1, self.p):
-            samples[(i-self.s)//self.p] = self.train_representation(i)
-        
-        # embeddings
-        embeddings_2d = np.zeros((train_num, epoch_num, 2))
-        for i in range(train_num):
-            embedding_2d = self.trainer.model.encoder(torch.from_numpy(samples[:,i,:]).to(device=self.data_provider.DEVICE, dtype=torch.float)).cpu().detach().numpy()
-            embeddings_2d[i] = embedding_2d
-        
-        train_labels = self.data_provider.train_labels(self.s)
-
-        cls = np.argwhere(train_labels == cls_num).squeeze()
-        high_data = embeddings_2d[cls].reshape(len(cls), -1)
-        labels, scores, centroid, centroid_labels, embedding = test_abnormal(high_data)
-
-
+    #     cls = np.argwhere(train_labels == cls_num).squeeze()
+    #     high_data = embeddings_2d[cls].reshape(len(cls), -1)
+    #     # labels, scores, centroid, centroid_labels, embedding = test_abnormal(high_data)
 
 
     #################################################################################################################
@@ -314,8 +146,9 @@ class HybridTimeVisBackend(TimeVisBackend):
 
 
 class ActiveLearningTimeVisBackend(TimeVisBackend):
-    def __init__(self, data_provider, trainer, vis, evaluator, **hyperparameters) -> None:
-        super().__init__(data_provider, trainer, vis, evaluator, **hyperparameters)
+    def __init__(self, data_provider, projector, trainer, vis, evaluator, **hyperparameters) -> None:
+        super().__init__(data_provider, projector, vis, evaluator, **hyperparameters)
+        self.trainer = trainer
     
     def get_epoch_index(self, iteration):
         """get the training data index for an epoch"""
@@ -422,8 +255,12 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         return new_indices, true_labels[new_indices], scores
     
     def al_train(self, iteration, indices):
+        CONTENT_PATH = self.data_provider.content_path
+        # record output information
+        now = time.strftime("%Y-%m-%d-%H_%M_%S", time.localtime(time.time())) 
+        sys.stdout = open(os.path.join(CONTENT_PATH, now+".txt"), "w")
+
         # for reproduce purpose
-        
         print("New indices:\t{}".format(len(indices)))
         self.save_human_selection(iteration, indices)
         lb_idx = self.get_epoch_index(iteration)
@@ -431,7 +268,7 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         print("Training indices:\t{}".format(len(train_idx)))
         print("Valid indices:\t{}".format(len(set(train_idx))))
 
-        CONTENT_PATH = self.data_provider.content_path
+        
         TOTAL_EPOCH = self.hyperparameters["TRAINING"]["total_epoch"]
         NET = self.hyperparameters["TRAINING"]["NET"]
         DEVICE = self.data_provider.DEVICE
