@@ -5,6 +5,7 @@ import json
 import time
 import torch
 import numpy as np
+import pickle
 
 # if active learning warning
 # os.environ["OMP_NUM_THREADS"] = "1"
@@ -17,6 +18,7 @@ import torchvision
 from scipy.special import softmax
 from sklearn.neighbors import NearestNeighbors
 
+from noise_detector import NoiseTrajectoryDetector
 # timevis_path = "D:\\code-space\\DLVisDebugger" #limy 
 timevis_path = "../../DLVisDebugger" #xianglin#yvonne
 sys.path.append(timevis_path)
@@ -109,27 +111,6 @@ class TimeVisBackend:
             test_num = self.data_provider.test_num
             res = list(range(0, train_num + test_num, 1))
         return res
-    
-    # def detect_noise(self, cls_num):
-    #     # extract samples
-    #     train_num = self.train_num
-    #     repr_dim = self.representation_dim
-    #     epoch_num = (self.e - self.s)//self.p + 1
-    #     samples = np.zeros((epoch_num, train_num, repr_dim))
-    #     for i in range(self.s, self.e+1, self.p):
-    #         samples[(i-self.s)//self.p] = self.train_representation(i)
-        
-    #     # embeddings
-    #     embeddings_2d = np.zeros((train_num, epoch_num, 2))
-    #     for i in range(train_num):
-    #         embedding_2d = self.trainer.model.encoder(torch.from_numpy(samples[:,i,:]).to(device=self.data_provider.DEVICE, dtype=torch.float)).cpu().detach().numpy()
-    #         embeddings_2d[i] = embedding_2d
-        
-    #     train_labels = self.data_provider.train_labels(self.s)
-
-    #     cls = np.argwhere(train_labels == cls_num).squeeze()
-    #     high_data = embeddings_2d[cls].reshape(len(cls), -1)
-    #     # labels, scores, centroid, centroid_labels, embedding = test_abnormal(high_data)
 
 
     #################################################################################################################
@@ -442,7 +423,67 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         os.system("mkdir -p {}".format(save_dir))
         self.trainer.save(save_dir=save_dir, file_name="al")
         # TODO evaluate visualization model
-    
 
+
+class AnormalyTimeVisBackend(TimeVisBackend):
+
+    def __init__(self, data_provider, projector, vis, evaluator, **hyperparameters) -> None:
+        super().__init__(data_provider, projector, vis, evaluator, **hyperparameters)
+        file_path = os.path.join(self.data_provider.content_path, 'ntd.pkl')
+        if not os.path.exists(file_path):
+            self._init_detection()
+        else:
+            with open(file_path, 'rb') as f:
+                self.ntd = pickle.load(f)
+        file_path = os.path.join(self.data_provider.content_path, 'clean_label.json')
+        with open(file_path, "r") as f:
+            self.clean_labels = np.array(json.load(f))
+
+    #################################################################################################################
+    #                                                                                                               #
+    #                                            Anormaly Detection                                                 #
+    #                                                                                                               #
+    #################################################################################################################
+
+    def _save(self):
+        with open(os.path.join(self.data_provider.content_path, 'ntd.pkl'), 'wb') as f:
+            pickle.dump(self.ntd, f, pickle.HIGHEST_PROTOCOL)
+
+    def _init_detection(self):
+        # extract samples
+        train_num = self.train_num
+        epoch_num = (self.e - self.s)//self.p + 1
+        embeddings_2d = np.zeros((train_num, epoch_num, 2))
+        for i in range(self.s, self.e+1, self.p):
+            embeddings_2d[(i-self.s)//self.p] = self.projector.batch_project(i, self.train_representation(i))
+
+        train_labels = self.data_provider.train_labels(self.s)
+        trajectories = embeddings_2d.reshape(len(embeddings_2d), -1)
+        ntd = NoiseTrajectoryDetector(trajectories, train_labels)
+        print("Detecting abnormal....")
+        ntd.proj_all(dim=2, period=75)
+        print("Finish detection!")
+
+        self.ntd = ntd
+        self._save()
+    
+    def suggest_abnormal(self, cls_num, idxs, comfirmed, budget):
+        if not self.ntd.detect_noise_cls(cls_num):
+            return np.array([]),np.array([]),np.array([])
+        map_idxs = np.where(self.ntd.labels == cls_num)
+        
+        if len(idxs) > 0:
+            for idx, comfirm in zip(idxs, comfirmed):
+                selected = self.ntd.trajectory_embedding[str(cls_num)][np.where(map_idxs==idx)[0]]
+                self.ntd.update_belief(cls_num, selected, comfirm)
+        
+        # update use
+        _, suggest_idxs, scores, _ = self.ntd.batch_suggest_abnormal(cls_num=cls_num, budget=budget)
+        suggest_idxs = map_idxs[suggest_idxs]
+        suggest_labels = self.clean_labels[suggest_idxs]
+
+        # save results
+        self._save()
+        return suggest_idxs, scores, suggest_labels
         
         
