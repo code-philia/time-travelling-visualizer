@@ -37,7 +37,7 @@ def update_projection():
     predicates = res["predicates"]
     
     sys.path.append(CONTENT_PATH)
-    timevis = initialize_backend(CONTENT_PATH, iteration)
+    timevis = initialize_backend(CONTENT_PATH)
     EPOCH = (iteration-1)*timevis.data_provider.p + timevis.data_provider.s
 
     embedding_2d, grid, decision_view, label_color_list, label_list, max_iter, training_data_index, \
@@ -63,7 +63,7 @@ def filter():
     predicates = res["predicates"]
 
     sys.path.append(CONTENT_PATH)
-    timevis = initialize_backend(CONTENT_PATH, iteration)
+    timevis = initialize_backend(CONTENT_PATH)
     EPOCH = (iteration-1)*timevis.data_provider.p + timevis.data_provider.s
 
     training_data_number = timevis.hyperparameters["TRAINING"]["train_num"]
@@ -163,7 +163,7 @@ def al_query():
     curr_idxs = data["currentIndices"]
 
     sys.path.append(CONTENT_PATH)
-    timevis = initialize_backend(CONTENT_PATH, iteration)
+    timevis = initialize_backend(CONTENT_PATH)
     indices, scores, labels = timevis.al_query(iteration, budget, strategy, prev_idxs, curr_idxs)
 
     # # dummy input
@@ -179,21 +179,21 @@ def al_query():
 def anomaly_query():
     data = request.get_json()
     CONTENT_PATH = os.path.normpath(data['content_path'])
-    strategy = data["strategy"]
     budget = int(data["budget"])
     cls = int(data["cls"])
-    prev_idxs = data["previousIndices"]
-    curr_idxs = data["currentIndices"]
+    idxs = data["indices"]
+    comfirmed = data["comfirm_info"]
 
     sys.path.append(CONTENT_PATH)
 
-    # timevis = initialize_backend(CONTENT_PATH, iteration)
-    # indices, labels = timevis.al_query(iteration, budget, strategy)
+    timevis = initialize_backend(CONTENT_PATH)
+    indices, scores, labels = timevis.suggest_abnormal(cls, idxs, comfirmed, budget)
+    clean_list = timevis.suggest_normal(cls, 1)
 
     # dummy input
-    indices = np.arange(budget)
-    scores = np.random.rand(budget)
-    labels = np.arange(budget)
+    # indices = np.arange(budget)
+    # scores = np.random.rand(budget)
+    # labels = np.arange(budget)
 
     sys.path.remove(CONTENT_PATH)
     return make_response(jsonify({"selectedPoints": indices.tolist(), "scores": scores.tolist(), "suggestLabels":labels.tolist(),"cleanList":[10000,10001,10002]}), 200)
@@ -207,7 +207,7 @@ def al_train():
     iteration = data["iteration"]
     sys.path.append(CONTENT_PATH)
 
-    timevis = initialize_backend(CONTENT_PATH, iteration)
+    timevis = initialize_backend(CONTENT_PATH)
     timevis.al_train(iteration, new_indices)
 
     from config import config
@@ -265,7 +265,7 @@ def login():
 #         EPOCH = (i-1)*EPOCH_PERIOD + EPOCH_START
 
 #         sys.path.append(CONTENT_PATH)
-#         timevis = initialize_backend(CONTENT_PATH, EPOCH)
+#         timevis = initialize_backend(CONTENT_PATH)
 
 #         # detect whether we have query before
 #         fname = "Epoch" if timevis.data_provider.mode == "normal" else "Iteration"
@@ -309,7 +309,6 @@ def get_res():
    
     
     return make_response(jsonify({"results":json_data,"bgimgList":imglist}), 200)
-
 
 if __name__ == "__main__":
     with open('config.json', 'r') as f:

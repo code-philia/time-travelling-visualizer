@@ -17,7 +17,7 @@ from singleVis.eval.evaluator import Evaluator
 from singleVis.visualizer import visualizer
 from singleVis.projector import Projector, ALProjector
 
-def initialize_backend(CONTENT_PATH, EPOCH):
+def initialize_backend(CONTENT_PATH):
 
     from config import config
 

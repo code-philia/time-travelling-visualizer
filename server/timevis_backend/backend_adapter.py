@@ -470,6 +470,8 @@ class AnormalyTimeVisBackend(TimeVisBackend):
     def suggest_abnormal(self, cls_num, idxs, comfirmed, budget):
         if not self.ntd.detect_noise_cls(cls_num):
             return np.array([]),np.array([]),np.array([])
+
+        # TODO verify the correctness of this part (indexing...)
         map_idxs = np.where(self.ntd.labels == cls_num)
         
         if len(idxs) > 0:
@@ -485,5 +487,17 @@ class AnormalyTimeVisBackend(TimeVisBackend):
         # save results
         self._save()
         return suggest_idxs, scores, suggest_labels
+    
+    def suggest_normal(self, cls_num, budget):
+        if not self.ntd.detect_noise_cls(cls_num):
+            return np.array([])
+        map_idxs = np.where(self.ntd.labels == cls_num)
+
+        scores = self.ntd.query_noise_score(cls_num)
+        idxs = np.flip(np.argsort(scores)[:budget])
+        suggest_idx = map_idxs[idxs]
+        scores = scores[idxs]
+
+        return suggest_idx, scores
         
         
