@@ -147,7 +147,11 @@ export const template = html`
     align-items: center;
     cursor: pointer;
     height: 36px;
+    justify-content:space-around;
     border-bottom: 1px solid #bcb8b8;
+  }
+  .resTable{
+    width:100%;
   }
   .row-img:hover {
     color: #560731;
@@ -623,7 +627,7 @@ export const template = html`
    
     <div class="matches-list-title">[[queryResultListTitle]]</div>
     
-     <template is="dom-if" if="[[showCheckAllQueryRes]]">
+     <template is="dom-if" if="[[showMoreRecommend]]">
      <div style="display:flex;">
      <paper-input value="{{moreRecommednNum}}" label="more recommend num:">
      </paper-input>
@@ -636,11 +640,11 @@ export const template = html`
      <button class="button set-filter">Filter query result</button>
      <button class="button clear-selection">Clear Selection</button>
      </div>-->
-     <div class="matches-list-title" style="background:#eaeaea; line-height:40px;"> 
+     <div class="matches-list-title" style="background:#eaeaea; line-height:40px;display: flex;justify-content: space-around;"> 
      <template is="dom-if" if="[[showCheckAllQueryRes]]">
-     <paper-checkbox style="margin: 0px -2px 0px 5px;" id="label-points-toggle" checked="{{checkAllQueryRes}}"></paper-checkbox>
+     <paper-checkbox style="margin: 10px -2px 0px 5px;" id="label-points-toggle" checked="{{checkAllQueryRes}}"></paper-checkbox>
      </template>
-     <span class="queryResColumnHeader">index</span><span class="queryResColumnHeader">predict</span><span class="queryResColumnHeader">estimation</span> <template is="dom-if" if="[[showCheckAllQueryRes]]"><span class="queryResColumnHeader">score</span></template></div>
+     <span class="queryResColumnHeader">index</span><span class="queryResColumnHeader">predict</span><template is="dom-if" if="[[showMoreRecommend]]"><span class="queryResColumnHeader">estimation</span></template> <template is="dom-if" if="[[showCheckAllQueryRes]]"><span class="queryResColumnHeader">score</span></template></div>
       <div class="list"></div>
       <div class="limit-msg">Showing only the first 100 results...</div>
     </div>

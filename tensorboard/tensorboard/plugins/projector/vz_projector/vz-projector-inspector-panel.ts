@@ -125,6 +125,9 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   @property({ type: Boolean })
   showAnomaly: boolean = false
 
+  @property({type: Boolean})
+  isControlGroup: boolean = false
+
   @property({ type: Boolean })
   shownormal: boolean = false
 
@@ -133,6 +136,9 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
   @property({ type: Boolean })
   showCheckAllQueryRes: boolean = true
+
+  @property({type: Boolean})
+  showMoreRecommend: boolean = true
 
   @property({type: Number})
   moreRecommednNum: number = 10
@@ -200,8 +206,9 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
     this.currentFilterType = 'normal'
 
-    this.showAnomaly = window.sessionStorage.taskType == 'anormaly detection' || window.taskType == 'anormaly detection'
+    this.showAnomaly = window.sessionStorage.taskType == 'anormaly detection' && window.sessionStorage.isControlGroup !== 'true'
     this.shownormal = window.sessionStorage.taskType == 'active learning' || window.taskType == 'active learning'
+    this.isControlGroup = window.sessionStorage.isControlGroup == 'true'
 
     this.queryByStrategtBtn = this.$$('.query-by-stratergy') as HTMLButtonElement;
     this.moreRecommend = this.$$('.query-by-sel-btn') as HTMLButtonElement;
@@ -544,6 +551,11 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
                 // }
                 // this.projectorScatterPlotAdapter.scatterPlot.setMouseMode(MouseMode.AREA_SELECT);
                 this.showCheckAllQueryRes = true
+                if(window.sessionStorage.isControlGroup == 'true'){
+                  this.showMoreRecommend = false
+                }else{
+                  this.showMoreRecommend = true
+                }
                 this.queryResultListTitle = 'Possible Abnormal Point List'
 
               }
@@ -561,6 +573,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     window.suggestionIndicates = []
     window.checkboxDom = []
     const queryListTable = document.createElement('table');
+    queryListTable.className = 'resTable'
     for (let i = 0; i < indices.length; i++) {
       const index = indices[i];
       const row = document.createElement('th');
@@ -692,13 +705,17 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     // return String(pointIndex) + "Label: " + stringMetaData + " Prediction: " + prediction + " Original label: " + original_label;
     let prediction_res = stringMetaData === prediction ? ' - ' : ' ❗️ '
     if (this.showCheckAllQueryRes == false) {
-      return `${displayPointIndex}|${displayprediction}|${prediction_res}`
+      if(window.sessionStorage.isControlGroup == 'true'){
+        return `${displayPointIndex}|${displayprediction}`
+      }else{
+        return `${displayPointIndex}|${displayprediction}|${prediction_res}`
+      }
     }
-    // if (suggest_label !== undefined) {
-    //   return displayPointIndex + " | " + displayStringMetaData + `(${suggest_label})` + " | " + displayprediction + " | " + prediction_res + " | " + score
-    // } else {
-    return `${displayPointIndex}|${displayprediction}|${prediction_res}|${score !== undefined ? score : '-'}`
-    // }
+    if(window.sessionStorage.isControlGroup == 'true'){
+      return `${displayPointIndex}|${displayprediction}|${score !== undefined ? score : '-'}`
+    }else{
+      return `${displayPointIndex}|${displayprediction}|${prediction_res}|${score !== undefined ? score : '-'}`
+    }
   }
   private getnnLabelFromIndex(pointIndex: number): string {
     const metadata = this.projector.dataSet.points[pointIndex].metadata[
@@ -851,7 +868,8 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       });
     }
     if (window)
-      if (window.sessionStorage.taskType === 'anormaly detection') {
+      if (window.sessionStorage.taskType === 'anormaly detection' && window.sessionStorage.isControlGroup !== 'true'
+      ) {
         self.showTab('anomaly');
       } else if (window.sessionStorage.taskType === 'active learning') {
         self.showTab('advanced');
@@ -950,6 +968,11 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             // }
             // this.projectorScatterPlotAdapter.scatterPlot.setMouseMode(MouseMode.AREA_SELECT);
             this.showCheckAllQueryRes = true
+            if(window.sessionStorage.isControlGroup == 'true'){
+              this.showMoreRecommend = false
+            }else{
+              this.showMoreRecommend = true
+            }
             this.queryResultListTitle = 'Possible Abnormal Point List'
 
           }
@@ -1138,6 +1161,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             }
             // console.log('this.queryIndices',this.queryIndices)
             this.showCheckAllQueryRes = false
+            this.showMoreRecommend = false
             this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'normal');
             this.queryResultListTitle = 'Query Result List'
           }
@@ -1168,6 +1192,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
 
   private queryByAl(projector, currentIndices, previoustIIndices,querNum?) {
+    let that = this
     let num = Number(this.budget)
     if(querNum){
       num = Number(querNum)
@@ -1198,6 +1223,12 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             this.projectorEventContext.setMouseMode(MouseMode.AREA_SELECT)
           }
           this.showCheckAllQueryRes = true
+
+          if(window.sessionStorage.isControlGroup == 'true'){
+            this.showMoreRecommend = false
+          }else{
+            this.showMoreRecommend = true
+          }
           this.checkAllQueryRes = false
           this.queryResultListTitle = 'Active Learning suggestion'
           // this.projectorScatterPlotAdapter.scatterPlot.setMouseMode(MouseMode.AREA_SELECT);

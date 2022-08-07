@@ -768,11 +768,11 @@ export class ProjectorScatterPlotAdapter {
       let dst = 0;
       if (selectedPointCount > 0) {
         for (let i = 0; i < n; ++i) {
-          let c = new THREE.Color(unselectedColor);
           let point = ds.points[i]
+          let c = new THREE.Color(point.color)
           //filter之后 只有unlabel无颜色
-          if (window.properties && window.properties[window.iteration] && window.properties[window.iteration][i] !== 1) {
-            c = new THREE.Color(point.color)
+          if (window.properties && window.properties[window.iteration] && window.properties[window.iteration][i] === 1) {
+            c = new THREE.Color(unselectedColor);
           }
           colors[dst++] = c.r;
           colors[dst++] = c.g;
