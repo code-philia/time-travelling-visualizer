@@ -615,7 +615,7 @@ class Projector
   ///
   setDynamicNoisy() {
     // this.setDynamicStop()
-    if(window.customSelection && window.customSelection.length){
+    if (window.customSelection && window.customSelection.length) {
       this.filterDataset(window.customSelection)
     }
     // this.filterDataset(this.selectedPointIndices)
@@ -635,8 +635,8 @@ class Projector
     if (this.intervalFlag) {
       this.intervalFlag = false
       this.timer = window.setInterval(() => {
-        console.log('start',this.timer)
-        
+        console.log('start', this.timer)
+
         this.inspectorPanel.updateCurrentPlayEpoch(current)
         window.iteration = current;
         for (let i = 0; i < this.dataSet.points.length; i++) {
@@ -692,6 +692,10 @@ class Projector
       this.intervalFlag = true
       this.resetFilterDataset()
     }
+    let end = setInterval(function () { }, 10000);
+    for (let i = 1; i <= end; i++) {
+      clearInterval(i);
+    }
 
     this.iteration = this.currentIteration
     window.iteration = this.currentIteration
@@ -704,13 +708,13 @@ class Projector
 
   refresh() {
     // this.projectorScatterPlotAdapter.scatterPlot.render()
-    this.metadataCard.updateCustomList(this.dataSet.points,this as ProjectorEventContext)
+    this.metadataCard.updateCustomList(this.dataSet.points, this as ProjectorEventContext)
     // this.projectorScatterPlotAdapter.scatterPlot.render()
     this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
     this.projectorScatterPlotAdapter.render()
   }
-  removecustomInMetaCard(){
-    this.metadataCard.updateCustomList(this.dataSet.points,this as ProjectorEventContext)
+  removecustomInMetaCard() {
+    this.metadataCard.updateCustomList(this.dataSet.points, this as ProjectorEventContext)
     this.inspectorPanel.refreshSearchResult()
     this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
     this.projectorScatterPlotAdapter.render()
@@ -730,7 +734,7 @@ class Projector
       } else {
         window.alQueryResPointIndices = []
       }
-      this.metadataCard.updateCustomList(this.dataSet.points,this as ProjectorEventContext)
+      this.metadataCard.updateCustomList(this.dataSet.points, this as ProjectorEventContext)
     }
     if (selectionType === 'isShowSelected') {
       for (let i = 0; i < window.previousIndecates?.length; i++) {
@@ -741,7 +745,7 @@ class Projector
         }
         // }
       }
-      this.metadataCard.updateCustomList(this.dataSet.points,this as ProjectorEventContext)
+      this.metadataCard.updateCustomList(this.dataSet.points, this as ProjectorEventContext)
       this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
       this.projectorScatterPlotAdapter.render()
       return
@@ -767,7 +771,7 @@ class Projector
           }
         }
       }
-      this.metadataCard.updateCustomList(this.dataSet.points,this as ProjectorEventContext)
+      this.metadataCard.updateCustomList(this.dataSet.points, this as ProjectorEventContext)
       this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
       this.projectorScatterPlotAdapter.render()
       return
@@ -1204,7 +1208,7 @@ class Projector
   // }
   notifyProjectionPositionsUpdated() {
     this.projectorScatterPlotAdapter.notifyProjectionPositionsUpdated();
-    this.metadataCard.updateCustomList(this.dataSet.points,this as ProjectorEventContext)
+    this.metadataCard.updateCustomList(this.dataSet.points, this as ProjectorEventContext)
   }
   /**
    * Gets the current view of the embedding and saves it as a State object.
@@ -1386,12 +1390,12 @@ class Projector
     let headers = new Headers();
     headers.append('Content-Type', 'application/json');
     headers.append('Accept', 'application/json');
-    console.log('currentIndices',currentIndices)
+    console.log('currentIndices', currentIndices)
     let indices = currentIndices.filter((item, i, arr) => {
       //函数自身返回的是一个布尔值，只当返回值为true时，当前元素才会存入新的数组中。            
       return item <= 49999
     })
-    console.log('indices',indices)
+    console.log('indices', indices)
     fetch(`http://${this.DVIServer}/al_query`, {
       method: 'POST',
       body: JSON.stringify({
