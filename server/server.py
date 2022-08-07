@@ -240,6 +240,8 @@ def login():
         return make_response(jsonify({"normal_content_path": 'D:\\datasets\\al',"unormaly_content_path":'D:\\datasets\\timevis\\toy_model\\resnet18_cifar10'}), 200) #limy
         # return make_response(jsonify({"normal_content_path": '/home/xianglin/projects/DVI_data/active_learning/base/resnet18',"unormaly_content_path":'/home/xianglin/projects/DVI_data/noisy/symmetric/cifar10'}), 200) #xianglin
         # return make_response(jsonify({"normal_content_path": '/Users/zhangyifan/Downloads/al',"unormaly_content_path":'/Users/zhangyifan/Downloads/toy_model/resnet18_cifar10'}), 200) #yvonne
+    elif username == 'controlGroup' and password == '123qwe': # mock
+        return make_response(jsonify({"normal_content_path": 'D:\\datasets\\al',"unormaly_content_path":'D:\\datasets\\timevis\\toy_model\\resnet18_cifar10',"isControl":True}), 200) #limy
     else:
         return make_response(jsonify({"message":"username or password is wrong"}), 200)
   
