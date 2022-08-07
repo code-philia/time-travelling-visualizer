@@ -701,8 +701,14 @@ class Projector
 
   refresh() {
     // this.projectorScatterPlotAdapter.scatterPlot.render()
-    this.metadataCard.updateCustomList(this.dataSet.points)
+    this.metadataCard.updateCustomList(this.dataSet.points,this as ProjectorEventContext)
     // this.projectorScatterPlotAdapter.scatterPlot.render()
+    this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
+    this.projectorScatterPlotAdapter.render()
+  }
+  removecustomInMetaCard(){
+    this.metadataCard.updateCustomList(this.dataSet.points,this as ProjectorEventContext)
+    this.inspectorPanel.refreshSearchResult()
     this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
     this.projectorScatterPlotAdapter.render()
   }
@@ -721,7 +727,7 @@ class Projector
       } else {
         window.alQueryResPointIndices = []
       }
-      this.metadataCard.updateCustomList(this.dataSet.points)
+      this.metadataCard.updateCustomList(this.dataSet.points,this as ProjectorEventContext)
     }
     if (selectionType === 'isShowSelected') {
       for (let i = 0; i < window.previousIndecates?.length; i++) {
@@ -732,7 +738,7 @@ class Projector
         }
         // }
       }
-      this.metadataCard.updateCustomList(this.dataSet.points)
+      this.metadataCard.updateCustomList(this.dataSet.points,this as ProjectorEventContext)
       this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
       this.projectorScatterPlotAdapter.render()
       return
@@ -758,7 +764,7 @@ class Projector
           }
         }
       }
-      this.metadataCard.updateCustomList(this.dataSet.points)
+      this.metadataCard.updateCustomList(this.dataSet.points,this as ProjectorEventContext)
       this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
       this.projectorScatterPlotAdapter.render()
       return
@@ -1195,7 +1201,7 @@ class Projector
   // }
   notifyProjectionPositionsUpdated() {
     this.projectorScatterPlotAdapter.notifyProjectionPositionsUpdated();
-    this.metadataCard.updateCustomList(this.dataSet.points)
+    this.metadataCard.updateCustomList(this.dataSet.points,this as ProjectorEventContext)
   }
   /**
    * Gets the current view of the embedding and saves it as a State object.
