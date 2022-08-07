@@ -190,13 +190,9 @@ def anomaly_query():
     indices, scores, labels = timevis.suggest_abnormal(cls, idxs, comfirmed, budget)
     clean_list = timevis.suggest_normal(cls, 1)
 
-    # dummy input
-    # indices = np.arange(budget)
-    # scores = np.random.rand(budget)
-    # labels = np.arange(budget)
 
     sys.path.remove(CONTENT_PATH)
-    return make_response(jsonify({"selectedPoints": indices.tolist(), "scores": scores.tolist(), "suggestLabels":labels.tolist(),"cleanList":[10000,10001,10002]}), 200)
+    return make_response(jsonify({"selectedPoints": indices.tolist(), "scores": scores.tolist(), "suggestLabels":labels.tolist(),"cleanList":clean_list.tolist()}), 200)
 
 @app.route('/al_train', methods=["POST"])
 @cross_origin()
