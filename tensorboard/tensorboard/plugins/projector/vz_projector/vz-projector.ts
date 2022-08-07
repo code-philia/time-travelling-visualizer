@@ -633,8 +633,10 @@ class Projector
     current = Number(interationList[0])
     let count = 0
     if (this.intervalFlag) {
+      this.intervalFlag = false
       this.timer = window.setInterval(() => {
-        this.intervalFlag = false
+        console.log('start',this.timer)
+        
         this.inspectorPanel.updateCurrentPlayEpoch(current)
         window.iteration = current;
         for (let i = 0; i < this.dataSet.points.length; i++) {
@@ -683,6 +685,7 @@ class Projector
     this.onIterationChange(current);
   }
   setDynamicStop() {
+    window.isAnimatating = false
     console.log('this.timer', this.timer)
     if (this.timer && !this.intervalFlag) {
       window.clearInterval(this.timer)
