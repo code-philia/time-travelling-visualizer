@@ -125,7 +125,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   @property({ type: Boolean })
   showAnomaly: boolean = false
 
-  @property({type: Boolean})
+  @property({ type: Boolean })
   isControlGroup: boolean = false
 
   @property({ type: Boolean })
@@ -137,10 +137,10 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   @property({ type: Boolean })
   showCheckAllQueryRes: boolean = true
 
-  @property({type: Boolean})
+  @property({ type: Boolean })
   showMoreRecommend: boolean = true
 
-  @property({type: Number})
+  @property({ type: Number })
   moreRecommednNum: number = 10
 
 
@@ -159,6 +159,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   private moreRecommend: HTMLButtonElement;
   private queryAnomalyBtn: HTMLButtonElement;
   private showSelectionBtn: HTMLButtonElement;
+  private noisyshowSelectionBtn: HTMLButtonElement;
 
   private boundingSelectionBtn: HTMLButtonElement;
   private isAlSelecting: boolean;
@@ -212,7 +213,8 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
     this.queryByStrategtBtn = this.$$('.query-by-stratergy') as HTMLButtonElement;
     this.moreRecommend = this.$$('.query-by-sel-btn') as HTMLButtonElement;
-    this.showSelectionBtn = this.$$('.show-selection') as HTMLButtonElement
+    this.showSelectionBtn = this.$$('.show-selection') as HTMLButtonElement;
+    this.noisyshowSelectionBtn = this.$$('.noisy-show-selection') as HTMLButtonElement
     this.queryAnomalyBtn = this.$$('.query-anomaly') as HTMLButtonElement;
     // this.boundingSelectionBtn = this.$$('.bounding-selection') as HTMLButtonElement;
 
@@ -482,11 +484,11 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   clearQueryResList() {
     this.updateSearchResults([])
   }
-  refreshSearchResult(){
+  refreshSearchResult() {
     this.updateSearchResults(this.queryIndices)
   }
   private async updateSearchResults(indices: number[]) {
-    
+
     const container = this.$$('.matches-list') as HTMLDivElement;
     const list = container.querySelector('.list') as HTMLDivElement;
     list.textContent = '';
@@ -503,7 +505,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     // const msgId = logging.setModalMessage('Fetching sprite image...');
     if (this.moreRecommend) {
       this.moreRecommend.onclick = () => {
-        if(!window.customSelection || !window.customSelection.length){
+        if (!window.customSelection || !window.customSelection.length) {
           logging.setErrorMessage('Please confirm some selection first');
           return
         }
@@ -524,11 +526,18 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
               }
             }
           }
-          this.queryByAl(this.projector, currentIndices, previoustIIndices,this.moreRecommednNum)
+          this.queryByAl(this.projector, currentIndices, previoustIIndices, this.moreRecommednNum)
         } else if (window.sessionStorage.taskType === 'anormaly detection') {
+          let confirmInfo: any[] = []
+          for (let i = 0; i < window.queryResAnormalIndecates.length; i++) {
+            let value = Boolean(window.customSelection.indexOf(window.queryResAnormalIndecates[i]) !== -1)
+            confirmInfo.push(value)
+            if (value && window.previousIndecates.indexOf(window.queryResAnormalIndecates[i]) === -1) {
+              window.previousIndecates.push(window.queryResAnormalIndecates[i])
+            }
+          }
           this.projector.queryAnormalyStrategy(
-            '',
-            Number(this.moreRecommednNum), this.selectedAnormalyClass, window.customSelection, window.customSelection,
+            Number(this.moreRecommednNum), this.selectedAnormalyClass, window.queryResAnormalIndecates, confirmInfo,
             (indices: any, cleansIndices: any) => {
               if (indices != null) {
                 // this.queryIndices = indices;
@@ -542,6 +551,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
                 window.queryResAnormalCleanIndecates = cleansIndices
 
                 this.queryIndices = indices.concat(window.queryResAnormalCleanIndecates)
+
                 this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isAnormalyQuery');
                 // if (!this.isAlSelecting) {
                 //   this.isAlSelecting = true
@@ -551,9 +561,9 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
                 // }
                 // this.projectorScatterPlotAdapter.scatterPlot.setMouseMode(MouseMode.AREA_SELECT);
                 this.showCheckAllQueryRes = true
-                if(window.sessionStorage.isControlGroup == 'true'){
+                if (window.sessionStorage.isControlGroup == 'true') {
                   this.showMoreRecommend = false
-                }else{
+                } else {
                   this.showMoreRecommend = true
                 }
                 this.queryResultListTitle = 'Possible Abnormal Point List'
@@ -705,15 +715,15 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     // return String(pointIndex) + "Label: " + stringMetaData + " Prediction: " + prediction + " Original label: " + original_label;
     let prediction_res = stringMetaData === prediction ? ' - ' : ' ❗️ '
     if (this.showCheckAllQueryRes == false) {
-      if(window.sessionStorage.isControlGroup == 'true'){
+      if (window.sessionStorage.isControlGroup == 'true') {
         return `${displayPointIndex}|${displayprediction}`
-      }else{
+      } else {
         return `${displayPointIndex}|${displayprediction}|${prediction_res}`
       }
     }
-    if(window.sessionStorage.isControlGroup == 'true'){
+    if (window.sessionStorage.isControlGroup == 'true') {
       return `${displayPointIndex}|${displayprediction}|${score !== undefined ? score : '-'}`
-    }else{
+    } else {
       return `${displayPointIndex}|${displayprediction}|${prediction_res}|${score !== undefined ? score : '-'}`
     }
   }
@@ -895,44 +905,22 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
     this.queryByStrategtBtn.onclick = () => {
       this.queryByAl(projector, [], [])
-
-      // projector.queryByAL(
-      //   this.projector.iteration,
-      //   this.selectedStratergy,
-      //   Number(this.budget),
-      //   currentIndices,
-      //   previoustIIndices,
-      //   (indices: any, scores: any, labels: any) => {
-      //     if (indices != null) {
-      //       this.queryIndices = indices;
-      //       if (this.queryIndices.length == 0) {
-      //         this.searchBox.message = '0 matches.';
-      //       } else {
-      //         this.searchBox.message = `${this.queryIndices.length} matches.`;
-      //       }
-
-      //       window.alSuggestScoreList = scores
-      //       window.alSuggestLabelList = labels
-
-      //       this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isALQuery');
-      //       if (!this.isAlSelecting) {
-      //         this.isAlSelecting = true
-      //         window.isAdjustingSel = true
-      //         // this.boundingSelectionBtn.classList.add('actived')
-      //         this.projectorEventContext.setMouseMode(MouseMode.AREA_SELECT)
-      //       }
-      //       this.showCheckAllQueryRes = true
-      //       this.checkAllQueryRes = false
-      //       this.queryResultListTitle = 'Active Learning suggestion'
-      //       // this.projectorScatterPlotAdapter.scatterPlot.setMouseMode(MouseMode.AREA_SELECT);
-
-      //     }
-      //   }
-      // );
     }
 
-
+    // if(this.showSelectionBtn){
     this.showSelectionBtn.onclick = () => {
+      console.log('window.previousIndecates',window.previousIndecates)
+      for (let i = 0; i < window.previousIndecates?.length; i++) {
+        if (window.customSelection.indexOf(window.previousIndecates[i]) === -1) {
+          window.customSelection.push(window.previousIndecates[i])
+        }
+      }
+      this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isShowSelected');
+      // this.updateSearchResults(this.queryIndices)
+    }
+    // }
+    this.noisyshowSelectionBtn.onclick = () => {
+      console.log('window.previousIndecates',window.previousIndecates)
       for (let i = 0; i < window.previousIndecates?.length; i++) {
         if (window.customSelection.indexOf(window.previousIndecates[i]) === -1) {
           window.customSelection.push(window.previousIndecates[i])
@@ -944,7 +932,6 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
     this.queryAnomalyBtn.onclick = () => {
       projector.queryAnormalyStrategy(
-        '',
         Number(this.anomalyRecNum), this.selectedAnormalyClass, [], [],
         (indices: any, cleansIndices: any) => {
           if (indices != null) {
@@ -968,13 +955,12 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             // }
             // this.projectorScatterPlotAdapter.scatterPlot.setMouseMode(MouseMode.AREA_SELECT);
             this.showCheckAllQueryRes = true
-            if(window.sessionStorage.isControlGroup == 'true'){
+            if (window.sessionStorage.isControlGroup == 'true') {
               this.showMoreRecommend = false
-            }else{
+            } else {
               this.showMoreRecommend = true
             }
             this.queryResultListTitle = 'Possible Abnormal Point List'
-
           }
         })
     }
@@ -1191,10 +1177,11 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   }
 
 
-  private queryByAl(projector, currentIndices, previoustIIndices,querNum?) {
+
+  private queryByAl(projector, currentIndices, previoustIIndices, querNum?) {
     let that = this
     let num = Number(this.budget)
-    if(querNum){
+    if (querNum) {
       num = Number(querNum)
     }
     projector.queryByAL(
@@ -1224,13 +1211,14 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
           }
           this.showCheckAllQueryRes = true
 
-          if(window.sessionStorage.isControlGroup == 'true'){
+          if (window.sessionStorage.isControlGroup == 'true') {
             this.showMoreRecommend = false
-          }else{
+          } else {
             this.showMoreRecommend = true
           }
           this.checkAllQueryRes = false
           this.queryResultListTitle = 'Active Learning suggestion'
+
           // this.projectorScatterPlotAdapter.scatterPlot.setMouseMode(MouseMode.AREA_SELECT);
 
         }

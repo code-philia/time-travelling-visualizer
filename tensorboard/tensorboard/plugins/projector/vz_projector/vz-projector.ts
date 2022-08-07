@@ -1431,7 +1431,7 @@ class Projector
     });
   }
   // anormaly detection
-  queryAnormalyStrategy(strategy: string, budget: number, cls: number, currentIndices: number[], previousIndices: number[],
+  queryAnormalyStrategy(budget: number, cls: number, currentIndices: number[],comfirm_info:any[],
     callback: (indices: any, cleanIndices?: any) => void) {
     const msgId = logging.setModalMessage('Querying...');
     let headers = new Headers();
@@ -1440,12 +1440,11 @@ class Projector
     fetch(`http://${this.DVIServer}/anomaly_query`, {
       method: 'POST',
       body: JSON.stringify({
-        "strategy": strategy,
         "budget": budget,
         "cls": cls,
-        "currentIndices": currentIndices,
-        "previousIndices": previousIndices,
+        "indices": currentIndices,
         "content_path": this.dataSet.DVIsubjectModelPath,
+        "comfirm_info":comfirm_info
       }),
       headers: headers,
       mode: 'cors'

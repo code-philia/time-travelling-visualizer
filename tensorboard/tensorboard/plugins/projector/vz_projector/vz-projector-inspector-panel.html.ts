@@ -471,7 +471,7 @@ export const template = html`
     <div style="display:flex;">
     <!--<button style="width: 120px;" class="bounding-selection search-button search">Select</button>-->
     <button style="width: 180px; white-space: nowrap;" class="show-selection search-button search">Prev & Cur Selection</button>
-    <button style="width: 230px;" class="train-by-selection search-button search">Train By Selections</button>
+    <button style="width: 220px;" class="train-by-selection search-button search">re-Train By Selections</button>
     </div>
   </div>
 
@@ -506,9 +506,9 @@ export const template = html`
       <paper-input value="{{epochTo}}" label="iteration to:">
       </paper-input>
     </div>-->
-    <div class="flex-container" style="justify-content:space-around;height: 30px;">
-      <p class="total-epoch" style="margin-top:26px;">total: {{totalEpoch}}</p>
+    <div class="flex-container" style="justify-content:space-between;height: 30px;margin-bottom: 10px;">
       <p class="current-epoch" style="margin-top:26px;">iteration: {{currentPlayedEpoch}}</p>
+      <button style="width: 120px; white-space: nowrap;" class="noisy-show-selection search-button search">Prev Selection</button>
     </div>
     <div class="flex-container">
     <button style="width: 150px;" class="boundingbox-button show-noisy-btn">play animation</button>
@@ -626,7 +626,6 @@ export const template = html`
     <div class="matches-list" style="display: none">
    
     <div class="matches-list-title">[[queryResultListTitle]]</div>
-    
      <template is="dom-if" if="[[showMoreRecommend]]">
      <div style="display:flex;">
      <paper-input value="{{moreRecommednNum}}" label="more recommend num:">
