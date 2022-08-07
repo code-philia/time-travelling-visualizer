@@ -93,8 +93,8 @@ class NoiseTrajectoryDetector:
         repeat : int, optional
             repeat umap algorithm and select a better one, by default 2
         """
-        cls = self.labels == cls_num
-        high_data = self.embeddings_2d[cls,-period:,:].reshape(np.sum(cls), -1)
+        cls = np.where(self.labels == cls_num)[0]
+        high_data = self.embeddings_2d[cls,-period:,:].reshape(len(cls), -1)
         best_s = -1.
         best_c = -1.
         best_embedding = None
@@ -221,7 +221,7 @@ class NoiseTrajectoryDetector:
     
     def query_noise_score(self, cls_num):
         # recalculate scores
-        normed = self.umap_norm[str(cls_num)]
+        # normed = self.umap_norm[str(cls_num)]
         embeddings = self.trajectory_embedding[str(cls_num)]
         
         clean_scores = closest_dists(embeddings, self.clean_centers[str(cls_num)])
@@ -230,6 +230,7 @@ class NoiseTrajectoryDetector:
         else:
             noise_scores = closest_dists(embeddings, self.noise_centers[str(cls_num)])
         s1 = clean_scores- noise_scores
+        s1 = s1/s1.max()
         # s2 = self.pca_scores[str(cls_num)]/self.pca_norm[str(cls_num)]
         return s1
     
@@ -272,6 +273,31 @@ class NoiseTrajectoryDetector:
             plt.title('Trajectories Visualization of class {}'.format(cls_num), fontsize=24)
             plt.show()
         return suggest_idx, center_idxs[suggest_idx], s, self.trajectory_embedding[str(cls_num)][center_idxs[suggest_idx]]
+    
+    def batch_suggest_abnormal(self, cls_num, budget):
+        # check if we have abnormal
+        if not self.detect_noise_cls(cls_num):
+            return False
+
+        embeddings = self.trajectory_embedding[str(cls_num)]
+        centroids = embeddings[self.sub_centers[str(cls_num)]]
+
+        scores = self.query_noise_score(cls_num)
+        center_idxs = self.sub_centers[str(cls_num)]
+
+        # vote for scores (score summary)
+        c_labels = select_closest(embeddings, centroids)
+        centroid_scores = np.zeros(len(centroids))
+        for i in range(len(centroids)):
+            centroid_scores[i] = scores[c_labels==i].mean()
+
+        not_verified = np.argwhere(self.sub_center_verified[str(cls_num)] == False).squeeze(axis=1)
+        ranking = np.flip(np.argsort(centroid_scores[not_verified])[-budget:])
+
+        suggest_idxs = not_verified[ranking]
+        scores = centroid_scores[suggest_idxs]
+
+        return suggest_idxs, center_idxs[suggest_idxs], scores, self.trajectory_embedding[str(cls_num)][center_idxs[suggest_idxs]]
     
     def show(self, cls_num, save_path=None):
         embedding = self.trajectory_embedding[str(cls_num)]
