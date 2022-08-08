@@ -639,6 +639,17 @@ class Projector
 
         this.inspectorPanel.updateCurrentPlayEpoch(current)
         window.iteration = current;
+        let length = this.dataSet.points.length
+        if (length === 60002) {
+          let point1 = this.dataSet.points[length - 2];
+          let point2 = this.dataSet.points[length - 1];
+          point1.projections['tsne-0'] = window.allResPositions.grid[current][0]
+          point1.projections['tsne-1'] = window.allResPositions.grid[current][1]
+          point2.projections['tsne-0'] = window.allResPositions.grid[current][2]
+          point2.projections['tsne-1'] = window.allResPositions.grid[current][3]
+          // point.projections['tsne-0'] = 
+        }
+
         for (let i = 0; i < this.dataSet.points.length; i++) {
           const point = this.dataSet.points[i];
           if (!window.customSelection || !window.customSelection.length || window.customSelection.indexOf(i) !== -1) {
@@ -698,6 +709,16 @@ class Projector
     }
 
     this.iteration = this.currentIteration
+    let length = this.dataSet.points.length
+    if (length === 60002) {
+      let point1 = this.dataSet.points[length - 2];
+      let point2 = this.dataSet.points[length - 1];
+      point1.projections['tsne-0'] = window.allResPositions.grid[this.iteration][0]
+      point1.projections['tsne-1'] = window.allResPositions.grid[this.iteration][1]
+      point2.projections['tsne-0'] = window.allResPositions.grid[this.iteration][2]
+      point2.projections['tsne-1'] = window.allResPositions.grid[this.iteration][3]
+      // point.projections['tsne-0'] = 
+    }
     window.iteration = this.currentIteration
     this.updatePosByIndicates(window.iteration)
   }
@@ -1431,7 +1452,7 @@ class Projector
     });
   }
   // anormaly detection
-  queryAnormalyStrategy(budget: number, cls: number, currentIndices: number[],comfirm_info:any[],
+  queryAnormalyStrategy(budget: number, cls: number, currentIndices: number[], comfirm_info: any[],
     callback: (indices: any, cleanIndices?: any) => void) {
     const msgId = logging.setModalMessage('Querying...');
     let headers = new Headers();
@@ -1444,7 +1465,7 @@ class Projector
         "cls": cls,
         "indices": currentIndices,
         "content_path": this.dataSet.DVIsubjectModelPath,
-        "comfirm_info":comfirm_info
+        "comfirm_info": comfirm_info
       }),
       headers: headers,
       mode: 'cors'
