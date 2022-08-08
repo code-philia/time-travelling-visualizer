@@ -198,6 +198,8 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
   private currentFilterType: string
 
+  private labelMap: any
+
 
 
   ready() {
@@ -262,6 +264,18 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     this.projector = projector;
     this.projectorEventContext = projectorEventContext;
     this.setupUI(projector);
+    this.labelMap = {
+      "0": "plane",
+      "1": "car",
+      "2": "bird",
+      "3": "cat", 
+      "4": "deer", 
+      "5": "dog",
+      "6": "frog", 
+      "7": "horse", 
+      "8": "ship", 
+      "9": "truck"
+    }
     projectorEventContext.registerSelectionChangedListener(
       (selection, neighbors) => this.updateInspectorPane(selection, neighbors)
     );
@@ -701,7 +715,8 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     }
     let index = window.queryResPointIndices?.indexOf(pointIndex)
 
-    let suggest_label = window.alSuggestLabelList[index]
+    let suggest_label = this.labelMap[window.alSuggestLabelList[index]]
+    
     if (original_label == undefined) {
       original_label = `Unknown`;
     }
@@ -713,7 +728,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
     const displayPointIndex = String(pointIndex)
     // return String(pointIndex) + "Label: " + stringMetaData + " Prediction: " + prediction + " Original label: " + original_label;
-    let prediction_res = stringMetaData === prediction ? ' - ' : ' ❗️ '
+    let prediction_res = suggest_label === prediction ? ' - ' : ' ❗️ '
     if (this.showCheckAllQueryRes == false) {
       if (window.sessionStorage.isControlGroup == 'true') {
         return `${displayPointIndex}|${displayprediction}`
@@ -909,7 +924,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
     // if(this.showSelectionBtn){
     this.showSelectionBtn.onclick = () => {
-      console.log('window.previousIndecates',window.previousIndecates)
+      console.log('window.previousIndecates', window.previousIndecates)
       for (let i = 0; i < window.previousIndecates?.length; i++) {
         if (window.customSelection.indexOf(window.previousIndecates[i]) === -1) {
           window.customSelection.push(window.previousIndecates[i])
@@ -920,7 +935,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     }
     // }
     this.noisyshowSelectionBtn.onclick = () => {
-      console.log('window.previousIndecates',window.previousIndecates)
+      console.log('window.previousIndecates', window.previousIndecates)
       for (let i = 0; i < window.previousIndecates?.length; i++) {
         if (window.customSelection.indexOf(window.previousIndecates[i]) === -1) {
           window.customSelection.push(window.previousIndecates[i])
