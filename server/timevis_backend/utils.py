@@ -5,7 +5,7 @@ import torch
 import numpy as np
 from umap.umap_ import find_ab_params
 import pickle
-from .backend_adapter import TimeVisBackend, ActiveLearningTimeVisBackend
+from .backend_adapter import TimeVisBackend, ActiveLearningTimeVisBackend, AnormalyTimeVisBackend
 
 timevis_path = "../../DLVisDebugger"
 sys.path.append(timevis_path)
@@ -43,7 +43,7 @@ def initialize_backend(CONTENT_PATH):
     
 
     SETTING = config["SETTING"] # active learning
-    if SETTING == "normal":
+    if SETTING == "normal" or SETTING == "abnormal":
         EPOCH_START = config["EPOCH_START"]
         EPOCH_END = config["EPOCH_END"]
         EPOCH_PERIOD = config["EPOCH_PERIOD"]
@@ -65,11 +65,10 @@ def initialize_backend(CONTENT_PATH):
 
     model = SingleVisualizationModel(input_dims=512, output_dims=2, units=256, hidden_layer=HIDDEN_LAYER)
 
-    if SETTING == "normal":
+    if SETTING == "normal" or SETTING == "abnormal":
         data_provider = NormalDataProvider(CONTENT_PATH, net, EPOCH_START, EPOCH_END, EPOCH_PERIOD, split=-1, device=DEVICE, classes=CLASSES, verbose=1)
         SEGMENTS = config["VISUALIZATION"]["SEGMENTS"]
         projector = Projector(vis_model=model, content_path=CONTENT_PATH, segments=SEGMENTS, device=DEVICE)
-
     elif SETTING == "active learning":
         data_provider = ActiveLearningDataProvider(CONTENT_PATH, net, BASE_ITERATION, split=-1, device=DEVICE, classes=CLASSES, verbose=1)
         projector = ALProjector(vis_model=model, content_path=CONTENT_PATH, vis_model_name=VIS_MODEL_NAME, device=DEVICE)
@@ -101,9 +100,10 @@ def initialize_backend(CONTENT_PATH):
 
     if SETTING == "normal":
         timevis = TimeVisBackend(data_provider, projector, vis, evaluator, **config)
+    elif SETTING == "abnormal":
+        timevis = AnormalyTimeVisBackend(data_provider, projector, vis, evaluator, period=75, **config)
     elif SETTING == "active learning":
         timevis = ActiveLearningTimeVisBackend(data_provider, projector, trainer, vis, evaluator, **config)
-        
     return timevis
 
 
@@ -171,7 +171,7 @@ def update_epoch_projection(timevis, EPOCH, predicates):
     for pred in prediction:
         prediction_list.append(timevis.hyperparameters["CLASSES"][pred])
     
-    if timevis.hyperparameters["SETTING"] == "normal":
+    if timevis.hyperparameters["SETTING"] == "normal" or timevis.hyperparameters["SETTING"] == "abnormal":
         max_iter = (timevis.hyperparameters["EPOCH_END"] - timevis.hyperparameters["EPOCH_START"]) // timevis.hyperparameters["EPOCH_PERIOD"] + 1
     elif timevis.hyperparameters["SETTING"] == "active learning":
         # TODO fix this, could be larger than EPOCH

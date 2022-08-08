@@ -93,7 +93,7 @@ class NoiseTrajectoryDetector:
         repeat : int, optional
             repeat umap algorithm and select a better one, by default 2
         """
-        cls = np.where(self.labels == cls_num)[0]
+        cls = np.argwhere(self.labels == cls_num).squeeze(axis=1)
         high_data = self.embeddings_2d[cls,-period:,:].reshape(len(cls), -1)
         best_s = -1.
         best_c = -1.
@@ -172,7 +172,7 @@ class NoiseTrajectoryDetector:
             print("No anomaly detected for class {}!".format(cls_num))
 
     def proj_all(self, dim=2, period=75, repeat=2):
-        for cls_num in range(self.classes_num):
+        for cls_num in range(int(self.classes_num)):
             self.proj_cls(cls_num, dim=dim, period=period, repeat=repeat)
     
     def detect_noise_cls(self, cls_num, verbose=0):

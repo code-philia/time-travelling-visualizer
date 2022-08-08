@@ -18,7 +18,7 @@ import torchvision
 from scipy.special import softmax
 from sklearn.neighbors import NearestNeighbors
 
-from noise_detector import NoiseTrajectoryDetector
+from .noise_detector import NoiseTrajectoryDetector
 # timevis_path = "D:\\code-space\\DLVisDebugger" #limy 
 timevis_path = "../../DLVisDebugger" #xianglin#yvonne
 sys.path.append(timevis_path)
@@ -427,8 +427,9 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
 
 class AnormalyTimeVisBackend(TimeVisBackend):
 
-    def __init__(self, data_provider, projector, vis, evaluator, **hyperparameters) -> None:
+    def __init__(self, data_provider, projector, vis, evaluator, period, **hyperparameters) -> None:
         super().__init__(data_provider, projector, vis, evaluator, **hyperparameters)
+        self.period = period
         file_path = os.path.join(self.data_provider.content_path, 'ntd.pkl')
         if not os.path.exists(file_path):
             self._init_detection()
@@ -451,14 +452,16 @@ class AnormalyTimeVisBackend(TimeVisBackend):
 
     def _init_detection(self):
         # extract samples
-        train_num = self.train_num
-        epoch_num = (self.e - self.s)//self.p + 1
-        embeddings_2d = np.zeros((train_num, epoch_num, 2))
-        for i in range(self.s, self.e+1, self.p):
-            embeddings_2d[(i-self.s)//self.p] = self.projector.batch_project(i, self.train_representation(i))
-
-        train_labels = self.data_provider.train_labels(self.s)
-        trajectories = embeddings_2d.reshape(len(embeddings_2d), -1)
+        train_num = self.data_provider.train_num
+        # change epoch_NUM
+        # epoch_num = (self.data_provider.e - self.data_provider.s)//self.data_provider.p + 1
+        embeddings_2d = np.zeros((self.period, train_num, 2))
+        # for i in range(self.data_provider.s, self.data_provider.e+1, self.data_provider.p):
+        for i in range(self.data_provider.e - self.data_provider.p*(self.period-1), self.data_provider.e+1, self.data_provider.p):
+            id = (i-(self.data_provider.e - (self.data_provider.p-1)*self.period))//self.data_provider.p
+            embeddings_2d[id] = self.projector.batch_project(i, self.data_provider.train_representation(i))
+        trajectories = np.transpose(embeddings_2d, [1,0,2])
+        train_labels = self.data_provider.train_labels(self.data_provider.s)
         ntd = NoiseTrajectoryDetector(trajectories, train_labels)
         print("Detecting abnormal....")
         ntd.proj_all(dim=2, period=75)
@@ -472,11 +475,11 @@ class AnormalyTimeVisBackend(TimeVisBackend):
             return np.array([]),np.array([]),np.array([])
 
         # TODO verify the correctness of this part (indexing...)
-        map_idxs = np.where(self.ntd.labels == cls_num)
+        map_idxs = np.argwhere(self.ntd.labels == cls_num).squeeze(axis=1)
         
         if len(idxs) > 0:
             for idx, comfirm in zip(idxs, comfirmed):
-                selected = self.ntd.trajectory_embedding[str(cls_num)][np.where(map_idxs==idx)[0]]
+                selected = self.ntd.trajectory_embedding[str(cls_num)][np.argwhere(map_idxs==idx)[0,0]]
                 self.ntd.update_belief(cls_num, selected, comfirm)
         
         # update use
@@ -491,7 +494,7 @@ class AnormalyTimeVisBackend(TimeVisBackend):
     def suggest_normal(self, cls_num, budget):
         if not self.ntd.detect_noise_cls(cls_num):
             return np.array([])
-        map_idxs = np.where(self.ntd.labels == cls_num)
+        map_idxs = np.argwhere(self.ntd.labels == cls_num).squeeze(axis=1)
 
         scores = self.ntd.query_noise_score(cls_num)
         idxs = np.flip(np.argsort(scores)[:budget])

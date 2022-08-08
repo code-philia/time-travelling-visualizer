@@ -188,8 +188,7 @@ def anomaly_query():
 
     timevis = initialize_backend(CONTENT_PATH)
     indices, scores, labels = timevis.suggest_abnormal(cls, idxs, comfirmed, budget)
-    clean_list = timevis.suggest_normal(cls, 1)
-
+    clean_list,_ = timevis.suggest_normal(cls, 1)
 
     sys.path.remove(CONTENT_PATH)
     return make_response(jsonify({"selectedPoints": indices.tolist(), "scores": scores.tolist(), "suggestLabels":labels.tolist(),"cleanList":clean_list.tolist()}), 200)
