@@ -275,8 +275,8 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
     this.invNnTest15.innerText = ''+evaluation.inv_nn_test_15;
     this.invNnTest30.innerText = ''+evaluation.inv_nn_test_30;
     */
-    this.invAccTrain.innerText = '' + evaluation.inv_acc_train;
-    this.invAccTest.innerText = '' + evaluation.inv_acc_test;
+    this.invAccTrain.innerText = '' + evaluation.ppr_train;
+    this.invAccTest.innerText = '' + evaluation.ppr_test;
     //  this.invConfTrain.innerText = ''+evaluation.inv_conf_train;
     //  this.invConfTest.innerText = ''+evaluation.inv_conf_test;
     this.accTrain.innerText = '' + evaluation.acc_train;
