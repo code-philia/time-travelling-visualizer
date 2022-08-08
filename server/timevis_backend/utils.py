@@ -5,6 +5,7 @@ import torch
 import numpy as np
 from umap.umap_ import find_ab_params
 import pickle
+import gc
 from .backend_adapter import TimeVisBackend, ActiveLearningTimeVisBackend, AnormalyTimeVisBackend
 
 timevis_path = "../../DLVisDebugger"
@@ -104,6 +105,9 @@ def initialize_backend(CONTENT_PATH):
         timevis = AnormalyTimeVisBackend(data_provider, projector, vis, evaluator, period=75, **config)
     elif SETTING == "active learning":
         timevis = ActiveLearningTimeVisBackend(data_provider, projector, trainer, vis, evaluator, **config)
+    
+    del config
+    gc.collect()
     return timevis
 
 
@@ -133,11 +137,12 @@ def update_epoch_projection(timevis, EPOCH, predicates):
 
     # save results, grid and decision_view
     save_path = timevis.data_provider.model_path
-    iteration_name = "Epoch" if timevis.data_provider.mode == "normal" else "Iteration"
+    iteration_name = "Epoch" if timevis.data_provider.mode == "normal" or timevis.data_provider.mode == "abnormal" else "Iteration"
     save_path = os.path.join(save_path, "{}_{}".format(iteration_name, EPOCH))
-    with open(os.path.join(save_path, "grid.bin"), "wb") as f:
+    print(save_path)
+    with open(os.path.join(save_path, "grid.pkl"), "wb") as f:
         pickle.dump(grid, f)
-    np.save(os.path.join(save_path, "embedding.npy"), np.array(embedding_2d))
+    np.save(os.path.join(save_path, "embedding.npy"), embedding_2d)
     
     color = timevis.vis.get_standard_classes_color() * 255
     color = color.astype(int).tolist()
