@@ -172,7 +172,6 @@ def update_epoch_projection(timevis, EPOCH, predicates):
 
     prediction_list = []
     prediction = timevis.data_provider.get_pred(EPOCH, all_data).argmax(1)
-    timevis.hyperparameters["CLASSES"][prediction]
 
     for i in range(len(prediction)):
         prediction_list.append(timevis.hyperparameters["CLASSES"][prediction[i]])
