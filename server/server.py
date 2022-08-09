@@ -2,9 +2,6 @@
 #! Noted that
 #! iteration in frontend is start+(iteration -1)*period for normal training scenarios!!
 
-# TODO change to timevis format
-# TODO set a base class for some trainer functions... we dont need too many hyperparameters for frontend
-# TODO fix gpu_id
 # TODO refactor, similar function should be in utils
 # TODO tidy up
 # TODO return lb and ulb property
@@ -18,8 +15,6 @@ import json
 import numpy as np
 import gc
 
-# timevis_path = "../../DLVisDebugger"
-# sys.path.append(timevis_path)
 from timevis_backend.utils import *
 
 
@@ -88,7 +83,7 @@ def filter():
 
     return make_response(jsonify({"selectedPoints": selected_points.tolist()}), 200)
 
-#server
+# server
 # @app.route('/sprite', methods=["POST","GET"])
 # @cross_origin()
 # def sprite_image():
@@ -102,7 +97,7 @@ def filter():
 
 #     return make_response(jsonify({"imgUrl":pic_save_dir_path}), 200)
 
-#base64
+# base64
 @app.route('/sprite', methods=["POST","GET"])
 @cross_origin()
 def sprite_image():
@@ -117,8 +112,6 @@ def sprite_image():
     with open(pic_save_dir_path, 'rb') as img_f:
         img_stream = img_f.read()
         img_stream = base64.b64encode(img_stream).decode()
-        # img_stream = base64.b64encode(img_stream)
-    image_type = "image/png"
     return make_response(jsonify({"imgUrl":'data:image/png;base64,' + img_stream}), 200)
 
 @app.route('/json', methods=["POST","GET"])
@@ -164,13 +157,9 @@ def al_query():
     curr_idxs = data["currentIndices"]
 
     sys.path.append(CONTENT_PATH)
+
     timevis = initialize_backend(CONTENT_PATH)
     indices, labels, scores = timevis.al_query(iteration, budget, strategy, prev_idxs, curr_idxs)
-
-    # # dummy input
-    # indices = np.arange(10)
-    # scores = np.random.rand(10)
-    # labels = np.arange(10)
 
     sys.path.remove(CONTENT_PATH)
     return make_response(jsonify({"selectedPoints": indices.tolist(), "scores": scores.tolist(), "suggestLabels":labels.tolist()}), 200)
@@ -291,7 +280,7 @@ def get_res():
         # read background img
         with open(bgimg_path, 'rb') as img_f:
             img_stream = img_f.read()
-            img_stream = base64.b64encode(img_stream).decode()
+        img_stream = base64.b64encode(img_stream).decode()
         imglist[str(i)] = 'data:image/png;base64,' + img_stream
         # imglist[str(i)] = "http://{}{}".format(ip_adress, bgimg_path)
     sys.path.remove(CONTENT_PATH)
@@ -320,8 +309,6 @@ def get_res():
 #     res_json_path = os.path.join(CONTENT_PATH, "noisy", "res.json")
 #     with open(res_json_path,encoding='utf8')as fp:
 #         json_data = json.load(fp)
-   
-    
 #     return make_response(jsonify({"results":json_data,"bgimgList":imglist}), 200)
 
 if __name__ == "__main__":

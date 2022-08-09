@@ -183,24 +183,24 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         # here the training handlers and testing handlers are different
         complete_dataset = torchvision.datasets.CIFAR10(root="..//data//CIFAR10", download=True, train=True, transform=self.hyperparameters["TRAINING"]['transform_te'])
 
-        if strategy == "random":
+        if strategy == "Random":
             from query_strategies.random import RandomSampling
             q_strategy = RandomSampling(task_model, task_model_type, n_pool, idxs_lb, 10, DATA_NAME, NET, gpu=GPU, **self.hyperparameters["TRAINING"])
             # print information
             print(DATA_NAME)
-            print(type(strategy).__name__)
+            print(type(q_strategy).__name__)
             print('================Round {:d}==============='.format(iteration+1))
             # query new samples
             t0 = time.time()
             new_indices, scores = q_strategy.query(NUM_QUERY)
             t1 = time.time()
             print("Query time is {:.2f}".format(t1-t0))
-        elif strategy == "LeastConfidence":
+        elif strategy == "Uncertainty":
             from query_strategies.LeastConfidence import LeastConfidenceSampling
             q_strategy = LeastConfidenceSampling(task_model, task_model_type, n_pool, idxs_lb, 10, DATA_NAME, NET, gpu=GPU, **self.hyperparameters["TRAINING"])
             # print information
             print(DATA_NAME)
-            print(type(strategy).__name__)
+            print(type(q_strategy).__name__)
             print('================Round {:d}==============='.format(iteration+1))
             # query new samples
             t0 = time.time()
@@ -208,9 +208,12 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
             t1 = time.time()
             print("Query time is {:.2f}".format(t1-t0))
         
-        elif strategy == "coreset":
+        elif strategy == "Diversity":
             from query_strategies.coreset import CoreSetSampling
             q_strategy = CoreSetSampling(task_model, task_model_type, n_pool, 512, idxs_lb, DATA_NAME, NET, gpu=GPU, **self.hyperparameters["TRAINING"])
+            # print information
+            print(DATA_NAME)
+            print(type(q_strategy).__name__)
             print('================Round {:d}==============='.format(iteration+1))
             embedding = q_strategy.get_embedding(complete_dataset)
             # query new samples
@@ -219,16 +222,32 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
             t1 = time.time()
             print("Query time is {:.2f}".format(t1-t0))
         
-        elif strategy == "badge":
+        elif strategy == "Hybrid":
             from query_strategies.badge import BadgeSampling
             q_strategy = BadgeSampling(task_model, task_model_type, n_pool, 512, idxs_lb, 10, DATA_NAME, NET, gpu=GPU, **self.hyperparameters["TRAINING"])
+            # print information
+            print(DATA_NAME)
+            print(type(q_strategy).__name__)
             print('================Round {:d}==============='.format(iteration+1))
             # query new samples
             t0 = time.time()
             new_indices, scores = q_strategy.query(complete_dataset, NUM_QUERY)
             t1 = time.time()
             print("Query time is {:.2f}".format(t1-t0))
-
+        
+        elif strategy == "Feedback":
+            from query_strategies.feedback import FeedbackSampling
+            q_strategy = FeedbackSampling(task_model, task_model_type, n_pool, idxs_lb, 10, DATA_NAME, NET, gpu=GPU, **self.hyperparameters["TRAINING"])
+            # print information
+            print(DATA_NAME)
+            print(type(q_strategy).__name__)
+            print('================Round {:d}==============='.format(iteration+1))
+            # query new samples
+            t0 = time.time()
+            new_indices, scores = q_strategy.query(complete_dataset, NUM_QUERY)
+            t1 = time.time()
+            print("Query time is {:.2f}".format(t1-t0))
+            
         
         # TODO return the suggest labels, need to develop pesudo label generation technique in the future
         true_labels = self.data_provider.train_labels(iteration)
