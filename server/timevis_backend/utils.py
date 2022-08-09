@@ -171,10 +171,11 @@ def update_epoch_projection(timevis, EPOCH, predicates):
         label_list.append(timevis.hyperparameters["CLASSES"][int(label)])
 
     prediction_list = []
-    prediction = timevis.data_provider.get_pred(EPOCH, all_data).argmax(-1)
+    prediction = timevis.data_provider.get_pred(EPOCH, all_data).argmax(1)
+    timevis.hyperparameters["CLASSES"][prediction]
 
-    for pred in prediction:
-        prediction_list.append(timevis.hyperparameters["CLASSES"][pred])
+    for i in range(len(prediction)):
+        prediction_list.append(timevis.hyperparameters["CLASSES"][prediction[i]])
     
     if timevis.hyperparameters["SETTING"] == "normal" or timevis.hyperparameters["SETTING"] == "abnormal":
         max_iter = (timevis.hyperparameters["EPOCH_END"] - timevis.hyperparameters["EPOCH_START"]) // timevis.hyperparameters["EPOCH_PERIOD"] + 1
