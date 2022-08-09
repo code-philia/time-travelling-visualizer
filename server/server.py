@@ -13,7 +13,7 @@ import os
 import sys
 import json
 import numpy as np
-import gc
+# import gc
 
 from timevis_backend.utils import *
 
@@ -43,7 +43,7 @@ def update_projection():
 
     return make_response(jsonify({'result': embedding_2d, 'grid_index': grid, 'grid_color': 'data:image/png;base64,' + decision_view,
                                   'label_color_list': label_color_list, 'label_list': label_list,
-                                  'maximum_iteration': max_iter, 
+                                  'maximum_iteration': 2, 
                                   'training_data': training_data_index,
                                   'testing_data': testing_data_index, 'evaluation': eval_new,
                                   'prediction_list': prediction_list,
@@ -176,12 +176,16 @@ def anomaly_query():
 
     sys.path.append(CONTENT_PATH)
 
-    timevis = initialize_backend(CONTENT_PATH)
-    indices, scores, labels = timevis.suggest_abnormal(cls, idxs, comfirmed, budget)
-    clean_list,_ = timevis.suggest_normal(cls, 1)
+    # timevis = initialize_backend(CONTENT_PATH)
+    # indices, scores, labels = timevis.suggest_abnormal(cls, idxs, comfirmed, budget)
+    # clean_list,_ = timevis.suggest_normal(cls, 1)
+      # dummy input
+    indices = np.arange(budget)
+    scores = np.random.rand(budget)
+    labels = np.arange(budget)
 
     sys.path.remove(CONTENT_PATH)
-    return make_response(jsonify({"selectedPoints": indices.tolist(), "scores": scores.tolist(), "suggestLabels":labels.tolist(),"cleanList":clean_list.tolist()}), 200)
+    return make_response(jsonify({"selectedPoints": indices.tolist(), "scores": scores.tolist(), "suggestLabels":labels.tolist(),"cleanList":[10001]}), 200)
 
 @app.route('/al_train', methods=["POST"])
 @cross_origin()
@@ -294,12 +298,47 @@ def get_res():
 # def get_res():
 #     data = request.get_json()
 #     CONTENT_PATH = os.path.normpath(data['content_path'])
-#     iteration_s = data["iteration_start"]
-#     iteration_e = data["iteration_end"]
-#     imglist = {}
-#     for i in range(10):
-#         pic_save_dir_path = os.path.join(CONTENT_PATH, "noisy","bgimgs", "bgimg{}.png".format(i+1),)
-#         with open(pic_save_dir_path, 'rb') as img_f:
+#     # iteration_s = data["iteration_start"]
+#     # iteration_e = data["iteration_end"]
+#     predicates = dict() # placeholder
+
+#     results = dict()
+#     imglist = dict()
+#     gridlist = dict()
+
+#     sys.path.append(CONTENT_PATH)
+
+#     from config import config
+#     EPOCH_START = config["EPOCH_START"]
+#     EPOCH_PERIOD = config["EPOCH_PERIOD"]
+#     EPOCH_END = config["EPOCH_END"]
+
+#     # TODO Interval to be decided
+#     epoch_num = (EPOCH_END - EPOCH_START)// EPOCH_PERIOD + 1
+
+#     for i in range(1, epoch_num+1, 1):
+#         EPOCH = (i-1)*EPOCH_PERIOD + EPOCH_START
+
+#         timevis = initialize_backend(CONTENT_PATH)
+
+#         # detect whether we have query before
+#         fname = "Epoch" if timevis.data_provider.mode == "normal" or timevis.data_provider.mode == "abnormal" else "Iteration"
+#         bgimg_path = os.path.join(timevis.data_provider.model_path, "{}_{}".format(fname, EPOCH), "bgimg.png")
+#         embedding_path = os.path.join(timevis.data_provider.model_path, "{}_{}".format(fname, EPOCH), "embedding.npy")
+#         grid_path = os.path.join(timevis.data_provider.model_path, "{}_{}".format(fname, EPOCH), "grid.pkl")
+#         if os.path.exists(bgimg_path) and os.path.exists(embedding_path) and os.path.exists(grid_path):
+#             path = os.path.join(timevis.data_provider.model_path, "{}_{}".format(fname, EPOCH))
+#             result_path = os.path.join(path,"embedding.npy")
+#             results[str(i)] = np.load(result_path).tolist()
+#             with open(os.path.join(path, "grid.pkl"), "rb") as f:
+#                 grid = pickle.load(f)
+#             gridlist[str(i)] = grid
+#         else:
+#             embedding_2d, grid, _, _, _, _, _, _, _, _, _, _ = update_epoch_projection(timevis, EPOCH, predicates)
+#             results[str(i)] = embedding_2d
+#             gridlist[str(i)] = grid
+#         # read background img
+#         with open(bgimg_path, 'rb') as img_f:
 #             img_stream = img_f.read()
 #             img_stream = base64.b64encode(img_stream).decode()
 #             index = i+1
