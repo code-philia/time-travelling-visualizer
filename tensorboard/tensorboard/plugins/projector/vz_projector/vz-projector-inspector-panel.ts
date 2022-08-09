@@ -564,7 +564,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
                 window.queryResAnormalIndecates = indices
                 window.queryResAnormalCleanIndecates = cleansIndices
 
-                this.queryIndices = indices.concat(window.queryResAnormalCleanIndecates)
+                this.queryIndices = indices.concat(cleansIndices)
 
                 this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isAnormalyQuery');
                 // if (!this.isAlSelecting) {
@@ -642,6 +642,11 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
           input.checked = true
         }
         let newtd = document.createElement('td')
+        if(window.queryResAnormalCleanIndecates && window.queryResAnormalCleanIndecates.indexOf(index)!==-1){
+          input.disabled = true
+          input.style.visibility = 'hidden'
+        }
+        newtd.appendChild(input)
         newtd.className = 'inputColumn'
         newtd.appendChild(input)
         row.appendChild(newtd)
@@ -729,6 +734,9 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     const displayPointIndex = String(pointIndex)
     // return String(pointIndex) + "Label: " + stringMetaData + " Prediction: " + prediction + " Original label: " + original_label;
     let prediction_res = suggest_label === prediction ? ' - ' : ' ❗️ '
+    if(window.queryResAnormalCleanIndecates && window.queryResAnormalCleanIndecates.indexOf(pointIndex)!==-1){
+      return `${displayPointIndex}|${displayprediction}| clean | -`
+    }
     if (this.showCheckAllQueryRes == false) {
       if (window.sessionStorage.isControlGroup == 'true') {
         return `${displayPointIndex}|${displayprediction}`
@@ -960,7 +968,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             window.queryResAnormalIndecates = indices
             window.queryResAnormalCleanIndecates = cleansIndices
 
-            this.queryIndices = indices.concat(window.queryResAnormalCleanIndecates)
+            this.queryIndices = indices.concat(cleansIndices)
             this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isAnormalyQuery');
             // if (!this.isAlSelecting) {
             //   this.isAlSelecting = true
@@ -1067,6 +1075,10 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     this.noisyBtn.onclick = () => {
       if (!window.queryResAnormalIndecates?.length) {
         logging.setErrorMessage('Please query anomaly points first');
+        return
+      }
+      if(window.customSelection.length == 0){
+        alert('please confirm some points first')
         return
       }
       window.isAnimatating = true

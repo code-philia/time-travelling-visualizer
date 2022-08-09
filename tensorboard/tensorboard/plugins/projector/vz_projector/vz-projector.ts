@@ -615,8 +615,15 @@ class Projector
   ///
   setDynamicNoisy() {
     // this.setDynamicStop()
-    if (window.customSelection && window.customSelection.length) {
-      this.filterDataset(window.customSelection)
+    if(!window.customSelection){
+      window.customSelection = []
+    }
+    if(!window.queryResAnormalCleanIndecates){
+      window.queryResAnormalCleanIndecates = []
+    }
+    let indecates = window.customSelection.concat(window.queryResAnormalCleanIndecates)
+    if (indecates && indecates.length) {
+      this.filterDataset(indecates)
     }
     // this.filterDataset(this.selectedPointIndices)
     this.currentIteration = window.iteration
@@ -652,7 +659,7 @@ class Projector
 
         for (let i = 0; i < this.dataSet.points.length; i++) {
           const point = this.dataSet.points[i];
-          if (!window.customSelection || !window.customSelection.length || window.customSelection.indexOf(i) !== -1) {
+          if (!window.customSelection || !window.customSelection.length || window.customSelection.indexOf(i) !== -1 || window.queryResAnormalCleanIndecates?.indexOf(i)!==-1) {
             point.projections['tsne-0'] = positions[current][i][0];
             point.projections['tsne-1'] = positions[current][i][1];
             point.projections['tsne-2'] = 0;

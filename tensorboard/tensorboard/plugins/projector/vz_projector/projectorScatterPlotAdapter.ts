@@ -950,7 +950,7 @@ export class ProjectorScatterPlotAdapter {
     }
     if (window.queryResAnormalCleanIndecates?.length) {
       if (window.queryResAnormalCleanIndecates.indexOf(i) >= 0) {
-        return `🟢${i}`
+        return `🟢clean`
       }
     }
 
