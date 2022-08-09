@@ -580,6 +580,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
                 } else {
                   this.showMoreRecommend = true
                 }
+                this.checkAllQueryRes = false
                 this.queryResultListTitle = 'Possible Abnormal Point List'
 
               }
@@ -983,6 +984,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             } else {
               this.showMoreRecommend = true
             }
+            this.checkAllQueryRes = false
             this.queryResultListTitle = 'Possible Abnormal Point List'
           }
         })
@@ -1245,7 +1247,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
           }
           this.checkAllQueryRes = false
           this.queryResultListTitle = 'Active Learning suggestion'
-
+          
           // this.projectorScatterPlotAdapter.scatterPlot.setMouseMode(MouseMode.AREA_SELECT);
 
         }
