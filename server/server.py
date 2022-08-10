@@ -159,7 +159,7 @@ def al_query():
     sys.path.append(CONTENT_PATH)
 
     timevis = initialize_backend(CONTENT_PATH)
-    indices, labels, scores = timevis.al_query(iteration, budget, strategy, prev_idxs, curr_idxs)
+    indices, labels, scores = timevis.al_query(iteration, budget, strategy, np.array(prev_idxs).astype(np.int64), np.array(curr_idxs).astype(np.int64))
 
     sys.path.remove(CONTENT_PATH)
     return make_response(jsonify({"selectedPoints": indices.tolist(), "scores": scores.tolist(), "suggestLabels":labels.tolist()}), 200)
