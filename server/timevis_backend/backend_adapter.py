@@ -18,7 +18,7 @@ import torchvision
 from scipy.special import softmax
 from sklearn.neighbors import NearestNeighbors
 
-from .noise_detector import NoiseTrajectoryDetector
+from .noise_detector import NoiseTrajectoryDetector, select_centroid
 # timevis_path = "D:\\code-space\\DLVisDebugger" #limy 
 timevis_path = "../../DLVisDebugger" #xianglin#yvonne
 sys.path.append(timevis_path)
@@ -166,12 +166,13 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         resume_path = os.path.join(CONTENT_PATH, "Model", "Iteration_{}".format(iteration))
 
         idxs_lb = np.array(json.load(open(os.path.join(resume_path, "index.json"), "r")))
-        idxs_lb = np.concatenate((idxs_lb, prev_idxs), axis=0)
-        idxs_lb = np.concatenate((idxs_lb, curr_idxs), axis=0)
+        # idxs_lb = np.concatenate((idxs_lb, prev_idxs), axis=0)
+        # idxs_lb = np.concatenate((idxs_lb, curr_idxs), axis=0)
+        idxs_selected = np.concatenate((curr_idxs.astype(np.int64), prev_idxs.astype(np.int64)), axis=0)
         
-        state_dict = torch.load(os.path.join(resume_path, "subject_model.pth"))
+        # state_dict = torch.load(os.path.join(resume_path, "subject_model.pth"))
         # if if gpu is None
-        #state_dict = torch.load(os.path.join(resume_path, "subject_model.pth"),map_location=torch.device('cpu'))
+        state_dict = torch.load(os.path.join(resume_path, "subject_model.pth"), map_location=torch.device('cpu'))
         task_model.load_state_dict(state_dict)
         NUM_INIT_LB = len(idxs_lb)
 
@@ -204,36 +205,36 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
             print('================Round {:d}==============='.format(iteration+1))
             # query new samples
             t0 = time.time()
-            new_indices, scores = q_strategy.query(complete_dataset, NUM_QUERY)
+            new_indices, scores = q_strategy.query(complete_dataset, NUM_QUERY, idxs_selected)
             t1 = time.time()
             print("Query time is {:.2f}".format(t1-t0))
         
-        elif strategy == "Diversity":
-            from query_strategies.coreset import CoreSetSampling
-            q_strategy = CoreSetSampling(task_model, task_model_type, n_pool, 512, idxs_lb, DATA_NAME, NET, gpu=GPU, **self.hyperparameters["TRAINING"])
-            # print information
-            print(DATA_NAME)
-            print(type(q_strategy).__name__)
-            print('================Round {:d}==============='.format(iteration+1))
-            embedding = q_strategy.get_embedding(complete_dataset)
-            # query new samples
-            t0 = time.time()
-            new_indices, scores = q_strategy.query(embedding, NUM_QUERY)
-            t1 = time.time()
-            print("Query time is {:.2f}".format(t1-t0))
+        # elif strategy == "Diversity":
+        #     from query_strategies.coreset import CoreSetSampling
+        #     q_strategy = CoreSetSampling(task_model, task_model_type, n_pool, 512, idxs_lb, DATA_NAME, NET, gpu=GPU, **self.hyperparameters["TRAINING"])
+        #     # print information
+        #     print(DATA_NAME)
+        #     print(type(q_strategy).__name__)
+        #     print('================Round {:d}==============='.format(iteration+1))
+        #     embedding = q_strategy.get_embedding(complete_dataset)
+        #     # query new samples
+        #     t0 = time.time()
+        #     new_indices, scores = q_strategy.query(embedding, NUM_QUERY)
+        #     t1 = time.time()
+        #     print("Query time is {:.2f}".format(t1-t0))
         
-        elif strategy == "Hybrid":
-            from query_strategies.badge import BadgeSampling
-            q_strategy = BadgeSampling(task_model, task_model_type, n_pool, 512, idxs_lb, 10, DATA_NAME, NET, gpu=GPU, **self.hyperparameters["TRAINING"])
-            # print information
-            print(DATA_NAME)
-            print(type(q_strategy).__name__)
-            print('================Round {:d}==============='.format(iteration+1))
-            # query new samples
-            t0 = time.time()
-            new_indices, scores = q_strategy.query(complete_dataset, NUM_QUERY)
-            t1 = time.time()
-            print("Query time is {:.2f}".format(t1-t0))
+        # elif strategy == "Hybrid":
+        #     from query_strategies.badge import BadgeSampling
+        #     q_strategy = BadgeSampling(task_model, task_model_type, n_pool, 512, idxs_lb, 10, DATA_NAME, NET, gpu=GPU, **self.hyperparameters["TRAINING"])
+        #     # print information
+        #     print(DATA_NAME)
+        #     print(type(q_strategy).__name__)
+        #     print('================Round {:d}==============='.format(iteration+1))
+        #     # query new samples
+        #     t0 = time.time()
+        #     new_indices, scores = q_strategy.query(complete_dataset, NUM_QUERY)
+        #     t1 = time.time()
+        #     print("Query time is {:.2f}".format(t1-t0))
         
         elif strategy == "Feedback":
             from query_strategies.feedback import FeedbackSampling
@@ -243,8 +244,9 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
             print(type(q_strategy).__name__)
             print('================Round {:d}==============='.format(iteration+1))
             # query new samples
+            all_data = self.data_provider.train_representation(iteration)
             t0 = time.time()
-            new_indices, scores = q_strategy.query(complete_dataset, NUM_QUERY)
+            new_indices, scores = q_strategy.query(complete_dataset, NUM_QUERY, all_data, idxs_selected)
             t1 = time.time()
             print("Query time is {:.2f}".format(t1-t0))
             
@@ -281,7 +283,7 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         from Model.model import resnet18
         task_model = resnet18()
         resume_path = os.path.join(CONTENT_PATH, "Model", "Iteration_{}".format(iteration))
-        state_dict = torch.load(os.path.join(resume_path, "subject_model.pth"))
+        state_dict = torch.load(os.path.join(resume_path, "subject_model.pth"), map_location=torch.device("cpu"))
         task_model.load_state_dict(state_dict)
 
         self.save_iteration_index(NEW_ITERATION, train_idx)
