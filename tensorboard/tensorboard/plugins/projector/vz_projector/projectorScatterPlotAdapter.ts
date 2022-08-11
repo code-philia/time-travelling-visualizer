@@ -766,7 +766,7 @@ export class ProjectorScatterPlotAdapter {
     {
       const n = ds.points.length;
       let dst = 0;
-      if (selectedPointCount > 0) {
+      if (selectedPointCount >= 0) {
         for (let i = 0; i < n; ++i) {
           let point = ds.points[i]
           let c = new THREE.Color(point.color)

@@ -813,7 +813,8 @@ export class DataSet {
           headers: headers,
           mode: 'cors'
         }).then(response => response.json()).then(data => {
-          iteration++
+          iteration = iteration + 1
+          window.iteration = iteration
           const result = data.result;
           const grid_index = [[data.grid_index[0], data.grid_index[1]], [data.grid_index[2], data.grid_index[3]]];
           const grid_color = [[137, 120, 117], [136, 119, 116], [136, 118, 115], [135, 117, 114]];

@@ -1221,7 +1221,8 @@ class Projector
   onProjectionChanged(projection?: Projection) {
     this.dataPanel.projectionChanged(projection);
     this.updateBackgroundImg()
-    this.inspectorPanel.clearQueryResList()
+    this.inspectorPanel.clearQueryResList();
+    this.notifySelectionChanged([]);
     this.projectorScatterPlotAdapter.render();
   }
   setProjection(projection: Projection) {
