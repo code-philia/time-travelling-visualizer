@@ -566,7 +566,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
                 this.queryIndices = indices.concat(cleansIndices)
 
-                this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isAnormalyQuery');
+            
                 // if (!this.isAlSelecting) {
                 //   this.isAlSelecting = true
                 //   window.isAdjustingSel = true
@@ -582,6 +582,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
                 }
                 this.checkAllQueryRes = false
                 this.queryResultListTitle = 'Possible Abnormal Point List'
+                this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isAnormalyQuery');
 
               }
             })
@@ -1231,7 +1232,6 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
           window.alSuggestScoreList = scores
           window.alSuggestLabelList = labels
 
-          this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isALQuery');
           if (!this.isAlSelecting) {
             this.isAlSelecting = true
             window.isAdjustingSel = true
@@ -1247,7 +1247,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
           }
           this.checkAllQueryRes = false
           this.queryResultListTitle = 'Active Learning suggestion'
-          
+          this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isALQuery');
           // this.projectorScatterPlotAdapter.scatterPlot.setMouseMode(MouseMode.AREA_SELECT);
 
         }
