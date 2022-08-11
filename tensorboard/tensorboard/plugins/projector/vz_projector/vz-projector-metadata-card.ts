@@ -163,7 +163,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
             <div class="metadata-key" style="width:40px;">[[item.key]]</div>
             <div class="metadata-value" style="width:40px;">[[item.value]]</div>
             <div class="metadata-value">[[item.prediction]]</div>
-            <button class="remove-btn" id="[[item.key]]" on-click="removeCustomSelItem"><iron-icon icon="close" style="height: 20px;width:20px;"></iron-icon></button>
+            <button class="remove-btn" id="[[item.key]]" on-click="removeCustomSelItem">✖️</button>
           </div>
           </div>
         </template>
