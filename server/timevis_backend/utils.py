@@ -96,7 +96,7 @@ def initialize_backend(CONTENT_PATH):
     # #                                                       EVALUATION                                                     #
     # ########################################################################################################################
 
-    vis = visualizer(data_provider, projector, RESOLUTION, 10, CLASSES)
+    vis = visualizer(data_provider, projector, RESOLUTION)
     evaluator = Evaluator(data_provider, projector)
 
     if SETTING == "normal":
