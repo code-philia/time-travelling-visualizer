@@ -5,23 +5,20 @@ import torch
 import numpy as np
 from umap.umap_ import find_ab_params
 import pickle
-from .backend_adapter import TimeVisBackend, ActiveLearningTimeVisBackend
+import gc
+from .backend_adapter import TimeVisBackend, ActiveLearningTimeVisBackend, AnormalyTimeVisBackend
 
 timevis_path = "../../DLVisDebugger"
 sys.path.append(timevis_path)
-from singleVis.custom_weighted_random_sampler import CustomWeightedRandomSampler
 from singleVis.SingleVisualizationModel import SingleVisualizationModel
 from singleVis.losses import SingleVisLoss, UmapLoss, ReconstructionLoss
-from singleVis.edge_dataset import DataHandler
 from singleVis.trainer import SingleVisTrainer
 from singleVis.data import NormalDataProvider, ActiveLearningDataProvider
 from singleVis.eval.evaluator import Evaluator
-from singleVis.spatial_edge_constructor import SingleEpochSpatialEdgeConstructor
 from singleVis.visualizer import visualizer
+from singleVis.projector import Projector, ALProjector
 
-def initialize_backend(CONTENT_PATH, EPOCH):
-    # TODO fix this
-    # GPU_ID = "0"
+def initialize_backend(CONTENT_PATH):
 
     from config import config
 
@@ -44,9 +41,10 @@ def initialize_backend(CONTENT_PATH, EPOCH):
     RESOLUTION = config["VISUALIZATION"]["RESOLUTION"]
     EVALUATION_NAME = config["VISUALIZATION"]["EVALUATION_NAME"]
     NET = config["TRAINING"]["NET"]
+    
 
     SETTING = config["SETTING"] # active learning
-    if SETTING == "normal":
+    if SETTING == "normal" or SETTING == "abnormal":
         EPOCH_START = config["EPOCH_START"]
         EPOCH_END = config["EPOCH_END"]
         EPOCH_PERIOD = config["EPOCH_PERIOD"]
@@ -66,56 +64,50 @@ def initialize_backend(CONTENT_PATH, EPOCH):
     #                                                      TRAINING SETTING                                                  #
     # ########################################################################################################################
 
-    if SETTING == "normal":
+    model = SingleVisualizationModel(input_dims=512, output_dims=2, units=256, hidden_layer=HIDDEN_LAYER)
+
+    if SETTING == "normal" or SETTING == "abnormal":
         data_provider = NormalDataProvider(CONTENT_PATH, net, EPOCH_START, EPOCH_END, EPOCH_PERIOD, split=-1, device=DEVICE, classes=CLASSES, verbose=1)
-        # if PREPROCESS:
-        #     data_provider._meta_data()
-        #     if B_N_EPOCHS != 0:
-        #         data_provider._estimate_boundary(LEN//10, l_bound=L_BOUND)
+        SEGMENTS = config["VISUALIZATION"]["SEGMENTS"]
+        projector = Projector(vis_model=model, content_path=CONTENT_PATH, segments=SEGMENTS, device=DEVICE)
     elif SETTING == "active learning":
         data_provider = ActiveLearningDataProvider(CONTENT_PATH, net, BASE_ITERATION, split=-1, device=DEVICE, classes=CLASSES, verbose=1)
-        # if PREPROCESS:
-        #     data_provider._meta_data(BASE_ITERATION)
-        #     if B_N_EPOCHS != 0:
-        #         LEN = len(data_provider.train_labels(BASE_ITERATION))
-        #         data_provider._estimate_boundary(BASE_ITERATION, LEN//10, l_bound=L_BOUND)
-    
-
-    model = SingleVisualizationModel(input_dims=512, output_dims=2, units=256, hidden_layer=HIDDEN_LAYER)
-    negative_sample_rate = 5
-    min_dist = .1
-    _a, _b = find_ab_params(1.0, min_dist)
-    umap_loss_fn = UmapLoss(negative_sample_rate, DEVICE, _a, _b, repulsion_strength=1.0)
-    recon_loss_fn = ReconstructionLoss(beta=1.0)
-    criterion = SingleVisLoss(umap_loss_fn, recon_loss_fn, lambd=LAMBDA)
-
-    # optimizer = torch.optim.Adam(model.parameters(), lr=.1, weight_decay=5e-4)
-    optimizer = torch.optim.Adam(model.parameters(), lr=.01, weight_decay=1e-5)
-    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=4, gamma=.1)
-
+        projector = ALProjector(vis_model=model, content_path=CONTENT_PATH, vis_model_name=VIS_MODEL_NAME, device=DEVICE)
+        
     # ########################################################################################################################
     # #                                                       TRAIN                                                          #
     # ########################################################################################################################
-
-    trainer = SingleVisTrainer(model, criterion, optimizer, lr_scheduler,edge_loader=None, DEVICE=DEVICE)
-    if SETTING == "normal":
-        trainer.load(file_path=os.path.join(data_provider.model_path, VIS_MODEL_NAME))
-    elif SETTING == "active learning":
-        trainer.load(file_path=os.path.join(data_provider.model_path, "Iteration_{}".format(EPOCH), VIS_MODEL_NAME))
     
-        
+    if SETTING == "active learning":
+        negative_sample_rate = 5
+        min_dist = .1
+        _a, _b = find_ab_params(1.0, min_dist)
+        umap_loss_fn = UmapLoss(negative_sample_rate, DEVICE, _a, _b, repulsion_strength=1.0)
+        recon_loss_fn = ReconstructionLoss(beta=1.0)
+        criterion = SingleVisLoss(umap_loss_fn, recon_loss_fn, lambd=LAMBDA)
+
+        optimizer = torch.optim.Adam(model.parameters(), lr=.01, weight_decay=1e-5)
+        lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=4, gamma=.1)
+
+        trainer = SingleVisTrainer(model, criterion, optimizer, lr_scheduler,edge_loader=None, DEVICE=DEVICE)
+        # trainer.load(file_path=os.path.join(data_provider.model_path, "Iteration_{}".format(EPOCH), VIS_MODEL_NAME))
+    
     # ########################################################################################################################
     # #                                                       EVALUATION                                                     #
     # ########################################################################################################################
 
-    vis = visualizer(data_provider, trainer.model, RESOLUTION, 10, CLASSES)
-    evaluator = Evaluator(data_provider, trainer)
+    vis = visualizer(data_provider, projector, RESOLUTION)
+    evaluator = Evaluator(data_provider, projector)
 
     if SETTING == "normal":
-        timevis = TimeVisBackend(data_provider, trainer, vis, evaluator, **config)
+        timevis = TimeVisBackend(data_provider, projector, vis, evaluator, **config)
+    elif SETTING == "abnormal":
+        timevis = AnormalyTimeVisBackend(data_provider, projector, vis, evaluator, period=75, **config)
     elif SETTING == "active learning":
-        timevis = ActiveLearningTimeVisBackend(data_provider, trainer, vis, evaluator, **config)
+        timevis = ActiveLearningTimeVisBackend(data_provider, projector, trainer, vis, evaluator, **config)
     
+    del config
+    gc.collect()
     return timevis
 
 
@@ -124,10 +116,8 @@ def update_epoch_projection(timevis, EPOCH, predicates):
     train_data = timevis.data_provider.train_representation(EPOCH)
     test_data = timevis.data_provider.test_representation(EPOCH)
     all_data = np.concatenate((train_data, test_data), axis=0)
-    
-    timevis.trainer.model.to(timevis.trainer.DEVICE)
-    embedding_2d = timevis.trainer.model.encoder(
-        torch.from_numpy(all_data).to(dtype=torch.float32, device=timevis.trainer.DEVICE)).cpu().detach().numpy().tolist()
+
+    embedding_2d = timevis.projector.batch_project(EPOCH, all_data)
 
     train_labels = timevis.data_provider.train_labels(EPOCH)
     test_labels = timevis.data_provider.test_labels(EPOCH)
@@ -147,11 +137,12 @@ def update_epoch_projection(timevis, EPOCH, predicates):
 
     # save results, grid and decision_view
     save_path = timevis.data_provider.model_path
-    iteration_name = "Epoch" if timevis.data_provider.mode == "normal" else "Iteration"
+    iteration_name = "Epoch" if timevis.data_provider.mode == "normal" or timevis.data_provider.mode == "abnormal" else "Iteration"
     save_path = os.path.join(save_path, "{}_{}".format(iteration_name, EPOCH))
-    with open(os.path.join(save_path, "grid.bin"), "wb") as f:
+    print(save_path)
+    with open(os.path.join(save_path, "grid.pkl"), "wb") as f:
         pickle.dump(grid, f)
-    np.save(os.path.join(save_path, "embedding.npy"), np.array(embedding_2d))
+    np.save(os.path.join(save_path, "embedding.npy"), embedding_2d)
     
     color = timevis.vis.get_standard_classes_color() * 255
     color = color.astype(int).tolist()
@@ -180,12 +171,12 @@ def update_epoch_projection(timevis, EPOCH, predicates):
         label_list.append(timevis.hyperparameters["CLASSES"][int(label)])
 
     prediction_list = []
-    prediction = timevis.data_provider.get_pred(EPOCH, all_data).argmax(-1)
+    prediction = timevis.data_provider.get_pred(EPOCH, all_data).argmax(1)
 
-    for pred in prediction:
-        prediction_list.append(timevis.hyperparameters["CLASSES"][pred])
+    for i in range(len(prediction)):
+        prediction_list.append(timevis.hyperparameters["CLASSES"][prediction[i]])
     
-    if timevis.hyperparameters["SETTING"] == "normal":
+    if timevis.hyperparameters["SETTING"] == "normal" or timevis.hyperparameters["SETTING"] == "abnormal":
         max_iter = (timevis.hyperparameters["EPOCH_END"] - timevis.hyperparameters["EPOCH_START"]) // timevis.hyperparameters["EPOCH_PERIOD"] + 1
     elif timevis.hyperparameters["SETTING"] == "active learning":
         # TODO fix this, could be larger than EPOCH
@@ -208,4 +199,4 @@ def update_epoch_projection(timevis, EPOCH, predicates):
     ulb = np.setdiff1d(training_data_index, lb)
     properties[ulb] = 1
     
-    return embedding_2d, grid, b_fig, label_color_list, label_list, max_iter, training_data_index, testing_data_index, eval_new, prediction_list, selected_points, properties
+    return embedding_2d.tolist(), grid, b_fig, label_color_list, label_list, max_iter, training_data_index, testing_data_index, eval_new, prediction_list, selected_points, properties

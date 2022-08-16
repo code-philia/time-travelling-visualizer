@@ -766,13 +766,13 @@ export class ProjectorScatterPlotAdapter {
     {
       const n = ds.points.length;
       let dst = 0;
-      if (selectedPointCount > 0) {
+      if (selectedPointCount >= 0) {
         for (let i = 0; i < n; ++i) {
-          let c = new THREE.Color(unselectedColor);
           let point = ds.points[i]
+          let c = new THREE.Color(point.color)
           //filter之后 只有unlabel无颜色
-          if (window.properties && window.properties[window.iteration] && window.properties[window.iteration][i] !== 1) {
-            c = new THREE.Color(point.color)
+          if (window.properties && window.properties[window.iteration] && window.properties[window.iteration][i] === 1) {
+            c = new THREE.Color(unselectedColor);
           }
           colors[dst++] = c.r;
           colors[dst++] = c.g;
@@ -941,14 +941,16 @@ export class ProjectorScatterPlotAdapter {
         return `✅ ${i}`
       }
     }
-    if (window.queryResAnormalIndecates?.length) {
-      if (window.queryResAnormalIndecates.indexOf(i) >= 0) {
+    if (window.queryResAnormalIndecates?.length && window.queryResAnormalIndecates.indexOf(i) >= 0) {
+      if (window.isAnimatating && window.customSelection.indexOf(i) == -1) {
+        return ``
+      }else{
         return `⭕️ ${i}`
       }
     }
     if (window.queryResAnormalCleanIndecates?.length) {
       if (window.queryResAnormalCleanIndecates.indexOf(i) >= 0) {
-        return `🟢${i}`
+        return `🟢clean`
       }
     }
 

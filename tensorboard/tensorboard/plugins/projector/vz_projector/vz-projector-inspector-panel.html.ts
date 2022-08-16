@@ -147,7 +147,11 @@ export const template = html`
     align-items: center;
     cursor: pointer;
     height: 36px;
+    justify-content:space-around;
     border-bottom: 1px solid #bcb8b8;
+  }
+  .resTable{
+    width:100%;
   }
   .row-img:hover {
     color: #560731;
@@ -467,7 +471,7 @@ export const template = html`
     <div style="display:flex;">
     <!--<button style="width: 120px;" class="bounding-selection search-button search">Select</button>-->
     <button style="width: 180px; white-space: nowrap;" class="show-selection search-button search">Prev & Cur Selection</button>
-    <button style="width: 230px;" class="train-by-selection search-button search">Train By Selections</button>
+    <button style="width: 220px;" class="train-by-selection search-button search">re-Train By Selections</button>
     </div>
   </div>
 
@@ -502,9 +506,9 @@ export const template = html`
       <paper-input value="{{epochTo}}" label="iteration to:">
       </paper-input>
     </div>-->
-    <div class="flex-container" style="justify-content:space-around;height: 30px;">
-      <p class="total-epoch" style="margin-top:26px;">total: {{totalEpoch}}</p>
+    <div class="flex-container" style="justify-content:space-between;height: 30px;margin-bottom: 10px;">
       <p class="current-epoch" style="margin-top:26px;">iteration: {{currentPlayedEpoch}}</p>
+      <button style="width: 120px; white-space: nowrap;" class="noisy-show-selection search-button search">Prev Selection</button>
     </div>
     <div class="flex-container">
     <button style="width: 150px;" class="boundingbox-button show-noisy-btn">play animation</button>
@@ -622,8 +626,7 @@ export const template = html`
     <div class="matches-list" style="display: none">
    
     <div class="matches-list-title">[[queryResultListTitle]]</div>
-    
-     <template is="dom-if" if="[[showCheckAllQueryRes]]">
+     <template is="dom-if" if="[[showMoreRecommend]]">
      <div style="display:flex;">
      <paper-input value="{{moreRecommednNum}}" label="more recommend num:">
      </paper-input>
@@ -636,11 +639,11 @@ export const template = html`
      <button class="button set-filter">Filter query result</button>
      <button class="button clear-selection">Clear Selection</button>
      </div>-->
-     <div class="matches-list-title" style="background:#eaeaea; line-height:40px;"> 
+     <div class="matches-list-title" style="background:#eaeaea; line-height:40px;display: flex;justify-content: space-around;"> 
      <template is="dom-if" if="[[showCheckAllQueryRes]]">
-     <paper-checkbox style="margin: 0px -2px 0px 5px;" id="label-points-toggle" checked="{{checkAllQueryRes}}"></paper-checkbox>
+     <paper-checkbox style="margin: 10px -2px 0px 5px;" id="label-points-toggle" checked="{{checkAllQueryRes}}"></paper-checkbox>
      </template>
-     <span class="queryResColumnHeader">index</span><span class="queryResColumnHeader">predict</span><span class="queryResColumnHeader">estimation</span> <template is="dom-if" if="[[showCheckAllQueryRes]]"><span class="queryResColumnHeader">score</span></template></div>
+     <span class="queryResColumnHeader">index</span><span class="queryResColumnHeader">predict</span><template is="dom-if" if="[[showMoreRecommend]]"><span class="queryResColumnHeader">estimation</span></template> <template is="dom-if" if="[[showCheckAllQueryRes]]"><span class="queryResColumnHeader">score</span></template></div>
       <div class="list"></div>
       <div class="limit-msg">Showing only the first 100 results...</div>
     </div>

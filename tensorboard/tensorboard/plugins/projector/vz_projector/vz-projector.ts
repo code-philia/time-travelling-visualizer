@@ -615,8 +615,15 @@ class Projector
   ///
   setDynamicNoisy() {
     // this.setDynamicStop()
-    if(window.customSelection && window.customSelection.length){
-      this.filterDataset(window.customSelection)
+    if(!window.customSelection){
+      window.customSelection = []
+    }
+    if(!window.queryResAnormalCleanIndecates){
+      window.queryResAnormalCleanIndecates = []
+    }
+    let indecates = window.customSelection.concat(window.queryResAnormalCleanIndecates)
+    if (indecates && indecates.length) {
+      this.filterDataset(indecates)
     }
     // this.filterDataset(this.selectedPointIndices)
     this.currentIteration = window.iteration
@@ -633,13 +640,26 @@ class Projector
     current = Number(interationList[0])
     let count = 0
     if (this.intervalFlag) {
+      this.intervalFlag = false
       this.timer = window.setInterval(() => {
-        this.intervalFlag = false
+        console.log('start', this.timer)
+
         this.inspectorPanel.updateCurrentPlayEpoch(current)
         window.iteration = current;
+        let length = this.dataSet.points.length
+        if (length === 60002) {
+          let point1 = this.dataSet.points[length - 2];
+          let point2 = this.dataSet.points[length - 1];
+          point1.projections['tsne-0'] = window.allResPositions.grid[current][0]
+          point1.projections['tsne-1'] = window.allResPositions.grid[current][1]
+          point2.projections['tsne-0'] = window.allResPositions.grid[current][2]
+          point2.projections['tsne-1'] = window.allResPositions.grid[current][3]
+          // point.projections['tsne-0'] = 
+        }
+
         for (let i = 0; i < this.dataSet.points.length; i++) {
           const point = this.dataSet.points[i];
-          if (!window.customSelection || !window.customSelection.length || window.customSelection.indexOf(i) !== -1) {
+          if (!window.customSelection || !window.customSelection.length || window.customSelection.indexOf(i) !== -1 || window.queryResAnormalCleanIndecates?.indexOf(i)!==-1) {
             point.projections['tsne-0'] = positions[current][i][0];
             point.projections['tsne-1'] = positions[current][i][1];
             point.projections['tsne-2'] = 0;
@@ -683,14 +703,29 @@ class Projector
     this.onIterationChange(current);
   }
   setDynamicStop() {
+    window.isAnimatating = false
     console.log('this.timer', this.timer)
     if (this.timer && !this.intervalFlag) {
       window.clearInterval(this.timer)
       this.intervalFlag = true
       this.resetFilterDataset()
     }
+    let end = setInterval(function () { }, 10000);
+    for (let i = 1; i <= end; i++) {
+      clearInterval(i);
+    }
 
     this.iteration = this.currentIteration
+    let length = this.dataSet.points.length
+    if (length === 60002) {
+      let point1 = this.dataSet.points[length - 2];
+      let point2 = this.dataSet.points[length - 1];
+      point1.projections['tsne-0'] = window.allResPositions.grid[this.iteration][0]
+      point1.projections['tsne-1'] = window.allResPositions.grid[this.iteration][1]
+      point2.projections['tsne-0'] = window.allResPositions.grid[this.iteration][2]
+      point2.projections['tsne-1'] = window.allResPositions.grid[this.iteration][3]
+      // point.projections['tsne-0'] = 
+    }
     window.iteration = this.currentIteration
     this.updatePosByIndicates(window.iteration)
   }
@@ -701,13 +736,13 @@ class Projector
 
   refresh() {
     // this.projectorScatterPlotAdapter.scatterPlot.render()
-    this.metadataCard.updateCustomList(this.dataSet.points,this as ProjectorEventContext)
+    this.metadataCard.updateCustomList(this.dataSet.points, this as ProjectorEventContext)
     // this.projectorScatterPlotAdapter.scatterPlot.render()
     this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
     this.projectorScatterPlotAdapter.render()
   }
-  removecustomInMetaCard(){
-    this.metadataCard.updateCustomList(this.dataSet.points,this as ProjectorEventContext)
+  removecustomInMetaCard() {
+    this.metadataCard.updateCustomList(this.dataSet.points, this as ProjectorEventContext)
     this.inspectorPanel.refreshSearchResult()
     this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
     this.projectorScatterPlotAdapter.render()
@@ -727,7 +762,7 @@ class Projector
       } else {
         window.alQueryResPointIndices = []
       }
-      this.metadataCard.updateCustomList(this.dataSet.points,this as ProjectorEventContext)
+      this.metadataCard.updateCustomList(this.dataSet.points, this as ProjectorEventContext)
     }
     if (selectionType === 'isShowSelected') {
       for (let i = 0; i < window.previousIndecates?.length; i++) {
@@ -738,7 +773,7 @@ class Projector
         }
         // }
       }
-      this.metadataCard.updateCustomList(this.dataSet.points,this as ProjectorEventContext)
+      this.metadataCard.updateCustomList(this.dataSet.points, this as ProjectorEventContext)
       this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
       this.projectorScatterPlotAdapter.render()
       return
@@ -764,7 +799,7 @@ class Projector
           }
         }
       }
-      this.metadataCard.updateCustomList(this.dataSet.points,this as ProjectorEventContext)
+      this.metadataCard.updateCustomList(this.dataSet.points, this as ProjectorEventContext)
       this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
       this.projectorScatterPlotAdapter.render()
       return
@@ -1186,7 +1221,8 @@ class Projector
   onProjectionChanged(projection?: Projection) {
     this.dataPanel.projectionChanged(projection);
     this.updateBackgroundImg()
-    this.inspectorPanel.clearQueryResList()
+    this.inspectorPanel.clearQueryResList();
+    this.notifySelectionChanged([]);
     this.projectorScatterPlotAdapter.render();
   }
   setProjection(projection: Projection) {
@@ -1201,7 +1237,7 @@ class Projector
   // }
   notifyProjectionPositionsUpdated() {
     this.projectorScatterPlotAdapter.notifyProjectionPositionsUpdated();
-    this.metadataCard.updateCustomList(this.dataSet.points,this as ProjectorEventContext)
+    this.metadataCard.updateCustomList(this.dataSet.points, this as ProjectorEventContext)
   }
   /**
    * Gets the current view of the embedding and saves it as a State object.
@@ -1383,12 +1419,12 @@ class Projector
     let headers = new Headers();
     headers.append('Content-Type', 'application/json');
     headers.append('Accept', 'application/json');
-    console.log('currentIndices',currentIndices)
+    console.log('currentIndices', currentIndices)
     let indices = currentIndices.filter((item, i, arr) => {
       //函数自身返回的是一个布尔值，只当返回值为true时，当前元素才会存入新的数组中。            
       return item <= 49999
     })
-    console.log('indices',indices)
+    console.log('indices', indices)
     fetch(`http://${this.DVIServer}/al_query`, {
       method: 'POST',
       body: JSON.stringify({
@@ -1424,7 +1460,7 @@ class Projector
     });
   }
   // anormaly detection
-  queryAnormalyStrategy(strategy: string, budget: number, cls: number, currentIndices: number[], previousIndices: number[],
+  queryAnormalyStrategy(budget: number, cls: number, currentIndices: number[], comfirm_info: any[],
     callback: (indices: any, cleanIndices?: any) => void) {
     const msgId = logging.setModalMessage('Querying...');
     let headers = new Headers();
@@ -1433,12 +1469,11 @@ class Projector
     fetch(`http://${this.DVIServer}/anomaly_query`, {
       method: 'POST',
       body: JSON.stringify({
-        "strategy": strategy,
         "budget": budget,
         "cls": cls,
-        "currentIndices": currentIndices,
-        "previousIndices": previousIndices,
+        "indices": currentIndices,
         "content_path": this.dataSet.DVIsubjectModelPath,
+        "comfirm_info": comfirm_info
       }),
       headers: headers,
       mode: 'cors'

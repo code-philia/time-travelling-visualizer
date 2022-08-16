@@ -50,7 +50,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   dataSet: DataSet;
 
   @property({ type: String })
-  selectedStratergy: string = 'random';
+  selectedStratergy: string = 'Random';
 
   @property({ type: String })
   selectedAnormalyStratergy: string;
@@ -126,6 +126,9 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   showAnomaly: boolean = false
 
   @property({ type: Boolean })
+  isControlGroup: boolean = false
+
+  @property({ type: Boolean })
   shownormal: boolean = false
 
   @property({ type: String })
@@ -134,7 +137,10 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   @property({ type: Boolean })
   showCheckAllQueryRes: boolean = true
 
-  @property({type: Number})
+  @property({ type: Boolean })
+  showMoreRecommend: boolean = true
+
+  @property({ type: Number })
   moreRecommednNum: number = 10
 
 
@@ -153,6 +159,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   private moreRecommend: HTMLButtonElement;
   private queryAnomalyBtn: HTMLButtonElement;
   private showSelectionBtn: HTMLButtonElement;
+  private noisyshowSelectionBtn: HTMLButtonElement;
 
   private boundingSelectionBtn: HTMLButtonElement;
   private isAlSelecting: boolean;
@@ -191,6 +198,8 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
   private currentFilterType: string
 
+  private labelMap: any
+
 
 
   ready() {
@@ -200,12 +209,14 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
     this.currentFilterType = 'normal'
 
-    this.showAnomaly = window.sessionStorage.taskType == 'anormaly detection' || window.taskType == 'anormaly detection'
+    this.showAnomaly = window.sessionStorage.taskType == 'anormaly detection' && window.sessionStorage.isControlGroup !== 'true'
     this.shownormal = window.sessionStorage.taskType == 'active learning' || window.taskType == 'active learning'
+    this.isControlGroup = window.sessionStorage.isControlGroup == 'true'
 
     this.queryByStrategtBtn = this.$$('.query-by-stratergy') as HTMLButtonElement;
     this.moreRecommend = this.$$('.query-by-sel-btn') as HTMLButtonElement;
-    this.showSelectionBtn = this.$$('.show-selection') as HTMLButtonElement
+    this.showSelectionBtn = this.$$('.show-selection') as HTMLButtonElement;
+    this.noisyshowSelectionBtn = this.$$('.noisy-show-selection') as HTMLButtonElement
     this.queryAnomalyBtn = this.$$('.query-anomaly') as HTMLButtonElement;
     // this.boundingSelectionBtn = this.$$('.bounding-selection') as HTMLButtonElement;
 
@@ -253,13 +264,25 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     this.projector = projector;
     this.projectorEventContext = projectorEventContext;
     this.setupUI(projector);
+    this.labelMap = {
+      "0": "plane",
+      "1": "car",
+      "2": "bird",
+      "3": "cat", 
+      "4": "deer", 
+      "5": "dog",
+      "6": "frog", 
+      "7": "horse", 
+      "8": "ship", 
+      "9": "truck"
+    }
     projectorEventContext.registerSelectionChangedListener(
       (selection, neighbors) => this.updateInspectorPane(selection, neighbors)
     );
     // TODO change them based on metadata fields
     this.searchFields = ["type", "label", "new_selection"]
     // active learning statergy
-    this.statergyList = ["random", "LeastConfidence", "coreset", "badge"]
+    this.statergyList = ["Random", "Uncertainty", "Diversity", "Hybrid", "Feedback"]
     // anormaly detection statergy
     this.anormalyStatergyList = ['anormalyStageone', 'anormalyStageTwo', 'anormalyStageThree']
     // anormaly detcttion classes
@@ -475,11 +498,11 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   clearQueryResList() {
     this.updateSearchResults([])
   }
-  refreshSearchResult(){
+  refreshSearchResult() {
     this.updateSearchResults(this.queryIndices)
   }
   private async updateSearchResults(indices: number[]) {
-    
+
     const container = this.$$('.matches-list') as HTMLDivElement;
     const list = container.querySelector('.list') as HTMLDivElement;
     list.textContent = '';
@@ -496,7 +519,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     // const msgId = logging.setModalMessage('Fetching sprite image...');
     if (this.moreRecommend) {
       this.moreRecommend.onclick = () => {
-        if(!window.customSelection || !window.customSelection.length){
+        if (!window.customSelection || !window.customSelection.length) {
           logging.setErrorMessage('Please confirm some selection first');
           return
         }
@@ -517,11 +540,18 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
               }
             }
           }
-          this.queryByAl(this.projector, currentIndices, previoustIIndices,this.moreRecommednNum)
+          this.queryByAl(this.projector, currentIndices, previoustIIndices, this.moreRecommednNum)
         } else if (window.sessionStorage.taskType === 'anormaly detection') {
+          let confirmInfo: any[] = []
+          for (let i = 0; i < window.queryResAnormalIndecates.length; i++) {
+            let value = Boolean(window.customSelection.indexOf(window.queryResAnormalIndecates[i]) !== -1)
+            confirmInfo.push(value)
+            if (value && window.previousIndecates.indexOf(window.queryResAnormalIndecates[i]) === -1) {
+              window.previousIndecates.push(window.queryResAnormalIndecates[i])
+            }
+          }
           this.projector.queryAnormalyStrategy(
-            '',
-            Number(this.moreRecommednNum), this.selectedAnormalyClass, window.customSelection, window.customSelection,
+            Number(this.moreRecommednNum), this.selectedAnormalyClass, window.queryResAnormalIndecates, confirmInfo,
             (indices: any, cleansIndices: any) => {
               if (indices != null) {
                 // this.queryIndices = indices;
@@ -534,8 +564,9 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
                 window.queryResAnormalIndecates = indices
                 window.queryResAnormalCleanIndecates = cleansIndices
 
-                this.queryIndices = indices.concat(window.queryResAnormalCleanIndecates)
-                this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isAnormalyQuery');
+                this.queryIndices = indices.concat(cleansIndices)
+
+            
                 // if (!this.isAlSelecting) {
                 //   this.isAlSelecting = true
                 //   window.isAdjustingSel = true
@@ -544,7 +575,14 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
                 // }
                 // this.projectorScatterPlotAdapter.scatterPlot.setMouseMode(MouseMode.AREA_SELECT);
                 this.showCheckAllQueryRes = true
+                if (window.sessionStorage.isControlGroup == 'true') {
+                  this.showMoreRecommend = false
+                } else {
+                  this.showMoreRecommend = true
+                }
+                this.checkAllQueryRes = false
                 this.queryResultListTitle = 'Possible Abnormal Point List'
+                this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isAnormalyQuery');
 
               }
             })
@@ -561,6 +599,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     window.suggestionIndicates = []
     window.checkboxDom = []
     const queryListTable = document.createElement('table');
+    queryListTable.className = 'resTable'
     for (let i = 0; i < indices.length; i++) {
       const index = indices[i];
       const row = document.createElement('th');
@@ -605,6 +644,11 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
           input.checked = true
         }
         let newtd = document.createElement('td')
+        if(window.queryResAnormalCleanIndecates && window.queryResAnormalCleanIndecates.indexOf(index)!==-1){
+          input.disabled = true
+          input.style.visibility = 'hidden'
+        }
+        newtd.appendChild(input)
         newtd.className = 'inputColumn'
         newtd.appendChild(input)
         row.appendChild(newtd)
@@ -678,7 +722,8 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     }
     let index = window.queryResPointIndices?.indexOf(pointIndex)
 
-    let suggest_label = window.alSuggestLabelList[index]
+    let suggest_label = this.labelMap[window.alSuggestLabelList[index]]
+    
     if (original_label == undefined) {
       original_label = `Unknown`;
     }
@@ -690,15 +735,22 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
     const displayPointIndex = String(pointIndex)
     // return String(pointIndex) + "Label: " + stringMetaData + " Prediction: " + prediction + " Original label: " + original_label;
-    let prediction_res = stringMetaData === prediction ? ' - ' : ' ❗️ '
-    if (this.showCheckAllQueryRes == false) {
-      return `${displayPointIndex}|${displayprediction}|${prediction_res}`
+    let prediction_res = suggest_label === prediction ? ' - ' : ' ❗️ '
+    if(window.queryResAnormalCleanIndecates && window.queryResAnormalCleanIndecates.indexOf(pointIndex)!==-1){
+      return `${displayPointIndex}|${displayprediction}| clean | -`
     }
-    // if (suggest_label !== undefined) {
-    //   return displayPointIndex + " | " + displayStringMetaData + `(${suggest_label})` + " | " + displayprediction + " | " + prediction_res + " | " + score
-    // } else {
-    return `${displayPointIndex}|${displayprediction}|${prediction_res}|${score !== undefined ? score : '-'}`
-    // }
+    if (this.showCheckAllQueryRes == false) {
+      if (window.sessionStorage.isControlGroup == 'true') {
+        return `${displayPointIndex}|${displayprediction}`
+      } else {
+        return `${displayPointIndex}|${displayprediction}|${prediction_res}`
+      }
+    }
+    if (window.sessionStorage.isControlGroup == 'true') {
+      return `${displayPointIndex}|${displayprediction}|${score !== undefined ? score : '-'}`
+    } else {
+      return `${displayPointIndex}|${displayprediction}|${prediction_res}|${score !== undefined ? score : '-'}`
+    }
   }
   private getnnLabelFromIndex(pointIndex: number): string {
     const metadata = this.projector.dataSet.points[pointIndex].metadata[
@@ -851,7 +903,8 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       });
     }
     if (window)
-      if (window.sessionStorage.taskType === 'anormaly detection') {
+      if (window.sessionStorage.taskType === 'anormaly detection' && window.sessionStorage.isControlGroup !== 'true'
+      ) {
         self.showTab('anomaly');
       } else if (window.sessionStorage.taskType === 'active learning') {
         self.showTab('advanced');
@@ -877,44 +930,22 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
     this.queryByStrategtBtn.onclick = () => {
       this.queryByAl(projector, [], [])
-
-      // projector.queryByAL(
-      //   this.projector.iteration,
-      //   this.selectedStratergy,
-      //   Number(this.budget),
-      //   currentIndices,
-      //   previoustIIndices,
-      //   (indices: any, scores: any, labels: any) => {
-      //     if (indices != null) {
-      //       this.queryIndices = indices;
-      //       if (this.queryIndices.length == 0) {
-      //         this.searchBox.message = '0 matches.';
-      //       } else {
-      //         this.searchBox.message = `${this.queryIndices.length} matches.`;
-      //       }
-
-      //       window.alSuggestScoreList = scores
-      //       window.alSuggestLabelList = labels
-
-      //       this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isALQuery');
-      //       if (!this.isAlSelecting) {
-      //         this.isAlSelecting = true
-      //         window.isAdjustingSel = true
-      //         // this.boundingSelectionBtn.classList.add('actived')
-      //         this.projectorEventContext.setMouseMode(MouseMode.AREA_SELECT)
-      //       }
-      //       this.showCheckAllQueryRes = true
-      //       this.checkAllQueryRes = false
-      //       this.queryResultListTitle = 'Active Learning suggestion'
-      //       // this.projectorScatterPlotAdapter.scatterPlot.setMouseMode(MouseMode.AREA_SELECT);
-
-      //     }
-      //   }
-      // );
     }
 
-
+    // if(this.showSelectionBtn){
     this.showSelectionBtn.onclick = () => {
+      console.log('window.previousIndecates', window.previousIndecates)
+      for (let i = 0; i < window.previousIndecates?.length; i++) {
+        if (window.customSelection.indexOf(window.previousIndecates[i]) === -1) {
+          window.customSelection.push(window.previousIndecates[i])
+        }
+      }
+      this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isShowSelected');
+      // this.updateSearchResults(this.queryIndices)
+    }
+    // }
+    this.noisyshowSelectionBtn.onclick = () => {
+      console.log('window.previousIndecates', window.previousIndecates)
       for (let i = 0; i < window.previousIndecates?.length; i++) {
         if (window.customSelection.indexOf(window.previousIndecates[i]) === -1) {
           window.customSelection.push(window.previousIndecates[i])
@@ -926,7 +957,6 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
     this.queryAnomalyBtn.onclick = () => {
       projector.queryAnormalyStrategy(
-        '',
         Number(this.anomalyRecNum), this.selectedAnormalyClass, [], [],
         (indices: any, cleansIndices: any) => {
           if (indices != null) {
@@ -940,7 +970,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             window.queryResAnormalIndecates = indices
             window.queryResAnormalCleanIndecates = cleansIndices
 
-            this.queryIndices = indices.concat(window.queryResAnormalCleanIndecates)
+            this.queryIndices = indices.concat(cleansIndices)
             this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isAnormalyQuery');
             // if (!this.isAlSelecting) {
             //   this.isAlSelecting = true
@@ -950,8 +980,13 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             // }
             // this.projectorScatterPlotAdapter.scatterPlot.setMouseMode(MouseMode.AREA_SELECT);
             this.showCheckAllQueryRes = true
+            if (window.sessionStorage.isControlGroup == 'true') {
+              this.showMoreRecommend = false
+            } else {
+              this.showMoreRecommend = true
+            }
+            this.checkAllQueryRes = false
             this.queryResultListTitle = 'Possible Abnormal Point List'
-
           }
         })
     }
@@ -1043,6 +1078,10 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     this.noisyBtn.onclick = () => {
       if (!window.queryResAnormalIndecates?.length) {
         logging.setErrorMessage('Please query anomaly points first');
+        return
+      }
+      if(window.customSelection.length == 0){
+        alert('please confirm some points first')
         return
       }
       window.isAnimatating = true
@@ -1138,6 +1177,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             }
             // console.log('this.queryIndices',this.queryIndices)
             this.showCheckAllQueryRes = false
+            this.showMoreRecommend = false
             this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'normal');
             this.queryResultListTitle = 'Query Result List'
           }
@@ -1167,9 +1207,11 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   }
 
 
-  private queryByAl(projector, currentIndices, previoustIIndices,querNum?) {
+
+  private queryByAl(projector, currentIndices, previoustIIndices, querNum?) {
+    let that = this
     let num = Number(this.budget)
-    if(querNum){
+    if (querNum) {
       num = Number(querNum)
     }
     projector.queryByAL(
@@ -1190,7 +1232,6 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
           window.alSuggestScoreList = scores
           window.alSuggestLabelList = labels
 
-          this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isALQuery');
           if (!this.isAlSelecting) {
             this.isAlSelecting = true
             window.isAdjustingSel = true
@@ -1198,8 +1239,15 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             this.projectorEventContext.setMouseMode(MouseMode.AREA_SELECT)
           }
           this.showCheckAllQueryRes = true
+
+          if (window.sessionStorage.isControlGroup == 'true') {
+            this.showMoreRecommend = false
+          } else {
+            this.showMoreRecommend = true
+          }
           this.checkAllQueryRes = false
           this.queryResultListTitle = 'Active Learning suggestion'
+          this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isALQuery');
           // this.projectorScatterPlotAdapter.scatterPlot.setMouseMode(MouseMode.AREA_SELECT);
 
         }
