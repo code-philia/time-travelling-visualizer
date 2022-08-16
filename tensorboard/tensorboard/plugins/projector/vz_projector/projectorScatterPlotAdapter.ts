@@ -936,11 +936,6 @@ export class ProjectorScatterPlotAdapter {
     return labels;
   }
   private getLabelText(ds: DataSet, i: number, accessor: string): string {
-    if (window.customSelection?.length && window.isAdjustingSel) {
-      if (window.customSelection.indexOf(i) >= 0) {
-        return `✅ ${i}`
-      }
-    }
     if (window.queryResAnormalIndecates?.length && window.queryResAnormalIndecates.indexOf(i) >= 0) {
       if (window.isAnimatating && window.customSelection.indexOf(i) == -1) {
         return ``
@@ -951,6 +946,11 @@ export class ProjectorScatterPlotAdapter {
     if (window.queryResAnormalCleanIndecates?.length) {
       if (window.queryResAnormalCleanIndecates.indexOf(i) >= 0) {
         return `🟢clean`
+      }
+    }
+    if (window.customSelection?.length && window.isAdjustingSel) {
+      if (window.customSelection.indexOf(i) >= 0) {
+        return `✅ ${i}`
       }
     }
 

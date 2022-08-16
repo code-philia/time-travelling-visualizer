@@ -567,12 +567,12 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
                 this.queryIndices = indices.concat(cleansIndices)
 
             
-                // if (!this.isAlSelecting) {
-                //   this.isAlSelecting = true
-                //   window.isAdjustingSel = true
-                //   // this.boundingSelectionBtn.classList.add('actived')
-                //   this.projectorEventContext.setMouseMode(MouseMode.AREA_SELECT)
-                // }
+                if (!this.isAlSelecting) {
+                  this.isAlSelecting = true
+                  window.isAdjustingSel = true
+                  // this.boundingSelectionBtn.classList.add('actived')
+                  this.projectorEventContext.setMouseMode(MouseMode.AREA_SELECT)
+                }
                 // this.projectorScatterPlotAdapter.scatterPlot.setMouseMode(MouseMode.AREA_SELECT);
                 this.showCheckAllQueryRes = true
                 if (window.sessionStorage.isControlGroup == 'true') {
@@ -583,7 +583,6 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
                 this.checkAllQueryRes = false
                 this.queryResultListTitle = 'Possible Abnormal Point List'
                 this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isAnormalyQuery');
-
               }
             })
 
@@ -971,13 +970,12 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             window.queryResAnormalCleanIndecates = cleansIndices
 
             this.queryIndices = indices.concat(cleansIndices)
-            this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isAnormalyQuery');
-            // if (!this.isAlSelecting) {
-            //   this.isAlSelecting = true
-            //   window.isAdjustingSel = true
-            //   // this.boundingSelectionBtn.classList.add('actived')
-            //   this.projectorEventContext.setMouseMode(MouseMode.AREA_SELECT)
-            // }
+            if (!this.isAlSelecting) {
+              this.isAlSelecting = true
+              window.isAdjustingSel = true
+              // this.boundingSelectionBtn.classList.add('actived')
+              this.projectorEventContext.setMouseMode(MouseMode.AREA_SELECT)
+            }
             // this.projectorScatterPlotAdapter.scatterPlot.setMouseMode(MouseMode.AREA_SELECT);
             this.showCheckAllQueryRes = true
             if (window.sessionStorage.isControlGroup == 'true') {
@@ -987,6 +985,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             }
             this.checkAllQueryRes = false
             this.queryResultListTitle = 'Possible Abnormal Point List'
+            this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isAnormalyQuery');
           }
         })
     }
