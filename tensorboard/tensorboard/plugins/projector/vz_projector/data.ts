@@ -525,18 +525,21 @@ export class DataSet {
         window.unLabelData = []
         window.testingData = []
         window.labeledData = []
-        window.nowShowIndicates = []
 
-        for (let i = 0; i < data.properties.length; i++) {
-          if (data.properties[i] === 1) {
-            window.unLabelData.push(i)
-          } else if (data.properties[i] === 2) {
-            window.testingData.push(i)
-          } else {
-            window.labeledData.push(i)
+        if(!window.nowShowIndicates){
+          window.nowShowIndicates = []
+          for (let i = 0; i < data.properties.length; i++) {
+            if (data.properties[i] === 1) {
+              window.unLabelData.push(i)
+            } else if (data.properties[i] === 2) {
+              window.testingData.push(i)
+            } else {
+              window.labeledData.push(i)
+            }
+            window.nowShowIndicates.push(i)
           }
-          window.nowShowIndicates.push(i)
         }
+       
 
         // const is_uncertainty_diversity_tot_exist = data.uncertainty_diversity_tot?.is_exist;
         // this.is_uncertainty_diversity_tot_exist[iteration] = is_uncertainty_diversity_tot_exist;
@@ -853,17 +856,19 @@ export class DataSet {
           window.unLabelData = []
           window.testingData = []
           window.labeledData = []
-          window.nowShowIndicates = []
+          if(!window.nowShowIndicates){
+            window.nowShowIndicates = []
 
-          for (let i = 0; i < data.properties.length; i++) {
-            if (data.properties[i] === 1) {
-              window.unLabelData.push(i)
-            } else if (data.properties[i] === 2) {
-              window.testingData.push(i)
-            } else {
-              window.labeledData.push(i)
+            for (let i = 0; i < data.properties.length; i++) {
+              if (data.properties[i] === 1) {
+                window.unLabelData.push(i)
+              } else if (data.properties[i] === 2) {
+                window.testingData.push(i)
+              } else {
+                window.labeledData.push(i)
+              }
+              window.nowShowIndicates.push(i)
             }
-            window.nowShowIndicates.push(i)
           }
 
           // const is_uncertainty_diversity_tot_exist = data.uncertainty_diversity_tot?.is_exist;

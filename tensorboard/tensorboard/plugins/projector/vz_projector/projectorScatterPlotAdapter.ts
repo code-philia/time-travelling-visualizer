@@ -966,7 +966,7 @@ export class ProjectorScatterPlotAdapter {
           : `Unknown #${i}`;
       }
     }
-    if (window.isAdjustingSel) {
+    if (window.isAdjustingSel && window.sessionStorage.isControlGroup !=='true') {
       if (ds.points[i]?.metadata[accessor] !== undefined && ds.points[i]?.current_prediction !== ds.points[i]?.metadata[accessor]) {
         return ` ❗${i}`
       }

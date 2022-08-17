@@ -160,6 +160,8 @@ class Projector
 
   @property({ type: Boolean })
   showTesting: boolean = true;
+  @property({ type: Boolean })
+  _showNotAvaliable: boolean = false
 
   // The working subset of the data source's original data set.
   dataSet: DataSet;
@@ -206,6 +208,7 @@ class Projector
   private intervalFlag: boolean
 
   private registered: boolean
+
 
 
 
@@ -259,6 +262,7 @@ class Projector
 
 
     this.intervalFlag = true
+    this._showNotAvaliable = false
 
     this.metadataStyle = {
       left: '320px',
@@ -441,6 +445,7 @@ class Projector
   onIterationChange(num: number) {
     // window.iteration = num;
     this.iteration = num;
+    this.filterDataset(window.nowShowIndicates)
   }
 
   setSelectedLabelOption(labelOption: string) {
@@ -566,6 +571,7 @@ class Projector
     this.selectionChangedListeners.push(listener);
   }
   filterDataset(pointIndices: number[], filter?: boolean) {
+    console.log('fifiififiiiiii')
     const selectionSize = this.selectedPointIndices.length;
     /*
     if (this.dataSetBeforeFilter == null) {
@@ -1238,6 +1244,16 @@ class Projector
   notifyProjectionPositionsUpdated() {
     this.projectorScatterPlotAdapter.notifyProjectionPositionsUpdated();
     this.metadataCard.updateCustomList(this.dataSet.points, this as ProjectorEventContext)
+  }
+
+  hiddenOrShowScatter(type:string){
+   let dom = this.$$('#scatter') as HTMLElement
+   dom.style.visibility = type
+   if(type === ''){
+     this._showNotAvaliable = false
+   }else{
+    this._showNotAvaliable = true
+   }
   }
   /**
    * Gets the current view of the embedding and saves it as a State object.
