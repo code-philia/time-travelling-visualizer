@@ -138,7 +138,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   showCheckAllQueryRes: boolean = true
 
   @property({ type: Boolean })
-  showMoreRecommend: boolean = true
+  showMoreRecommend: boolean = false
 
   @property({ type: Number })
   moreRecommednNum: number = 10
