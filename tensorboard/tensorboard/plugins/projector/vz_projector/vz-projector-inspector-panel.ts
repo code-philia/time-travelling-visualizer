@@ -138,7 +138,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   showCheckAllQueryRes: boolean = true
 
   @property({ type: Boolean })
-  showMoreRecommend: boolean = false
+  showMoreRecommend: boolean = true
 
   @property({ type: Number })
   moreRecommednNum: number = 10
@@ -209,10 +209,15 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
     this.currentFilterType = 'normal'
 
+ 
+
     this.showAnomaly = window.sessionStorage.taskType == 'anormaly detection' && window.sessionStorage.isControlGroup !== 'true'
     this.shownormal = window.sessionStorage.taskType == 'active learning' || window.taskType == 'active learning'
     this.isControlGroup = window.sessionStorage.isControlGroup == 'true'
-
+    
+    if(window.sessionStorage.taskType == 'active learning'){
+      this.moreRecommednNum = 100
+    }
     this.queryByStrategtBtn = this.$$('.query-by-stratergy') as HTMLButtonElement;
     this.moreRecommend = this.$$('.query-by-sel-btn') as HTMLButtonElement;
     this.showSelectionBtn = this.$$('.show-selection') as HTMLButtonElement;
