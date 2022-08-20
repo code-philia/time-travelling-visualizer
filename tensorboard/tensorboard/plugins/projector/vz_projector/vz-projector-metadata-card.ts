@@ -129,12 +129,12 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
                 <div class="metadata-key">prediction</div>
                 <div class="metadata-value">[[item.prediction]]</div>
                 </div>
-                <template is="dom-if" if="[[item.possibelWroung]]">
+                <!--<template is="dom-if" if="[[item.possibelWroung]]">
                 <div id="tips-warn" style="position: absolute;right: 10px;top: 50px;" class="meta-tips">❗️</div>
                 <paper-tooltip animation-delay="0" for="tips-warn"
                 >disagreement between prediction and pseudo label
                 </paper-tooltip>
-                </template>
+                </template>-->
                 <template is="dom-if" if="[[item.isSelected]]">
                 <div id="tips-warn" style="position: absolute;right: 10px;top: 80px;" class="meta-tips">☑️selected</div>
                 <paper-tooltip animation-delay="0" for="tips-warn"
@@ -152,8 +152,9 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
           <div class="metadata-row">
           <div class="metadata-key" style="padding-left: 15px;">| img |</div>
           <div class="metadata-key">index |</div>
-          <div class="metadata-key" style="width: 40px;text-align: right;">label |</div>
+          <!--<div class="metadata-key" style="width: 40px;text-align: right;">label |</div>-->
           <div class="metadata-key">predict |</div>
+          <div class="metadata-key">operation |</div>
           </div>
           <div style="max-height: calc(100vh - 440px);overflow: auto; padding: 0 15px;">
           <template is="dom-repeat" items="[[customMetadata]]">
@@ -161,9 +162,9 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
             <div style="text-align: center;display: inline-block;position: absolute;left: -16px;" class="metadata-value">[[item.flag]]</div>
             <img src="[[item.src]]" />
             <div class="metadata-key" style="width:40px;">[[item.key]]</div>
-            <div class="metadata-value" style="width:40px;">[[item.value]]</div>
+            <!--<div class="metadata-value" style="width:40px;">[[item.value]]</div>-->
             <div class="metadata-value">[[item.prediction]]</div>
-            <button class="remove-btn" id="[[item.key]]" on-click="removeCustomSelItem"><iron-icon icon="close" style="height: 20px;width:20px;"></iron-icon></button>
+            <button class="remove-btn" id="[[item.key]]" on-click="removeCustomSelItem">✖️</button>
           </div>
           </div>
         </template>
@@ -299,6 +300,9 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
         for (let i = 0; i < window.customSelection.length; i++) {
           let src = data.urlList[window.customSelection[i]]
           let flag = points[window.customSelection[i]]?.metadata.label === points[window.customSelection[i]]?.current_prediction ? '' : '❗️'
+          if(window.sessionStorage.isControlGroup === 'true'){
+            flag = ''
+          }
           metadata.push({ key: window.customSelection[i], value: points[window.customSelection[i]].metadata.label, src: src, prediction: points[window.customSelection[i]].current_prediction, flag: flag });
         }
         if (msgId) {

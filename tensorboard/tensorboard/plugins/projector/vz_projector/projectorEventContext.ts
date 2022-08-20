@@ -48,6 +48,7 @@ export interface ProjectorEventContext {
   updateMetaByIndices(indicate:number);
   renderInTraceLine(inTrace: boolean);
   setMouseMode(mode:any);
+  hiddenOrShowScatter(type:string)
   removecustomInMetaCard();
   /** Registers a callback to be invoked when the projection changes. */
   registerProjectionChangedListener(listener: ProjectionChangedListener);

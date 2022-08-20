@@ -352,7 +352,7 @@ export const template = html`
     flex-direction: column;
   }
   .results .list{
-    max-height: calc(100vh - 420px);
+    max-height: calc(100vh - 580px);
     overflow: auto;
   }
 
@@ -476,9 +476,9 @@ export const template = html`
   </div>
 
   <div data-panel="anomaly" class="ink-panel-content query-content">
-    <div class="statergy-by" style="display:flex">
+    <div class="statergy-by" style="display:flex;justify-content: space-between;">
 
-      <paper-dropdown-menu no-animations label="Classes">
+      <!--<paper-dropdown-menu no-animations label="Classes" style="width:0;visibility:hidden;">
       <paper-listbox attr-for-selected="value" class="dropdown-content" selected="{{selectedAnormalyClass}}"
         slot="dropdown-content">
         <template is="dom-repeat" items="[[classOptionsList]]">
@@ -487,7 +487,7 @@ export const template = html`
           </paper-item>
         </template>
       </paper-listbox>
-    </paper-dropdown-menu>
+    </paper-dropdown-menu>-->
       <paper-input value="{{anomalyRecNum}}" label="number of query" style="margin-right: 10px;"></paper-input>
       <button style="width: 100px;" class="query-anomaly search-button search">Query</button>
     </div>
@@ -643,7 +643,7 @@ export const template = html`
      <template is="dom-if" if="[[showCheckAllQueryRes]]">
      <paper-checkbox style="margin: 10px -2px 0px 5px;" id="label-points-toggle" checked="{{checkAllQueryRes}}"></paper-checkbox>
      </template>
-     <span class="queryResColumnHeader">index</span><span class="queryResColumnHeader">predict</span><template is="dom-if" if="[[showMoreRecommend]]"><span class="queryResColumnHeader">estimation</span></template> <template is="dom-if" if="[[showCheckAllQueryRes]]"><span class="queryResColumnHeader">score</span></template></div>
+     <span class="queryResColumnHeader">index</span><span class="queryResColumnHeader" id="queryResheader">predict</span><template is="dom-if" if="[[showMoreRecommend]]"><span class="queryResColumnHeader">estimation</span></template> <template is="dom-if" if="[[showCheckAllQueryRes]]"><span class="queryResColumnHeader">score</span></template></div>
       <div class="list"></div>
       <div class="limit-msg">Showing only the first 100 results...</div>
     </div>
