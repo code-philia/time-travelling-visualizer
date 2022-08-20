@@ -247,7 +247,7 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
                     self.ftm = pickle.load(f)
             self.ftm.update_belief(curr_idxs)
             # query new samples
-            new_indices, scores = self.ftm.sample_batch(budget, return_score=True)
+            new_indices, scores = self.ftm.sample_batch(budget, return_scores=True)
             t1 = time.time()
             print("Query time is {:.2f}".format(t1-t0))
         else:
@@ -307,7 +307,7 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         q_strategy.train(total_epoch=TOTAL_EPOCH, task_model=resnet_model, complete_dataset=train_dataset,save_path=save_path)
         t2 = time.time()
         print("Training time is {:.2f}".format(t2-t1))
-        # self.save_subject_model(NEW_ITERATION, q_strategy.task_model.state_dict())
+        self.save_subject_model(NEW_ITERATION, q_strategy.task_model.state_dict())
 
         # compute accuracy at each round
         accu = q_strategy.test_accu(test_dataset)
@@ -444,20 +444,20 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
     #                                                                                                               #
     #################################################################################################################
     def _save(self, iteration):
-        with open(os.path.join(self.data_provider.content_path, "Model", "Iteration_{}".format(iteration), '.pkl'), 'wb') as f:
+        with open(os.path.join(self.data_provider.content_path, "Model", "Iteration_{}".format(iteration), 'ftm.pkl'), 'wb') as f:
             pickle.dump(self.ftm, f, pickle.HIGHEST_PROTOCOL)
 
     def _init_detection(self, iteration, lb_idxs, period=80):
         # extract samples
         train_num = self.data_provider.train_num
         # change epoch_NUM
-        embeddings_2d = np.zeros((self.period, train_num, 2))
-        for i in range(self.data_provider.e - self.data_provider.p*(self.period-1), self.data_provider.e+1, self.data_provider.p):
-            id = (i-(self.data_provider.e - (self.data_provider.p-1)*self.period))//self.data_provider.p
+        embeddings_2d = np.zeros((period, train_num, 2))
+        for i in range(self.data_provider.e - self.data_provider.p*(period-1), self.data_provider.e+1, self.data_provider.p):
+            id = (i-(self.data_provider.e - (self.data_provider.p-1)*period))//self.data_provider.p
             embeddings_2d[id] = self.projector.batch_project(iteration, i, self.data_provider.train_representation(iteration, i))
         trajectories = np.transpose(embeddings_2d, [1,0,2])
         samples = self.data_provider.train_representation(iteration, self.data_provider.e)
-        self.ftm = FeedbackTrajectoryManager(samples, trajectories, 20,period=period,metric="v")
+        self.ftm = FeedbackTrajectoryManager(samples, trajectories, 20, period=period, metric="v")
         print("Detecting abnormal....")
         self.ftm.clustered()
         print("Finish detection!")
@@ -531,12 +531,12 @@ class AnormalyTimeVisBackend(TimeVisBackend):
         if len(correct_idxs)>0:
             self.ntd.update_belief(idxs[correct_idxs])
         
-        suggest_idxs = self.ntd.sample_batch(budget)
+        suggest_idxs, scores = self.ntd.sample_batch(budget, return_scores=True)
         suggest_labels = self.clean_labels[suggest_idxs]
 
         # save results
         self._save()
-        return suggest_idxs, suggest_labels
+        return suggest_idxs, scores, suggest_labels
     
     def suggest_normal(self, budget):
         suggest_idxs = self.ntd.sample_normal_batch(budget)

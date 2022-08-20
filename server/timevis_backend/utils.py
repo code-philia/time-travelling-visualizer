@@ -179,6 +179,8 @@ def update_epoch_projection(timevis, EPOCH, predicates):
     eval_new['bound_test_15'] = 1
     eval_new['ppr_train'] = 1
     eval_new['ppr_test'] = 1
+    eval_new["train_accu"] = 1
+    eval_new["test_accu"] = 1
 
     label_color_list = []
     label_list = []

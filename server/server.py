@@ -148,15 +148,14 @@ def anomaly_query():
     data = request.get_json()
     CONTENT_PATH = os.path.normpath(data['content_path'])
     budget = int(data["budget"])
-    cls = int(data["cls"])
     idxs = data["indices"]
     comfirmed = data["comfirm_info"]
 
     sys.path.append(CONTENT_PATH)
 
     timevis = initialize_backend(CONTENT_PATH)
-    indices, scores, labels = timevis.suggest_abnormal(cls, idxs, comfirmed, budget)
-    clean_list,_ = timevis.suggest_normal(cls, 1)
+    indices, scores, labels = timevis.suggest_abnormal(idxs, comfirmed, budget)
+    clean_list,_ = timevis.suggest_normal(1)
 
     sys.path.remove(CONTENT_PATH)
     return make_response(jsonify({"selectedPoints": indices.tolist(), "scores": scores.tolist(), "suggestLabels":labels.tolist(),"cleanList":clean_list.tolist()}), 200)
@@ -217,8 +216,8 @@ def login():
     # if pass return normal_content_path and anormaly_content_path
     # TODO copy datasets
     if username == 'admin' and password == '123qwe': # mock
-        return make_response(jsonify({"normal_content_path": 'D:\\datasets\\al',"unormaly_content_path":'D:\\datasets\\timevis\\toy_model\\resnet18_cifar10'}), 200) #limy
-        # return make_response(jsonify({"normal_content_path": '/home/xianglin/projects/DVI_data/active_learning/base/resnet18',"unormaly_content_path":'/home/xianglin/projects/DVI_data/noisy/symmetric/cifar10'}), 200) #xianglin
+        # return make_response(jsonify({"normal_content_path": 'D:\\datasets\\al',"unormaly_content_path":'D:\\datasets\\timevis\\toy_model\\resnet18_cifar10'}), 200) #limy
+        return make_response(jsonify({"normal_content_path": '/home/xianglin/DVI_data/active_learning/random/resnet18/CIFAR10',"unormaly_content_path":'/home/xianglin/projects/DVI_data/noisy/symmetric/cifar10'}), 200) #xianglin
         # return make_response(jsonify({"normal_content_path": '/Users/zhangyifan/Downloads/al',"unormaly_content_path":'/Users/zhangyifan/Downloads/toy_model/resnet18_cifar10'}), 200) #yvonne
     elif username == 'controlGroup' and password == '123qwe': # mock
         return make_response(jsonify({"normal_content_path": 'D:\\datasets\\al',"unormaly_content_path":'D:\\datasets\\timevis\\toy_model\\resnet18_cifar10',"isControl":True}), 200) #limy
