@@ -320,7 +320,6 @@ class Projector
  
 
         function tranListToTreeData(arr) {
-          console.log('arr',arr)
           const newArr = []
           // 1. 构建一个字典：能够快速根据id找到对象。
           const map = {}
@@ -335,7 +334,6 @@ class Projector
             const key = item.value
             map[key] = item
           })
-          console.log('arr2',arr)
 
           // 2. 对于arr中的每一项
           arr.forEach(item => {
@@ -352,7 +350,7 @@ class Projector
           return newArr
         }
         data = tranListToTreeData(data)[0]
-        console.log('data',data)
+        // console.log('data',data)
         var margin = 50;
         var svg = d3.select(svgDom);
         var width = svg.attr("width");
@@ -375,11 +373,11 @@ class Projector
         //        node.parent - 当前节点的父节点, 根节点为 null.
         //        node.children - 当前节点的孩子节点(如果有的话); 叶节点为 undefined.
         //        node.value - 当前节点以及 descendants(后代节点) 的总计值; 可以通过 node.sum 和 node.count 计算.
-        console.log(hierarchyData);
+        // console.log(hierarchyData);
 
         //创建一个树状图
         var tree = d3.tree()
-          .size([100, 400])
+          .size([100, 1000])
           .separation(function (a, b) {
             return (a.parent == b.parent ? 1 : 2) / a.depth; //一种更适合于径向布局的变体，可以按比例缩小半径差距:
           });
@@ -424,7 +422,7 @@ class Projector
               target: end
             });
           })
-          .attr('stroke', 'blue')
+          .attr('stroke', '#4190ea')
           .attr('stroke-width', 1)
           .attr('fill', 'none');
 
@@ -442,16 +440,20 @@ class Projector
 
         //绘制文字和节点
         gs.append('circle')
-          .attr('r', 10)
-          .attr('fill', 'blue')
+          .attr('r', 8)
+          .attr('fill', function (d, i) {
+            return d.data.value == window.iteration?'orange':'#4190ea'
+          })
           .attr('stroke-width', 1)
-          .attr('stroke', 'blue')
+          .attr('stroke', function (d, i) {
+            return d.data.value == window.iteration?'orange':'#4190ea'
+          })
 
         gs.append('text')
           .attr('x', function (d, i) {
-            return d.children ? -10 : -10; //有子元素的话  当前节点的文字前移40
+            return d.children ? 15 : 15; //有子元素的话  当前节点的文字前移40
           })
-          .attr('y', -25)
+          .attr('y', -20)
           .attr('dy', 10)
           .text(function (d, i) {
             return d.data.value;
@@ -460,12 +462,14 @@ class Projector
     let that = this
     setTimeout(() => {
       let list = svgDom.querySelectorAll("circle");
-      console.log('lililili', list)
       for (let i = 0; i <= list.length; i++) {
         let c = list[i]
+        c.style.cursor="pointer"
         c.addEventListener('click', (e: any) => {
-          console.log("eeee", e.target.nextSibling.innerHTML,)
-          that.projectionsPanel.jumpTo(Number(e.target.nextSibling.innerHTML))
+          // console.log("eeee", e.target.nextSibling.innerHTML,)
+          if(e.target.nextSibling.innerHTML != window.iteration){
+            that.projectionsPanel.jumpTo(Number(e.target.nextSibling.innerHTML))
+          }
         })
       }
     })
@@ -641,6 +645,7 @@ class Projector
     if (!window.isAnimatating) {
       this.filterDataset(window.nowShowIndicates)
     }
+    this.initialTree()
   }
 
   setSelectedLabelOption(labelOption: string) {
