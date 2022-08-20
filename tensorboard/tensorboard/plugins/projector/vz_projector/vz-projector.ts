@@ -451,9 +451,11 @@ class Projector
 
         gs.append('text')
           .attr('x', function (d, i) {
-            return d.children ? 15 : 15; //有子元素的话  当前节点的文字前移40
+            return d.children ? 15 : 10; 
           })
-          .attr('y', -20)
+          .attr('y', function (d, i) {
+            return d.children ? -20 : -5;
+          })
           .attr('dy', 10)
           .text(function (d, i) {
             return d.data.value;
