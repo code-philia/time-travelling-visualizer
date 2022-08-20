@@ -302,9 +302,14 @@ class Projector
 
     const d3 = window.d3;
     console.log('d3dddd', d3, window.d3)
+  
     let svgDom = this.$$("#mysvggg")
 
-    document.body.append(svgDom)
+    while (svgDom?.firstChild) {
+      svgDom.removeChild(svgDom.lastChild);
+    }
+
+    // document.body.append(svgDom)
 
 
     await fetch(`http://${window.sessionStorage.ipAddress}/get_itertaion_structure?path=${window.modelMath}`, { method: 'POST' })
@@ -312,6 +317,7 @@ class Projector
       .then(res => {
         window.treejson = res.structure
         let data = res.structure
+ 
 
         function tranListToTreeData(arr) {
           console.log('arr',arr)
