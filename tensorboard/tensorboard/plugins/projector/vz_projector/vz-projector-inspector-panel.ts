@@ -211,7 +211,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
  
 
-    this.showAnomaly = window.sessionStorage.taskType == 'anormaly detection' && window.sessionStorage.isControlGroup !== 'true'
+    this.showAnomaly = window.sessionStorage.taskType == 'anormaly detection'
     this.shownormal = window.sessionStorage.taskType == 'active learning' || window.taskType == 'active learning'
     this.isControlGroup = window.sessionStorage.isControlGroup == 'true'
     
@@ -587,6 +587,9 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
                 }
                 this.checkAllQueryRes = false
                 this.queryResultListTitle = 'Possible Abnormal Point List'
+                let dom = this.$$("#queryResheader")
+                console.log('domdom',dom)
+                dom.innerHTML = 'label'
                 this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isAnormalyQuery');
               }
             })
@@ -993,6 +996,9 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             }
             this.checkAllQueryRes = false
             this.queryResultListTitle = 'Possible Abnormal Point List'
+            let dom = this.$$("#queryResheader")
+            console.log('domdom',dom)
+            dom.innerHTML = 'label'
             this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isAnormalyQuery');
           }
         })
@@ -1254,6 +1260,8 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
           }
           this.checkAllQueryRes = false
           this.queryResultListTitle = 'Active Learning suggestion'
+          let dom = this.$$("#queryResheader")
+          dom.innerHTML = 'predict'
           this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isALQuery');
           // this.projectorScatterPlotAdapter.scatterPlot.setMouseMode(MouseMode.AREA_SELECT);
 
