@@ -202,6 +202,18 @@ def al_train():
     # update iteration projection
     embedding_2d, grid, decision_view, label_color_list, label_list, _, training_data_index, \
     testing_data_index, eval_new, prediction_list, selected_points, properties = update_epoch_projection(timevis, NEW_ITERATION, dict())
+    
+    # rewirte json =========
+    res_json_path = os.path.join(CONTENT_PATH, "iteration_structure.json")
+    with open(res_json_path,encoding='utf8')as fp:
+        json_data = json.load(fp)
+
+        json_data.append({'value': NEW_ITERATION, 'name': 'iteration', 'pid': iteration})
+        print('json_data',json_data)
+    with open(res_json_path,'w')as r:
+      json.dump(json_data, r)
+    r.close()
+    # rewirte json =========
 
     del config
     gc.collect()
