@@ -61,9 +61,9 @@ const POINT_COLOR_UNLABELED = 16776960;
 const POINT_COLOR_HOVER = 7396243;
 
 const POINT_SCALE_DEFAULT = 1.2;
-const POINT_SCALE_SELECTED = 1.2;
+const POINT_SCALE_SELECTED = 2.0;
 const POINT_SCALE_NEIGHBOR = 1.2;
-const POINT_SCALE_HOVER = 1.2;
+const POINT_SCALE_HOVER = 2.5;
 const POINT_SCALE_NEW_SELECTION = 2;
 const POINT_SCALE_SELECTED_NEW_SELECTION = 2.4;
 const POINT_SCALE_HOVER_NEW_SELECTION = 2.4;
@@ -608,7 +608,21 @@ export class ProjectorScatterPlotAdapter {
       const n = selectedPointCount;
       for (let i = 0; i < n; ++i) {
         const p = selectedPointIndices[i];
-        scale[p] = POINT_SCALE_SELECTED;
+        if(window.isAnimatating){
+          scale[p] = 4.0;
+        } else{
+          scale[p] = POINT_SCALE_SELECTED;
+        }
+
+      }
+    }
+    {
+      const n = window.customSelection.length;
+      for (let i = 0; i < n; ++i) {
+        const p = window.customSelection[i];
+        if(window.isAnimatating){
+          scale[p] = 4.0;
+        }
       }
     }
     // Scale up the neighbor points.
@@ -901,7 +915,7 @@ export class ProjectorScatterPlotAdapter {
     //   }
     // }
 
-    if (window.customSelection?.length && window.isAdjustingSel) {
+    if (!window.isAnimatating && window.customSelection?.length && window.isAdjustingSel) {
       const n = ds.points.length;
       let c = new THREE.Color(POINT_CUSTOM_SELECTED);
       for (let i = 0; i < n; i++) {
@@ -915,13 +929,13 @@ export class ProjectorScatterPlotAdapter {
     }
 
     // Color the hover point.
-    if (hoverPointIndex != null) {
-      let c = new THREE.Color(POINT_COLOR_HOVER);
-      let dst = hoverPointIndex * 3;
-      colors[dst++] = c.r;
-      colors[dst++] = c.g;
-      colors[dst++] = c.b;
-    }
+    // if (hoverPointIndex != null) {
+    //   let c = new THREE.Color(POINT_COLOR_HOVER);
+    //   let dst = hoverPointIndex * 3;
+    //   colors[dst++] = c.r;
+    //   colors[dst++] = c.g;
+    //   colors[dst++] = c.b;
+    // }
     return colors;
   }
   generate3DLabelsArray(ds: DataSet, accessor: string) {

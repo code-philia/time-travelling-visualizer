@@ -51,7 +51,9 @@ declare global {
     tSNETotalIter: number,
     taskType: string,
     selectedStack: any,
-    ipAddress: string
+    ipAddress: string,
+    d3: any,
+    treejson: any
   }
 }
 
@@ -251,6 +253,7 @@ class Projector
     this.bookmarkPanel.initialize(this, this as ProjectorEventContext);
     this.setupUIControls();
     this.initializeDataProvider();
+    this.d3loader()
     this.iteration = 0;
     this.currentIteration = 0
 
@@ -277,6 +280,190 @@ class Projector
     //   .then(data => { this.DVIServer = data.DVIServerIP + ":" + data.DVIServerPort; })
     this.DVIServer = window.sessionStorage.ipAddress
   };
+  d3loader() {
+    let that = this
+    new Promise((resolve) => {
+      let url = "https://d3js.org/d3.v5.min.js"
+      // let url = "http://127.0.0.1/d3-min.js"
+      let script = document.createElement('script')
+      script.setAttribute('src', url)
+
+      script.onload = () => {
+        resolve(true)
+        that.initialTree()
+      }
+      document.body.append(script)
+    })
+  }
+
+
+  async initialTree() {
+    // this.d3loader()
+
+    const d3 = window.d3;
+    console.log('d3dddd', d3, window.d3)
+    let svgDom = this.$$("#mysvggg")
+
+    document.body.append(svgDom)
+
+
+    await fetch(`http://${window.sessionStorage.ipAddress}/get_itertaion_structure?path=${window.modelMath}`, { method: 'POST' })
+      .then(response => response.json())
+      .then(res => {
+        window.treejson = res.structure
+        let data = res.structure
+
+        function tranListToTreeData(arr) {
+          console.log('arr',arr)
+          const newArr = []
+          // 1. 构建一个字典：能够快速根据id找到对象。
+          const map = {}
+          // {
+          //   '01': {id:"01", pid:"",   "name":"老王",children: [] },
+          //   '02': {id:"02", pid:"01", "name":"小张",children: [] },
+          // }
+          arr.forEach(item => {
+            // 为了计算方便，统一添加children
+            item.children = []
+            // 构建一个字典
+            const key = item.value
+            map[key] = item
+          })
+          console.log('arr2',arr)
+
+          // 2. 对于arr中的每一项
+          arr.forEach(item => {
+            const parent = map[item.pid]
+            if (parent) {
+              //    如果它有父级，把当前对象添加父级元素的children中
+              parent.children.push(item)
+            } else {
+              //    如果它没有父级（pid:''）,直接添加到newArr
+              newArr.push(item)
+            }
+          })
+
+          return newArr
+        }
+        data = tranListToTreeData(data)[0]
+        console.log('data',data)
+        var margin = 50;
+        var svg = d3.select(svgDom);
+        var width = svg.attr("width");
+        var height = svg.attr("height");
+
+        //创建分组
+        var g = svg.append("g")
+          .attr("transform", "translate(" + margin + "," + 20 + ")");
+
+
+        //创建一个层级布局
+        var hierarchyData = d3.hierarchy(data)
+          .sum(function (d, i) {
+            return d.value;
+          });
+        //    返回的节点和每一个后代会被附加如下属性:
+        //        node.data - 关联的数据，由 constructor 指定.
+        //        node.depth - 当前节点的深度, 根节点为 0.
+        //        node.height - 当前节点的高度, 叶节点为 0.
+        //        node.parent - 当前节点的父节点, 根节点为 null.
+        //        node.children - 当前节点的孩子节点(如果有的话); 叶节点为 undefined.
+        //        node.value - 当前节点以及 descendants(后代节点) 的总计值; 可以通过 node.sum 和 node.count 计算.
+        console.log(hierarchyData);
+
+        //创建一个树状图
+        var tree = d3.tree()
+          .size([100, 400])
+          .separation(function (a, b) {
+            return (a.parent == b.parent ? 1 : 2) / a.depth; //一种更适合于径向布局的变体，可以按比例缩小半径差距:
+          });
+
+        //初始化树状图数据
+        var treeData = tree(hierarchyData)
+        console.log(treeData); //这里的数据treeData与hierarchyData 相同
+
+        //获取边和节点
+        var nodes = treeData.descendants();
+        var links = treeData.links();
+        console.log(nodes);
+        console.log(links);
+
+        //创建贝塞尔曲线生成器
+        var link = d3.linkHorizontal()
+          .x(function (d) {
+            return d.y;
+          }) //生成的曲线在曲线的终点和起点处的切线是水平方向的
+          .y(function (d) {
+            return d.x;
+          });
+
+
+        //绘制边
+        g.append('g')
+          .selectAll('path')
+          .data(links)
+          .enter()
+          .append('path')
+          .attr('d', function (d, i) {
+            var start = {
+              x: d.source.x,
+              y: d.source.y
+            };
+            var end = {
+              x: d.target.x,
+              y: d.target.y
+            };
+            return link({
+              source: start,
+              target: end
+            });
+          })
+          .attr('stroke', 'blue')
+          .attr('stroke-width', 1)
+          .attr('fill', 'none');
+
+
+        //创建节点与文字分组
+        var gs = g.append('g')
+          .selectAll('.g')
+          .data(nodes)
+          .enter()
+          .append('g')
+          .attr('transform', function (d, i) {
+            return 'translate(' + d.y + ',' + d.x + ')';
+
+          });
+
+        //绘制文字和节点
+        gs.append('circle')
+          .attr('r', 10)
+          .attr('fill', 'blue')
+          .attr('stroke-width', 1)
+          .attr('stroke', 'blue')
+
+        gs.append('text')
+          .attr('x', function (d, i) {
+            return d.children ? -10 : -10; //有子元素的话  当前节点的文字前移40
+          })
+          .attr('y', -25)
+          .attr('dy', 10)
+          .text(function (d, i) {
+            return d.data.value;
+          })
+      })
+    let that = this
+    setTimeout(() => {
+      let list = svgDom.querySelectorAll("circle");
+      console.log('lililili', list)
+      for (let i = 0; i <= list.length; i++) {
+        let c = list[i]
+        c.addEventListener('click', (e: any) => {
+          console.log("eeee", e.target.nextSibling.innerHTML,)
+          that.projectionsPanel.jumpTo(Number(e.target.nextSibling.innerHTML))
+        })
+      }
+    })
+  }
 
   readyregis() {
     let el: any = this.$$('#metadata-card')
@@ -445,7 +632,9 @@ class Projector
   onIterationChange(num: number) {
     // window.iteration = num;
     this.iteration = num;
-    this.filterDataset(window.nowShowIndicates)
+    if (!window.isAnimatating) {
+      this.filterDataset(window.nowShowIndicates)
+    }
   }
 
   setSelectedLabelOption(labelOption: string) {
@@ -571,7 +760,6 @@ class Projector
     this.selectionChangedListeners.push(listener);
   }
   filterDataset(pointIndices: number[], filter?: boolean) {
-    console.log('fifiififiiiiii')
     const selectionSize = this.selectedPointIndices.length;
     /*
     if (this.dataSetBeforeFilter == null) {
@@ -621,10 +809,10 @@ class Projector
   ///
   setDynamicNoisy() {
     // this.setDynamicStop()
-    if(!window.customSelection){
+    if (!window.customSelection) {
       window.customSelection = []
     }
-    if(!window.queryResAnormalCleanIndecates){
+    if (!window.queryResAnormalCleanIndecates) {
       window.queryResAnormalCleanIndecates = []
     }
     let indecates = window.customSelection.concat(window.queryResAnormalCleanIndecates)
@@ -665,7 +853,7 @@ class Projector
 
         for (let i = 0; i < this.dataSet.points.length; i++) {
           const point = this.dataSet.points[i];
-          if (!window.customSelection || !window.customSelection.length || window.customSelection.indexOf(i) !== -1 || window.queryResAnormalCleanIndecates?.indexOf(i)!==-1) {
+          if (!window.customSelection || !window.customSelection.length || window.customSelection.indexOf(i) !== -1 || window.queryResAnormalCleanIndecates?.indexOf(i) !== -1) {
             point.projections['tsne-0'] = positions[current][i][0];
             point.projections['tsne-1'] = positions[current][i][1];
             point.projections['tsne-2'] = 0;
@@ -687,7 +875,7 @@ class Projector
         } else {
           current = interationList[++count]
         }
-      }, 1500)
+      }, 1200)
     }
 
   }
@@ -1246,14 +1434,14 @@ class Projector
     this.metadataCard.updateCustomList(this.dataSet.points, this as ProjectorEventContext)
   }
 
-  hiddenOrShowScatter(type:string){
-   let dom = this.$$('#scatter') as HTMLElement
-   dom.style.visibility = type
-   if(type === ''){
-     this._showNotAvaliable = false
-   }else{
-    this._showNotAvaliable = true
-   }
+  hiddenOrShowScatter(type: string) {
+    let dom = this.$$('#scatter') as HTMLElement
+    dom.style.visibility = type
+    if (type === '') {
+      this._showNotAvaliable = false
+    } else {
+      this._showNotAvaliable = true
+    }
   }
   /**
    * Gets the current view of the embedding and saves it as a State object.
@@ -1459,15 +1647,29 @@ class Projector
       const scores = data.scores
       logging.setModalMessage(null, msgId);
 
-      for (let i = 0; i < currentIndices.length; i++) {
-        if (window.previousIndecates.indexOf(currentIndices[i]) === -1) {
-          window.previousIndecates.push(currentIndices[i])
+      if (currentIndices && currentIndices.length) {
+        for (let i = 0; i < currentIndices.length; i++) {
+          if (window.previousIndecates.indexOf(currentIndices[i]) === -1) {
+            window.previousIndecates.push(currentIndices[i])
+          }
         }
+        function func(a, b) {
+          return a - b;
+        }
+        window.previousIndecates.sort(func)
+      } else {
+        for (let i = 0; i < window.customSelection.length; i++) {
+          if (window.previousIndecates.indexOf(window.customSelection[i]) === -1) {
+            window.previousIndecates.push(window.customSelection[i])
+          }
+        }
+        function func(a, b) {
+          return a - b;
+        }
+        window.previousIndecates.sort(func)
       }
-      function func(a, b) {
-        return a - b;
-      }
-      window.previousIndecates.sort(func)
+
+
 
       callback(indices, scores, labels);
     }).catch(error => {

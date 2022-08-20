@@ -225,9 +225,7 @@ export class DataSet {
   DVIEvaluation: {
     [iteration: number]: any;
   } = [];
-  DVIDataList: {
-    [iteration: number]: any;
-  } = [];
+  DVIDataList:any = [];
   DVIAvailableIteration: Array<number> = [];
   DVIPredicates: any[] = [];
   is_uncertainty_diversity_tot_exist: {
@@ -773,6 +771,7 @@ export class DataSet {
     }
   }
 
+
   /** Runs DVI on the data. */
   async reTrainByDVI(
     iteration: number, newIndices: number[],
@@ -805,6 +804,7 @@ export class DataSet {
           //函数自身返回的是一个布尔值，只当返回值为true时，当前元素才会存入新的数组中。            
           return item <= 49999
         })
+        let that = this
         
         await fetch("http://" + this.DVIServer + "/al_train", {
           method: 'POST',
@@ -816,7 +816,8 @@ export class DataSet {
           headers: headers,
           mode: 'cors'
         }).then(response => response.json()).then(data => {
-          iteration = iteration + 1
+          iteration = data.maximum_iteration
+         
           window.iteration = iteration
           const result = data.result;
           const grid_index = [[data.grid_index[0], data.grid_index[1]], [data.grid_index[2], data.grid_index[3]]];
@@ -1056,6 +1057,12 @@ export class DataSet {
             this.DVIfilterIndices.push(i);
           }
           this.DVIDataList[iteration] = this.points
+          if(this.DVIDataList[iteration] && this.DVIDataList[iteration].length && this.DVIDataList.lenght> iteration ){
+            console.log('inininiinsert')
+            for(let i = this.DVIDataList.length+1; i> iteration;i--){
+              this.DVIDataList[i] = this.DVIDataList[i-1]
+            }
+          }
           window.DVIDataList = this.DVIDataList
           stepCallback(this.tSNEIteration, evaluation, new_selection, filterIndices, this.tSNETotalIter);
         }).catch(error => {

@@ -352,7 +352,7 @@ export const template = html`
     flex-direction: column;
   }
   .results .list{
-    max-height: calc(100vh - 420px);
+    max-height: calc(100vh - 580px);
     overflow: auto;
   }
 
