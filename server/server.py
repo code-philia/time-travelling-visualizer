@@ -80,19 +80,6 @@ def filter():
 
     return make_response(jsonify({"selectedPoints": selected_points.tolist()}), 200)
 
-# server
-# @app.route('/sprite', methods=["POST","GET"])
-# @cross_origin()
-# def sprite_image():
-#     path = request.args.get("path")
-#     index=request.args.get("index")
-
-#     CONTENT_PATH = os.path.normpath(path)
-#     print('index', index)
-#     idx = int(index)
-#     pic_save_dir_path = os.path.join('http://ip:host', "sprites", "{}.png".format(idx))
-
-#     return make_response(jsonify({"imgUrl":pic_save_dir_path}), 200)
 
 # base64
 @app.route('/sprite', methods=["POST","GET"])
@@ -111,12 +98,6 @@ def sprite_image():
         img_stream = base64.b64encode(img_stream).decode()
     return make_response(jsonify({"imgUrl":'data:image/png;base64,' + img_stream}), 200)
 
-@app.route('/json', methods=["POST","GET"])
-@cross_origin()
-def sprite_json():
-    with open('graphic.json', 'r') as f:
-       config = json.load(f)
-    return make_response(jsonify({"imgUrl":config}), 200)
 
 @app.route('/spriteList', methods=["POST"])
 @cross_origin()
@@ -126,9 +107,7 @@ def sprite_list_image():
     path = data["path"]
 
     CONTENT_PATH = os.path.normpath(path)
-
     length = len(indices)
-
     urlList = {}
 
     for i in range(length):
@@ -142,6 +121,7 @@ def sprite_list_image():
             # urlList.append('data:image/png;base64,' + img_stream)
     return make_response(jsonify({"urlList":urlList}), 200)
 
+
 @app.route('/al_query', methods=["POST"])
 @cross_origin()
 def al_query():
@@ -152,10 +132,11 @@ def al_query():
     budget = int(data["budget"])
     prev_idxs = data["previousIndices"]
     curr_idxs = data["currentIndices"]
+    # TODO dense_al parameter from frontend
 
     sys.path.append(CONTENT_PATH)
-
-    timevis = initialize_backend(CONTENT_PATH)
+    timevis = initialize_backend(CONTENT_PATH, dense_al=True)
+    # TODO add new sampling rule
     indices, labels, scores = timevis.al_query(iteration, budget, strategy, np.array(prev_idxs).astype(np.int64), np.array(curr_idxs).astype(np.int64))
 
     sys.path.remove(CONTENT_PATH)
@@ -189,7 +170,9 @@ def al_train():
     iteration = data["iteration"]
     sys.path.append(CONTENT_PATH)
 
+    # default setting al_train is light version, we only save the last epoch
     timevis = initialize_backend(CONTENT_PATH)
+    # TODO fix
     timevis.al_train(iteration, new_indices)
 
     from config import config

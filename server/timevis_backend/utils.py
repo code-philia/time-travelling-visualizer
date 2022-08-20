@@ -11,14 +11,14 @@ from .backend_adapter import TimeVisBackend, ActiveLearningTimeVisBackend, Anorm
 timevis_path = "../../DLVisDebugger"
 sys.path.append(timevis_path)
 from singleVis.SingleVisualizationModel import SingleVisualizationModel
-from singleVis.losses import SingleVisLoss, UmapLoss, ReconstructionLoss
-from singleVis.trainer import SingleVisTrainer
-from singleVis.data import NormalDataProvider, ActiveLearningDataProvider
+from singleVis.losses import SingleVisLoss, UmapLoss, ReconstructionLoss, SmoothnessLoss, HybridLoss
+from singleVis.trainer import SingleVisTrainer, HybridVisTrainer
+from singleVis.data import NormalDataProvider, ActiveLearningDataProvider, DenseActiveLearningDataProvider
 from singleVis.eval.evaluator import Evaluator
-from singleVis.visualizer import visualizer
-from singleVis.projector import Projector, ALProjector
+from singleVis.visualizer import visualizer, DenseALvisualizer
+from singleVis.projector import Projector, ALProjector, DenseALProjector
 
-def initialize_backend(CONTENT_PATH):
+def initialize_backend(CONTENT_PATH, dense_al=False):
 
     from config import config
 
@@ -56,6 +56,9 @@ def initialize_backend(CONTENT_PATH):
         T_N_EPOCHS = config["VISUALIZATION"]["T_N_EPOCHS"]
     elif SETTING == "active learning":
         BASE_ITERATION = config["BASE_ITERATION"]
+        TOTAL_EPOCH = config["TRAINING"]["total_epoch"]
+    else:
+        raise NotImplementedError
 
     import Model.model as subject_model
     net = eval("subject_model.{}()".format(NET))
@@ -71,8 +74,13 @@ def initialize_backend(CONTENT_PATH):
         SEGMENTS = config["VISUALIZATION"]["SEGMENTS"]
         projector = Projector(vis_model=model, content_path=CONTENT_PATH, segments=SEGMENTS, device=DEVICE)
     elif SETTING == "active learning":
-        data_provider = ActiveLearningDataProvider(CONTENT_PATH, net, BASE_ITERATION, split=-1, device=DEVICE, classes=CLASSES, verbose=1)
-        projector = ALProjector(vis_model=model, content_path=CONTENT_PATH, vis_model_name=VIS_MODEL_NAME, device=DEVICE)
+        DENSE_VIS_MODEL_NAME = config["VISUALIZATION"]["DENSE_VIS_MODEL_NAME"]
+        if dense_al:
+            data_provider = DenseActiveLearningDataProvider(CONTENT_PATH, net, BASE_ITERATION, epoch_num=TOTAL_EPOCH, split=-1, device=DEVICE, classes=CLASSES,verbose=1)
+            projector = DenseALProjector(vis_model=model, content_path=CONTENT_PATH, vis_model_name=DENSE_VIS_MODEL_NAME, device=DEVICE)
+        else:
+            data_provider = ActiveLearningDataProvider(CONTENT_PATH, net, BASE_ITERATION, split=-1, device=DEVICE, classes=CLASSES, verbose=1)
+            projector = ALProjector(vis_model=model, content_path=CONTENT_PATH, vis_model_name=VIS_MODEL_NAME, device=DEVICE)
         
     # ########################################################################################################################
     # #                                                       TRAIN                                                          #
@@ -84,19 +92,27 @@ def initialize_backend(CONTENT_PATH):
         _a, _b = find_ab_params(1.0, min_dist)
         umap_loss_fn = UmapLoss(negative_sample_rate, DEVICE, _a, _b, repulsion_strength=1.0)
         recon_loss_fn = ReconstructionLoss(beta=1.0)
-        criterion = SingleVisLoss(umap_loss_fn, recon_loss_fn, lambd=LAMBDA)
-
-        optimizer = torch.optim.Adam(model.parameters(), lr=.01, weight_decay=1e-5)
-        lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=4, gamma=.1)
-
-        trainer = SingleVisTrainer(model, criterion, optimizer, lr_scheduler,edge_loader=None, DEVICE=DEVICE)
-        # trainer.load(file_path=os.path.join(data_provider.model_path, "Iteration_{}".format(EPOCH), VIS_MODEL_NAME))
+        if dense_al:
+            smooth_loss_fn = SmoothnessLoss(margin=1.)
+            S_LAMBDA = config["VISUALIZATION"]["S_LAMBDA"]
+            criterion = HybridLoss(umap_loss_fn, recon_loss_fn, smooth_loss_fn, lambd1=LAMBDA, lambd2=S_LAMBDA)
+            optimizer = torch.optim.Adam(model.parameters(), lr=.01, weight_decay=1e-5)
+            lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=4, gamma=.1)
+            trainer = HybridVisTrainer(model, criterion, optimizer, lr_scheduler,edge_loader=None, DEVICE=DEVICE)
+        else:
+            criterion = SingleVisLoss(umap_loss_fn, recon_loss_fn, lambd=LAMBDA)
+            optimizer = torch.optim.Adam(model.parameters(), lr=.01, weight_decay=1e-5)
+            lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=4, gamma=.1)
+            trainer = SingleVisTrainer(model, criterion, optimizer, lr_scheduler,edge_loader=None, DEVICE=DEVICE)
     
     # ########################################################################################################################
     # #                                                       EVALUATION                                                     #
     # ########################################################################################################################
 
-    vis = visualizer(data_provider, projector, RESOLUTION)
+    if dense_al:
+        vis = DenseALvisualizer(data_provider, projector, RESOLUTION)
+    else:
+        vis = visualizer(data_provider, projector, RESOLUTION)
     evaluator = Evaluator(data_provider, projector)
 
     if SETTING == "normal":
@@ -104,7 +120,7 @@ def initialize_backend(CONTENT_PATH):
     elif SETTING == "abnormal":
         timevis = AnormalyTimeVisBackend(data_provider, projector, vis, evaluator, period=75, **config)
     elif SETTING == "active learning":
-        timevis = ActiveLearningTimeVisBackend(data_provider, projector, trainer, vis, evaluator, **config)
+        timevis = ActiveLearningTimeVisBackend(data_provider, projector, trainer, vis, evaluator, dense_al, **config)
     
     del config
     gc.collect()

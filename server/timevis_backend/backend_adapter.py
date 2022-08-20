@@ -128,9 +128,10 @@ class TimeVisBackend:
 
 
 class ActiveLearningTimeVisBackend(TimeVisBackend):
-    def __init__(self, data_provider, projector, trainer, vis, evaluator, **hyperparameters) -> None:
+    def __init__(self, data_provider, projector, trainer, vis, evaluator, dense, **hyperparameters) -> None:
         super().__init__(data_provider, projector, vis, evaluator, **hyperparameters)
         self.trainer = trainer
+        self.dense = dense
     
     def get_epoch_index(self, iteration):
         """get the training data index for an epoch"""
@@ -139,7 +140,6 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         return index
 
     def al_query(self, iteration, budget, strategy, prev_idxs, curr_idxs):
-    # def al_query(self, iteration, budget, strategy, idxs_lb):
         """get the index of new selection from different strategies"""
         CONTENT_PATH = self.data_provider.content_path
         NUM_QUERY = budget
@@ -152,10 +152,6 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         now = time.strftime("%Y-%m-%d-%H_%M_%S", time.localtime(time.time())) 
         sys.stdout = open(os.path.join(CONTENT_PATH, now+".txt"), "w")
 
-        # for reproduce purpose
-        # torch.manual_seed(1331)
-        # np.random.seed(1131)
-
         # loading neural network
         import Model.model as subject_model
         task_model = eval("subject_model.{}()".format(NET))
@@ -167,12 +163,7 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         resume_path = os.path.join(CONTENT_PATH, "Model", "Iteration_{}".format(iteration))
 
         idxs_lb = np.array(json.load(open(os.path.join(resume_path, "index.json"), "r")))
-        # idxs_lb = np.concatenate((idxs_lb, prev_idxs), axis=0)
-        # idxs_lb = np.concatenate((idxs_lb, curr_idxs), axis=0)
-        idxs_selected = np.concatenate((curr_idxs.astype(np.int64), prev_idxs.astype(np.int64)), axis=0)
         
-        # state_dict = torch.load(os.path.join(resume_path, "subject_model.pth"))
-        # if if gpu is None
         state_dict = torch.load(os.path.join(resume_path, "subject_model.pth"), map_location=torch.device('cpu'))
         task_model.load_state_dict(state_dict)
         NUM_INIT_LB = len(idxs_lb)
@@ -187,7 +178,9 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
 
         if strategy == "Random":
             from query_strategies.random import RandomSampling
-            q_strategy = RandomSampling(task_model, task_model_type, n_pool, idxs_lb, 10, DATA_NAME, NET, gpu=GPU, **self.hyperparameters["TRAINING"])
+            idxs_selected = np.concatenate((curr_idxs.astype(np.int64), prev_idxs.astype(np.int64)), axis=0)
+            curr_lb = np.concatenate((idxs_lb, idxs_selected), axis=0)
+            q_strategy = RandomSampling(task_model, task_model_type, n_pool, curr_lb, 10, DATA_NAME, NET, gpu=GPU, **self.hyperparameters["TRAINING"])
             # print information
             print(DATA_NAME)
             print(type(q_strategy).__name__)
@@ -199,7 +192,9 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
             print("Query time is {:.2f}".format(t1-t0))
         elif strategy == "Uncertainty":
             from query_strategies.LeastConfidence import LeastConfidenceSampling
-            q_strategy = LeastConfidenceSampling(task_model, task_model_type, n_pool, idxs_lb, 10, DATA_NAME, NET, gpu=GPU, **self.hyperparameters["TRAINING"])
+            idxs_selected = np.concatenate((curr_idxs.astype(np.int64), prev_idxs.astype(np.int64)), axis=0)
+            curr_lb = np.concatenate((idxs_lb, idxs_selected), axis=0)
+            q_strategy = LeastConfidenceSampling(task_model, task_model_type, n_pool, curr_lb, 10, DATA_NAME, NET, gpu=GPU, **self.hyperparameters["TRAINING"])
             # print information
             print(DATA_NAME)
             print(type(q_strategy).__name__)
@@ -238,18 +233,25 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         #     print("Query time is {:.2f}".format(t1-t0))
         
         elif strategy == "Feedback":
-            from query_strategies.feedback import FeedbackSampling
-            q_strategy = FeedbackSampling(task_model, task_model_type, n_pool, idxs_lb, 10, DATA_NAME, NET, gpu=GPU, **self.hyperparameters["TRAINING"])
-            # print information
+            # TODO hard coded parameters...
+            period = 80
             print(DATA_NAME)
-            print(type(q_strategy).__name__)
+            print("FeedbackSampling")
             print('================Round {:d}==============='.format(iteration+1))
-            # query new samples
-            all_data = self.data_provider.train_representation(iteration)
             t0 = time.time()
-            new_indices, scores = q_strategy.query(complete_dataset, NUM_QUERY, all_data, idxs_selected)
+            file_path = os.path.join(self.data_provider.content_path, "Iteration_{}".format(iteration), 'ftm.pkl')
+            if not os.path.exists(file_path):
+                self._init_detection(iteration, lb_idxs=idxs_lb, period=period)
+            else:
+                with open(file_path, 'rb') as f:
+                    self.ftm = pickle.load(f)
+            self.ftm.update_belief(curr_idxs)
+            # query new samples
+            new_indices, scores = self.ftm.sample_batch(budget, return_score=True)
             t1 = time.time()
             print("Query time is {:.2f}".format(t1-t0))
+        else:
+            raise NotImplementedError
             
         # TODO return the suggest labels, need to develop pesudo label generation technique in the future
         true_labels = self.data_provider.train_labels(iteration)
@@ -289,6 +291,8 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         task_model_type = "pytorch"
         # start experiment
         n_pool = self.hyperparameters["TRAINING"]["train_num"]  # 50000
+        save_path = os.path.join(CONTENT_PATH, "Model", "Iteration_{}".format(NEW_ITERATION))
+        os.system("mkdir -p {}".format(save_path))
 
         from query_strategies.random import RandomSampling
         q_strategy = RandomSampling(task_model, task_model_type, n_pool, lb_idx, 10, DATA_NAME, NET, gpu=GPU, **self.hyperparameters["TRAINING"])
@@ -300,36 +304,15 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         train_dataset = torchvision.datasets.CIFAR10(root="..//data//CIFAR10", download=True, train=True, transform=self.hyperparameters["TRAINING"]['transform_tr'])
         test_dataset = torchvision.datasets.CIFAR10(root="..//data//CIFAR10", download=True, train=False, transform=self.hyperparameters["TRAINING"]['transform_te'])
         t1 = time.time()
-        q_strategy.train(total_epoch=TOTAL_EPOCH, task_model=resnet_model, complete_dataset=train_dataset)
+        q_strategy.train(total_epoch=TOTAL_EPOCH, task_model=resnet_model, complete_dataset=train_dataset,save_path=save_path)
         t2 = time.time()
         print("Training time is {:.2f}".format(t2-t1))
-        self.save_subject_model(NEW_ITERATION, q_strategy.task_model.state_dict())
+        # self.save_subject_model(NEW_ITERATION, q_strategy.task_model.state_dict())
 
         # compute accuracy at each round
         accu = q_strategy.test_accu(test_dataset)
         print('Accuracy {:.3f}'.format(100*accu))
     
-
-    def al_find_similar(self, iteration, prev_idxs, curr_idxs, k):
-        train_data = self.data_provider.train_representation(iteration)
-        train_labels = self.data_provider.train_labels(iteration)
-
-        train_num = self.data_provider.train_num
-        lb_idx = self.get_epoch_index(iteration)
-        ulb_idx = np.setdiff1d(np.arrange(train_num), lb_idx)
-        curr_selected = np.concatenate((prev_idxs, curr_idxs), axis=0)
-        ulb_idx = np.setdiff1d(ulb_idx, curr_selected)
-        nbrs = NearestNeighbors(n_neighbors=k, algorithm='ball_tree').fit(train_data[ulb_idx])
-        _, idxs = nbrs.kneighbors(train_data[curr_idxs])
-
-        idxs = idxs.flatten()
-        idxs = ulb_idx[idxs]
-        unique_idxs, ids = np.unique(idxs, return_index=True)
-        # suggest_labels = curr_labels.repeat(k)
-        # suggest_labels = suggest_labels[ids]
-        suggest_labels = train_labels[unique_idxs]
-
-        return unique_idxs, suggest_labels
     
     def get_max_iter(self):
         path  = os.path.join(self.data_provider.content_path, "Model")
@@ -395,63 +378,108 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         EVALUATION_NAME = config["VISUALIZATION"]["EVALUATION_NAME"]
         NET = config["TRAINING"]["NET"]
 
-        t0 = time.time()
-        spatial_cons = SingleEpochSpatialEdgeConstructor(self.data_provider, iteration, S_N_EPOCHS, B_N_EPOCHS, 15)
-        edge_to, edge_from, probs, feature_vectors, attention = spatial_cons.construct()
-        t1 = time.time()
-
-        probs = probs / (probs.max()+1e-3)
-        eliminate_zeros = probs>1e-3
-        edge_to = edge_to[eliminate_zeros]
-        edge_from = edge_from[eliminate_zeros]
-        probs = probs[eliminate_zeros]
-
-        # save result
-        save_dir = os.path.join(self.data_provider.model_path, "SV_time_al.json")
-        if not os.path.exists(save_dir):
-            evaluation = dict()
+        if self.dense:
+            raise NotImplementedError
         else:
-            f = open(save_dir, "r")
-            evaluation = json.load(f)
-            f.close()
-        if "complex_construction" not in evaluation.keys():
-            evaluation["complex_construction"] = dict()
-        evaluation["complex_construction"][str(iteration)] = round(t1-t0, 3)
-        with open(save_dir, 'w') as f:
-            json.dump(evaluation, f)
-        print("constructing timeVis complex in {:.1f} seconds.".format(t1-t0))
+            t0 = time.time()
+            spatial_cons = SingleEpochSpatialEdgeConstructor(self.data_provider, iteration, S_N_EPOCHS, B_N_EPOCHS, 15)
+            edge_to, edge_from, probs, feature_vectors, attention = spatial_cons.construct()
+            t1 = time.time()
 
+            probs = probs / (probs.max()+1e-3)
+            eliminate_zeros = probs>1e-3
+            edge_to = edge_to[eliminate_zeros]
+            edge_from = edge_from[eliminate_zeros]
+            probs = probs[eliminate_zeros]
 
-        dataset = DataHandler(edge_to, edge_from, feature_vectors, attention)
-        n_samples = int(np.sum(S_N_EPOCHS * probs) // 1)
-        # chosse sampler based on the number of dataset
-        if len(edge_to) > 2^24:
-            sampler = CustomWeightedRandomSampler(probs, n_samples, replacement=True)
-        else:
-            sampler = WeightedRandomSampler(probs, n_samples, replacement=True)
-        edge_loader = DataLoader(dataset, batch_size=512, sampler=sampler)
-        self.trainer.update_edge_loader(edge_loader)
+            # save result
+            save_dir = os.path.join(self.data_provider.model_path, "SV_time_al.json")
+            if not os.path.exists(save_dir):
+                evaluation = dict()
+            else:
+                f = open(save_dir, "r")
+                evaluation = json.load(f)
+                f.close()
+            if "complex_construction" not in evaluation.keys():
+                evaluation["complex_construction"] = dict()
+            evaluation["complex_construction"][str(iteration)] = round(t1-t0, 3)
+            with open(save_dir, 'w') as f:
+                json.dump(evaluation, f)
+            print("constructing timeVis complex in {:.1f} seconds.".format(t1-t0))
 
-        t2=time.time()
-        self.trainer.train(PATIENT, MAX_EPOCH)
-        t3 = time.time()
-        # save result
-        save_dir = os.path.join(self.data_provider.model_path, "SV_time_al.json")
-        if not os.path.exists(save_dir):
-            evaluation = dict()
-        else:
-            f = open(save_dir, "r")
-            evaluation = json.load(f)
-            f.close()
-        if  "training" not in evaluation.keys():
-            evaluation["training"] = dict()
-        evaluation["training"][str(iteration)] = round(t3-t2, 3)
-        with open(save_dir, 'w') as f:
-            json.dump(evaluation, f)
-        save_dir = os.path.join(self.data_provider.model_path, "Iteration_{}".format(iteration))
-        os.system("mkdir -p {}".format(save_dir))
-        self.trainer.save(save_dir=save_dir, file_name="al")
-        # TODO evaluate visualization model
+            dataset = DataHandler(edge_to, edge_from, feature_vectors, attention)
+            n_samples = int(np.sum(S_N_EPOCHS * probs) // 1)
+            # chosse sampler based on the number of dataset
+            if len(edge_to) > 2^24:
+                sampler = CustomWeightedRandomSampler(probs, n_samples, replacement=True)
+            else:
+                sampler = WeightedRandomSampler(probs, n_samples, replacement=True)
+            edge_loader = DataLoader(dataset, batch_size=512, sampler=sampler)
+            self.trainer.update_edge_loader(edge_loader)
+
+            t2=time.time()
+            self.trainer.train(PATIENT, MAX_EPOCH)
+            t3 = time.time()
+            # save result
+            save_dir = os.path.join(self.data_provider.model_path, "SV_time_al.json")
+            if not os.path.exists(save_dir):
+                evaluation = dict()
+            else:
+                f = open(save_dir, "r")
+                evaluation = json.load(f)
+                f.close()
+            if  "training" not in evaluation.keys():
+                evaluation["training"] = dict()
+            evaluation["training"][str(iteration)] = round(t3-t2, 3)
+            with open(save_dir, 'w') as f:
+                json.dump(evaluation, f)
+            save_dir = os.path.join(self.data_provider.model_path, "Iteration_{}".format(iteration))
+            os.system("mkdir -p {}".format(save_dir))
+            self.trainer.save(save_dir=save_dir, file_name="al")
+            # TODO evaluate visualization model, train and test
+    
+    #################################################################################################################
+    #                                                                                                               #
+    #                                            Sample Selection                                                  #
+    #                                                                                                               #
+    #################################################################################################################
+    def _save(self, iteration):
+        with open(os.path.join(self.data_provider.content_path, "Model", "Iteration_{}".format(iteration), '.pkl'), 'wb') as f:
+            pickle.dump(self.ftm, f, pickle.HIGHEST_PROTOCOL)
+
+    def _init_detection(self, iteration, lb_idxs, period=80):
+        # extract samples
+        train_num = self.data_provider.train_num
+        # change epoch_NUM
+        embeddings_2d = np.zeros((self.period, train_num, 2))
+        for i in range(self.data_provider.e - self.data_provider.p*(self.period-1), self.data_provider.e+1, self.data_provider.p):
+            id = (i-(self.data_provider.e - (self.data_provider.p-1)*self.period))//self.data_provider.p
+            embeddings_2d[id] = self.projector.batch_project(iteration, i, self.data_provider.train_representation(iteration, i))
+        trajectories = np.transpose(embeddings_2d, [1,0,2])
+        samples = self.data_provider.train_representation(iteration, self.data_provider.e)
+        self.ftm = FeedbackTrajectoryManager(samples, trajectories, 20,period=period,metric="v")
+        print("Detecting abnormal....")
+        self.ftm.clustered()
+        print("Finish detection!")
+        self.ftm.manual_select(lb_idxs)
+        self._save(iteration)
+    
+    def _suggest_abnormal(self, iteration, idxs, comfirmed, budget):
+        correct_idxs = np.argwhere(comfirmed==1).squeeze()
+        if len(correct_idxs)>0:
+            self.ftm.update_belief(idxs[correct_idxs])
+        
+        suggest_idxs = self.ftm.sample_batch(budget)
+
+        # save results
+        self._save(iteration)
+        return suggest_idxs
+    
+    def _suggest_normal(self, iteration, budget):
+        suggest_idxs = self.ftm.sample_normal_batch(budget)
+        # save results
+        self._save(iteration)
+        return suggest_idxs
 
 
 class AnormalyTimeVisBackend(TimeVisBackend):
