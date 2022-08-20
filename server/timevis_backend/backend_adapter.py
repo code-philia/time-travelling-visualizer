@@ -18,7 +18,7 @@ import torchvision
 from scipy.special import softmax
 from sklearn.neighbors import NearestNeighbors
 
-from .noise_detector import NoiseTrajectoryDetector, select_centroid
+# from .noise_detector import NoiseTrajectoryDetector, select_centroid
 # timevis_path = "D:\\code-space\\DLVisDebugger" #limy 
 timevis_path = "../../DLVisDebugger" #xianglin#yvonne
 sys.path.append(timevis_path)
@@ -26,6 +26,7 @@ from singleVis.utils import *
 from singleVis.custom_weighted_random_sampler import CustomWeightedRandomSampler
 from singleVis.edge_dataset import DataHandler
 from singleVis.spatial_edge_constructor import SingleEpochSpatialEdgeConstructor
+from singleVis.trajectory_manager import FeedbackTrajectoryManager
 
 # active_learning_path = "D:\\code-space\\ActiveLearning"  # limy 
 active_learning_path = "../../ActiveLearning"
@@ -250,7 +251,6 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
             t1 = time.time()
             print("Query time is {:.2f}".format(t1-t0))
             
-        
         # TODO return the suggest labels, need to develop pesudo label generation technique in the future
         true_labels = self.data_provider.train_labels(iteration)
 
@@ -270,11 +270,10 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         print("Training indices:\t{}".format(len(train_idx)))
         print("Valid indices:\t{}".format(len(set(train_idx))))
 
-        
         TOTAL_EPOCH = self.hyperparameters["TRAINING"]["total_epoch"]
         NET = self.hyperparameters["TRAINING"]["NET"]
         DEVICE = self.data_provider.DEVICE
-        NEW_ITERATION = iteration + 1
+        NEW_ITERATION = self.get_max_iter() + 1
         GPU = self.hyperparameters["GPU"]
         DATA_NAME = self.hyperparameters["DATASET"]
         sys.path.append(CONTENT_PATH)
@@ -331,7 +330,16 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         suggest_labels = train_labels[unique_idxs]
 
         return unique_idxs, suggest_labels
-
+    
+    def get_max_iter(self):
+        path  = os.path.join(self.data_provider.content_path, "Model")
+        dir_list = os.listdir(path)
+        max_iter = -1
+        for dir in dir_list:
+            if "Iteration_" in dir:
+                i = int(dir.replace("Iteration_",""))
+                max_iter = max(max_iter, i)
+        return max_iter
 
     def save_human_selection(self, iteration, indices):
         """
@@ -482,46 +490,32 @@ class AnormalyTimeVisBackend(TimeVisBackend):
             id = (i-(self.data_provider.e - (self.data_provider.p-1)*self.period))//self.data_provider.p
             embeddings_2d[id] = self.projector.batch_project(i, self.data_provider.train_representation(i))
         trajectories = np.transpose(embeddings_2d, [1,0,2])
-        train_labels = self.data_provider.train_labels(self.data_provider.s)
-        ntd = NoiseTrajectoryDetector(trajectories, train_labels)
+        samples = self.data_provider.train_representation(self.data_provider.e)
+        ftm = FeedbackTrajectoryManager(samples, trajectories, 20,period=100,metric="v")
         print("Detecting abnormal....")
-        ntd.proj_all(dim=2, period=75)
+        ftm.clustered()
         print("Finish detection!")
-
-        self.ntd = ntd
+        self.ntd = ftm
         self._save()
     
-    def suggest_abnormal(self, cls_num, idxs, comfirmed, budget):
-        if not self.ntd.detect_noise_cls(cls_num):
-            return np.array([]),np.array([]),np.array([])
-
-        # TODO verify the correctness of this part (indexing...)
-        map_idxs = np.argwhere(self.ntd.labels == cls_num).squeeze(axis=1)
+    def suggest_abnormal(self, idxs, comfirmed, budget):
+        correct_idxs = np.argwhere(comfirmed==1).squeeze()
+        if len(correct_idxs)>0:
+            self.ntd.update_belief(idxs[correct_idxs])
         
-        if len(idxs) > 0:
-            for idx, comfirm in zip(idxs, comfirmed):
-                selected = self.ntd.trajectory_embedding[str(cls_num)][np.argwhere(map_idxs==idx)[0,0]]
-                self.ntd.update_belief(cls_num, selected, comfirm)
-        
-        # update use
-        _, suggest_idxs, scores, _ = self.ntd.batch_suggest_abnormal(cls_num=cls_num, budget=budget)
-        suggest_idxs = map_idxs[suggest_idxs]
+        suggest_idxs = self.ntd.sample_batch(budget)
         suggest_labels = self.clean_labels[suggest_idxs]
 
         # save results
         self._save()
-        return suggest_idxs, scores, suggest_labels
+        return suggest_idxs, suggest_labels
     
-    def suggest_normal(self, cls_num, budget):
-        if not self.ntd.detect_noise_cls(cls_num):
-            return np.array([])
-        map_idxs = np.argwhere(self.ntd.labels == cls_num).squeeze(axis=1)
+    def suggest_normal(self, budget):
+        suggest_idxs = self.ntd.sample_normal_batch(budget)
+        suggest_labels = self.clean_labels[suggest_idxs]
 
-        scores = self.ntd.query_noise_score(cls_num)
-        idxs = np.flip(np.argsort(scores)[:budget])
-        suggest_idx = map_idxs[idxs]
-        scores = scores[idxs]
-
-        return suggest_idx, scores
+        # save results
+        self._save()
+        return suggest_idxs, suggest_labels
         
         
