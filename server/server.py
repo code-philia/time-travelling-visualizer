@@ -5,7 +5,6 @@
 # TODO refactor, similar function should be in utils
 # TODO tidy up
 # TODO return lb and ulb property
-
 from flask import request, Flask, jsonify, make_response
 from flask_cors import CORS, cross_origin
 import base64
@@ -17,12 +16,10 @@ import gc
 
 from timevis_backend.utils import *
 
-
 # flask for API server
 app = Flask(__name__)
 cors = CORS(app, supports_credentials=True)
 app.config['CORS_HEADERS'] = 'Content-Type'
-
 
 @app.route('/updateProjection', methods=["POST", "GET"])
 @cross_origin()
@@ -196,7 +193,7 @@ def al_train():
     timevis.al_train(iteration, new_indices)
 
     from config import config
-    NEW_ITERATION = iteration + 1
+    NEW_ITERATION =  timevis.get_max_iter()
     timevis.vis_train(NEW_ITERATION, **config)
 
     # update iteration projection

@@ -180,7 +180,8 @@ def update_epoch_projection(timevis, EPOCH, predicates):
         max_iter = (timevis.hyperparameters["EPOCH_END"] - timevis.hyperparameters["EPOCH_START"]) // timevis.hyperparameters["EPOCH_PERIOD"] + 1
     elif timevis.hyperparameters["SETTING"] == "active learning":
         # TODO fix this, could be larger than EPOCH
-        max_iter = max(timevis.hyperparameters["BASE_ITERATION"], EPOCH)
+        max_iter = timevis.get_max_iter()
+        # max_iter = max(timevis.hyperparameters["BASE_ITERATION"], EPOCH)
 
     # current_index = timevis.get_epoch_index(EPOCH)
     # selected_points = np.arange(training_data_number + testing_data_number)[current_index]
