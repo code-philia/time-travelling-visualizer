@@ -288,28 +288,15 @@ def get_res():
     del config
     gc.collect()    
     return make_response(jsonify({"results":results,"bgimgList":imglist, "grid": gridlist}), 200)
-# #mock toy_model
-# @app.route('/all_result_list', methods=["POST"])
-# @cross_origin()
-# def get_res():
-#     data = request.get_json()
-#     CONTENT_PATH = os.path.normpath(data['content_path'])
-#     iteration_s = data["iteration_start"]
-#     iteration_e = data["iteration_end"]
-#     imglist = {}
-#     for i in range(10):
-#         pic_save_dir_path = os.path.join(CONTENT_PATH, "noisy","bgimgs", "bgimg{}.png".format(i+1),)
-#         with open(pic_save_dir_path, 'rb') as img_f:
-#             img_stream = img_f.read()
-#             img_stream = base64.b64encode(img_stream).decode()
-#             index = i+1
-#             imglist[index] = 'data:image/png;base64,' + img_stream
-#             # imglist.append({index:'data:image/png;base64,' + img_stream})
-#     # pic_save_dir_path = os.path.join(CONTENT_PATH, "Model", "Epoch_1","bgimg.png")
-#     res_json_path = os.path.join(CONTENT_PATH, "noisy", "res.json")
-#     with open(res_json_path,encoding='utf8')as fp:
-#         json_data = json.load(fp)
-#     return make_response(jsonify({"results":json_data,"bgimgList":imglist}), 200)
+
+@app.route('/get_itertaion_structure', methods=["POST", "GET"])
+@cross_origin()
+def get_tree():
+    CONTENT_PATH = request.args.get("path")
+    res_json_path = os.path.join(CONTENT_PATH, "iteration_structure.json")
+    with open(res_json_path,encoding='utf8')as fp:
+        json_data = json.load(fp)
+    return make_response(jsonify({"structure":json_data}), 200)
 
 if __name__ == "__main__":
     with open('config.json', 'r') as f:
