@@ -741,7 +741,10 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     // return String(pointIndex) + "Label: " + stringMetaData + " Prediction: " + prediction + " Original label: " + original_label;
     let prediction_res = suggest_label === prediction ? ' - ' : ' ❗️ '
     if(window.queryResAnormalCleanIndecates && window.queryResAnormalCleanIndecates.indexOf(pointIndex)!==-1){
-      return `${displayPointIndex}|${displayprediction}| clean | -`
+      return `${displayPointIndex}|${displayStringMetaData}| clean | -`
+    }
+    if(window.queryResAnormalIndecates && window.queryResAnormalIndecates.indexOf(pointIndex)!==-1){
+      return `${displayPointIndex}|${displayStringMetaData}|${prediction_res}|${score !== undefined ? score : '-'}`
     }
     if (this.showCheckAllQueryRes == false) {
       if (window.sessionStorage.isControlGroup == 'true') {

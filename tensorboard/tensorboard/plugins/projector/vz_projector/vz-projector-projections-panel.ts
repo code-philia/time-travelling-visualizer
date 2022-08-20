@@ -76,7 +76,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
   @property({ type: Boolean })
   _showFilter: boolean = false
   @property({ type: String })
-  selectedArchitecture: string = 'ResNet-34'
+  selectedArchitecture: string = 'ResNet-18'
   @property({ type: String })
   selectedLr: string = '0.0001'
   @property({ type: Number })
@@ -212,7 +212,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
   ready() {
     super.ready();
     this.learningRateList = ['0.001', '0.0001', '0.00000001']
-    this.architectureList = ['ResNet-34', 'VGG-18']
+    this.architectureList = ['ResNet-18', 'VGG-18']
     this.totalEpochList = [100, 150, 200]
     this._showFilter = window.sessionStorage.taskType == 'anormaly detection'
     this.zDropdown = this.$$('#z-dropdown') as HTMLElement;
@@ -801,7 +801,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
       this.totalAccTest.innerText = String(Math.random().toFixed(3))
     }
     if(this.projector){
-      if(this.selectedArchitecture == 'ResNet-34' && this.selectedLr == '0.0001'){
+      if(this.selectedArchitecture == 'ResNet-18' && this.selectedLr == '0.0001'){
         
         this.projector.hiddenOrShowScatter('')
        }else{
@@ -822,7 +822,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
   _selectedLrChanged(){
     if(this.projector){
       if(this.projector){
-        if(this.selectedArchitecture == 'ResNet-34' && this.selectedLr == '0.0001'){
+        if(this.selectedArchitecture == 'ResNet-18' && this.selectedLr == '0.0001'){
           
           this.projector.hiddenOrShowScatter('')
          }else{

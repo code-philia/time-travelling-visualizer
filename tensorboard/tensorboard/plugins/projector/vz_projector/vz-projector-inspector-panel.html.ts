@@ -476,9 +476,9 @@ export const template = html`
   </div>
 
   <div data-panel="anomaly" class="ink-panel-content query-content">
-    <div class="statergy-by" style="display:flex">
+    <div class="statergy-by" style="display:flex;justify-content: space-between;">
 
-      <paper-dropdown-menu no-animations label="Classes">
+      <!--<paper-dropdown-menu no-animations label="Classes" style="width:0;visibility:hidden;">
       <paper-listbox attr-for-selected="value" class="dropdown-content" selected="{{selectedAnormalyClass}}"
         slot="dropdown-content">
         <template is="dom-repeat" items="[[classOptionsList]]">
@@ -487,7 +487,7 @@ export const template = html`
           </paper-item>
         </template>
       </paper-listbox>
-    </paper-dropdown-menu>
+    </paper-dropdown-menu>-->
       <paper-input value="{{anomalyRecNum}}" label="number of query" style="margin-right: 10px;"></paper-input>
       <button style="width: 100px;" class="query-anomaly search-button search">Query</button>
     </div>
