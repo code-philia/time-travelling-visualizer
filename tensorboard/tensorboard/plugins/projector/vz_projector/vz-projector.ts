@@ -302,7 +302,7 @@ class Projector
 
     const d3 = window.d3;
     console.log('d3dddd', d3, window.d3)
-  
+
     let svgDom = this.$$("#mysvggg")
 
     while (svgDom?.firstChild) {
@@ -311,13 +311,17 @@ class Projector
 
     // document.body.append(svgDom)
 
-
-    await fetch(`http://${window.sessionStorage.ipAddress}/get_itertaion_structure?path=${window.modelMath}`, { method: 'POST' })
+    let headers = new Headers();
+    await fetch(`http://${window.sessionStorage.ipAddress}/get_itertaion_structure?path=${window.modelMath}`, {
+      method: 'POST',
+      headers: headers,
+      mode: 'cors'
+    })
       .then(response => response.json())
       .then(res => {
         window.treejson = res.structure
         let data = res.structure
- 
+
 
         function tranListToTreeData(arr) {
           const newArr = []
@@ -442,16 +446,16 @@ class Projector
         gs.append('circle')
           .attr('r', 8)
           .attr('fill', function (d, i) {
-            return d.data.value == window.iteration?'orange':'#4190ea'
+            return d.data.value == window.iteration ? 'orange' : '#4190ea'
           })
           .attr('stroke-width', 1)
           .attr('stroke', function (d, i) {
-            return d.data.value == window.iteration?'orange':'#4190ea'
+            return d.data.value == window.iteration ? 'orange' : '#4190ea'
           })
 
         gs.append('text')
           .attr('x', function (d, i) {
-            return d.children ? 15 : 10; 
+            return d.children ? 15 : 10;
           })
           .attr('y', function (d, i) {
             return d.children ? -20 : -5;
@@ -466,10 +470,10 @@ class Projector
       let list = svgDom.querySelectorAll("circle");
       for (let i = 0; i <= list.length; i++) {
         let c = list[i]
-        c.style.cursor="pointer"
+        c.style.cursor = "pointer"
         c.addEventListener('click', (e: any) => {
           // console.log("eeee", e.target.nextSibling.innerHTML,)
-          if(e.target.nextSibling.innerHTML != window.iteration){
+          if (e.target.nextSibling.innerHTML != window.iteration) {
             that.projectionsPanel.jumpTo(Number(e.target.nextSibling.innerHTML))
           }
         })
