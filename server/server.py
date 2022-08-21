@@ -293,5 +293,6 @@ if __name__ == "__main__":
     with open('config.json', 'r') as f:
         config = json.load(f)
         ip_adress = config["ServerIP"]
+        # ip_adress = "172.26.191.173"
         port = config["ServerPort"]
     app.run(host=ip_adress, port=int(port))
