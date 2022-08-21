@@ -53,7 +53,10 @@ declare global {
     selectedStack: any,
     ipAddress: string,
     d3: any,
-    treejson: any
+    treejson: any,
+
+    rejectIndicates:any,
+    acceptIndicates:any,
   }
 }
 
@@ -948,6 +951,7 @@ class Projector
   refresh() {
     // this.projectorScatterPlotAdapter.scatterPlot.render()
     this.metadataCard.updateCustomList(this.dataSet.points, this as ProjectorEventContext)
+    this.metadataCard.updateRejectList(this.dataSet.points, this as ProjectorEventContext)
     // this.projectorScatterPlotAdapter.scatterPlot.render()
     this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
     this.projectorScatterPlotAdapter.render()
@@ -1634,18 +1638,21 @@ class Projector
     });
   }
   // active learning
-  queryByAL(iteration: number, strategy: string, budget: number, currentIndices: number[], previousIndices: number[],
+  queryByAL(iteration: number, strategy: string, budget: number, acceptIndicates: number[], rejectIndicates: number[],
     callback: (indices: any, scores: any, labels: any) => void) {
     const msgId = logging.setModalMessage('Querying...');
     let headers = new Headers();
     headers.append('Content-Type', 'application/json');
     headers.append('Accept', 'application/json');
-    console.log('currentIndices', currentIndices)
-    let indices = currentIndices.filter((item, i, arr) => {
+    let accIndicates = acceptIndicates.filter((item, i, arr) => {
       //函数自身返回的是一个布尔值，只当返回值为true时，当前元素才会存入新的数组中。            
       return item <= 49999
     })
-    console.log('indices', indices)
+    let rejIndicates = rejectIndicates.filter((item, i, arr) => {
+      //函数自身返回的是一个布尔值，只当返回值为true时，当前元素才会存入新的数组中。            
+      return item <= 49999
+    })
+
     fetch(`http://${this.DVIServer}/al_query`, {
       method: 'POST',
       body: JSON.stringify({
@@ -1653,8 +1660,8 @@ class Projector
         "strategy": strategy,
         "budget": budget,
         "content_path": this.dataSet.DVIsubjectModelPath,
-        "currentIndices": indices,
-        "previousIndices": previousIndices
+        "accIndicates": accIndicates,
+        "rejIndicates": rejIndicates
       }),
       headers: headers,
       mode: 'cors'
@@ -1664,27 +1671,27 @@ class Projector
       const scores = data.scores
       logging.setModalMessage(null, msgId);
 
-      if (currentIndices && currentIndices.length) {
-        for (let i = 0; i < currentIndices.length; i++) {
-          if (window.previousIndecates.indexOf(currentIndices[i]) === -1) {
-            window.previousIndecates.push(currentIndices[i])
-          }
-        }
-        function func(a, b) {
-          return a - b;
-        }
-        window.previousIndecates.sort(func)
-      } else {
-        for (let i = 0; i < window.customSelection.length; i++) {
-          if (window.previousIndecates.indexOf(window.customSelection[i]) === -1) {
-            window.previousIndecates.push(window.customSelection[i])
-          }
-        }
-        function func(a, b) {
-          return a - b;
-        }
-        window.previousIndecates.sort(func)
-      }
+      // if (currentIndices && currentIndices.length) {
+      //   for (let i = 0; i < currentIndices.length; i++) {
+      //     if (window.previousIndecates.indexOf(currentIndices[i]) === -1) {
+      //       window.previousIndecates.push(currentIndices[i])
+      //     }
+      //   }
+      //   function func(a, b) {
+      //     return a - b;
+      //   }
+      //   window.previousIndecates.sort(func)
+      // } else {
+      //   for (let i = 0; i < window.customSelection.length; i++) {
+      //     if (window.previousIndecates.indexOf(window.customSelection[i]) === -1) {
+      //       window.previousIndecates.push(window.customSelection[i])
+      //     }
+      //   }
+      //   function func(a, b) {
+      //     return a - b;
+      //   }
+      //   window.previousIndecates.sort(func)
+      // }
 
 
 

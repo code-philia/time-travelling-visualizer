@@ -640,10 +640,15 @@ export const template = html`
      <button class="button clear-selection">Clear Selection</button>
      </div>-->
      <div class="matches-list-title" style="background:#eaeaea; line-height:40px;display: flex;justify-content: space-around;"> 
-     <template is="dom-if" if="[[showCheckAllQueryRes]]">
+     <!--<template is="dom-if" if="[[showCheckAllQueryRes]]">
      <paper-checkbox style="margin: 10px -2px 0px 5px;" id="label-points-toggle" checked="{{checkAllQueryRes}}"></paper-checkbox>
-     </template>
-     <span class="queryResColumnHeader">index</span><span class="queryResColumnHeader" id="queryResheader">predict</span><template is="dom-if" if="[[showMoreRecommend]]"><span class="queryResColumnHeader">estimation</span></template> <template is="dom-if" if="[[showCheckAllQueryRes]]"><span class="queryResColumnHeader">score</span></template></div>
+     </template>-->
+     <template is="dom-if" if="[[showCheckAllQueryRes]]"><span class="queryResColumnHeader" style="width:30px">acc</span></template>
+     <template is="dom-if" if="[[showCheckAllQueryRes]]"><span class="queryResColumnHeader" style="width:30px">rej</span></template>
+     <span class="queryResColumnHeader">index</span><span class="queryResColumnHeader" id="queryResheader">predict</span>
+     <template is="dom-if" if="[[showMoreRecommend]]"><span class="queryResColumnHeader">estimation</span></template> 
+     <template is="dom-if" if="[[showCheckAllQueryRes]]"><span class="queryResColumnHeader">score</span></template>
+     </div>
       <div class="list"></div>
       <div class="limit-msg">Showing only the first 100 results...</div>
     </div>
