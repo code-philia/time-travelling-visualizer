@@ -61,9 +61,9 @@ const POINT_COLOR_UNLABELED = 16776960;
 const POINT_COLOR_HOVER = 7396243;
 
 const POINT_SCALE_DEFAULT = 1.2;
-const POINT_SCALE_SELECTED = 1.2;
+const POINT_SCALE_SELECTED = 2.0;
 const POINT_SCALE_NEIGHBOR = 1.2;
-const POINT_SCALE_HOVER = 1.2;
+const POINT_SCALE_HOVER = 2.5;
 const POINT_SCALE_NEW_SELECTION = 2;
 const POINT_SCALE_SELECTED_NEW_SELECTION = 2.4;
 const POINT_SCALE_HOVER_NEW_SELECTION = 2.4;
@@ -608,7 +608,21 @@ export class ProjectorScatterPlotAdapter {
       const n = selectedPointCount;
       for (let i = 0; i < n; ++i) {
         const p = selectedPointIndices[i];
-        scale[p] = POINT_SCALE_SELECTED;
+        if(window.isAnimatating){
+          scale[p] = 4.0;
+        } else{
+          scale[p] = POINT_SCALE_SELECTED;
+        }
+
+      }
+    }
+    {
+      const n = window.customSelection.length;
+      for (let i = 0; i < n; ++i) {
+        const p = window.customSelection[i];
+        if(window.isAnimatating){
+          scale[p] = 4.0;
+        }
       }
     }
     // Scale up the neighbor points.
@@ -901,7 +915,7 @@ export class ProjectorScatterPlotAdapter {
     //   }
     // }
 
-    if (window.customSelection?.length && window.isAdjustingSel) {
+    if (!window.isAnimatating && window.customSelection?.length && window.isAdjustingSel) {
       const n = ds.points.length;
       let c = new THREE.Color(POINT_CUSTOM_SELECTED);
       for (let i = 0; i < n; i++) {
@@ -915,13 +929,13 @@ export class ProjectorScatterPlotAdapter {
     }
 
     // Color the hover point.
-    if (hoverPointIndex != null) {
-      let c = new THREE.Color(POINT_COLOR_HOVER);
-      let dst = hoverPointIndex * 3;
-      colors[dst++] = c.r;
-      colors[dst++] = c.g;
-      colors[dst++] = c.b;
-    }
+    // if (hoverPointIndex != null) {
+    //   let c = new THREE.Color(POINT_COLOR_HOVER);
+    //   let dst = hoverPointIndex * 3;
+    //   colors[dst++] = c.r;
+    //   colors[dst++] = c.g;
+    //   colors[dst++] = c.b;
+    // }
     return colors;
   }
   generate3DLabelsArray(ds: DataSet, accessor: string) {
@@ -936,11 +950,6 @@ export class ProjectorScatterPlotAdapter {
     return labels;
   }
   private getLabelText(ds: DataSet, i: number, accessor: string): string {
-    if (window.customSelection?.length && window.isAdjustingSel) {
-      if (window.customSelection.indexOf(i) >= 0) {
-        return `✅ ${i}`
-      }
-    }
     if (window.queryResAnormalIndecates?.length && window.queryResAnormalIndecates.indexOf(i) >= 0) {
       if (window.isAnimatating && window.customSelection.indexOf(i) == -1) {
         return ``
@@ -951,6 +960,11 @@ export class ProjectorScatterPlotAdapter {
     if (window.queryResAnormalCleanIndecates?.length) {
       if (window.queryResAnormalCleanIndecates.indexOf(i) >= 0) {
         return `🟢clean`
+      }
+    }
+    if (window.customSelection?.length && window.isAdjustingSel) {
+      if (window.customSelection.indexOf(i) >= 0) {
+        return `✅ ${i}`
       }
     }
 
@@ -966,7 +980,7 @@ export class ProjectorScatterPlotAdapter {
           : `Unknown #${i}`;
       }
     }
-    if (window.isAdjustingSel) {
+    if (window.isAdjustingSel && window.sessionStorage.isControlGroup !=='true') {
       if (ds.points[i]?.metadata[accessor] !== undefined && ds.points[i]?.current_prediction !== ds.points[i]?.metadata[accessor]) {
         return ` ❗${i}`
       }

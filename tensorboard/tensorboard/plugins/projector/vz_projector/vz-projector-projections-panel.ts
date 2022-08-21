@@ -74,6 +74,17 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
   showForceCategoricalColorsCheckbox: boolean;
 
   @property({ type: Boolean })
+  _showFilter: boolean = false
+  @property({ type: String })
+  selectedArchitecture: string = 'ResNet-18'
+  @property({ type: String })
+  selectedLr: string = '0.0001'
+  @property({ type: Number })
+  selectedTotalEpoch: number = 200
+
+
+
+  @property({ type: Boolean })
   pcaIs3d: boolean = true;
   @property({ type: Boolean })
   tSNEis3d: boolean = false;
@@ -179,6 +190,13 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
 
   private iterationInput: number;
 
+  private learningRateList: string[];
+  private architectureList: string[];
+  private totalEpochList: number[]
+
+  private totalAccTrain: HTMLElement;
+  private totalAccTest : HTMLElement;
+
   initialize(projector: any) {
     this.polymerChangesTriggerReprojection = true;
     this.projector = projector;
@@ -193,6 +211,10 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
 
   ready() {
     super.ready();
+    this.learningRateList = ['0.001', '0.0001', '0.00000001']
+    this.architectureList = ['ResNet-18', 'VGG-18']
+    this.totalEpochList = [100, 150, 200]
+    this._showFilter = window.sessionStorage.taskType == 'anormaly detection'
     this.zDropdown = this.$$('#z-dropdown') as HTMLElement;
     //this.runTsneButton = this.$$('.run-tsne') as HTMLButtonElement;
     //this.runTsneButton.innerText = 'Run';
@@ -204,6 +226,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
     this.nextDVIButton = this.$$('.next-dvi') as HTMLButtonElement;
     this.jumpDVIButton = this.$$('.jump-dvi') as HTMLButtonElement;
     this.jumpDVIButton.disabled = true;
+
     //this.nextDVIButton.disabled = true;
     //this.perplexitySlider = this.$$('#perplexity-slider') as HTMLInputElement;
     /*
@@ -213,6 +236,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
     this.superviseFactorInput = this.$$(
       '#supervise-factor-slider'
     ) as HTMLInputElement;*/
+
     this.iterationLabelTsne = this.$$('.run-tsne-iter') as HTMLElement;
     this.totalIterationLabelDVI = this.$$('.dvi-total-iter') as HTMLElement;
 
@@ -229,13 +253,15 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
     // this.invConfTest = this.$$('.inv_conf_test') as HTMLElement;
     this.accTrain = this.$$('.acc_train') as HTMLElement;
     this.accTest = this.$$('.acc_test') as HTMLElement;
-    if(window.sessionStorage.taskType == 'anormaly detection'){
+    this.totalAccTrain = this.$$('.total_acc_train') as HTMLElement;
+    this.totalAccTest = this.$$('.total_acc_test') as HTMLElement;
+    if (window.sessionStorage.taskType == 'anormaly detection') {
       this.subjectModelPathEditorInput = window.sessionStorage.unormaly_content_path
-    }else{
+    } else {
       this.subjectModelPathEditorInput = window.sessionStorage.normal_content_path
     }
     window.modelMath = this.subjectModelPathEditorInput
-    if(this.dataSet){
+    if (this.dataSet) {
       this.dataSet.DVIsubjectModelPath = this.subjectModelPathEditorInput;
     }
   }
@@ -248,10 +274,10 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
 
   private subjectModelPathEditorInputChange() {
     window.modelMath = this.subjectModelPathEditorInput
-    if(window.sessionStorage.taskType == 'anormaly detection'){
-      window.sessionStorage.setItem('unormaly_content_path',this.subjectModelPathEditorInput)
-    }else{
-      window.sessionStorage.setItem('normal_content_path',this.subjectModelPathEditorInput)
+    if (window.sessionStorage.taskType == 'anormaly detection') {
+      window.sessionStorage.setItem('unormaly_content_path', this.subjectModelPathEditorInput)
+    } else {
+      window.sessionStorage.setItem('normal_content_path', this.subjectModelPathEditorInput)
     }
     this.dataSet.DVIsubjectModelPath = this.subjectModelPathEditorInput;
   }
@@ -386,7 +412,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
            * get filter index
            */
           //get search predicates or indices
-          if(iteration== null && evaluation == null){
+          if (iteration == null && evaluation == null) {
             this.nextDVIButton.disabled = false;
             return
           }
@@ -424,8 +450,6 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
         });
     });
     this.jumpDVIButton.addEventListener('click', () => {
-      const msgId = logging.setModalMessage('loading...');
-      this.jumpDVIButton.disabled = true;
       if (this.iterationInput > this.dataSet.tSNETotalIter || this.iterationInput < 1) {
         logging.setErrorMessage("Invaild Input!", null);
         this.jumpDVIButton.disabled = false;
@@ -433,50 +457,13 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
       } else if (this.iterationInput == this.dataSet.tSNEIteration) {
         logging.setWarningMessage("current iteration!");
         this.jumpDVIButton.disabled = false;
-        logging.setModalMessage(null, msgId);
+        // logging.setModalMessage(null, msgId);
         return;
       }
-      this.nextDVIButton.disabled = true;
-      this.previousDVIButton.disabled = true;
-      this.dataSet.projectDVI(this.iterationInput, this.projector.inspectorPanel.currentPredicate,
-        (iteration: number | null, evaluation: any, newSelection: any[], indices: number[], totalIter?: number) => {
-          /**
-           * get filter index
-           */
-          //get search predicates or indices
-          var filterIndices: number[];
-          filterIndices = []
-          if (this.temporalStatus) {
-            //search predicate
-            this.projector.inspectorPanel.filterIndices = indices;
-          }
-          //indices
-          filterIndices = this.projector.inspectorPanel.filterIndices;
-          
-          this.projector.dataSet.setDVIFilteredData(filterIndices);
-
-          if (iteration != null) {
-            this.iterationLabelTsne.innerText = '' + iteration;
-            this.totalIterationLabelDVI.innerText = '' + totalIter;
-            this.updateEvaluationInformation(evaluation);
-            // this.projector.notifyProjectionPositionsUpdated(newSelection);
-            this.projector.notifyProjectionPositionsUpdated();
-            this.projector.onProjectionChanged();
-            this.projector.onIterationChange(iteration);
-            if (this.dataSet.tSNEIteration > 1) {
-              this.previousDVIButton.disabled = false;
-            }
-            if (this.dataSet.tSNETotalIter != this.dataSet.tSNEIteration) {
-              this.nextDVIButton.disabled = false;
-            }
-          } else {
-            this.nextDVIButton.disabled = false;
-            this.projector.onProjectionChanged();
-          }
-          logging.setModalMessage(null, msgId);
-          this.jumpDVIButton.disabled = false;
-        });
+      this.jumpTo(this.iterationInput)
     });
+
+
 
     /*
     this.nextDVIButton.addEventListener('click', () => {
@@ -538,6 +525,51 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
       (inputs[i] as HTMLElement).style.fontSize = '14px';
     }
   }
+
+  jumpTo(iterationInput){
+    const msgId = logging.setModalMessage('loading...');
+    this.jumpDVIButton.disabled = true;
+    this.nextDVIButton.disabled = true;
+    this.previousDVIButton.disabled = true;
+    this.dataSet.projectDVI(iterationInput, this.projector.inspectorPanel.currentPredicate,
+      (iteration: number | null, evaluation: any, newSelection: any[], indices: number[], totalIter?: number) => {
+        /**
+         * get filter index
+         */
+        //get search predicates or indices
+        var filterIndices: number[];
+        filterIndices = []
+        if (this.temporalStatus) {
+          //search predicate
+          this.projector.inspectorPanel.filterIndices = indices;
+        }
+        //indices
+        filterIndices = this.projector.inspectorPanel.filterIndices;
+
+        this.projector.dataSet.setDVIFilteredData(filterIndices);
+
+        if (iteration != null) {
+          this.iterationLabelTsne.innerText = '' + iteration;
+          this.totalIterationLabelDVI.innerText = '' + totalIter;
+          this.updateEvaluationInformation(evaluation);
+          // this.projector.notifyProjectionPositionsUpdated(newSelection);
+          this.projector.notifyProjectionPositionsUpdated();
+          this.projector.onProjectionChanged();
+          this.projector.onIterationChange(iteration);
+          if (this.dataSet.tSNEIteration > 1) {
+            this.previousDVIButton.disabled = false;
+          }
+          if (this.dataSet.tSNETotalIter != this.dataSet.tSNEIteration) {
+            this.nextDVIButton.disabled = false;
+          }
+        } else {
+          this.nextDVIButton.disabled = false;
+          this.projector.onProjectionChanged();
+        }
+        logging.setModalMessage(null, msgId);
+        this.jumpDVIButton.disabled = false;
+      });
+  }
   retrainBySelections(iteration: number, selections: number[]) {
 
     const msgId = logging.setModalMessage('training and loading...')
@@ -565,6 +597,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
           this.projector.notifyProjectionPositionsUpdated();
           this.projector.onProjectionChanged();
           this.projector.onIterationChange(iteration);
+          this.projector.initialTree()
         } else {
           this.projector.onProjectionChanged();
         }
@@ -760,6 +793,48 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
   @observe('temporalStatus')
   _DVITemporalStatusObserver() {
 
+  }
+  @observe('selectedArchitecture')
+  _selectedArchitectureChanged(){
+    if(this.totalAccTrain){
+      this.totalAccTrain.innerText = String(Math.random().toFixed(3))
+      this.totalAccTest.innerText = String(Math.random().toFixed(3))
+    }
+    if(this.projector){
+      if(this.selectedArchitecture == 'ResNet-18' && this.selectedLr == '0.0001'){
+        
+        this.projector.hiddenOrShowScatter('')
+       }else{
+        this.projector.hiddenOrShowScatter('hidden')
+       }
+    }
+    console.log('ar', this.totalAccTrain, this.selectedTotalEpoch, this.selectedLr)
+  }
+  @observe('selectedTotalEpoch')
+  _selectedTotalEpochChanged(){
+    if(this.totalAccTrain){
+      this.totalAccTrain.innerText = String(Math.random().toFixed(3))
+      this.totalAccTest.innerText = String(Math.random().toFixed(3))
+    }
+    console.log('ep', this.selectedArchitecture, this.selectedTotalEpoch, this.selectedLr)
+  }
+  @observe('selectedLr')
+  _selectedLrChanged(){
+    if(this.projector){
+      if(this.projector){
+        if(this.selectedArchitecture == 'ResNet-18' && this.selectedLr == '0.0001'){
+          
+          this.projector.hiddenOrShowScatter('')
+         }else{
+          this.projector.hiddenOrShowScatter('hidden')
+         }
+      }
+    }
+    if(this.totalAccTrain){
+      this.totalAccTrain.innerText = String(Math.random().toFixed(3))
+      this.totalAccTest.innerText = String(Math.random().toFixed(3))
+    }
+    console.log('lr', this.selectedArchitecture, this.selectedTotalEpoch, this.selectedLr)
   }
   metadataChanged(spriteAndMetadata: SpriteAndMetadataInfo, metadataFile?: string) {
     // Project by options for custom projections.

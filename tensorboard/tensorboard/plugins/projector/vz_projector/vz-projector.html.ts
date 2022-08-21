@@ -29,7 +29,6 @@ export const template = html`
       #container {
         display: flex;
         width: 100%;
-        height: 100%;
         overflow: hidden;
       }
 
@@ -283,7 +282,8 @@ export const template = html`
         >
       </div>
     </paper-dialog>
-    <div id="container">
+    <div id="container" style="height:calc(100vh - 130px)">
+      <svg style="z-index:99;position: absolute;background: #f2f2f2;bottom: 0;" width="100%" height="130" id="mysvggg"></svg>
       <div id="left-pane" class="ink-panel">
         <vz-projector-data-panel id="data-panel"></vz-projector-data-panel>
         <vz-projector-projections-panel
@@ -407,7 +407,14 @@ export const template = html`
           </div>
         </div>
         <div class="stage">
+        <template is="dom-if" if="[[_showNotAvaliable]]">
+        <div style="position:absolute;top: 20%;width: 100%;text-align: center;">
+        <h1 style="color:red;">Not Avaliable!</h1>
+        <h4>you can choose ResNet and lr: 0.0001 to see the visualization </h4>
+        </div>
+        </template>
           <div id="scatter">
+  
             <svg id="selector"></svg>
           </div>
           <vz-projector-metadata-card

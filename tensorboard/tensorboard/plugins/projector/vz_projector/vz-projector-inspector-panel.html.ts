@@ -352,7 +352,7 @@ export const template = html`
     flex-direction: column;
   }
   .results .list{
-    max-height: calc(100vh - 420px);
+    max-height: calc(100vh - 580px);
     overflow: auto;
   }
 
@@ -476,9 +476,9 @@ export const template = html`
   </div>
 
   <div data-panel="anomaly" class="ink-panel-content query-content">
-    <div class="statergy-by" style="display:flex">
+    <div class="statergy-by" style="display:flex;justify-content: space-between;">
 
-      <paper-dropdown-menu no-animations label="Classes">
+      <!--<paper-dropdown-menu no-animations label="Classes" style="width:0;visibility:hidden;">
       <paper-listbox attr-for-selected="value" class="dropdown-content" selected="{{selectedAnormalyClass}}"
         slot="dropdown-content">
         <template is="dom-repeat" items="[[classOptionsList]]">
@@ -487,13 +487,11 @@ export const template = html`
           </paper-item>
         </template>
       </paper-listbox>
-    </paper-dropdown-menu>
+    </paper-dropdown-menu>-->
       <paper-input value="{{anomalyRecNum}}" label="number of query" style="margin-right: 10px;"></paper-input>
       <button style="width: 100px;" class="query-anomaly search-button search">Query</button>
     </div>
-    <paper-tooltip position="bottom" animation-delay="0" fit-to-visible-bounds>
-    anomaly detection
-    </paper-tooltip>
+
     <!--<div class="buttons">
     <button class="button reset-filter">Show All</button>
     <button class="button set-filter">Filter query result</button>
@@ -506,14 +504,16 @@ export const template = html`
       <paper-input value="{{epochTo}}" label="iteration to:">
       </paper-input>
     </div>-->
-    <div class="flex-container" style="justify-content:space-between;height: 30px;margin-bottom: 10px;">
+    <div class="flex-container" style="justify-content:space-between;height: 30px;margin-bottom: 10px;margin-top: 20px;">
       <p class="current-epoch" style="margin-top:26px;">iteration: {{currentPlayedEpoch}}</p>
       <button style="width: 120px; white-space: nowrap;" class="noisy-show-selection search-button search">Prev Selection</button>
     </div>
-    <div class="flex-container">
-    <button style="width: 150px;" class="boundingbox-button show-noisy-btn">play animation</button>
-    <button style="width: 150px;" class="boundingbox-button stop-animation-btn">
-      stop playing
+    <div class="flex-container" style="position: fixed;bottom: 200px;z-index: 9;left: 50%;margin-left: -50px;">
+    <button style="width: 50px;" class="show-noisy-btn">
+    <svg xmlns="http://www.w3.org/2000/svg" enable-background="new 0 0 24 24" height="24px" viewBox="0 0 24 24" width="24px" fill="#000000"><g><rect fill="none" height="24" width="24"/></g><g><path d="M12,2C6.48,2,2,6.48,2,12s4.48,10,10,10s10-4.48,10-10S17.52,2,12,2z M9.5,16.5v-9l7,4.5L9.5,16.5z"/></g></svg>
+    </button>
+    <button style="width: 50px;" class="stop-animation-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="#000000"><path d="M0 0h24v24H0z" fill="none"/><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
     </button>
   </div>
   </div>
@@ -643,7 +643,7 @@ export const template = html`
      <template is="dom-if" if="[[showCheckAllQueryRes]]">
      <paper-checkbox style="margin: 10px -2px 0px 5px;" id="label-points-toggle" checked="{{checkAllQueryRes}}"></paper-checkbox>
      </template>
-     <span class="queryResColumnHeader">index</span><span class="queryResColumnHeader">predict</span><template is="dom-if" if="[[showMoreRecommend]]"><span class="queryResColumnHeader">estimation</span></template> <template is="dom-if" if="[[showCheckAllQueryRes]]"><span class="queryResColumnHeader">score</span></template></div>
+     <span class="queryResColumnHeader">index</span><span class="queryResColumnHeader" id="queryResheader">predict</span><template is="dom-if" if="[[showMoreRecommend]]"><span class="queryResColumnHeader">estimation</span></template> <template is="dom-if" if="[[showCheckAllQueryRes]]"><span class="queryResColumnHeader">score</span></template></div>
       <div class="list"></div>
       <div class="limit-msg">Showing only the first 100 results...</div>
     </div>

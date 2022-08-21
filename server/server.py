@@ -5,7 +5,6 @@
 # TODO refactor, similar function should be in utils
 # TODO tidy up
 # TODO return lb and ulb property
-
 from flask import request, Flask, jsonify, make_response
 from flask_cors import CORS, cross_origin
 import base64
@@ -17,12 +16,10 @@ import gc
 
 from timevis_backend.utils import *
 
-
 # flask for API server
 app = Flask(__name__)
 cors = CORS(app, supports_credentials=True)
 app.config['CORS_HEADERS'] = 'Content-Type'
-
 
 @app.route('/updateProjection', methods=["POST", "GET"])
 @cross_origin()
@@ -83,19 +80,6 @@ def filter():
 
     return make_response(jsonify({"selectedPoints": selected_points.tolist()}), 200)
 
-# server
-# @app.route('/sprite', methods=["POST","GET"])
-# @cross_origin()
-# def sprite_image():
-#     path = request.args.get("path")
-#     index=request.args.get("index")
-
-#     CONTENT_PATH = os.path.normpath(path)
-#     print('index', index)
-#     idx = int(index)
-#     pic_save_dir_path = os.path.join('http://ip:host', "sprites", "{}.png".format(idx))
-
-#     return make_response(jsonify({"imgUrl":pic_save_dir_path}), 200)
 
 # base64
 @app.route('/sprite', methods=["POST","GET"])
@@ -114,12 +98,6 @@ def sprite_image():
         img_stream = base64.b64encode(img_stream).decode()
     return make_response(jsonify({"imgUrl":'data:image/png;base64,' + img_stream}), 200)
 
-@app.route('/json', methods=["POST","GET"])
-@cross_origin()
-def sprite_json():
-    with open('graphic.json', 'r') as f:
-       config = json.load(f)
-    return make_response(jsonify({"imgUrl":config}), 200)
 
 @app.route('/spriteList', methods=["POST"])
 @cross_origin()
@@ -129,9 +107,7 @@ def sprite_list_image():
     path = data["path"]
 
     CONTENT_PATH = os.path.normpath(path)
-
     length = len(indices)
-
     urlList = {}
 
     for i in range(length):
@@ -145,6 +121,7 @@ def sprite_list_image():
             # urlList.append('data:image/png;base64,' + img_stream)
     return make_response(jsonify({"urlList":urlList}), 200)
 
+
 @app.route('/al_query', methods=["POST"])
 @cross_origin()
 def al_query():
@@ -155,10 +132,11 @@ def al_query():
     budget = int(data["budget"])
     prev_idxs = data["previousIndices"]
     curr_idxs = data["currentIndices"]
+    # TODO dense_al parameter from frontend
 
     sys.path.append(CONTENT_PATH)
-
-    timevis = initialize_backend(CONTENT_PATH)
+    timevis = initialize_backend(CONTENT_PATH, dense_al=True)
+    # TODO add new sampling rule
     indices, labels, scores = timevis.al_query(iteration, budget, strategy, np.array(prev_idxs).astype(np.int64), np.array(curr_idxs).astype(np.int64))
 
     sys.path.remove(CONTENT_PATH)
@@ -170,15 +148,14 @@ def anomaly_query():
     data = request.get_json()
     CONTENT_PATH = os.path.normpath(data['content_path'])
     budget = int(data["budget"])
-    cls = int(data["cls"])
     idxs = data["indices"]
     comfirmed = data["comfirm_info"]
 
     sys.path.append(CONTENT_PATH)
 
     timevis = initialize_backend(CONTENT_PATH)
-    indices, scores, labels = timevis.suggest_abnormal(cls, idxs, comfirmed, budget)
-    clean_list,_ = timevis.suggest_normal(cls, 1)
+    indices, scores, labels = timevis.suggest_abnormal(idxs, comfirmed, budget)
+    clean_list,_ = timevis.suggest_normal(1)
 
     sys.path.remove(CONTENT_PATH)
     return make_response(jsonify({"selectedPoints": indices.tolist(), "scores": scores.tolist(), "suggestLabels":labels.tolist(),"cleanList":clean_list.tolist()}), 200)
@@ -192,16 +169,30 @@ def al_train():
     iteration = data["iteration"]
     sys.path.append(CONTENT_PATH)
 
+    # default setting al_train is light version, we only save the last epoch
     timevis = initialize_backend(CONTENT_PATH)
+    # TODO fix
     timevis.al_train(iteration, new_indices)
 
     from config import config
-    NEW_ITERATION = iteration + 1
+    NEW_ITERATION =  timevis.get_max_iter()
     timevis.vis_train(NEW_ITERATION, **config)
 
     # update iteration projection
     embedding_2d, grid, decision_view, label_color_list, label_list, _, training_data_index, \
     testing_data_index, eval_new, prediction_list, selected_points, properties = update_epoch_projection(timevis, NEW_ITERATION, dict())
+    
+    # rewirte json =========
+    res_json_path = os.path.join(CONTENT_PATH, "iteration_structure.json")
+    with open(res_json_path,encoding='utf8')as fp:
+        json_data = json.load(fp)
+
+        json_data.append({'value': NEW_ITERATION, 'name': 'iteration', 'pid': iteration})
+        print('json_data',json_data)
+    with open(res_json_path,'w')as r:
+      json.dump(json_data, r)
+    r.close()
+    # rewirte json =========
 
     del config
     gc.collect()
@@ -225,8 +216,8 @@ def login():
     # if pass return normal_content_path and anormaly_content_path
     # TODO copy datasets
     if username == 'admin' and password == '123qwe': # mock
-        return make_response(jsonify({"normal_content_path": 'D:\\datasets\\al',"unormaly_content_path":'D:\\datasets\\timevis\\toy_model\\resnet18_cifar10'}), 200) #limy
-        # return make_response(jsonify({"normal_content_path": '/home/xianglin/projects/DVI_data/active_learning/base/resnet18',"unormaly_content_path":'/home/xianglin/projects/DVI_data/noisy/symmetric/cifar10'}), 200) #xianglin
+        # return make_response(jsonify({"normal_content_path": 'D:\\datasets\\al',"unormaly_content_path":'D:\\datasets\\timevis\\toy_model\\resnet18_cifar10'}), 200) #limy
+        return make_response(jsonify({"normal_content_path": '/home/xianglin/DVI_data/active_learning/random/resnet18/CIFAR10',"unormaly_content_path":'/home/xianglin/projects/DVI_data/noisy/symmetric/cifar10'}), 200) #xianglin
         # return make_response(jsonify({"normal_content_path": '/Users/zhangyifan/Downloads/al',"unormaly_content_path":'/Users/zhangyifan/Downloads/toy_model/resnet18_cifar10'}), 200) #yvonne
     elif username == 'controlGroup' and password == '123qwe': # mock
         return make_response(jsonify({"normal_content_path": 'D:\\datasets\\al',"unormaly_content_path":'D:\\datasets\\timevis\\toy_model\\resnet18_cifar10',"isControl":True}), 200) #limy
@@ -288,28 +279,15 @@ def get_res():
     del config
     gc.collect()    
     return make_response(jsonify({"results":results,"bgimgList":imglist, "grid": gridlist}), 200)
-# #mock toy_model
-# @app.route('/all_result_list', methods=["POST"])
-# @cross_origin()
-# def get_res():
-#     data = request.get_json()
-#     CONTENT_PATH = os.path.normpath(data['content_path'])
-#     iteration_s = data["iteration_start"]
-#     iteration_e = data["iteration_end"]
-#     imglist = {}
-#     for i in range(10):
-#         pic_save_dir_path = os.path.join(CONTENT_PATH, "noisy","bgimgs", "bgimg{}.png".format(i+1),)
-#         with open(pic_save_dir_path, 'rb') as img_f:
-#             img_stream = img_f.read()
-#             img_stream = base64.b64encode(img_stream).decode()
-#             index = i+1
-#             imglist[index] = 'data:image/png;base64,' + img_stream
-#             # imglist.append({index:'data:image/png;base64,' + img_stream})
-#     # pic_save_dir_path = os.path.join(CONTENT_PATH, "Model", "Epoch_1","bgimg.png")
-#     res_json_path = os.path.join(CONTENT_PATH, "noisy", "res.json")
-#     with open(res_json_path,encoding='utf8')as fp:
-#         json_data = json.load(fp)
-#     return make_response(jsonify({"results":json_data,"bgimgList":imglist}), 200)
+
+@app.route('/get_itertaion_structure', methods=["POST", "GET"])
+@cross_origin()
+def get_tree():
+    CONTENT_PATH = request.args.get("path")
+    res_json_path = os.path.join(CONTENT_PATH, "iteration_structure.json")
+    with open(res_json_path,encoding='utf8')as fp:
+        json_data = json.load(fp)
+    return make_response(jsonify({"structure":json_data}), 200)
 
 if __name__ == "__main__":
     with open('config.json', 'r') as f:

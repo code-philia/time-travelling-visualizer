@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {html} from '@polymer/polymer';
+import { html } from '@polymer/polymer';
 
 import './styles';
 
@@ -176,7 +176,7 @@ export const template = html`
       }
       table, th, td {
         border: 1px solid black;
-        padding: 15px;
+        padding: 8px;
         border-collapse: collapse;
       }
       button{
@@ -185,6 +185,14 @@ export const template = html`
       button:hover{
         background: #550831;
         color:#fff;
+      }
+
+      .filter-content{
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        margin-top: -20px;
       }
       
     </style>
@@ -366,7 +374,7 @@ export const template = html`
           </div>
             <div class="row">   </div>
             
-            <div class="row">
+            <div class="row" style="height: 0px;visibility: hidden;">
                 <div class="iteration-editor">
                     <paper-input
                       value="{{iterationEditorInput}}"
@@ -376,8 +384,12 @@ export const template = html`
                 </div>
                 <button class="jump-dvi ink-button" title="Jump DVI">Jump</button>
             </div>
+          <div style="display:flex;justify-content: space-between;">
           <p style="font-weight: 600;">Iteration: <span class="run-tsne-iter">0</span></p>
-          <div>
+          <p>Total iteration number: <span class="dvi-total-iter">0</span></p>
+          </div>
+
+          <div style="border-bottom:1px solid #666; height:0; visibility:hidden;">
               <table>
                   <caption style="margin-bottom: 10px;">Visualization Confidence</caption>
                 <tr>
@@ -406,14 +418,55 @@ export const template = html`
                   <td><span class="inv_conf_test">NA</span></td>
                 </tr>-->
               </table>
+              <p>Accuracy:</p>
+              <p>train: <span class="acc_train">NA</span> test: <span class="acc_test">NA</span></p>
+              </div>
+             <p id="tsne-sampling" class="notice">
+              </p>
 <!--          <p>Projection nn perseverance knn: (train,15): <span class="nn_train_15">NA</span> (test,15): <span class="nn_test_15">NA</span></p>-->
 <!--          <p>Projection boundary perserverance knn: (train,15): <span class="bound_train_15">NA</span> (test,15): <span class="bound_test_15">NA</span></p>-->
 <!--          <p>PPR: train: <span class="inv_acc_train">NA</span> test: <span class="inv_acc_test">NA</span></p>-->
 <!--          <p>CCR: train: <span class="inv_conf_train">NA</span> test: <span class="inv_conf_test">NA</span></p>-->
-          <p>Task Model Accuracy:</p>
-          <p>train: <span class="acc_train">NA</span> test: <span class="acc_test">NA</span></p>
+<template is="dom-if" if="[[_showFilter]]">
+<h2>Train Result Statistics</h2>
+<div class="filter-content">
+<paper-dropdown-menu style="width: 120px" no-animations label="Architecture">
+<paper-listbox attr-for-selected="value" class="dropdown-content" selected="{{selectedArchitecture}}"
+  slot="dropdown-content">
+  <template is="dom-repeat" items="[[architectureList]]">
+    <paper-item value="[[item]]" label="[[item]]">
+      [[item]]
+    </paper-item>
+  </template>
+</paper-listbox>
+</paper-dropdown-menu>
+<paper-dropdown-menu style="width: 120px" no-animations label="Learning Rate">
+<paper-listbox attr-for-selected="value" class="dropdown-content" selected="{{selectedLr}}"
+  slot="dropdown-content">
+  <template is="dom-repeat" items="[[learningRateList]]">
+    <paper-item value="[[item]]" label="[[item]]">
+      [[item]]
+    </paper-item>
+  </template>
+</paper-listbox>
+</paper-dropdown-menu>
+<paper-dropdown-menu style="width: 120px" no-animations label="Total Epoch">
+<paper-listbox attr-for-selected="value" class="dropdown-content" selected="{{selectedTotalEpoch}}"
+  slot="dropdown-content">
+  <template is="dom-repeat" items="[[totalEpochList]]">
+    <paper-item value="[[item]]" label="[[item]]">
+      [[item]]
+    </paper-item>
+  </template>
+</paper-listbox>
+</paper-dropdown-menu>
+</div>
+
+</template>
+<p style="font-weight: 600;">Task Model Accuracy:</p>
+<p style="font-size:20px;">train: <span class="total_acc_train">NA</span> test: <span class="total_acc_test">NA</span></p>
+
           </div>
-           <p>Total iteration number: <span class="dvi-total-iter">0</span></p>
           <p id="tsne-sampling" class="notice">
           </p>
         </div>
