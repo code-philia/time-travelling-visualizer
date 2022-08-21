@@ -374,7 +374,7 @@ export const template = html`
           </div>
             <div class="row">   </div>
             
-            <div class="row">
+            <div class="row" style="height: 0px;visibility: hidden;">
                 <div class="iteration-editor">
                     <paper-input
                       value="{{iterationEditorInput}}"
