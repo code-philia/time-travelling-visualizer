@@ -828,7 +828,7 @@ class Projector
     if (!window.queryResAnormalCleanIndecates) {
       window.queryResAnormalCleanIndecates = []
     }
-    let indecates = window.customSelection.concat(window.queryResAnormalCleanIndecates)
+    let indecates = window.queryResAnormalCleanIndecates.concat(window.customSelection)
     if (indecates && indecates.length) {
       this.filterDataset(indecates)
     }

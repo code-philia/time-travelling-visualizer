@@ -464,7 +464,7 @@ export const template = html`
 
 </template>
 <p style="font-weight: 600;">Task Model Accuracy:</p>
-<p>train: <span class="total_acc_train">NA</span> test: <span class="total_acc_test">NA</span></p>
+<p style="font-size:20px;">train: <span class="total_acc_train">NA</span> test: <span class="total_acc_test">NA</span></p>
 
           </div>
           <p id="tsne-sampling" class="notice">

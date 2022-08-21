@@ -747,7 +747,12 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       return `${displayPointIndex}|${displayStringMetaData}| clean | -`
     }
     if(window.queryResAnormalIndecates && window.queryResAnormalIndecates.indexOf(pointIndex)!==-1){
-      return `${displayPointIndex}|${displayStringMetaData}|${prediction_res}|${score !== undefined ? score : '-'}`
+      if (window.sessionStorage.isControlGroup == 'true') {
+        return `${displayPointIndex}|${displayStringMetaData}|${score !== undefined ? score : '-'}`
+      }else{
+        return `${displayPointIndex}|${displayStringMetaData}|${prediction_res}|${score !== undefined ? score : '-'}`
+      }
+
     }
     if (this.showCheckAllQueryRes == false) {
       if (window.sessionStorage.isControlGroup == 'true') {
@@ -980,7 +985,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             window.queryResAnormalIndecates = indices
             window.queryResAnormalCleanIndecates = cleansIndices
 
-            this.queryIndices = indices.concat(cleansIndices)
+            this.queryIndices = cleansIndices.concat(indices)
             if (!this.isAlSelecting) {
               this.isAlSelecting = true
               window.isAdjustingSel = true
