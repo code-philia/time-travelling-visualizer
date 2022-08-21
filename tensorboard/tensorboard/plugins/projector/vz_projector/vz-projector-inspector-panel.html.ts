@@ -491,9 +491,7 @@ export const template = html`
       <paper-input value="{{anomalyRecNum}}" label="number of query" style="margin-right: 10px;"></paper-input>
       <button style="width: 100px;" class="query-anomaly search-button search">Query</button>
     </div>
-    <paper-tooltip position="bottom" animation-delay="0" fit-to-visible-bounds>
-    anomaly detection
-    </paper-tooltip>
+
     <!--<div class="buttons">
     <button class="button reset-filter">Show All</button>
     <button class="button set-filter">Filter query result</button>
@@ -506,7 +504,7 @@ export const template = html`
       <paper-input value="{{epochTo}}" label="iteration to:">
       </paper-input>
     </div>-->
-    <div class="flex-container" style="justify-content:space-between;height: 30px;margin-bottom: 10px;">
+    <div class="flex-container" style="justify-content:space-between;height: 30px;margin-bottom: 10px;margin-top: 20px;">
       <p class="current-epoch" style="margin-top:26px;">iteration: {{currentPlayedEpoch}}</p>
       <button style="width: 120px; white-space: nowrap;" class="noisy-show-selection search-button search">Prev Selection</button>
     </div>
@@ -550,7 +548,7 @@ export const template = html`
           <paper-input value="{{epochTo}}" label="iteration to:">
           </paper-input>
         </div>
-        <div class="flex-container" style="margin-top: 20px;">
+        <div class="flex-container">
           <p class="current-epoch">epoch: {{currentPlayedEpoch}}</p>
           <paper-toggle-button id="show-trace-toggle" checked="{{showTrace}}">
             Show Trace
