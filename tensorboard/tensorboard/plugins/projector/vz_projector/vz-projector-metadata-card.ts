@@ -196,7 +196,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
   hasMetadata: boolean = false;
 
   @property({ type: Boolean })
-  showImg: boolean = false;
+  showImg: boolean = true;
 
   @property({ type: Number })
   selectedNum: Number = 0;
@@ -255,7 +255,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
 
   updateMetadata(pointMetadata?: PointMetadata, src?: string, point?: any, indicate?: number) {
     this.pointMetadata = pointMetadata;
-    this.showImg = pointMetadata != null
+    this.showImg = true
 
     this.hasMetadata = pointMetadata != null || window.acceptIndicates?.length;
     if (!window.previousIndecates) {

@@ -506,6 +506,10 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   refreshSearchResult() {
     this.updateSearchResults(this.queryIndices)
   }
+
+  refreshSearchResByList(list:any){
+    this.updateSearchResults(list)
+  }
   private async updateSearchResults(indices: number[]) {
 
     const container = this.$$('.matches-list') as HTMLDivElement;
@@ -685,7 +689,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         //   // if(newacctd.)
         // })
         accInput.addEventListener('change',()=>{
-          console.log(accInput.checked,window.acceptIndicates.indexOf(index))
+
           if(accInput.checked){
             if(window.acceptIndicates.indexOf(index) === -1){
               window.acceptIndicates.push(index)
@@ -700,6 +704,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
               window.acceptIndicates.splice(window.acceptIndicates.indexOf(index),1)
             }
           }
+          window.customSelection = window.acceptIndicates.concat(window.rejectIndicates)
           this.projectorEventContext.refresh()
         })
 
@@ -727,10 +732,9 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
               window.rejectIndicates.splice(window.rejectIndicates.indexOf(index),1)
             }
           }
+          window.customSelection = window.acceptIndicates.concat(window.rejectIndicates)
           this.projectorEventContext.refresh()
         })
-        // <input type="radio" name="task" value="active learning" checked="checked">active learning
-        // <input type="radio" name="task" value="anormaly detection"> anormaly detection
 
         // row.appendChild(input);
       }
@@ -800,8 +804,9 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       original_label = `Unknown`;
     }
     let index = window.queryResPointIndices?.indexOf(pointIndex)
-
+   
     let suggest_label = this.labelMap[window.alSuggestLabelList[index]]
+
     
     if (original_label == undefined) {
       original_label = `Unknown`;
@@ -814,7 +819,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
     const displayPointIndex = String(pointIndex)
     // return String(pointIndex) + "Label: " + stringMetaData + " Prediction: " + prediction + " Original label: " + original_label;
-    let prediction_res = suggest_label === prediction ? ' - ' : ' ❗️ '
+    let prediction_res = suggest_label === prediction || window.alSuggestLabelList.length === 0 ? ' - ' : ' ❗️ '
     if(window.queryResAnormalCleanIndecates && window.queryResAnormalCleanIndecates.indexOf(pointIndex)!==-1){
       return `${displayPointIndex}|${displayStringMetaData}| clean | -`
     }

@@ -962,8 +962,11 @@ export class ProjectorScatterPlotAdapter {
         return `🟢clean`
       }
     }
-    if (window.customSelection?.length && window.isAdjustingSel) {
-      if (window.customSelection.indexOf(i) >= 0) {
+    if (window.customSelection?.length) {
+      if (window.rejectIndicates && window.rejectIndicates.indexOf(i) >= 0) {
+        return `❌ ${i}`
+      }
+      if (window.acceptIndicates && window.acceptIndicates.indexOf(i) >= 0) {
         return `✅ ${i}`
       }
     }

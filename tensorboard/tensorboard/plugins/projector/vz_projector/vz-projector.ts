@@ -969,15 +969,21 @@ class Projector
     if (!this.registered) {
       this.readyregis()
     }
-    if (selectionType === 'isALQuery' || selectionType === 'normal' || selectionType === 'isAnormalyQuery') {
-      window.customSelection = []
+    if(!window.acceptIndicates){
+      window.acceptIndicates = []
+    }
+    if(!window.rejectIndicates){
+      window.rejectIndicates = []
+    }
+    window.customSelection = window.acceptIndicates.concat(window.rejectIndicates)
+    if (selectionType === 'isALQuery' || selectionType === 'normal' || selectionType === 'isAnormalyQuery' ||selectionType === 'boundingbox') {
+      // window.customSelection = []
       window.queryResPointIndices = newSelectedPointIndices
       if (selectionType === 'isALQuery') {
         window.alQueryResPointIndices = newSelectedPointIndices
       } else {
         window.alQueryResPointIndices = []
       }
-      this.metadataCard.updateCustomList(this.dataSet.points, this as ProjectorEventContext)
     }
     if (selectionType === 'isShowSelected') {
       for (let i = 0; i < window.previousIndecates?.length; i++) {
@@ -993,30 +999,18 @@ class Projector
       this.projectorScatterPlotAdapter.render()
       return
     }
-    if (selectionType === 'boundingbox' && window.isAdjustingSel) {
-      if (!window.customSelection) {
-        window.customSelection = []
-      }
-      for (let i = 0; i < newSelectedPointIndices.length; i++) {
-        let check: any = window.checkboxDom[newSelectedPointIndices[i]]
-        if (window.customSelection.indexOf(newSelectedPointIndices[i]) < 0) {
-          window.customSelection.push(newSelectedPointIndices[i]);
-
-          if (check) {
-            check.checked = true
-          }
-
-        } else {
-          let index = window.customSelection.indexOf(newSelectedPointIndices[i])
-          window.customSelection.splice(index, 1)
-          if (check) {
-            check.checked = false
-          }
-        }
-      }
-      this.metadataCard.updateCustomList(this.dataSet.points, this as ProjectorEventContext)
+    if (selectionType === 'boundingbox') {
+      window.alSuggestLabelList = []
+      window.alSuggestScoreList = []
+      window.queryResPointIndices = newSelectedPointIndices
+      this.selectedPointIndices = newSelectedPointIndices
+      window.alQueryResPointIndices = []
+      this.inspectorPanel.refreshSearchResByList(newSelectedPointIndices)
       this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
       this.projectorScatterPlotAdapter.render()
+      this.selectionChangedListeners.forEach((l) =>
+      l(this.selectedPointIndices, [])
+    );
       return
     }
 
@@ -1122,14 +1116,7 @@ class Projector
             index: newSelectedPointIndices[0],
             dist: 0
           };
-        if (window.isAnimatating !== true) {
-          // this.dataSet.getSpriteImage(this.selectedPointIndices[0], (imgData: any) => {
-          //   let src = 'data:image/png;base64,' + imgData.imgUrl
-          //   this.metadataCard.updateMetadata(
-          //     this.dataSet.points[newSelectedPointIndices[0]].metadata, src, this.dataSet.points[newSelectedPointIndices[0]]
-          //   );
-          // })
-        }
+       
       } else {
         this.metadataCard.updateMetadata(null);
       }

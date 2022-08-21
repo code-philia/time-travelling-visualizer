@@ -352,7 +352,7 @@ export const template = html`
     flex-direction: column;
   }
   .results .list{
-    max-height: calc(100vh - 580px);
+    max-height: calc(100vh - 520px);
     overflow: auto;
   }
 
@@ -470,7 +470,7 @@ export const template = html`
     </div>-->
     <div style="display:flex;">
     <!--<button style="width: 120px;" class="bounding-selection search-button search">Select</button>-->
-    <button style="width: 180px; white-space: nowrap;" class="show-selection search-button search">Prev & Cur Selection</button>
+    <button style="width: 180px; white-space: nowrap;visibility: hidden;width: 0;" class="show-selection search-button search">Prev & Cur Selection</button>
     <button style="width: 220px;" class="train-by-selection search-button search">re-Train By Selections</button>
     </div>
   </div>
@@ -625,7 +625,7 @@ export const template = html`
     </div>
     <div class="matches-list" style="display: none">
    
-    <div class="matches-list-title">[[queryResultListTitle]]</div>
+    <!--<div class="matches-list-title">[[queryResultListTitle]]</div>-->
      <template is="dom-if" if="[[showMoreRecommend]]">
      <div style="display:flex;">
      <paper-input value="{{moreRecommednNum}}" label="more recommend num:">
