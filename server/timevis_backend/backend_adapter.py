@@ -292,7 +292,7 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         # start experiment
         n_pool = self.hyperparameters["TRAINING"]["train_num"]  # 50000
         save_path = os.path.join(CONTENT_PATH, "Model", "Iteration_{}".format(NEW_ITERATION))
-        os.system("mkdir -p {}".format(save_path))
+        os.makedirs(save_path, exist_ok=True)
 
         from query_strategies.random import RandomSampling
         q_strategy = RandomSampling(task_model, task_model_type, n_pool, lb_idx, 10, DATA_NAME, NET, gpu=GPU, **self.hyperparameters["TRAINING"])
@@ -337,7 +337,7 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
     
     def save_iteration_index(self, iteration, idxs):
         new_iteration_dir = os.path.join(self.data_provider.content_path, "Model", "Iteration_{}".format(iteration))
-        os.system("mkdir -p {}".format(new_iteration_dir))
+        os.makedirs(new_iteration_dir, exist_ok=True)
         save_location = os.path.join(new_iteration_dir, "index.json")
         with open(save_location, "w") as f:
             json.dump(idxs.tolist(), f)
@@ -434,7 +434,7 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
             with open(save_dir, 'w') as f:
                 json.dump(evaluation, f)
             save_dir = os.path.join(self.data_provider.model_path, "Iteration_{}".format(iteration))
-            os.system("mkdir -p {}".format(save_dir))
+            os.makedirs(save_dir, exist_ok=True)
             self.trainer.save(save_dir=save_dir, file_name="al")
             # TODO evaluate visualization model, train and test
     
