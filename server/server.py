@@ -130,8 +130,6 @@ def al_query():
     iteration = data["iteration"]
     strategy = data["strategy"]
     budget = int(data["budget"])
-    # prev_idxs = data["previousIndices"]
-    # curr_idxs = data["currentIndices"]
     acc_idxs = data["accIndicates"]
     rej_idxs = data["rejIndicates"]
     # TODO dense_al parameter from frontend
@@ -150,14 +148,15 @@ def anomaly_query():
     data = request.get_json()
     CONTENT_PATH = os.path.normpath(data['content_path'])
     budget = int(data["budget"])
-    idxs = data["indices"]
-    comfirmed = data["comfirm_info"]
+    strategy = data["strategy"]
+    acc_idxs = data["accIndicates"]
+    rej_idxs = data["rejIndicates"]
 
     sys.path.append(CONTENT_PATH)
 
     timevis = initialize_backend(CONTENT_PATH)
-    indices, scores, labels = timevis.suggest_abnormal(idxs, comfirmed, budget)
-    clean_list,_ = timevis.suggest_normal(1)
+    indices, scores, labels = timevis.suggest_abnormal(strategy, np.array(acc_idxs).astype(np.int64), np.array(rej_idxs).astype(np.int64), budget)
+    clean_list,_ = timevis.suggest_normal(strategy, 1)
 
     sys.path.remove(CONTENT_PATH)
     return make_response(jsonify({"selectedPoints": indices.tolist(), "scores": scores.tolist(), "suggestLabels":labels.tolist(),"cleanList":clean_list.tolist()}), 200)

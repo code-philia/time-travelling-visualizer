@@ -22,7 +22,7 @@ from singleVis.utils import *
 from singleVis.custom_weighted_random_sampler import CustomWeightedRandomSampler
 from singleVis.edge_dataset import DataHandler
 from singleVis.spatial_edge_constructor import SingleEpochSpatialEdgeConstructor
-from singleVis.trajectory_manager import FeedbackTrajectoryManager
+from singleVis.trajectory_manager import TBSampling, FeedbackSampling
 
 # active_learning_path = "D:\\code-space\\ActiveLearning"  # limy 
 active_learning_path = "../../ActiveLearning"
@@ -156,7 +156,7 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         index = load_labelled_data_index(index_file)
         return index
 
-    def al_query(self, iteration, budget, strategy, prev_idxs, curr_idxs):
+    def al_query(self, iteration, budget, strategy, acc_idxs, rej_idxs):
         """get the index of new selection from different strategies"""
         CONTENT_PATH = self.data_provider.content_path
         NUM_QUERY = budget
@@ -195,7 +195,7 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
 
         if strategy == "Random":
             from query_strategies.random import RandomSampling
-            idxs_selected = np.concatenate((curr_idxs.astype(np.int64), prev_idxs.astype(np.int64)), axis=0)
+            idxs_selected = np.concatenate((acc_idxs.astype(np.int64), rej_idxs.astype(np.int64)), axis=0)
             curr_lb = np.concatenate((idxs_lb, idxs_selected), axis=0)
             q_strategy = RandomSampling(task_model, task_model_type, n_pool, curr_lb, 10, DATA_NAME, NET, gpu=GPU, **self.hyperparameters["TRAINING"])
             # print information
@@ -209,7 +209,7 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
             print("Query time is {:.2f}".format(t1-t0))
         elif strategy == "Uncertainty":
             from query_strategies.LeastConfidence import LeastConfidenceSampling
-            idxs_selected = np.concatenate((curr_idxs.astype(np.int64), prev_idxs.astype(np.int64)), axis=0)
+            idxs_selected = np.concatenate((acc_idxs.astype(np.int64), rej_idxs.astype(np.int64)), axis=0)
             curr_lb = np.concatenate((idxs_lb, idxs_selected), axis=0)
             q_strategy = LeastConfidenceSampling(task_model, task_model_type, n_pool, curr_lb, 10, DATA_NAME, NET, gpu=GPU, **self.hyperparameters["TRAINING"])
             # print information
@@ -221,7 +221,6 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
             new_indices, scores = q_strategy.query(complete_dataset, NUM_QUERY, idxs_selected)
             t1 = time.time()
             print("Query time is {:.2f}".format(t1-t0))
-        
         # elif strategy == "Diversity":
         #     from query_strategies.coreset import CoreSetSampling
         #     q_strategy = CoreSetSampling(task_model, task_model_type, n_pool, 512, idxs_lb, DATA_NAME, NET, gpu=GPU, **self.hyperparameters["TRAINING"])
@@ -248,23 +247,25 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         #     new_indices, scores = q_strategy.query(complete_dataset, NUM_QUERY)
         #     t1 = time.time()
         #     print("Query time is {:.2f}".format(t1-t0))
+        elif strategy == "TBSampling":
+            # TODO hard coded parameters...
+            period = 80
+            print(DATA_NAME)
+            print("TBSampling")
+            print('================Round {:d}==============='.format(iteration+1))
+            t0 = time.time()
+            new_indices, scores = self._suggest_abnormal(strategy, iteration, acc_idxs, rej_idxs, budget, period)
+            t1 = time.time()
+            print("Query time is {:.2f}".format(t1-t0))
         
         elif strategy == "Feedback":
             # TODO hard coded parameters...
             period = 80
             print(DATA_NAME)
-            print("FeedbackSampling")
+            print("TBSampling")
             print('================Round {:d}==============='.format(iteration+1))
             t0 = time.time()
-            file_path = os.path.join(self.data_provider.content_path, "Iteration_{}".format(iteration), 'ftm.pkl')
-            if not os.path.exists(file_path):
-                self._init_detection(iteration, lb_idxs=idxs_lb, period=period)
-            else:
-                with open(file_path, 'rb') as f:
-                    self.ftm = pickle.load(f)
-            self.ftm.update_belief(curr_idxs)
-            # query new samples
-            new_indices, scores = self.ftm.sample_batch(budget, return_scores=True)
+            new_indices, scores = self._suggest_abnormal(strategy, iteration, acc_idxs, rej_idxs, budget, period)
             t1 = time.time()
             print("Query time is {:.2f}".format(t1-t0))
         else:
@@ -460,42 +461,61 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
     #                                            Sample Selection                                                  #
     #                                                                                                               #
     #################################################################################################################
-    def _save(self, iteration):
-        with open(os.path.join(self.data_provider.content_path, "Model", "Iteration_{}".format(iteration), 'ftm.pkl'), 'wb') as f:
-            pickle.dump(self.ftm, f, pickle.HIGHEST_PROTOCOL)
+    def _save(self, iteration, ftm, name):
+        with open(os.path.join(self.data_provider.content_path, "Model","Iteration_{}".format(iteration), '{}_ftm.pkl'.format(name)), 'wb') as f:
+            pickle.dump(ftm, f, pickle.HIGHEST_PROTOCOL)
 
-    def _init_detection(self, iteration, lb_idxs, period=80):
-        # extract samples
-        train_num = self.data_provider.train_num
-        # change epoch_NUM
-        embeddings_2d = np.zeros((period, train_num, 2))
-        for i in range(self.data_provider.e - self.data_provider.p*(period-1), self.data_provider.e+1, self.data_provider.p):
-            id = (i-(self.data_provider.e - (self.data_provider.p-1)*period))//self.data_provider.p
-            embeddings_2d[id] = self.projector.batch_project(iteration, i, self.data_provider.train_representation(iteration, i))
-        trajectories = np.transpose(embeddings_2d, [1,0,2])
-        samples = self.data_provider.train_representation(iteration, self.data_provider.e)
-        self.ftm = FeedbackTrajectoryManager(samples, trajectories, 20, period=period, metric="v")
-        print("Detecting abnormal....")
-        self.ftm.clustered()
-        print("Finish detection!")
-        self.ftm.manual_select(lb_idxs)
-        self._save(iteration)
-    
-    def _suggest_abnormal(self, iteration, idxs, comfirmed, budget):
-        correct_idxs = np.argwhere(comfirmed==1).squeeze()
-        if len(correct_idxs)>0:
-            self.ftm.update_belief(idxs[correct_idxs])
+    def _init_detection(self, iteration, strategy, period=80):
+        embedding_path = os.path.join(self.data_provider.content_path,"Model", "Iteration_{}".format(iteration),'embeddings.npy')
+        if os.path.exists(embedding_path):
+            trajectories = np.load(embedding_path)
+        else:
+            # extract samples
+            train_num = self.data_provider.train_num
+            # change epoch_NUM
+            epoch_num = (self.data_provider.e - self.data_provider.s)//self.data_provider.p + 1
+            embeddings_2d = np.zeros((epoch_num, train_num, 2))
+            for i in range(self.data_provider.s, self.data_provider.e+1, self.data_provider.p):
+            # for i in range(self.data_provider.e - self.data_provider.p*(self.period-1), self.data_provider.e+1, self.data_provider.p):
+                # id = (i-(self.data_provider.e - (self.data_provider.p-1)*self.period))//self.data_provider.p
+                id = (i - self.data_provider.s)//self.data_provider.p
+                embeddings_2d[id] = self.projector.batch_project(iteration, i, self.data_provider.train_representation(iteration, i))
+            trajectories = np.transpose(embeddings_2d, [1,0,2])
+            np.save(embedding_path, trajectories)
+        if strategy == "TBSampling":
+            ftm_path = os.path.join(self.data_provider.content_path, 'tb_ftm.pkl')
+            if os.path.exists(ftm_path):
+                with open(ftm_path, 'rb') as f:
+                    ftm = pickle.load(f)
+            else:
+                ftm = TBSampling(trajectories, 30, period=period,metric="a")
+                print("Detecting abnormal....")
+                ftm.clustered()
+                print("Finish detection!")
+                self._save(ftm, "tb")
+        elif strategy == "FeedBack":
+            ftm_path = os.path.join(self.data_provider.content_path, 'fb_ftm.pkl')
+            if os.path.exists(ftm_path):
+                with open(ftm_path, 'rb') as f:
+                    ftm = pickle.load(f)
+            else:
+                ftm = FeedbackSampling(trajectories, 30, period=period,metric="a")
+                print("Detecting abnormal....")
+                ftm.clustered()
+                print("Finish detection!")
+                self._save(ftm, "fb")
+        else:
+            raise NotImplementedError
+        return ftm
         
-        suggest_idxs = self.ftm.sample_batch(budget)
-
-        # save results
-        self._save(iteration)
-        return suggest_idxs
+    def _suggest_abnormal(self, strategy, iteration, acc_idxs, rej_idxs, budget, period):
+        ftm = self._init_detection(iteration, strategy, period)
+        suggest_idxs, scores = ftm.sample_batch(acc_idxs, rej_idxs, budget, return_scores=True)
+        return suggest_idxs, scores
     
-    def _suggest_normal(self, iteration, budget):
-        suggest_idxs = self.ftm.sample_normal_batch(budget)
-        # save results
-        self._save(iteration)
+    def _suggest_normal(self, strategy, iteration, budget, period):
+        ftm = self._init_detection(iteration, strategy, period)
+        suggest_idxs = ftm.sample_normal(budget)
         return suggest_idxs
 
 
@@ -504,12 +524,6 @@ class AnormalyTimeVisBackend(TimeVisBackend):
     def __init__(self, data_provider, projector, vis, evaluator, period, **hyperparameters) -> None:
         super().__init__(data_provider, projector, vis, evaluator, **hyperparameters)
         self.period = period
-        file_path = os.path.join(self.data_provider.content_path, 'ntd.pkl')
-        if not os.path.exists(file_path):
-            self._init_detection()
-        else:
-            with open(file_path, 'rb') as f:
-                self.ntd = pickle.load(f)
         file_path = os.path.join(self.data_provider.content_path, 'clean_label.json')
         with open(file_path, "r") as f:
             self.clean_labels = np.array(json.load(f))
@@ -523,47 +537,63 @@ class AnormalyTimeVisBackend(TimeVisBackend):
     #                                                                                                               #
     #################################################################################################################
 
-    def _save(self):
-        with open(os.path.join(self.data_provider.content_path, 'ntd.pkl'), 'wb') as f:
-            pickle.dump(self.ntd, f, pickle.HIGHEST_PROTOCOL)
+    def _save(self, ntd, name):
+        with open(os.path.join(self.data_provider.content_path, '{}_ntd.pkl'.format(name)), 'wb') as f:
+            pickle.dump(ntd, f, pickle.HIGHEST_PROTOCOL)
 
-    def _init_detection(self):
-        # extract samples
-        train_num = self.data_provider.train_num
-        # change epoch_NUM
-        # epoch_num = (self.data_provider.e - self.data_provider.s)//self.data_provider.p + 1
-        embeddings_2d = np.zeros((self.period, train_num, 2))
-        # for i in range(self.data_provider.s, self.data_provider.e+1, self.data_provider.p):
-        for i in range(self.data_provider.e - self.data_provider.p*(self.period-1), self.data_provider.e+1, self.data_provider.p):
-            id = (i-(self.data_provider.e - (self.data_provider.p-1)*self.period))//self.data_provider.p
-            embeddings_2d[id] = self.projector.batch_project(i, self.data_provider.train_representation(i))
-        trajectories = np.transpose(embeddings_2d, [1,0,2])
-        samples = self.data_provider.train_representation(self.data_provider.e)
-        ftm = FeedbackTrajectoryManager(samples, trajectories, 20,period=100,metric="v")
-        print("Detecting abnormal....")
-        ftm.clustered()
-        print("Finish detection!")
-        self.ntd = ftm
-        self._save()
-    
-    def suggest_abnormal(self, idxs, comfirmed, budget):
-        correct_idxs = np.argwhere(comfirmed==1).squeeze()
-        if len(correct_idxs)>0:
-            self.ntd.update_belief(idxs[correct_idxs])
+    def _init_detection(self, strategy):
+        embedding_path = os.path.join(self.data_provider.content_path, 'embeddings.npy')
+        if os.path.exists(embedding_path):
+            trajectories = np.load(embedding_path)
+        else:
+            # extract samples
+            train_num = self.data_provider.train_num
+            # change epoch_NUM
+            epoch_num = (self.data_provider.e - self.data_provider.s)//self.data_provider.p + 1
+            embeddings_2d = np.zeros((epoch_num, train_num, 2))
+            for i in range(self.data_provider.s, self.data_provider.e+1, self.data_provider.p):
+            # for i in range(self.data_provider.e - self.data_provider.p*(self.period-1), self.data_provider.e+1, self.data_provider.p):
+                # id = (i-(self.data_provider.e - (self.data_provider.p-1)*self.period))//self.data_provider.p
+                id = (i - self.data_provider.s)//self.data_provider.p
+                embeddings_2d[id] = self.projector.batch_project(i, self.data_provider.train_representation(i))
+            trajectories = np.transpose(embeddings_2d, [1,0,2])
+            np.save(embedding_path, trajectories)
+        if strategy == "TBSampling":
+            ntd_path = os.path.join(self.data_provider.content_path, 'tb_ntd.pkl')
+            if os.path.exists(ntd_path):
+                with open(ntd_path, 'rb') as f:
+                    ntd = pickle.load(f)
+            else:
+                ntd = TBSampling(trajectories, 30,period=self.period,metric="a")
+                print("Detecting abnormal....")
+                ntd.clustered()
+                print("Finish detection!")
+                self._save(ntd, "tb")
+        elif strategy == "FeedBack":
+            ntd_path = os.path.join(self.data_provider.content_path, 'fb_ntd.pkl')
+            if os.path.exists(ntd_path):
+                with open(ntd_path, 'rb') as f:
+                    ntd = pickle.load(f)
+            else:
+                ntd = FeedbackSampling(trajectories, 30,period=self.period,metric="a")
+                print("Detecting abnormal....")
+                ntd.clustered()
+                print("Finish detection!")
+                self._save(ntd, "fb")
+        else:
+            raise NotImplementedError
+        return ntd
         
-        suggest_idxs, scores = self.ntd.sample_batch(budget, return_scores=True)
+    def suggest_abnormal(self, strategy, acc_idxs, rej_idxs, budget):
+        ntd = self._init_detection(strategy)
+        suggest_idxs, scores = ntd.sample_batch(acc_idxs, rej_idxs, budget, return_scores=True)
         suggest_labels = self.clean_labels[suggest_idxs]
-
-        # save results
-        self._save()
         return suggest_idxs, scores, suggest_labels
     
-    def suggest_normal(self, budget):
-        suggest_idxs = self.ntd.sample_normal_batch(budget)
+    def suggest_normal(self, strategy, budget):
+        ntd = self._init_detection(strategy)
+        suggest_idxs = ntd.sample_normal(budget)
         suggest_labels = self.clean_labels[suggest_idxs]
-
-        # save results
-        self._save()
         return suggest_idxs, suggest_labels
         
         

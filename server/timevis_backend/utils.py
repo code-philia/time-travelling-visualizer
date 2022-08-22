@@ -118,7 +118,7 @@ def initialize_backend(CONTENT_PATH, dense_al=False):
     if SETTING == "normal":
         timevis = TimeVisBackend(data_provider, projector, vis, evaluator, **config)
     elif SETTING == "abnormal":
-        timevis = AnormalyTimeVisBackend(data_provider, projector, vis, evaluator, period=75, **config)
+        timevis = AnormalyTimeVisBackend(data_provider, projector, vis, evaluator, period=100, **config)
     elif SETTING == "active learning":
         timevis = ActiveLearningTimeVisBackend(data_provider, projector, trainer, vis, evaluator, dense_al, **config)
     
