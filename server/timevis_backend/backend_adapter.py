@@ -262,7 +262,7 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
             # TODO hard coded parameters...
             period = 80
             print(DATA_NAME)
-            print("TBSampling")
+            print("Feedback")
             print('================Round {:d}==============='.format(iteration+1))
             t0 = time.time()
             new_indices, scores = self._suggest_abnormal(strategy, iteration, acc_idxs, rej_idxs, budget, period)
