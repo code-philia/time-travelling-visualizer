@@ -167,7 +167,7 @@ class Projector
   showUnlabeled: boolean = true;
 
   @property({ type: Boolean })
-  showTesting: boolean = true;
+  showTesting: boolean = false;
   @property({ type: Boolean })
   _showNotAvaliable: boolean = false
 
@@ -265,7 +265,7 @@ class Projector
 
     this.showlabeled = true
     this.showUnlabeled = true
-    this.showTesting = true
+    this.showTesting = false
 
     this.registered = false
 
@@ -639,7 +639,7 @@ class Projector
         window.nowShowIndicates = indicates
         // this.projector.filterDataset(window.nowShowIndicates)
       } else {
-        ///隐藏labeled
+
         for (let i = 0; i < window.properties[window.iteration].length; i++) {
           if (window.properties[window.iteration][i] !== 2 && window.nowShowIndicates.indexOf(i) !== -1) {
             indicates.push(i)
@@ -653,9 +653,19 @@ class Projector
 
   onIterationChange(num: number) {
     // window.iteration = num;
+    let indicates = []
     this.iteration = num;
     if (!window.isAnimatating) {
+      if(this.showTesting === false){
+        for (let i = 0; i < window.properties[window.iteration].length; i++) {
+          if (window.properties[window.iteration][i] !== 2 && window.nowShowIndicates.indexOf(i) !== -1) {
+            indicates.push(i)
+          }
+        }
+        window.nowShowIndicates = indicates
+      }
       this.filterDataset(window.nowShowIndicates)
+
     }
     this.initialTree()
   }
@@ -999,6 +1009,7 @@ class Projector
         // }
       }
       this.metadataCard.updateCustomList(this.dataSet.points, this as ProjectorEventContext)
+      this.metadataCard.updateRejectList(this.dataSet.points, this as ProjectorEventContext)
       this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
       this.projectorScatterPlotAdapter.render()
       return
@@ -1444,6 +1455,7 @@ class Projector
   notifyProjectionPositionsUpdated() {
     this.projectorScatterPlotAdapter.notifyProjectionPositionsUpdated();
     this.metadataCard.updateCustomList(this.dataSet.points, this as ProjectorEventContext)
+    this.metadataCard.updateRejectList(this.dataSet.points, this as ProjectorEventContext)
   }
 
   hiddenOrShowScatter(type: string) {
@@ -1651,8 +1663,8 @@ class Projector
         "strategy": strategy,
         "budget": budget,
         "content_path": this.dataSet.DVIsubjectModelPath,
-        "accIndicates": accIndicates,
-        "rejIndicates": rejIndicates
+        "accIndices": accIndicates,
+        "rejIndices": rejIndicates
       }),
       headers: headers,
       mode: 'cors'
@@ -1713,8 +1725,8 @@ class Projector
         "indices": currentIndices,
         "content_path": this.dataSet.DVIsubjectModelPath,
         "comfirm_info": comfirm_info,
-        "accIndicates": accIndicates,
-        "rejIndicates": rejIndicates,
+        "accIndices": accIndicates,
+        "rejIndices": rejIndicates,
         "strategy": strategy
         
       }),

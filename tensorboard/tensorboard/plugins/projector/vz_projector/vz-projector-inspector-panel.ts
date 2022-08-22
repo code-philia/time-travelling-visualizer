@@ -287,7 +287,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     // TODO change them based on metadata fields
     this.searchFields = ["type", "label", "new_selection"]
     // active learning statergy
-    this.statergyList = ["Random", "Uncertainty", "TBsampling"]
+    this.statergyList = ["Random", "Uncertainty", "TBSampling"]
     // anormaly detection statergy
     this.anormalyStatergyList = ['anormalyStageone', 'anormalyStageTwo', 'anormalyStageThree']
     // anormaly detcttion classes
@@ -1059,7 +1059,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
     this.queryAnomalyBtn.onclick = () => {
       projector.queryAnormalyStrategy(
-        Number(this.anomalyRecNum), this.selectedAnormalyClass, [], [],window.acceptIndicates,window.rejectIndicates,'TBsampling',
+        Number(this.anomalyRecNum), this.selectedAnormalyClass, [], [],window.acceptIndicates,window.rejectIndicates,'TBSampling',
         (indices: any, cleansIndices: any) => {
           if (indices != null) {
             // this.queryIndices = indices;
@@ -1072,7 +1072,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             window.queryResAnormalIndecates = indices
             window.queryResAnormalCleanIndecates = cleansIndices
 
-            this.queryIndices = cleansIndices.concat(indices)
+            this.queryIndices = indices.concat(cleansIndices)
             if (!this.isAlSelecting) {
               this.isAlSelecting = true
               window.isAdjustingSel = true
@@ -1113,7 +1113,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         return a - b;
       }
       retrainList.sort(func)
-      this.projector.retrainBySelections(this.projector.iteration, retrainList)
+      this.projector.retrainBySelections(this.projector.iteration, window.acceptIndicates,window.rejectIndicates)
       //  this.projectionsPanel.reTrainBySel(this.projector.iteration,this.selectedPointIndices)
     }
     this.distFunc = vector.cosDist;
