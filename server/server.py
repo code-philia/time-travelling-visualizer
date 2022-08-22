@@ -334,4 +334,7 @@ if __name__ == "__main__":
         config = json.load(f)
         # ip_address = config["ServerIP"]
         port = config["ServerPort"]
+        
+    # ip_adress = "localhost"
+    # port = 5001
     app.run(host=ip_address, port=int(port))
