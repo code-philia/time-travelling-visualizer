@@ -6,9 +6,7 @@ import time
 import torch
 import numpy as np
 import pickle
-
-# if active learning warning
-# os.environ["OMP_NUM_THREADS"] = "1"
+import shutil
 
 import torch.nn
 from torch.utils.data import DataLoader
@@ -16,9 +14,7 @@ from torch.utils.data import WeightedRandomSampler
 import torchvision
 
 from scipy.special import softmax
-from sklearn.neighbors import NearestNeighbors
 
-# from .noise_detector import NoiseTrajectoryDetector, select_centroid
 # timevis_path = "D:\\code-space\\DLVisDebugger" #limy 
 timevis_path = "../../DLVisDebugger" #xianglin#yvonne
 sys.path.append(timevis_path)
@@ -125,6 +121,9 @@ class TimeVisBackend:
         index_file = os.path.join(self.data_provider.model_path, "Epoch_{:d}".format(epoch_id), "index.json")
         index = load_labelled_data_index(index_file)
         return index
+    
+    def reset(self):
+        return
 
 
 class ActiveLearningTimeVisBackend(TimeVisBackend):
@@ -133,6 +132,24 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         self.trainer = trainer
         self.dense = dense
     
+    def reset(self, iteration):
+        # delete [iteration,...)
+        max_i = self.get_max_iter()
+        for i in range(iteration, max_i+1, 1):
+            path = os.path.join(self.data_provider.content_path, "Model", "Iteration_{}".format(i))
+            shutil.rmtree(path)
+        iter_structure_path = os.path.join(self.data_provider.content_path, "iteration_structure.json")
+        with open(iter_structure_path, "r") as f:
+            i_s = json.load(f)
+        new_is = list()
+        for item in i_s:
+            value = item["value"]
+            if value < iteration:
+                new_is.append(item)
+        with open(iter_structure_path, "w") as f:
+            json.dump(new_is, f)
+        print("Successfully remove cache data!")
+
     def get_epoch_index(self, iteration):
         """get the training data index for an epoch"""
         index_file = os.path.join(self.data_provider.model_path, "Iteration_{:d}".format(iteration), "index.json")
@@ -496,6 +513,9 @@ class AnormalyTimeVisBackend(TimeVisBackend):
         file_path = os.path.join(self.data_provider.content_path, 'clean_label.json')
         with open(file_path, "r") as f:
             self.clean_labels = np.array(json.load(f))
+    
+    def reset(self):
+        return
 
     #################################################################################################################
     #                                                                                                               #

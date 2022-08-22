@@ -215,11 +215,24 @@ def login():
     # Verify username and password
     # if pass return normal_content_path and anormaly_content_path
     # TODO copy datasets
+    # TODO reset dataset when login
     if username == 'admin' and password == '123qwe': # mock
+        # reset active learning dataset
+        CONTENT_PATH = "/home/xianglin/projects/DVI_data/noisy/symmetric/cifar10"
+        sys.path.append(CONTENT_PATH)
+        timevis = initialize_backend(CONTENT_PATH)
+        timevis.reset(iteration=3)
+        sys.path.remove(CONTENT_PATH)
         # return make_response(jsonify({"normal_content_path": 'D:\\datasets\\al',"unormaly_content_path":'D:\\datasets\\timevis\\toy_model\\resnet18_cifar10'}), 200) #limy
         return make_response(jsonify({"normal_content_path": '/home/xianglin/DVI_data/active_learning/random/resnet18/CIFAR10',"unormaly_content_path":'/home/xianglin/projects/DVI_data/noisy/symmetric/cifar10'}), 200) #xianglin
         # return make_response(jsonify({"normal_content_path": '/Users/zhangyifan/Downloads/al',"unormaly_content_path":'/Users/zhangyifan/Downloads/toy_model/resnet18_cifar10'}), 200) #yvonne
     elif username == 'controlGroup' and password == '123qwe': # mock
+        # reset active learning dataset
+        CONTENT_PATH = "/home/xianglin/projects/DVI_data/noisy/symmetric/cifar10"
+        sys.path.append(CONTENT_PATH)
+        timevis = initialize_backend(CONTENT_PATH)
+        timevis.reset(iteration=3)
+        sys.path.remove(CONTENT_PATH)
         return make_response(jsonify({"normal_content_path": 'D:\\datasets\\al',"unormaly_content_path":'D:\\datasets\\timevis\\toy_model\\resnet18_cifar10',"isControl":True}), 200) #limy
     else:
         return make_response(jsonify({"message":"username or password is wrong"}), 200)
