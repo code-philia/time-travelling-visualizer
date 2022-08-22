@@ -309,7 +309,7 @@ class Projector
     const d3 = window.d3;
     console.log('d3dddd', d3, window.d3)
 
-    let svgDom = this.$$("#mysvggg")
+    let svgDom:any = this.$$("#mysvggg")
 
     while (svgDom?.firstChild) {
       svgDom.removeChild(svgDom.lastChild);
@@ -386,8 +386,15 @@ class Projector
         // console.log(hierarchyData);
 
         //创建一个树状图
+        let len = res.structure.length
+        let svgWidth = len * 35
+        if(svgWidth<1000){
+          svgWidth = 1000
+        }
+        svgDom.style.width = svgWidth + 200
+  
         var tree = d3.tree()
-          .size([100, 1000])
+          .size([100, svgWidth])
           .separation(function (a, b) {
             return (a.parent == b.parent ? 1 : 2) / a.depth; //一种更适合于径向布局的变体，可以按比例缩小半径差距:
           });

@@ -143,9 +143,11 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
               </div>
             </template>
           </div>
-          <div class="img-container" if="[[showImg]]">
+          <template is="dom-if" if="[[showImg]]">
+          <div class="img-container">
           <img id="metaImg" height="100px"/>
           </div>
+          </template>
         </template>
           <!--<div class="custom-list-header">custom selected list | [[selectedNum]]</div>
           <div class="metadata-row">
