@@ -774,7 +774,7 @@ export class DataSet {
 
   /** Runs DVI on the data. */
   async reTrainByDVI(
-    iteration: number, newIndices: number[],
+    iteration: number, newIndices: number[],rejection:number[],
     stepCallback: (iter: number | null, evaluation: any, newSelection: any[], filterIndices: number[], totalIter?: number) => void
   ) {
     this.projections['tsne'] = true;
@@ -804,13 +804,19 @@ export class DataSet {
           //函数自身返回的是一个布尔值，只当返回值为true时，当前元素才会存入新的数组中。            
           return item <= 49999
         })
+
+        let rejIndices = rejection.filter((item, i, arr) => {
+          //函数自身返回的是一个布尔值，只当返回值为true时，当前元素才会存入新的数组中。            
+          return item <= 49999
+        })
         let that = this
         
         await fetch("http://" + this.DVIServer + "/al_train", {
           method: 'POST',
           body: JSON.stringify({
             "iteration": this.tSNEIteration,
-            "newIndices": indices,
+            "accIndices": newIndices,
+            "rejIndices": rejIndices,
             "content_path": this.DVIsubjectModelPath,
           }),
           headers: headers,
@@ -1111,6 +1117,8 @@ export class DataSet {
     window.alSuggestLabelList = []
     window.alSuggestScoreList = []
     window.customSelection = []
+    window.acceptIndicates = [] 
+    window.rejectIndicates = []
   }
 
 

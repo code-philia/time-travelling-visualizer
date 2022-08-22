@@ -13,6 +13,7 @@ import sys
 import json
 import numpy as np
 import gc
+import shutil
 
 from timevis_backend.utils import *
 
@@ -130,14 +131,14 @@ def al_query():
     iteration = data["iteration"]
     strategy = data["strategy"]
     budget = int(data["budget"])
-    prev_idxs = data["previousIndices"]
-    curr_idxs = data["currentIndices"]
+    acc_idxs = data["accIndices"]
+    rej_idxs = data["rejIndices"]
     # TODO dense_al parameter from frontend
 
     sys.path.append(CONTENT_PATH)
     timevis = initialize_backend(CONTENT_PATH, dense_al=True)
     # TODO add new sampling rule
-    indices, labels, scores = timevis.al_query(iteration, budget, strategy, np.array(prev_idxs).astype(np.int64), np.array(curr_idxs).astype(np.int64))
+    indices, labels, scores = timevis.al_query(iteration, budget, strategy, np.array(acc_idxs).astype(np.int64), np.array(rej_idxs).astype(np.int64))
 
     sys.path.remove(CONTENT_PATH)
     return make_response(jsonify({"selectedPoints": indices.tolist(), "scores": scores.tolist(), "suggestLabels":labels.tolist()}), 200)
@@ -148,14 +149,17 @@ def anomaly_query():
     data = request.get_json()
     CONTENT_PATH = os.path.normpath(data['content_path'])
     budget = int(data["budget"])
-    idxs = data["indices"]
-    comfirmed = data["comfirm_info"]
+    strategy = data["strategy"]
+    acc_idxs = data["accIndices"]
+    rej_idxs = data["rejIndices"]
+    print(data)
 
     sys.path.append(CONTENT_PATH)
 
     timevis = initialize_backend(CONTENT_PATH)
-    indices, scores, labels = timevis.suggest_abnormal(idxs, comfirmed, budget)
-    clean_list,_ = timevis.suggest_normal(1)
+    timevis.save_acc_and_rej(acc_idxs, rej_idxs)
+    indices, scores, labels = timevis.suggest_abnormal(strategy, np.array(acc_idxs).astype(np.int64), np.array(rej_idxs).astype(np.int64), budget)
+    clean_list,_ = timevis.suggest_normal(strategy, 1)
 
     sys.path.remove(CONTENT_PATH)
     return make_response(jsonify({"selectedPoints": indices.tolist(), "scores": scores.tolist(), "suggestLabels":labels.tolist(),"cleanList":clean_list.tolist()}), 200)
@@ -165,17 +169,18 @@ def anomaly_query():
 def al_train():
     data = request.get_json()
     CONTENT_PATH = os.path.normpath(data['content_path'])
-    new_indices = data["newIndices"]
+    acc_idxs = data["accIndices"]
+    rej_idxs = data["rejIndices"]
     iteration = data["iteration"]
     sys.path.append(CONTENT_PATH)
 
     # default setting al_train is light version, we only save the last epoch
     timevis = initialize_backend(CONTENT_PATH)
-    # TODO fix
-    timevis.al_train(iteration, new_indices)
+    timevis.al_train(iteration, acc_idxs)
 
     from config import config
     NEW_ITERATION =  timevis.get_max_iter()
+    timevis.save_acc_and_rej(NEW_ITERATION, acc_idxs, rej_idxs)
     timevis.vis_train(NEW_ITERATION, **config)
 
     # update iteration projection
@@ -215,11 +220,43 @@ def login():
     # Verify username and password
     # if pass return normal_content_path and anormaly_content_path
     # TODO copy datasets
+    # TODO reset dataset when login
     if username == 'admin' and password == '123qwe': # mock
+        # reset active learning dataset
         # return make_response(jsonify({"normal_content_path": 'D:\\datasets\\al',"unormaly_content_path":'D:\\datasets\\timevis\\toy_model\\resnet18_cifar10'}), 200) #limy
-        return make_response(jsonify({"normal_content_path": '/home/xianglin/DVI_data/active_learning/random/resnet18/CIFAR10',"unormaly_content_path":'/home/xianglin/projects/DVI_data/noisy/symmetric/cifar10'}), 200) #xianglin
+        # delete [iteration,...)
+        con_paths = {"normal_content_path": '/home/xianglin/DVI_data/active_learning/random/resnet18/CIFAR10',"unormaly_content_path":'/home/xianglin/data/noisy/symmetric'}
+        for CONTENT_PATH in con_paths.values():
+            ac_flag = False
+            target_path = os.path.join(CONTENT_PATH, "Model")
+            dir_list = os.listdir(target_path)
+            for dir in dir_list:
+                if "Iteration_" in dir:
+                    ac_flag=True
+                    i = int(dir.replace("Iteration_", ""))
+                    if i > 2:
+                        shutil.rmtree(os.path.join(target_path, dir))
+            if ac_flag:
+                iter_structure_path = os.path.join(CONTENT_PATH, "iteration_structure.json")
+                with open(iter_structure_path, "r") as f:
+                    i_s = json.load(f)
+                new_is = list()
+                for item in i_s:
+                    value = item["value"]
+                    if value < 3:
+                        new_is.append(item)
+                with open(iter_structure_path, "w") as f:
+                    json.dump(new_is, f)
+                print("Successfully remove cache data!")
+        return make_response(jsonify({"normal_content_path": '/home/xianglin/DVI_data/active_learning/random/resnet18/CIFAR10',"unormaly_content_path":'/home/xianglin/data/noisy/symmetric'}), 200) #xianglin
         # return make_response(jsonify({"normal_content_path": '/Users/zhangyifan/Downloads/al',"unormaly_content_path":'/Users/zhangyifan/Downloads/toy_model/resnet18_cifar10'}), 200) #yvonne
     elif username == 'controlGroup' and password == '123qwe': # mock
+        # reset active learning dataset
+        CONTENT_PATH = "/home/xianglin/projects/DVI_data/noisy/symmetric/cifar10"
+        sys.path.append(CONTENT_PATH)
+        timevis = initialize_backend(CONTENT_PATH)
+        timevis.reset(iteration=3)
+        sys.path.remove(CONTENT_PATH)
         return make_response(jsonify({"normal_content_path": 'D:\\datasets\\al',"unormaly_content_path":'D:\\datasets\\timevis\\toy_model\\resnet18_cifar10',"isControl":True}), 200) #limy
     else:
         return make_response(jsonify({"message":"username or password is wrong"}), 200)
@@ -290,9 +327,11 @@ def get_tree():
     return make_response(jsonify({"structure":json_data}), 200)
 
 if __name__ == "__main__":
+    import socket
+    hostname = socket.gethostname()
+    ip_address = socket.gethostbyname(hostname)
     with open('config.json', 'r') as f:
         config = json.load(f)
-        ip_adress = config["ServerIP"]
-        # ip_adress = "172.26.191.173"
+        # ip_address = config["ServerIP"]
         port = config["ServerPort"]
-    app.run(host=ip_adress, port=int(port))
+    app.run(host=ip_address, port=int(port))

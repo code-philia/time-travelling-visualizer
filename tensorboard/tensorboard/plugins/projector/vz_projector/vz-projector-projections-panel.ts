@@ -570,10 +570,10 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
         this.jumpDVIButton.disabled = false;
       });
   }
-  retrainBySelections(iteration: number, selections: number[]) {
+  retrainBySelections(iteration: number, selections: number[],rejections: number[]) {
 
     const msgId = logging.setModalMessage('training and loading...')
-    this.dataSet.reTrainByDVI(iteration, selections,
+    this.dataSet.reTrainByDVI(iteration, selections,rejections,
       (iteration: number | null, evaluation: any, new_selection: any[], indices: number[], totalIter?: number) => {
         /**
          * get filter index
