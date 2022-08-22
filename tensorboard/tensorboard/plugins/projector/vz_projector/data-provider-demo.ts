@@ -151,7 +151,6 @@ export class DemoDataProvider implements DataProvider {
     //   spriteImagePath = embedding.sprite.imagePath;
     //   spriteImagePath = `${spriteImagePath}`
     // }
-    console.log('90909099999')
     //@ts-ignore
     retrieveSpriteAndMetadataInfo(
       embedding.metadataPath,

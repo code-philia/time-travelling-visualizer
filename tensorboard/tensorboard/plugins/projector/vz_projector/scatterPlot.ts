@@ -133,8 +133,6 @@ export class ScatterPlot {
     });
     this.renderer.setClearColor(BACKGROUND_COLOR, 1);
     this.container.appendChild(this.renderer.domElement);
-    // console.log(this.renderer.domElement)
-    // this.renderer.domElement.styl
 
     this.light = new THREE.PointLight(0xffffff);
     this.scene.add(this.light);
@@ -388,7 +386,6 @@ export class ScatterPlot {
     //   return
     // }
     if (this.selecting && this.isShifting) {
-      console.log('99999000',123)
       this.orbitCameraControls.enabled = false;
       this.rectangleSelector.onMouseDown(e.offsetX, e.offsetY);
       this.setNearestPointToMouse(e);
@@ -584,7 +581,6 @@ export class ScatterPlot {
       alert('You can select up to 100 points at a time, and the first 100 points are selected by default')
       this.isShifting = false
     }
-    console.log('pointIndices.length', pointIndices.length)
     for (let i = 0; i < length; i++) {
       if (pointIndices[i] < this.realDataNumber) {
         validIndices.push(pointIndices[i]);

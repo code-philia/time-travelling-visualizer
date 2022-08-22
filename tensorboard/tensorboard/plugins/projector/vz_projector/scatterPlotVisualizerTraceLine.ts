@@ -332,7 +332,7 @@ export class scatterPlotVisualizerTraceLine implements ScatterPlotVisualizer {
     this.geometry.addAttribute('position', this.positions);
     this.geometry.addAttribute('color', colors);
     let lettersSoFar = 0;
-    console.log('selectedIndexList', this.selectedIndexList, this.glyphTexture)
+
     this.linegeometry = new THREE.BufferGeometry()
     this.polylines = [];
   //  if(window.worldSpacePointPositions?.length>1){

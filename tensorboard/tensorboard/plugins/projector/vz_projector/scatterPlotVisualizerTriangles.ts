@@ -307,7 +307,7 @@ export class scatterPlotVisualizerTriangles implements ScatterPlotVisualizer {
     }
     this.pointsMesh = new THREE.Mesh(this.geometry, this.material);
     this.pointsMesh.frustumCulled = false;
-    console.log(this.geometry, this.pointsMesh)
+ 
     this.scene.add(this.pointsMesh);
   }
   private colorLabels(pointColors: Float32Array) {

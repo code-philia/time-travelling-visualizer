@@ -1064,7 +1064,6 @@ export class DataSet {
           }
           this.DVIDataList[iteration] = this.points
           if(this.DVIDataList[iteration] && this.DVIDataList[iteration].length && this.DVIDataList.lenght> iteration ){
-            console.log('inininiinsert')
             for(let i = this.DVIDataList.length+1; i> iteration;i--){
               this.DVIDataList[i] = this.DVIDataList[i-1]
             }

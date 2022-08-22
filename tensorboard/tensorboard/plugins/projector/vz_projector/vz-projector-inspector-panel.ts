@@ -524,7 +524,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       indices.length <= LIMIT_RESULTS ? 'none' : null;
     indices = indices.slice(0, LIMIT_RESULTS);
     this.moreRecommend = container.querySelector('.query-by-sel-btn') as HTMLButtonElement
-    // console.log('90999',this.moreRecommend)
+
     // const msgId = logging.setModalMessage('Fetching sprite image...');
     if (this.moreRecommend) {
       this.moreRecommend.onclick = () => {
@@ -592,7 +592,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
                 this.checkAllQueryRes = false
                 this.queryResultListTitle = 'Possible Abnormal Point List'
                 let dom = this.$$("#queryResheader")
-                console.log('domdom',dom)
+       
                 dom.innerHTML = 'label'
                 this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isAnormalyQuery');
               }
@@ -707,7 +707,6 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
           }else{
             if(window.acceptIndicates.indexOf(index) !== -1){
-              console.log(window.acceptIndicates.indexOf(index))
               window.acceptIndicates.splice(window.acceptIndicates.indexOf(index),1)
             }
           }
@@ -1055,7 +1054,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
     // if(this.showSelectionBtn){
     this.showSelectionBtn.onclick = () => {
-      console.log('window.previousIndecates', window.previousIndecates)
+     
       for (let i = 0; i < window.previousIndecates?.length; i++) {
         if (window.customSelection.indexOf(window.previousIndecates[i]) === -1) {
           window.customSelection.push(window.previousIndecates[i])
@@ -1066,7 +1065,6 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     }
     // }
     this.noisyshowSelectionBtn.onclick = () => {
-      console.log('window.previousIndecates', window.previousIndecates)
       for (let i = 0; i < window.previousIndecates?.length; i++) {
         if (window.customSelection.indexOf(window.previousIndecates[i]) === -1) {
           window.customSelection.push(window.previousIndecates[i])
@@ -1108,7 +1106,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             this.checkAllQueryRes = false
             this.queryResultListTitle = 'Possible Abnormal Point List'
             let dom = this.$$("#queryResheader")
-            console.log('domdom',dom)
+       
             dom.innerHTML = 'label'
             this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isAnormalyQuery');
           }
@@ -1282,7 +1280,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         this.projectorEventContext.notifySelectionChanged([]);
         return;
       }
-      console.log(this.searchPredicate, this.selectedMetadataField, this.confidenceThresholdFrom, this.confidenceThresholdTo)
+
       projector.query(
         this.searchPredicate,
         this.searchInRegexMode,
@@ -1299,7 +1297,6 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             } else {
               this.searchBox.message = `${this.queryIndices.length} matches.`;
             }
-            // console.log('this.queryIndices',this.queryIndices)
             this.showCheckAllQueryRes = false
             this.showMoreRecommend = false
             this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'normal');

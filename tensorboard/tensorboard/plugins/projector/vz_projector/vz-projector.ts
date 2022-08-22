@@ -308,7 +308,6 @@ class Projector
     // this.d3loader()
 
     const d3 = window.d3;
-    console.log('d3dddd', d3, window.d3)
 
     let svgDom:any = this.$$("#mysvggg")
 
@@ -361,32 +360,30 @@ class Projector
           return newArr
         }
         data = tranListToTreeData(data)[0]
-        // console.log('data',data)
         var margin = 50;
         var svg = d3.select(svgDom);
         var width = svg.attr("width");
         var height = svg.attr("height");
 
-        //创建分组
+        //create group
         var g = svg.append("g")
           .attr("transform", "translate(" + margin + "," + 20 + ")");
 
 
-        //创建一个层级布局
+        //create layer layout
         var hierarchyData = d3.hierarchy(data)
           .sum(function (d, i) {
             return d.value;
           });
-        //    返回的节点和每一个后代会被附加如下属性:
-        //        node.data - 关联的数据，由 constructor 指定.
-        //        node.depth - 当前节点的深度, 根节点为 0.
-        //        node.height - 当前节点的高度, 叶节点为 0.
-        //        node.parent - 当前节点的父节点, 根节点为 null.
-        //        node.children - 当前节点的孩子节点(如果有的话); 叶节点为 undefined.
-        //        node.value - 当前节点以及 descendants(后代节点) 的总计值; 可以通过 node.sum 和 node.count 计算.
-        // console.log(hierarchyData);
+        //    nodes attributes:
+        //        node.data - data.
+        //        node.depth - root is 0.
+        //        node.height -  leaf node is 0.
+        //        node.parent - parent id, root is null.
+        //        node.children.
+        //        node.value - total value current node and descendants;
 
-        //创建一个树状图
+        //create tree
         let len = res.structure.length
         let svgWidth = len * 35
         if(svgWidth<1000){
@@ -397,30 +394,27 @@ class Projector
         var tree = d3.tree()
           .size([100, svgWidth])
           .separation(function (a, b) {
-            return (a.parent == b.parent ? 1 : 2) / a.depth; //一种更适合于径向布局的变体，可以按比例缩小半径差距:
+            return (a.parent == b.parent ? 1 : 2) / a.depth;
           });
 
-        //初始化树状图数据
+        //init
         var treeData = tree(hierarchyData)
-        console.log(treeData); //这里的数据treeData与hierarchyData 相同
 
-        //获取边和节点
+        //line node
         var nodes = treeData.descendants();
         var links = treeData.links();
-        console.log(nodes);
-        console.log(links);
 
-        //创建贝塞尔曲线生成器
+        //line
         var link = d3.linkHorizontal()
           .x(function (d) {
             return d.y;
-          }) //生成的曲线在曲线的终点和起点处的切线是水平方向的
+          }) //linkHorizontal
           .y(function (d) {
             return d.x;
           });
 
 
-        //绘制边
+        //path
         g.append('g')
           .selectAll('path')
           .data(links)
@@ -453,7 +447,6 @@ class Projector
           .append('g')
           .attr('transform', function (d, i) {
             return 'translate(' + d.y + ',' + d.x + ')';
-
           });
 
         //绘制文字和节点
@@ -486,7 +479,6 @@ class Projector
         let c = list[i]
         c.style.cursor = "pointer"
         c.addEventListener('click', (e: any) => {
-          // console.log("eeee", e.target.nextSibling.innerHTML,)
           if (e.target.nextSibling.innerHTML != window.iteration) {
             that.projectionsPanel.jumpTo(Number(e.target.nextSibling.innerHTML))
           }
@@ -497,7 +489,6 @@ class Projector
 
   readyregis() {
     let el: any = this.$$('#metadata-card')
-    console.log('elel', el)
     if (!el) {
       return
     }
@@ -514,29 +505,25 @@ class Projector
       let startX = e.clientX;
       let startY = e.clientY;
 
-      console.log(startX, startY, offleft, offTop, that.metadataStyle);
-
       el.setCapture && el.setCapture();
 
 
       const handler = function (event: any) {
         event = event || window.event;
 
-        // 鼠标停止位置
+        // mouse stop position
         let endX = event.clientX;
         let endY = event.clientY;
 
-        // 移动距离
+        // distance
         let moveX = endX - startX;
         let moveY = endY - startY;
 
-        // 元素最终位置
+        // final position
         let lastX = offleft + moveX;
         let lastY = offTop + moveY;
 
-        // console.log(moveX, moveY, lastX, lastY);
-
-        //边界处理
+        //boundry
         if (
           lastX >
           document.documentElement.clientWidth - el.clientWidth - 20
@@ -877,7 +864,6 @@ class Projector
     if (this.intervalFlag) {
       this.intervalFlag = false
       this.timer = window.setInterval(() => {
-        console.log('start', this.timer)
 
         this.inspectorPanel.updateCurrentPlayEpoch(current)
         window.iteration = current;
@@ -939,7 +925,6 @@ class Projector
   }
   setDynamicStop() {
     window.isAnimatating = false
-    console.log('this.timer', this.timer)
     if (this.timer && !this.intervalFlag) {
       window.clearInterval(this.timer)
       this.intervalFlag = true
@@ -1185,7 +1170,6 @@ class Projector
     let timeNow = new Date().getTime()
     if (this.timer === null || timeNow - this.timer > 700) {
       if (window.iteration && pointIndex !== undefined && pointIndex !== null && window.previousHover !== pointIndex) {
-        console.log('get img')
         this.timer = timeNow
         this.updateMetaByIndices(pointIndex)
         window.previousHover = pointIndex
