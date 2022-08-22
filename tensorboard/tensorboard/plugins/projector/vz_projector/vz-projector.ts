@@ -57,6 +57,9 @@ declare global {
 
     rejectIndicates:any,
     acceptIndicates:any,
+
+    acceptInputList:any,
+    rejectInputList:any
   }
 }
 
@@ -958,7 +961,8 @@ class Projector
   }
   removecustomInMetaCard() {
     this.metadataCard.updateCustomList(this.dataSet.points, this as ProjectorEventContext)
-    this.inspectorPanel.refreshSearchResult()
+    this.metadataCard.updateRejectList(this.dataSet.points, this as ProjectorEventContext)
+    // this.inspectorPanel.refreshSearchResult()
     this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
     this.projectorScatterPlotAdapter.render()
   }
@@ -1689,10 +1693,16 @@ class Projector
     });
   }
   // anormaly detection
-  queryAnormalyStrategy(budget: number, cls: number, currentIndices: number[], comfirm_info: any[],
+  queryAnormalyStrategy(budget: number, cls: number, currentIndices: number[], comfirm_info: any[],accIndicates:number[],rejIndicates:number[],strategy:string,
     callback: (indices: any, cleanIndices?: any) => void) {
     const msgId = logging.setModalMessage('Querying...');
     let headers = new Headers();
+    if(!accIndicates){
+      accIndicates = []
+    }
+    if(!rejIndicates){
+      rejIndicates = []
+    }
     headers.append('Content-Type', 'application/json');
     headers.append('Accept', 'application/json');
     fetch(`http://${this.DVIServer}/anomaly_query`, {
@@ -1702,7 +1712,11 @@ class Projector
         "cls": cls,
         "indices": currentIndices,
         "content_path": this.dataSet.DVIsubjectModelPath,
-        "comfirm_info": comfirm_info
+        "comfirm_info": comfirm_info,
+        "accIndicates": accIndicates,
+        "rejIndicates": rejIndicates,
+        "strategy": strategy
+        
       }),
       headers: headers,
       mode: 'cors'

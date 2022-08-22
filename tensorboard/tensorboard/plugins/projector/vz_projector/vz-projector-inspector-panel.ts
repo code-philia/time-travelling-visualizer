@@ -560,7 +560,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             }
           }
           this.projector.queryAnormalyStrategy(
-            Number(this.moreRecommednNum), this.selectedAnormalyClass, window.queryResAnormalIndecates, confirmInfo,
+            Number(this.moreRecommednNum), this.selectedAnormalyClass, window.queryResAnormalIndecates, confirmInfo,window.acceptIndicates,window.rejectIndicates,'Feedback',
             (indices: any, cleansIndices: any) => {
               if (indices != null) {
                 // this.queryIndices = indices;
@@ -609,6 +609,8 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
     window.suggestionIndicates = []
     window.checkboxDom = []
+    window.acceptInputList = []
+    window.rejectInputList = []
     if(!window.acceptIndicates){
       window.acceptIndicates = []
     }
@@ -673,22 +675,27 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         // row.appendChild(newtd)
 
         let newacctd:any = document.createElement('td')
-        let accInput = document.createElement('input');
+        let accInput:any = document.createElement('input');
         accInput.setAttribute('name',`op${index}`)
+        accInput.setAttribute('id',`accept${index}`)
         accInput.setAttribute('type',`radio`)
         accInput.className = 'inputColumn';
         accInput.setAttribute('value',`accept`)
+        window.acceptInputList[indices[i]] = accInput
         newacctd.append(accInput)
         row.appendChild(newacctd)
 
 
-        // newacctd.addEventListener('click',(e:any)=>{
-        //   if(newacctd.checked){
-        //     newacctd.checked = false
-        //   }
-        //   // if(newacctd.)
-        // })
+        accInput.addEventListener('mouseup',(e:any)=>{
+          if(accInput.checked){
+            // accInput.prop("checked", false);
+            accInput.checked = false
+            window.acceptIndicates.splice(window.acceptIndicates.indexOf(index),1)
+          }
+          // if(newacctd.)
+        })
         accInput.addEventListener('change',()=>{
+          console.log()
 
           if(accInput.checked){
             if(window.acceptIndicates.indexOf(index) === -1){
@@ -711,8 +718,10 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         
         let newrejtd = document.createElement('td')
         let rejectInput = document.createElement('input');
+        window.rejectInputList[indices[i]] = rejectInput
         rejectInput.setAttribute('type',`radio`)
         rejectInput.setAttribute('name',`op${index}`)
+        accInput.setAttribute('id',`reject${index}`)
         rejectInput.setAttribute('value',`reject`)
         newrejtd.append(rejectInput)
         row.appendChild(newrejtd)
@@ -1050,7 +1059,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
     this.queryAnomalyBtn.onclick = () => {
       projector.queryAnormalyStrategy(
-        Number(this.anomalyRecNum), this.selectedAnormalyClass, [], [],
+        Number(this.anomalyRecNum), this.selectedAnormalyClass, [], [],window.acceptIndicates,window.rejectIndicates,'TBsampling',
         (indices: any, cleansIndices: any) => {
           if (indices != null) {
             // this.queryIndices = indices;

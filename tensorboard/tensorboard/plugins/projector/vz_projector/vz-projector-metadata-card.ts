@@ -84,9 +84,8 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
         padding: 8px;
       }
       .remove-btn{
-        position: absolute;
-        right: -40px;
-        top: 15px;
+
+      
         border-radius: 50%;
         width: 24px;
         height: 24px;
@@ -167,7 +166,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
             <div class="metadata-key" style="width:40px;">[[item.key]]</div>
             <!--<div class="metadata-value" style="width:40px;">[[item.value]]</div>-->
             <div class="metadata-value">[[item.prediction]]</div>
-            <!--<button class="remove-btn" id="[[item.key]]" on-click="removeCustomSelItem">✖️</button>-->
+            <button class="remove-btn" id="[[item.key]]" on-click="removeacceptSelItem">✖️</button>
           </div>
           </div>
         </template>
@@ -181,7 +180,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
           <div class="metadata-key" style="width:40px;">[[item.key]]</div>
           <!--<div class="metadata-value" style="width:40px;">[[item.value]]</div>-->
           <div class="metadata-value">[[item.prediction]]</div>
-          <!--<button class="remove-btn" id="[[item.key]]" on-click="removeCustomSelItem">✖️</button>-->
+          <button class="remove-btn" id="[[item.key]]" on-click="removerejectSelItem">✖️</button>
         </div>
         </div>
       </template>
@@ -193,7 +192,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
   `;
 
   @property({ type: Boolean })
-  hasMetadata: boolean = false;
+  hasMetadata: boolean = true;
 
   @property({ type: Boolean })
   showImg: boolean = true;
@@ -257,7 +256,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
     this.pointMetadata = pointMetadata;
     this.showImg = true
 
-    this.hasMetadata = pointMetadata != null || window.acceptIndicates?.length;
+    this.hasMetadata = true
     if (!window.previousIndecates) {
       window.previousIndecates = []
     }
@@ -301,7 +300,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
     if (!window.acceptIndicates || window.acceptIndicates.length === 0) {
       this.customMetadata = []
     }
-    this.hasMetadata = window.acceptIndicates?.length;
+    this.hasMetadata = true;
     this.selectedNum = window.acceptIndicates?.length
     let metadata = [];
     let DVIServer = window.sessionStorage.ipAddress;
@@ -365,7 +364,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
     if (!window.rejectIndicates || window.rejectIndicates.length === 0) {
       this.rejectMetadata = []
     }
-    this.hasMetadata = window.rejectIndicates?.length;
+    this.hasMetadata = true;
     this.selectedNum = window.rejectIndicates?.length
     let metadata = [];
     let DVIServer = window.sessionStorage.ipAddress;
@@ -440,13 +439,22 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
       this.label = '' + this.pointMetadata[this.labelOption];
     }
   }
-  removeCustomSelItem(e: any) {
-    let index = window.customSelection.indexOf(Number(e.target.id))
+  removeacceptSelItem(e: any) {
+    let index = window.acceptIndicates.indexOf(Number(e.target.id))
     // window.customSelection.indexOf(7893)
     if (index >= 0) {
-      window.customSelection.splice(index, 1)
+      window.acceptIndicates.splice(index, 1)
     }
+    window.acceptInputList[e.target.id].checked = false
     this.projectorEventContext.removecustomInMetaCard()
-    console.log(this.projectorEventContext)
+  }
+  removerejectSelItem(e: any) {
+    let index = window.rejectIndicates.indexOf(Number(e.target.id))
+    // window.customSelection.indexOf(7893)
+    if (index >= 0) {
+      window.rejectIndicates.splice(index, 1)
+    }
+    window.rejectInputList[e.target.id].checked = false
+    this.projectorEventContext.removecustomInMetaCard()
   }
 }
