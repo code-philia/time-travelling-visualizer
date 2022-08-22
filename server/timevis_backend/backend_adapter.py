@@ -116,6 +116,16 @@ class TimeVisBackend:
     #                                                                                                               #
     #################################################################################################################
 
+    def save_acc_and_rej(self, acc_idxs, rej_idxs):
+        d = {
+            "acc_idxs": acc_idxs,
+            "rej_idxs": rej_idxs
+        }
+        path = os.path.join(self.data_provider.content_path, "acc_rej.json")
+        with open(path, "w") as f:
+            json.dump(d, f)
+        print("Successfully save the acc and rej idxs selected by user...")
+
     def get_epoch_index(self, epoch_id):
         """get the training data index for an epoch"""
         index_file = os.path.join(self.data_provider.model_path, "Epoch_{:d}".format(epoch_id), "index.json")
@@ -131,6 +141,16 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         super().__init__(data_provider, projector, vis, evaluator, **hyperparameters)
         self.trainer = trainer
         self.dense = dense
+    
+    def save_acc_and_rej(self, iteration, acc_idxs, rej_idxs):
+        d = {
+            "acc_idxs": acc_idxs,
+            "rej_idxs": rej_idxs
+        }
+        path = os.path.join(self.data_provider.content_path, "Model", "Iteration_{}".format(iteration), "acc_rej.json")
+        with open(path, "w") as f:
+            json.dump(d, f)
+        print("Successfully save the acc and rej idxs selected by user at Iteration {}...".format(iteration))
     
     def reset(self, iteration):
         # delete [iteration,...)
@@ -466,9 +486,10 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
             pickle.dump(ftm, f, pickle.HIGHEST_PROTOCOL)
 
     def _init_detection(self, iteration, strategy, period=80):
-        embedding_path = os.path.join(self.data_provider.content_path,"Model", "Iteration_{}".format(iteration),'embeddings.npy')
+        embedding_path = os.path.join(self.data_provider.content_path,"Model", "Iteration_{}".format(iteration),'trajectory_embeddings.npy')
         if os.path.exists(embedding_path):
             trajectories = np.load(embedding_path)
+            print("Load trajectories from cache!")
         else:
             # extract samples
             train_num = self.data_provider.train_num
@@ -483,27 +504,29 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
             trajectories = np.transpose(embeddings_2d, [1,0,2])
             np.save(embedding_path, trajectories)
         if strategy == "TBSampling":
-            ftm_path = os.path.join(self.data_provider.content_path, 'tb_ftm.pkl')
+            ftm_path = os.path.join(self.data_provider.content_path, "Model", "Iteration_{}".format(iteration), 'tb_ftm.pkl')
             if os.path.exists(ftm_path):
                 with open(ftm_path, 'rb') as f:
                     ftm = pickle.load(f)
+                print("Load TBSampling from cache!")
             else:
                 ftm = TBSampling(trajectories, 30, period=period,metric="a")
                 print("Detecting abnormal....")
                 ftm.clustered()
                 print("Finish detection!")
-                self._save(ftm, "tb")
-        elif strategy == "FeedBack":
-            ftm_path = os.path.join(self.data_provider.content_path, 'fb_ftm.pkl')
+                self._save(iteration, ftm, "tb")
+        elif strategy == "Feedback":
+            ftm_path = os.path.join(self.data_provider.content_path, "Model", "Iteration_{}".format(iteration), 'fb_ftm.pkl')
             if os.path.exists(ftm_path):
                 with open(ftm_path, 'rb') as f:
                     ftm = pickle.load(f)
+                print("Load FeedbackSampling from cache!")
             else:
                 ftm = FeedbackSampling(trajectories, 30, period=period,metric="a")
                 print("Detecting abnormal....")
                 ftm.clustered()
                 print("Finish detection!")
-                self._save(ftm, "fb")
+                self._save(iteration, ftm, "fb")
         else:
             raise NotImplementedError
         return ftm
@@ -542,7 +565,7 @@ class AnormalyTimeVisBackend(TimeVisBackend):
             pickle.dump(ntd, f, pickle.HIGHEST_PROTOCOL)
 
     def _init_detection(self, strategy):
-        embedding_path = os.path.join(self.data_provider.content_path, 'embeddings.npy')
+        embedding_path = os.path.join(self.data_provider.content_path, 'trajectory_embeddings.npy')
         if os.path.exists(embedding_path):
             trajectories = np.load(embedding_path)
         else:
@@ -569,7 +592,7 @@ class AnormalyTimeVisBackend(TimeVisBackend):
                 ntd.clustered()
                 print("Finish detection!")
                 self._save(ntd, "tb")
-        elif strategy == "FeedBack":
+        elif strategy == "Feedback":
             ntd_path = os.path.join(self.data_provider.content_path, 'fb_ntd.pkl')
             if os.path.exists(ntd_path):
                 with open(ntd_path, 'rb') as f:
