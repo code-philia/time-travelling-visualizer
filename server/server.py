@@ -327,9 +327,11 @@ def get_tree():
     return make_response(jsonify({"structure":json_data}), 200)
 
 if __name__ == "__main__":
+    import socket
+    hostname = socket.gethostname()
+    ip_address = socket.gethostbyname(hostname)
     with open('config.json', 'r') as f:
         config = json.load(f)
-        ip_adress = config["ServerIP"]
-        # ip_adress = "172.26.191.173"
+        # ip_address = config["ServerIP"]
         port = config["ServerPort"]
-    app.run(host=ip_adress, port=int(port))
+    app.run(host=ip_address, port=int(port))
