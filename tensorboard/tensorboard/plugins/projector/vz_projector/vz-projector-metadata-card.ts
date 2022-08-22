@@ -436,7 +436,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
 
     setTimeout(() => {
       this.addBtnListener()
-    }, 3000)
+    }, 100)
   }
 
   addBtnListener() {
@@ -444,8 +444,9 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
     let btns = container?.querySelectorAll('.custom-list-Row')
     for (let i = 0; i < btns?.length; i++) {
       let btn = btns[i];
-      btn.addEventListener('hover', () => {
-        console.log(btn)
+      btn.addEventListener('mouseenter', () => {
+        // console.log('enter',btn)
+        this.projectorEventContext?.notifyHoverOverPoint(Number(btn.id))
       })
     }
   }
