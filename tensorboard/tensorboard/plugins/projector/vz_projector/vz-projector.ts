@@ -53,7 +53,10 @@ declare global {
     selectedStack: any,
     ipAddress: string,
     d3: any,
-    treejson: any
+    treejson: any,
+
+    rejectIndicates:any,
+    acceptIndicates:any,
   }
 }
 
@@ -948,6 +951,7 @@ class Projector
   refresh() {
     // this.projectorScatterPlotAdapter.scatterPlot.render()
     this.metadataCard.updateCustomList(this.dataSet.points, this as ProjectorEventContext)
+    this.metadataCard.updateRejectList(this.dataSet.points, this as ProjectorEventContext)
     // this.projectorScatterPlotAdapter.scatterPlot.render()
     this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
     this.projectorScatterPlotAdapter.render()
@@ -965,15 +969,21 @@ class Projector
     if (!this.registered) {
       this.readyregis()
     }
-    if (selectionType === 'isALQuery' || selectionType === 'normal' || selectionType === 'isAnormalyQuery') {
-      window.customSelection = []
+    if(!window.acceptIndicates){
+      window.acceptIndicates = []
+    }
+    if(!window.rejectIndicates){
+      window.rejectIndicates = []
+    }
+    window.customSelection = window.acceptIndicates.concat(window.rejectIndicates)
+    if (selectionType === 'isALQuery' || selectionType === 'normal' || selectionType === 'isAnormalyQuery' ||selectionType === 'boundingbox') {
+      // window.customSelection = []
       window.queryResPointIndices = newSelectedPointIndices
       if (selectionType === 'isALQuery') {
         window.alQueryResPointIndices = newSelectedPointIndices
       } else {
         window.alQueryResPointIndices = []
       }
-      this.metadataCard.updateCustomList(this.dataSet.points, this as ProjectorEventContext)
     }
     if (selectionType === 'isShowSelected') {
       for (let i = 0; i < window.previousIndecates?.length; i++) {
@@ -989,30 +999,18 @@ class Projector
       this.projectorScatterPlotAdapter.render()
       return
     }
-    if (selectionType === 'boundingbox' && window.isAdjustingSel) {
-      if (!window.customSelection) {
-        window.customSelection = []
-      }
-      for (let i = 0; i < newSelectedPointIndices.length; i++) {
-        let check: any = window.checkboxDom[newSelectedPointIndices[i]]
-        if (window.customSelection.indexOf(newSelectedPointIndices[i]) < 0) {
-          window.customSelection.push(newSelectedPointIndices[i]);
-
-          if (check) {
-            check.checked = true
-          }
-
-        } else {
-          let index = window.customSelection.indexOf(newSelectedPointIndices[i])
-          window.customSelection.splice(index, 1)
-          if (check) {
-            check.checked = false
-          }
-        }
-      }
-      this.metadataCard.updateCustomList(this.dataSet.points, this as ProjectorEventContext)
+    if (selectionType === 'boundingbox') {
+      window.alSuggestLabelList = []
+      window.alSuggestScoreList = []
+      window.queryResPointIndices = newSelectedPointIndices
+      this.selectedPointIndices = newSelectedPointIndices
+      window.alQueryResPointIndices = []
+      this.inspectorPanel.refreshSearchResByList(newSelectedPointIndices)
       this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
       this.projectorScatterPlotAdapter.render()
+      this.selectionChangedListeners.forEach((l) =>
+      l(this.selectedPointIndices, [])
+    );
       return
     }
 
@@ -1118,14 +1116,7 @@ class Projector
             index: newSelectedPointIndices[0],
             dist: 0
           };
-        if (window.isAnimatating !== true) {
-          // this.dataSet.getSpriteImage(this.selectedPointIndices[0], (imgData: any) => {
-          //   let src = 'data:image/png;base64,' + imgData.imgUrl
-          //   this.metadataCard.updateMetadata(
-          //     this.dataSet.points[newSelectedPointIndices[0]].metadata, src, this.dataSet.points[newSelectedPointIndices[0]]
-          //   );
-          // })
-        }
+       
       } else {
         this.metadataCard.updateMetadata(null);
       }
@@ -1634,18 +1625,21 @@ class Projector
     });
   }
   // active learning
-  queryByAL(iteration: number, strategy: string, budget: number, currentIndices: number[], previousIndices: number[],
+  queryByAL(iteration: number, strategy: string, budget: number, acceptIndicates: number[], rejectIndicates: number[],
     callback: (indices: any, scores: any, labels: any) => void) {
     const msgId = logging.setModalMessage('Querying...');
     let headers = new Headers();
     headers.append('Content-Type', 'application/json');
     headers.append('Accept', 'application/json');
-    console.log('currentIndices', currentIndices)
-    let indices = currentIndices.filter((item, i, arr) => {
+    let accIndicates = acceptIndicates.filter((item, i, arr) => {
       //函数自身返回的是一个布尔值，只当返回值为true时，当前元素才会存入新的数组中。            
       return item <= 49999
     })
-    console.log('indices', indices)
+    let rejIndicates = rejectIndicates.filter((item, i, arr) => {
+      //函数自身返回的是一个布尔值，只当返回值为true时，当前元素才会存入新的数组中。            
+      return item <= 49999
+    })
+
     fetch(`http://${this.DVIServer}/al_query`, {
       method: 'POST',
       body: JSON.stringify({
@@ -1653,8 +1647,8 @@ class Projector
         "strategy": strategy,
         "budget": budget,
         "content_path": this.dataSet.DVIsubjectModelPath,
-        "currentIndices": indices,
-        "previousIndices": previousIndices
+        "accIndicates": accIndicates,
+        "rejIndicates": rejIndicates
       }),
       headers: headers,
       mode: 'cors'
@@ -1664,27 +1658,27 @@ class Projector
       const scores = data.scores
       logging.setModalMessage(null, msgId);
 
-      if (currentIndices && currentIndices.length) {
-        for (let i = 0; i < currentIndices.length; i++) {
-          if (window.previousIndecates.indexOf(currentIndices[i]) === -1) {
-            window.previousIndecates.push(currentIndices[i])
-          }
-        }
-        function func(a, b) {
-          return a - b;
-        }
-        window.previousIndecates.sort(func)
-      } else {
-        for (let i = 0; i < window.customSelection.length; i++) {
-          if (window.previousIndecates.indexOf(window.customSelection[i]) === -1) {
-            window.previousIndecates.push(window.customSelection[i])
-          }
-        }
-        function func(a, b) {
-          return a - b;
-        }
-        window.previousIndecates.sort(func)
-      }
+      // if (currentIndices && currentIndices.length) {
+      //   for (let i = 0; i < currentIndices.length; i++) {
+      //     if (window.previousIndecates.indexOf(currentIndices[i]) === -1) {
+      //       window.previousIndecates.push(currentIndices[i])
+      //     }
+      //   }
+      //   function func(a, b) {
+      //     return a - b;
+      //   }
+      //   window.previousIndecates.sort(func)
+      // } else {
+      //   for (let i = 0; i < window.customSelection.length; i++) {
+      //     if (window.previousIndecates.indexOf(window.customSelection[i]) === -1) {
+      //       window.previousIndecates.push(window.customSelection[i])
+      //     }
+      //   }
+      //   function func(a, b) {
+      //     return a - b;
+      //   }
+      //   window.previousIndecates.sort(func)
+      // }
 
 
 

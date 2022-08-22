@@ -20,7 +20,7 @@ import { LegacyElementMixin } from '../../../components/polymer/legacy_element_m
 import '../../../components/polymer/irons_and_papers';
 
 import { PointMetadata } from './data';
-import {ProjectorEventContext} from './projectorEventContext';
+import { ProjectorEventContext } from './projectorEventContext';
 
 @customElement('vz-projector-metadata-card')
 class MetadataCard extends LegacyElementMixin(PolymerElement) {
@@ -30,7 +30,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
         background-color: rgba(255, 255, 255, 0.9);
         box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14),
           0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
-        width: 230px;
+        width: 330px;
       }
 
       #header {
@@ -48,7 +48,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
         font-size: 14px;
         line-height: 24px;
         padding: 12px 12px 8px;
-        width: 230px;
+        width: 330px;
         overflow-wrap: break-word;
       }
 
@@ -148,15 +148,18 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
           <img id="metaImg" height="100px"/>
           </div>
         </template>
-          <div class="custom-list-header">custom selected list | [[selectedNum]]</div>
+          <!--<div class="custom-list-header">custom selected list | [[selectedNum]]</div>
           <div class="metadata-row">
           <div class="metadata-key" style="padding-left: 15px;">| img |</div>
           <div class="metadata-key">index |</div>
-          <!--<div class="metadata-key" style="width: 40px;text-align: right;">label |</div>-->
+          <div class="metadata-key" style="width: 40px;text-align: right;">label |</div>
           <div class="metadata-key">predict |</div>
           <div class="metadata-key">operation |</div>
-          </div>
+          </div>-->
           <div style="max-height: calc(100vh - 440px);overflow: auto; padding: 0 15px;">
+          <div style="display:flex;">
+          <div style="width:150px;">
+          accept
           <template is="dom-repeat" items="[[customMetadata]]">
           <div class="metadata-row custom-list-Row" id=[[item.key]]>
             <div style="text-align: center;display: inline-block;position: absolute;left: -16px;" class="metadata-value">[[item.flag]]</div>
@@ -164,10 +167,26 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
             <div class="metadata-key" style="width:40px;">[[item.key]]</div>
             <!--<div class="metadata-value" style="width:40px;">[[item.value]]</div>-->
             <div class="metadata-value">[[item.prediction]]</div>
-            <button class="remove-btn" id="[[item.key]]" on-click="removeCustomSelItem">✖️</button>
+            <!--<button class="remove-btn" id="[[item.key]]" on-click="removeCustomSelItem">✖️</button>-->
           </div>
           </div>
         </template>
+        </div>
+        <div style="width:150px;">
+        reject
+        <template is="dom-repeat" items="[[rejectMetadata]]">
+        <div class="metadata-row custom-list-Row" id=[[item.key]]>
+          <div style="text-align: center;display: inline-block;position: absolute;left: -16px;" class="metadata-value">[[item.flag]]</div>
+          <img src="[[item.src]]" />
+          <div class="metadata-key" style="width:40px;">[[item.key]]</div>
+          <!--<div class="metadata-value" style="width:40px;">[[item.value]]</div>-->
+          <div class="metadata-value">[[item.prediction]]</div>
+          <!--<button class="remove-btn" id="[[item.key]]" on-click="removeCustomSelItem">✖️</button>-->
+        </div>
+        </div>
+      </template>
+      </div>
+      </div>
         </iron-collapse>
       </div>
     </template>
@@ -177,7 +196,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
   hasMetadata: boolean = false;
 
   @property({ type: Boolean })
-  showImg: boolean = false;
+  showImg: boolean = true;
 
   @property({ type: Number })
   selectedNum: Number = 0;
@@ -200,6 +219,13 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
     src?: string;
   }>;
 
+  @property({ type: Array })
+  rejectMetadata: Array<{
+    key: string;
+    value: string;
+    src?: string;
+  }>;
+
   @property({ type: Number })
   currentRemove: Number = null
 
@@ -209,7 +235,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
   private labelOption: string;
   private pointMetadata: PointMetadata;
   private resultImg: HTMLElement;
-  private points:any
+  private points: any
   private projectorEventContext: ProjectorEventContext
 
 
@@ -229,9 +255,9 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
 
   updateMetadata(pointMetadata?: PointMetadata, src?: string, point?: any, indicate?: number) {
     this.pointMetadata = pointMetadata;
-    this.showImg = pointMetadata != null
+    this.showImg = true
 
-    this.hasMetadata = pointMetadata != null || window.customSelection?.length;
+    this.hasMetadata = pointMetadata != null || window.acceptIndicates?.length;
     if (!window.previousIndecates) {
       window.previousIndecates = []
     }
@@ -265,27 +291,27 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
     }
   }
 
-  async updateCustomList(points:any,projectorEventContext?:ProjectorEventContext) {
+  async updateCustomList(points: any, projectorEventContext?: ProjectorEventContext) {
     this.projectorEventContext = projectorEventContext
-    if(points){
+    if (points) {
       this.points = points
     }
 
- 
-    if (!window.customSelection || window.customSelection.length === 0) {
+
+    if (!window.acceptIndicates || window.acceptIndicates.length === 0) {
       this.customMetadata = []
     }
-    this.hasMetadata = window.customSelection?.length;
-    this.selectedNum = window.customSelection?.length
+    this.hasMetadata = window.acceptIndicates?.length;
+    this.selectedNum = window.acceptIndicates?.length
     let metadata = [];
     let DVIServer = window.sessionStorage.ipAddress;
     let basePath = window.modelMath
     let headers = new Headers();
     headers.append('Content-Type', 'application/json');
     headers.append('Accept', 'application/json');
-    if (window.customSelection) {
+    if (window.acceptIndicates) {
       let msgId
-      if (window.customSelection.length > 1000) {
+      if (window.acceptIndicates.length > 1000) {
         msgId = logging.setModalMessage('Update ing...');
       }
 
@@ -293,17 +319,17 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
         method: 'POST',
         mode: 'cors',
         body: JSON.stringify({
-          "path": basePath, "index": window.customSelection,
+          "path": basePath, "index": window.acceptIndicates,
         }),
         headers: headers,
       }).then(response => response.json()).then(data => {
-        for (let i = 0; i < window.customSelection.length; i++) {
-          let src = data.urlList[window.customSelection[i]]
-          let flag = points[window.customSelection[i]]?.metadata.label === points[window.customSelection[i]]?.current_prediction ? '' : '❗️'
-          if(window.sessionStorage.isControlGroup === 'true'){
+        for (let i = 0; i < window.acceptIndicates.length; i++) {
+          let src = data.urlList[window.acceptIndicates[i]]
+          let flag = points[window.acceptIndicates[i]]?.metadata.label === points[window.acceptIndicates[i]]?.current_prediction ? '' : '❗️'
+          if (window.sessionStorage.isControlGroup === 'true') {
             flag = ''
           }
-          metadata.push({ key: window.customSelection[i], value: points[window.customSelection[i]].metadata.label, src: src, prediction: points[window.customSelection[i]].current_prediction, flag: flag });
+          metadata.push({ key: window.acceptIndicates[i], value: points[window.acceptIndicates[i]].metadata.label, src: src, prediction: points[window.acceptIndicates[i]].current_prediction, flag: flag });
         }
         if (msgId) {
           logging.setModalMessage(null, msgId);
@@ -313,10 +339,10 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
         if (msgId) {
           logging.setModalMessage(null, msgId);
         }
-        for (let i = 0; i < window.customSelection.length; i++) {
+        for (let i = 0; i < window.acceptIndicates.length; i++) {
           let src = ''
-          let flag = points[window.customSelection[i]]?.metadata.label === points[window.customSelection[i]]?.current_prediction ? '' : '❗️'
-          metadata.push({ key: window.customSelection[i], value: points[window.customSelection[i]].metadata.label, src: src, prediction: points[window.customSelection[i]].current_prediction, flag: flag });
+          let flag = points[window.acceptIndicates[i]]?.metadata.label === points[window.acceptIndicates[i]]?.current_prediction ? '' : '❗️'
+          metadata.push({ key: window.acceptIndicates[i], value: points[window.acceptIndicates[i]].metadata.label, src: src, prediction: points[window.acceptIndicates[i]].current_prediction, flag: flag });
         }
       });
 
@@ -328,6 +354,71 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
       this.addBtnListener()
     }, 3000)
   }
+
+  async updateRejectList(points: any, projectorEventContext?: ProjectorEventContext) {
+    this.projectorEventContext = projectorEventContext
+    if (points) {
+      this.points = points
+    }
+
+
+    if (!window.rejectIndicates || window.rejectIndicates.length === 0) {
+      this.rejectMetadata = []
+    }
+    this.hasMetadata = window.rejectIndicates?.length;
+    this.selectedNum = window.rejectIndicates?.length
+    let metadata = [];
+    let DVIServer = window.sessionStorage.ipAddress;
+    let basePath = window.modelMath
+    let headers = new Headers();
+    headers.append('Content-Type', 'application/json');
+    headers.append('Accept', 'application/json');
+    if (window.rejectIndicates) {
+      let msgId
+      if (window.rejectIndicates.length > 1000) {
+        msgId = logging.setModalMessage('Update ing...');
+      }
+
+      await fetch(`http://${DVIServer}/spriteList`, {
+        method: 'POST',
+        mode: 'cors',
+        body: JSON.stringify({
+          "path": basePath, "index": window.rejectIndicates,
+        }),
+        headers: headers,
+      }).then(response => response.json()).then(data => {
+        for (let i = 0; i < window.rejectIndicates.length; i++) {
+          let src = data.urlList[window.rejectIndicates[i]]
+          let flag = points[window.rejectIndicates[i]]?.metadata.label === points[window.rejectIndicates[i]]?.current_prediction ? '' : '❗️'
+          if (window.sessionStorage.isControlGroup === 'true') {
+            flag = ''
+          }
+          metadata.push({ key: window.rejectIndicates[i], value: points[window.rejectIndicates[i]].metadata.label, src: src, prediction: points[window.rejectIndicates[i]].current_prediction, flag: flag });
+        }
+        if (msgId) {
+          logging.setModalMessage(null, msgId);
+        }
+      }).catch(error => {
+        console.log("error", error);
+        if (msgId) {
+          logging.setModalMessage(null, msgId);
+        }
+        for (let i = 0; i < window.rejectIndicates.length; i++) {
+          let src = ''
+          let flag = points[window.rejectIndicates[i]]?.metadata.label === points[window.rejectIndicates[i]]?.current_prediction ? '' : '❗️'
+          metadata.push({ key: window.rejectIndicates[i], value: points[window.rejectIndicates[i]].metadata.label, src: src, prediction: points[window.rejectIndicates[i]].current_prediction, flag: flag });
+        }
+      });
+
+    }
+    // window.customMetadata = metadata
+    this.rejectMetadata = metadata;
+
+    setTimeout(() => {
+      this.addBtnListener()
+    }, 3000)
+  }
+
   addBtnListener() {
     const container = this.$$('#metadata-container') as any
     let btns = container?.querySelectorAll('.custom-list-Row')
@@ -341,7 +432,6 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
   removeCustomListItem(i: number) {
     this.customMetadata.splice(i, 1)
     window.customSelection.splice(i, 1)
-    console.log('rrrr', this.customMetadata, window.customSelection)
 
   }
   setLabelOption(labelOption: string) {
@@ -350,11 +440,11 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
       this.label = '' + this.pointMetadata[this.labelOption];
     }
   }
-  removeCustomSelItem(e:any) {
+  removeCustomSelItem(e: any) {
     let index = window.customSelection.indexOf(Number(e.target.id))
     // window.customSelection.indexOf(7893)
-    if(index>=0){
-      window.customSelection.splice(index,1)
+    if (index >= 0) {
+      window.customSelection.splice(index, 1)
     }
     this.projectorEventContext.removecustomInMetaCard()
     console.log(this.projectorEventContext)

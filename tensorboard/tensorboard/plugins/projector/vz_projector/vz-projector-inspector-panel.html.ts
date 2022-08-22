@@ -352,7 +352,7 @@ export const template = html`
     flex-direction: column;
   }
   .results .list{
-    max-height: calc(100vh - 580px);
+    max-height: calc(100vh - 520px);
     overflow: auto;
   }
 
@@ -470,7 +470,7 @@ export const template = html`
     </div>-->
     <div style="display:flex;">
     <!--<button style="width: 120px;" class="bounding-selection search-button search">Select</button>-->
-    <button style="width: 180px; white-space: nowrap;" class="show-selection search-button search">Prev & Cur Selection</button>
+    <button style="width: 180px; white-space: nowrap;visibility: hidden;width: 0;" class="show-selection search-button search">Prev & Cur Selection</button>
     <button style="width: 220px;" class="train-by-selection search-button search">re-Train By Selections</button>
     </div>
   </div>
@@ -625,7 +625,7 @@ export const template = html`
     </div>
     <div class="matches-list" style="display: none">
    
-    <div class="matches-list-title">[[queryResultListTitle]]</div>
+    <!--<div class="matches-list-title">[[queryResultListTitle]]</div>-->
      <template is="dom-if" if="[[showMoreRecommend]]">
      <div style="display:flex;">
      <paper-input value="{{moreRecommednNum}}" label="more recommend num:">
@@ -640,10 +640,15 @@ export const template = html`
      <button class="button clear-selection">Clear Selection</button>
      </div>-->
      <div class="matches-list-title" style="background:#eaeaea; line-height:40px;display: flex;justify-content: space-around;"> 
-     <template is="dom-if" if="[[showCheckAllQueryRes]]">
+     <!--<template is="dom-if" if="[[showCheckAllQueryRes]]">
      <paper-checkbox style="margin: 10px -2px 0px 5px;" id="label-points-toggle" checked="{{checkAllQueryRes}}"></paper-checkbox>
-     </template>
-     <span class="queryResColumnHeader">index</span><span class="queryResColumnHeader" id="queryResheader">predict</span><template is="dom-if" if="[[showMoreRecommend]]"><span class="queryResColumnHeader">estimation</span></template> <template is="dom-if" if="[[showCheckAllQueryRes]]"><span class="queryResColumnHeader">score</span></template></div>
+     </template>-->
+     <template is="dom-if" if="[[showCheckAllQueryRes]]"><span class="queryResColumnHeader" style="width:30px">acc</span></template>
+     <template is="dom-if" if="[[showCheckAllQueryRes]]"><span class="queryResColumnHeader" style="width:30px">rej</span></template>
+     <span class="queryResColumnHeader">index</span><span class="queryResColumnHeader" id="queryResheader">predict</span>
+     <template is="dom-if" if="[[showMoreRecommend]]"><span class="queryResColumnHeader">estimation</span></template> 
+     <template is="dom-if" if="[[showCheckAllQueryRes]]"><span class="queryResColumnHeader">score</span></template>
+     </div>
       <div class="list"></div>
       <div class="limit-msg">Showing only the first 100 results...</div>
     </div>

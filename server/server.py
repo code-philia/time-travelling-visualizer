@@ -130,14 +130,16 @@ def al_query():
     iteration = data["iteration"]
     strategy = data["strategy"]
     budget = int(data["budget"])
-    prev_idxs = data["previousIndices"]
-    curr_idxs = data["currentIndices"]
+    # prev_idxs = data["previousIndices"]
+    # curr_idxs = data["currentIndices"]
+    acc_idxs = data["accIndicates"]
+    rej_idxs = data["rejIndicates"]
     # TODO dense_al parameter from frontend
 
     sys.path.append(CONTENT_PATH)
     timevis = initialize_backend(CONTENT_PATH, dense_al=True)
     # TODO add new sampling rule
-    indices, labels, scores = timevis.al_query(iteration, budget, strategy, np.array(prev_idxs).astype(np.int64), np.array(curr_idxs).astype(np.int64))
+    indices, labels, scores = timevis.al_query(iteration, budget, strategy, np.array(acc_idxs).astype(np.int64), np.array(rej_idxs).astype(np.int64))
 
     sys.path.remove(CONTENT_PATH)
     return make_response(jsonify({"selectedPoints": indices.tolist(), "scores": scores.tolist(), "suggestLabels":labels.tolist()}), 200)
