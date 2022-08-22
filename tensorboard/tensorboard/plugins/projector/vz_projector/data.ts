@@ -1119,6 +1119,7 @@ export class DataSet {
     window.customSelection = []
     window.acceptIndicates = [] 
     window.rejectIndicates = []
+    window.flagindecatesList = []
   }
 
 

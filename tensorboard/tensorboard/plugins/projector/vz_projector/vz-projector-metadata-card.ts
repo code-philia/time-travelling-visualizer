@@ -110,12 +110,11 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
           >
           </paper-icon-button>
         </div>
-        <template is="dom-if" if="[[showImg]]">
         <div id="header">
           <div id="metadata-label">Current Hover Detail</div>
         </div>
-        </template>
         <iron-collapse id="metadata-container" opened>
+        <template is="dom-if" if="[[!showImg]]">No Hover Data</template>
         <template is="dom-if" if="[[showImg]]">
           <div id="metadata-table">
             <template is="dom-repeat" items="[[metadata]]">
@@ -149,8 +148,8 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
           </div>
           </template>
         </template>
-          <!--<div class="custom-list-header">custom selected list | [[selectedNum]]</div>
-          <div class="metadata-row">
+          <div class="custom-list-header">selected list | [[selectedNum]]</div>
+          <!--<div class="metadata-row">
           <div class="metadata-key" style="padding-left: 15px;">| img |</div>
           <div class="metadata-key">index |</div>
           <div class="metadata-key" style="width: 40px;text-align: right;">label |</div>
@@ -197,7 +196,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
   hasMetadata: boolean = true;
 
   @property({ type: Boolean })
-  showImg: boolean = true;
+  showImg: boolean = false;
 
   @property({ type: Number })
   selectedNum: Number = 0;
@@ -256,7 +255,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
 
   updateMetadata(pointMetadata?: PointMetadata, src?: string, point?: any, indicate?: number) {
     this.pointMetadata = pointMetadata;
-    this.showImg = true
+    this.showImg = pointMetadata != null
 
     this.hasMetadata = true
     if (!window.previousIndecates) {
@@ -303,7 +302,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
       this.customMetadata = []
     }
     this.hasMetadata = true;
-    this.selectedNum = window.acceptIndicates?.length
+    this.selectedNum = window.acceptIndicates?.length + window.rejectIndicates?.length
     let metadata = [];
     let DVIServer = window.sessionStorage.ipAddress;
     let basePath = window.modelMath
@@ -326,7 +325,11 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
       }).then(response => response.json()).then(data => {
         for (let i = 0; i < window.acceptIndicates.length; i++) {
           let src = data.urlList[window.acceptIndicates[i]]
-          let flag = points[window.acceptIndicates[i]]?.metadata.label === points[window.acceptIndicates[i]]?.current_prediction ? '' : '❗️'
+          // let flag = points[window.acceptIndicates[i]]?.metadata.label === points[window.acceptIndicates[i]]?.current_prediction ? '' : '❗️'
+          let flag = ""
+          if(window.flagindecatesList?.indexOf(window.acceptIndicates[i]) !== -1){
+            flag = '❗️'
+          }
           if (window.sessionStorage.isControlGroup === 'true') {
             flag = ''
           }
@@ -342,7 +345,11 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
         }
         for (let i = 0; i < window.acceptIndicates.length; i++) {
           let src = ''
-          let flag = points[window.acceptIndicates[i]]?.metadata.label === points[window.acceptIndicates[i]]?.current_prediction ? '' : '❗️'
+          // let flag = points[window.acceptIndicates[i]]?.metadata.label === points[window.acceptIndicates[i]]?.current_prediction ? '' : '❗️'
+          let flag = ""
+          if(window.flagindecatesList?.indexOf(window.rejectIndicates[i]) !== -1){
+            flag = '❗️'
+          }
           metadata.push({ key: window.acceptIndicates[i], value: points[window.acceptIndicates[i]].metadata.label, src: src, prediction: points[window.acceptIndicates[i]].current_prediction, flag: flag });
         }
       });
@@ -367,7 +374,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
       this.rejectMetadata = []
     }
     this.hasMetadata = true;
-    this.selectedNum = window.rejectIndicates?.length
+    this.selectedNum = window.acceptIndicates?.length + window.rejectIndicates?.length
     let metadata = [];
     let DVIServer = window.sessionStorage.ipAddress;
     let basePath = window.modelMath
@@ -390,7 +397,11 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
       }).then(response => response.json()).then(data => {
         for (let i = 0; i < window.rejectIndicates.length; i++) {
           let src = data.urlList[window.rejectIndicates[i]]
-          let flag = points[window.rejectIndicates[i]]?.metadata.label === points[window.rejectIndicates[i]]?.current_prediction ? '' : '❗️'
+          // let flag = points[window.rejectIndicates[i]]?.metadata.label === points[window.rejectIndicates[i]]?.current_prediction ? '' : '❗️'
+          let flag = ""
+          if(window.flagindecatesList?.indexOf(window.rejectIndicates[i]) !== -1){
+            flag = '❗️'
+          }
           if (window.sessionStorage.isControlGroup === 'true') {
             flag = ''
           }
@@ -406,7 +417,15 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
         }
         for (let i = 0; i < window.rejectIndicates.length; i++) {
           let src = ''
-          let flag = points[window.rejectIndicates[i]]?.metadata.label === points[window.rejectIndicates[i]]?.current_prediction ? '' : '❗️'
+
+          // let flag = points[window.rejectIndicates[i]]?.metadata.label === points[window.rejectIndicates[i]]?.current_prediction ? '' : '❗️'
+          // if(window.sessionStorage.taskType === 'anormaly detection'){
+          //   flag = points[window.rejectIndicates[i]]?.metadata.label === points[window.rejectIndicates[i]]?.current_prediction ? '' : '❗️'
+          // }
+          let flag = ""
+          if(window.flagindecatesList?.indexOf(window.rejectIndicates[i]) !== -1){
+            flag = '❗️'
+          }
           metadata.push({ key: window.rejectIndicates[i], value: points[window.rejectIndicates[i]].metadata.label, src: src, prediction: points[window.rejectIndicates[i]].current_prediction, flag: flag });
         }
       });

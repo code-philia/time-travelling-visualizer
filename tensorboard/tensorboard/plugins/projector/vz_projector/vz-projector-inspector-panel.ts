@@ -800,6 +800,9 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     }
   }
   private getLabelFromIndex(pointIndex: number): string {
+    if(!window.flagindecatesList){
+      window.flagindecatesList = []
+    }
     const metadata = this.projector.dataSet.points[pointIndex].metadata[
       this.selectedMetadataField
     ];
@@ -834,9 +837,15 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     }
     if(window.queryResAnormalIndecates && window.queryResAnormalIndecates.indexOf(pointIndex)!==-1){
       let prediction_res = suggest_label === displayStringMetaData ? ' - ' : ' ❗️ '
+     
       if (window.sessionStorage.isControlGroup == 'true') {
         return `${displayPointIndex}|${displayStringMetaData}|${score !== undefined ? score : '-'}`
       }else{
+        if(prediction_res !== " - "){
+          if(window.flagindecatesList.indexOf(pointIndex) === -1){
+            window.flagindecatesList.push(pointIndex)
+          }
+        }
         return `${displayPointIndex}|${displayStringMetaData}|${prediction_res}|${score !== undefined ? score : '-'}`
       }
 
@@ -845,12 +854,22 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       if (window.sessionStorage.isControlGroup == 'true') {
         return `${displayPointIndex}|${displayprediction}`
       } else {
+        if(prediction_res !== " - "){
+          if(window.flagindecatesList.indexOf(pointIndex) === -1){
+            window.flagindecatesList.push(pointIndex)
+          }
+        }
         return `${displayPointIndex}|${displayprediction}|${prediction_res}`
       }
     }
     if (window.sessionStorage.isControlGroup == 'true') {
       return `${displayPointIndex}|${displayprediction}|${score !== undefined ? score : '-'}`
     } else {
+      if(prediction_res !== " - "){
+        if(window.flagindecatesList.indexOf(pointIndex) === -1){
+          window.flagindecatesList.push(pointIndex)
+        }
+      }
       return `${displayPointIndex}|${displayprediction}|${prediction_res}|${score !== undefined ? score : '-'}`
     }
   }
@@ -1181,10 +1200,10 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     // Filtering dataset.
 
     this.noisyBtn.onclick = () => {
-      if (!window.queryResAnormalIndecates?.length) {
-        logging.setErrorMessage('Please query anomaly points first');
-        return
-      }
+      // if (!window.queryResAnormalIndecates?.length) {
+      //   logging.setErrorMessage('Please query anomaly points first');
+      //   return
+      // }
       if(window.customSelection.length == 0){
         alert('please confirm some points first')
         return

@@ -59,7 +59,8 @@ declare global {
     acceptIndicates:any,
 
     acceptInputList:any,
-    rejectInputList:any
+    rejectInputList:any,
+    flagindecatesList:any
   }
 }
 

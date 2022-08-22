@@ -506,7 +506,7 @@ export const template = html`
     </div>-->
     <div class="flex-container" style="justify-content:space-between;height: 30px;margin-bottom: 10px;margin-top: 20px;">
       <p class="current-epoch" style="margin-top:26px;">iteration: {{currentPlayedEpoch}}</p>
-      <button style="width: 120px; white-space: nowrap;" class="noisy-show-selection search-button search">Prev Selection</button>
+      <button style="width: 0px; visibility:hidden; white-space: nowrap;" class="noisy-show-selection search-button search">Prev Selection</button>
     </div>
     <div class="flex-container" style="position: fixed;bottom: 200px;z-index: 9;left: 50%;margin-left: -50px;">
     <button style="width: 50px;" class="show-noisy-btn">
