@@ -309,32 +309,22 @@ export const template = html`
           >
 
           <paper-icon-button
+            style="width: 0px;visibility: hidden;margin: 0;padding: 0;"
             id="editMode"
             alt="Edit current selection"
             toggles
             icon="image:exposure"
           ></paper-icon-button>
-          <paper-tooltip
-            for="editMode"
-            position="bottom"
-            animation-delay="0"
-            fit-to-visible-bounds
-            >Edit current selection</paper-tooltip
-          >
+        
 
           <paper-icon-button
             id="nightDayMode"
+            style="width: 0px;visibility: hidden;margin: 0;padding: 0;"
             alt="Enable/disable night mode"
             toggles
             icon="image:brightness-2"
           ></paper-icon-button>
-          <paper-tooltip
-            for="nightDayMode"
-            position="bottom"
-            animation-delay="0"
-            fit-to-visible-bounds
-            >Enable/disable night mode</paper-tooltip
-          >
+         
 
           <paper-icon-button
           id="hiddenBackground"
@@ -351,18 +341,13 @@ export const template = html`
           >
 
           <paper-icon-button
+            style="width: 0px;visibility: hidden;margin: 0;padding: 0;"
             id="labels3DMode"
             alt="Enable/disable 3D labels mode"
             toggles
             icon="font-download"
           ></paper-icon-button>
-          <paper-tooltip
-            for="labels3DMode"
-            position="bottom"
-            animation-delay="0"
-            fit-to-visible-bounds
-            >Enable/disable 3D labels mode</paper-tooltip
-          >
+         
 
           <paper-icon-button
           id="triangleMode"
@@ -448,7 +433,9 @@ export const template = html`
               <h3>3D Label Intro</h3>
               disagreement between prediction and pseudo label : ❗<br/>
               suggest label: 👍<br/>
-              custom selected: ✅<br/>
+              custom accept: ✅<br/>
+              custom reject: ❌<br/>
+              
               anomaly data: ⭕️<br/>
               clean data: 🟢<br/>
               <!-- <b>Zoom</b> Mouse wheel.<br />

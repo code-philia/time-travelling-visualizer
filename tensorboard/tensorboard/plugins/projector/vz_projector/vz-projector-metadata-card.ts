@@ -466,8 +466,9 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
     // window.customSelection.indexOf(7893)
     if (index >= 0) {
       window.acceptIndicates.splice(index, 1)
+      window.acceptInputList[e.target.id].checked = false
     }
-    window.acceptInputList[e.target.id].checked = false
+    // window.acceptInputList[e.target.id].checked = false
     this.projectorEventContext.removecustomInMetaCard()
   }
   removerejectSelItem(e: any) {
@@ -475,8 +476,9 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
     // window.customSelection.indexOf(7893)
     if (index >= 0) {
       window.rejectIndicates.splice(index, 1)
+      window.rejectInputList[e.target.id].checked = false
     }
-    window.rejectInputList[e.target.id].checked = false
+    // window.rejectInputList[e.target.id].checked = false
     this.projectorEventContext.removecustomInMetaCard()
   }
 }

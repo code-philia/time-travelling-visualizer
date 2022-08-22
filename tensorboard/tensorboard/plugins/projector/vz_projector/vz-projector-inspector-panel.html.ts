@@ -24,8 +24,7 @@ export const template = html`
     /* Account for the bookmark pane at the bottom */
   }
   .query-content.active{
-    height: 150px;
-    margin-bottom: 20px;
+    height: 130px;
     border-bottom: 1px solid #ccc;
   }
 
@@ -352,7 +351,7 @@ export const template = html`
     flex-direction: column;
   }
   .results .list{
-    max-height: calc(100vh - 520px);
+    max-height: calc(100vh - 490px);
     overflow: auto;
   }
 
@@ -504,7 +503,7 @@ export const template = html`
       <paper-input value="{{epochTo}}" label="iteration to:">
       </paper-input>
     </div>-->
-    <div class="flex-container" style="justify-content:space-between;height: 30px;margin-bottom: 10px;margin-top: 20px;">
+    <div class="flex-container" style="justify-content:space-between;height: 0px;margin-bottom: 10px;margin-top: 20px;width: 0px; visibility:hidden;">
       <p class="current-epoch" style="margin-top:26px;">iteration: {{currentPlayedEpoch}}</p>
       <button style="width: 0px; visibility:hidden; white-space: nowrap;" class="noisy-show-selection search-button search">Prev Selection</button>
     </div>
