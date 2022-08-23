@@ -547,6 +547,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
     // const msgId = logging.setModalMessage('Fetching sprite image...');
     if (this.moreRecommend) {
+
       this.moreRecommend.onclick = () => {
         if (!window.acceptIndicates || !window.rejectIndicates) {
           logging.setErrorMessage('Please confirm some selection first');
@@ -579,7 +580,13 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
               window.previousIndecates.push(window.queryResAnormalIndecates[i])
             }
           }
+          let AnormalyStrategy = 'Feedback'
+          // if is control group
+          if(window.sessionStorage.isControlGroup == 'true'){
+            AnormalyStrategy = 'TBSampling'
+          }
           this.projector.queryAnormalyStrategy(
+            
             Number(this.moreRecommednNum), this.selectedAnormalyClass, window.queryResAnormalIndecates, confirmInfo, window.acceptIndicates, window.rejectIndicates, 'Feedback',
             (indices: any, cleansIndices: any) => {
               if (indices != null) {
@@ -604,11 +611,12 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
                 }
                 // this.projectorScatterPlotAdapter.scatterPlot.setMouseMode(MouseMode.AREA_SELECT);
                 this.showCheckAllQueryRes = true
-                if (window.sessionStorage.isControlGroup == 'true') {
-                  this.showMoreRecommend = false
-                } else {
-                  this.showMoreRecommend = true
-                }
+                this.showMoreRecommend = true
+                // if (window.sessionStorage.isControlGroup == 'true') {
+                //   this.showMoreRecommend = false
+                // } else {
+                //   this.showMoreRecommend = true
+                // }
                 this.checkAllQueryRes = false
                 this.queryResultListTitle = 'Possible Abnormal Point List'
                 let dom = this.$$("#queryResheader")
@@ -1169,11 +1177,12 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             }
             // this.projectorScatterPlotAdapter.scatterPlot.setMouseMode(MouseMode.AREA_SELECT);
             this.showCheckAllQueryRes = true
-            if (window.sessionStorage.isControlGroup == 'true') {
-              this.showMoreRecommend = false
-            } else {
-              this.showMoreRecommend = true
-            }
+            this.showMoreRecommend = true
+            // if (window.sessionStorage.isControlGroup == 'true') {
+            //   this.showMoreRecommend = false
+            // } else {
+            //   this.showMoreRecommend = true
+            // }
             this.checkAllQueryRes = false
             this.queryResultListTitle = 'Possible Abnormal Point List'
             let dom = this.$$("#queryResheader")
@@ -1408,7 +1417,11 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       num = Number(querNum)
     }
     if (isRecommend === true) {
-      stratergy = 'Feedback'
+      if(window.sessionStorage.isControlGroup == 'true'){
+        stratergy = 'TBSampling'
+      }else{
+        stratergy = 'Feedback'
+      }
     }
     if (!acceptIndicates) {
       acceptIndicates = []
@@ -1441,12 +1454,12 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             this.projectorEventContext.setMouseMode(MouseMode.AREA_SELECT)
           }
           this.showCheckAllQueryRes = true
-
-          if (window.sessionStorage.isControlGroup == 'true') {
-            this.showMoreRecommend = false
-          } else {
-            this.showMoreRecommend = true
-          }
+          this.showMoreRecommend = true
+          // if (window.sessionStorage.isControlGroup == 'true') {
+          //   this.showMoreRecommend = false
+          // } else {
+          //   this.showMoreRecommend = true
+          // }
           this.checkAllQueryRes = false
           this.queryResultListTitle = 'Active Learning suggestion'
           let dom = this.$$("#queryResheader")

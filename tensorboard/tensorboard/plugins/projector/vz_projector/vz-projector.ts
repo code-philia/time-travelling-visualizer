@@ -469,7 +469,12 @@ class Projector
           })
           .attr('dy', 10)
           .text(function (d, i) {
-            return d.data.value;
+            if(window.sessionStorage.taskType === 'active learning'){
+              return `${d.data.value}|${d.data.name}`;
+            }else{
+              return `${d.data.value}`;
+            }
+        
           })
       })
     let that = this
@@ -481,7 +486,8 @@ class Projector
           c.style.cursor = "pointer"
           c.addEventListener('click', (e: any) => {
             if (e.target.nextSibling.innerHTML != window.iteration) {
-              that.projectionsPanel.jumpTo(Number(e.target.nextSibling.innerHTML))
+              let value = e.target.nextSibling.innerHTML.split("|")[0]
+              that.projectionsPanel.jumpTo(Number(value))
             }
           })
         }

@@ -799,24 +799,23 @@ export class DataSet {
     //   .then(data => {
     //     const ip_address = data.DVIServerIP + ":" + data.DVIServerPort;
     //     this.DVIServer = ip_address;
-    console.log('reTrainByDVI',newIndices)
     if (window.modelMath) {
       this.DVIsubjectModelPath = window.modelMath
     }
-    // let indices = []
-    // if(window.acceptIndicates){
-    //   indices = window.acceptIndicates.filter((item, i, arr) => {
-    //     //函数自身返回的是一个布尔值，只当返回值为true时，当前元素才会存入新的数组中。            
-    //     return item <= 49999
-    //   })
-    // }
-    // let rejIndices = []
-    // if(window.rejectIndicates){
-    //   rejIndices = window.rejectIndicates.filter((item, i, arr) => {
-    //     //函数自身返回的是一个布尔值，只当返回值为true时，当前元素才会存入新的数组中。            
-    //     return item <= 49999
-    //   })
-    // }
+    let indices = []
+    if(window.acceptIndicates){
+      indices = window.acceptIndicates.filter((item, i, arr) => {
+        //函数自身返回的是一个布尔值，只当返回值为true时，当前元素才会存入新的数组中。            
+        return item <= 49999
+      })
+    }
+    let rejIndices = []
+    if(window.rejectIndicates){
+      rejIndices = window.rejectIndicates.filter((item, i, arr) => {
+        //函数自身返回的是一个布尔值，只当返回值为true时，当前元素才会存入新的数组中。            
+        return item <= 49999
+      })
+    }
 
     let that = this
 
@@ -824,8 +823,8 @@ export class DataSet {
       method: 'POST',
       body: JSON.stringify({
         "iteration": this.tSNEIteration,
-        "accIndices": window.acceptIndicates,
-        "rejIndices": window.rejectIndicates,
+        "accIndices": indices,
+        "rejIndices": rejIndices,
         "content_path": this.DVIsubjectModelPath,
       }),
       headers: headers,
