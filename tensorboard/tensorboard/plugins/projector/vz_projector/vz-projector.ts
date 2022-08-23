@@ -958,6 +958,7 @@ class Projector
   }
 
   refresh() {
+    console.log('rreefff')
     // this.projectorScatterPlotAdapter.scatterPlot.render()
     this.metadataCard.updateCustomList(this.dataSet.points, this as ProjectorEventContext)
     this.metadataCard.updateRejectList(this.dataSet.points, this as ProjectorEventContext)

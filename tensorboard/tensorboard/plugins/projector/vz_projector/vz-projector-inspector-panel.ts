@@ -143,6 +143,12 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   @property({ type: Number })
   moreRecommednNum: number = 10
 
+  @property({ type: Boolean })
+  accAll: boolean = false
+
+  @property({ type: Boolean })
+  rejAll: boolean = false
+
 
   distFunc: DistanceFunction;
 
@@ -195,6 +201,9 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   private currentBoundingBoxSelection: number[];
   private projectorScatterPlotAdapter: ProjectorScatterPlotAdapter;
 
+  private rejAllRadio: any;
+  private accAllRadio: any;
+
 
   private currentFilterType: string
 
@@ -209,13 +218,13 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
     this.currentFilterType = 'normal'
 
- 
+
 
     this.showAnomaly = window.sessionStorage.taskType == 'anormaly detection'
     this.shownormal = window.sessionStorage.taskType == 'active learning' || window.taskType == 'active learning'
     this.isControlGroup = window.sessionStorage.isControlGroup == 'true'
-    
-    if(window.sessionStorage.taskType == 'active learning'){
+
+    if (window.sessionStorage.taskType == 'active learning') {
       this.moreRecommednNum = 100
     }
     this.queryByStrategtBtn = this.$$('.query-by-stratergy') as HTMLButtonElement;
@@ -223,6 +232,9 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     this.showSelectionBtn = this.$$('.show-selection') as HTMLButtonElement;
     this.noisyshowSelectionBtn = this.$$('.noisy-show-selection') as HTMLButtonElement
     this.queryAnomalyBtn = this.$$('.query-anomaly') as HTMLButtonElement;
+
+    this.accAllRadio = this.$$('#accAllRadio') as HTMLElement;
+    this.rejAllRadio = this.$$('#rejAllRadio') as HTMLElement;
     // this.boundingSelectionBtn = this.$$('.bounding-selection') as HTMLButtonElement;
 
     // this.resetFilterButton = this.$$('.reset-filter') as HTMLButtonElement;
@@ -273,12 +285,12 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       "0": "plane",
       "1": "car",
       "2": "bird",
-      "3": "cat", 
-      "4": "deer", 
+      "3": "cat",
+      "4": "deer",
       "5": "dog",
-      "6": "frog", 
-      "7": "horse", 
-      "8": "ship", 
+      "6": "frog",
+      "7": "horse",
+      "8": "ship",
       "9": "truck"
     }
     projectorEventContext.registerSelectionChangedListener(
@@ -373,6 +385,14 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   @observe('showNeighborImages', 'spriteImagesAvailable')
   _refreshNeighborsList() {
     this.updateNeighborsList();
+  }
+
+  @observe('accAll')
+  _accAllRes() {
+    if (this.accAll) {
+      console.log(12333)
+    }
+
   }
 
 
@@ -507,7 +527,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     this.updateSearchResults(this.queryIndices)
   }
 
-  refreshSearchResByList(list:any){
+  refreshSearchResByList(list: any) {
     this.updateSearchResults(list)
   }
   private async updateSearchResults(indices: number[]) {
@@ -549,7 +569,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
           //     }
           //   }
           // }
-          this.queryByAl(this.projector, window.acceptIndicates, window.rejectIndicates, this.moreRecommednNum,true)
+          this.queryByAl(this.projector, window.acceptIndicates, window.rejectIndicates, this.moreRecommednNum, true)
         } else if (window.sessionStorage.taskType === 'anormaly detection') {
           let confirmInfo: any[] = []
           for (let i = 0; i < window.queryResAnormalIndecates.length; i++) {
@@ -560,7 +580,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             }
           }
           this.projector.queryAnormalyStrategy(
-            Number(this.moreRecommednNum), this.selectedAnormalyClass, window.queryResAnormalIndecates, confirmInfo,window.acceptIndicates,window.rejectIndicates,'Feedback',
+            Number(this.moreRecommednNum), this.selectedAnormalyClass, window.queryResAnormalIndecates, confirmInfo, window.acceptIndicates, window.rejectIndicates, 'Feedback',
             (indices: any, cleansIndices: any) => {
               if (indices != null) {
                 // this.queryIndices = indices;
@@ -575,7 +595,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
                 this.queryIndices = indices.concat(cleansIndices)
 
-            
+
                 if (!this.isAlSelecting) {
                   this.isAlSelecting = true
                   window.isAdjustingSel = true
@@ -592,7 +612,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
                 this.checkAllQueryRes = false
                 this.queryResultListTitle = 'Possible Abnormal Point List'
                 let dom = this.$$("#queryResheader")
-       
+
                 dom.innerHTML = 'label'
                 this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isAnormalyQuery');
               }
@@ -611,16 +631,60 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     window.checkboxDom = []
     window.acceptInputList = []
     window.rejectInputList = []
-    if(!window.acceptIndicates){
+    if (!window.acceptIndicates) {
       window.acceptIndicates = []
     }
-    if(!window.rejectIndicates){
+    if (!window.rejectIndicates) {
       window.rejectIndicates = []
     }
-    
+
 
     const queryListTable = document.createElement('table');
     queryListTable.className = 'resTable'
+    if (this.showCheckAllQueryRes === true) {
+      this.accAllRadio = this.$$('#accAllRadio') as any;
+      this.rejAllRadio = this.$$('#rejAllRadio') as any;
+      // if (this.accAllRadio && this.rejAllRadio) {
+        // setTimeout(()=>{
+          this.accAllRadio.addEventListener('change', (e) => {
+            console.log('acc e', this.accAllRadio.checked)
+            if(this.accAllRadio.checked){
+              for (let i = 0; i < indices.length; i++) {
+                window.acceptInputList[indices[i]].checked = true
+                window.rejectInputList[indices[i]].checked = false
+                if (window.acceptIndicates.indexOf(indices[i]) === -1) {
+                  window.acceptIndicates.push(indices[i])
+                }
+                if(window.rejectIndicates.indexOf(indices[i]) !== -1) {
+                  let index = window.rejectIndicates.indexOf(indices[i])
+                  window.rejectIndicates.splice(index,1)
+                }
+              }
+            }
+
+            window.customSelection = window.rejectIndicates.concat(window.acceptIndicates)
+            this.projectorEventContext.refresh()
+          })
+          this.rejAllRadio.addEventListener('change', (e) => {
+            console.log('rej e', this.rejAllRadio.checked)
+            for (let i = 0; i < indices.length; i++) {
+              window.acceptInputList[indices[i]].checked = false
+              window.rejectInputList[indices[i]].checked = true
+              if (window.rejectIndicates.indexOf(indices[i]) === -1) {
+                window.rejectIndicates.push(indices[i])
+              }
+              if(window.acceptIndicates.indexOf(indices[i]) !== -1) {
+                let index = window.acceptIndicates.indexOf(indices[i])
+                window.acceptIndicates.splice(index,1)
+              }
+            }
+            window.customSelection = window.rejectIndicates.concat(window.acceptIndicates)
+            this.projectorEventContext.refresh()
+          })
+        // })
+      
+      // }
+    }
     for (let i = 0; i < indices.length; i++) {
       const index = indices[i];
       const row = document.createElement('th');
@@ -637,6 +701,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         this.projectorEventContext.notifyHoverOverPoint(null);
       };
       if (this.showCheckAllQueryRes === true) {
+
         // let input = document.createElement('input');
         // input.type = 'checkbox'
         // input.setAttribute('id', `resCheckbox${indices[i]}`)
@@ -674,70 +739,74 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         // newtd.appendChild(input)
         // row.appendChild(newtd)
 
-        let newacctd:any = document.createElement('td')
-        let accInput:any = document.createElement('input');
-        accInput.setAttribute('name',`op${index}`)
-        accInput.setAttribute('id',`accept${index}`)
-        accInput.setAttribute('type',`radio`)
+        let newacctd: any = document.createElement('td')
+        let accInput: any = document.createElement('input');
+        accInput.setAttribute('name', `op${index}`)
+        accInput.setAttribute('id', `accept${index}`)
+        accInput.setAttribute('type', `radio`)
         accInput.className = 'inputColumn';
-        accInput.setAttribute('value',`accept`)
+        accInput.setAttribute('value', `accept`)
         window.acceptInputList[indices[i]] = accInput
         newacctd.append(accInput)
         row.appendChild(newacctd)
 
 
-        accInput.addEventListener('mouseup',(e:any)=>{
-          if(accInput.checked){
+        accInput.addEventListener('mouseup', (e: any) => {
+          if (accInput.checked) {
             // accInput.prop("checked", false);
             accInput.checked = false
-            window.acceptIndicates.splice(window.acceptIndicates.indexOf(index),1)
+            window.acceptIndicates.splice(window.acceptIndicates.indexOf(index), 1)
           }
           // if(newacctd.)
         })
-        accInput.addEventListener('change',()=>{
-          console.log()
+        accInput.addEventListener('change', () => {
+          
 
-          if(accInput.checked){
-            if(window.acceptIndicates.indexOf(index) === -1){
+          if (accInput.checked) {
+            if (window.acceptIndicates.indexOf(index) === -1) {
               window.acceptIndicates.push(index)
             }
-            if(window.rejectIndicates.indexOf(index) !== -1){
-              window.rejectIndicates.splice(window.rejectIndicates.indexOf(index),1)
+            if (window.rejectIndicates.indexOf(index) !== -1) {
+              window.rejectIndicates.splice(window.rejectIndicates.indexOf(index), 1)
             }
+            this.accAllRadio.checked = false
+            this.rejAllRadio.checked = false
 
-          }else{
-            if(window.acceptIndicates.indexOf(index) !== -1){
-              window.acceptIndicates.splice(window.acceptIndicates.indexOf(index),1)
+          } else {
+            if (window.acceptIndicates.indexOf(index) !== -1) {
+              window.acceptIndicates.splice(window.acceptIndicates.indexOf(index), 1)
             }
           }
           window.customSelection = window.acceptIndicates.concat(window.rejectIndicates)
           this.projectorEventContext.refresh()
         })
 
-        
+
         let newrejtd = document.createElement('td')
         let rejectInput = document.createElement('input');
         window.rejectInputList[indices[i]] = rejectInput
-        rejectInput.setAttribute('type',`radio`)
-        rejectInput.setAttribute('name',`op${index}`)
-        accInput.setAttribute('id',`reject${index}`)
-        rejectInput.setAttribute('value',`reject`)
+        rejectInput.setAttribute('type', `radio`)
+        rejectInput.setAttribute('name', `op${index}`)
+        accInput.setAttribute('id', `reject${index}`)
+        rejectInput.setAttribute('value', `reject`)
         newrejtd.append(rejectInput)
         row.appendChild(newrejtd)
 
-        rejectInput.addEventListener('change',()=>{
-          if(rejectInput.checked){
-            if(window.rejectIndicates.indexOf(index) === -1){
+        rejectInput.addEventListener('change', () => {
+          if (rejectInput.checked) {
+            if (window.rejectIndicates.indexOf(index) === -1) {
               window.rejectIndicates.push(index)
             }
-            if(window.acceptIndicates.indexOf(index) !== -1){
+            if (window.acceptIndicates.indexOf(index) !== -1) {
               console.log(window.acceptIndicates.indexOf(index))
-              window.acceptIndicates.splice(window.acceptIndicates.indexOf(index),1)
+              window.acceptIndicates.splice(window.acceptIndicates.indexOf(index), 1)
             }
+            this.accAllRadio.checked = false
+            this.rejAllRadio.checked = false
 
-          }else{
-            if(window.rejectIndicates.indexOf(index) !== -1){
-              window.rejectIndicates.splice(window.rejectIndicates.indexOf(index),1)
+          } else {
+            if (window.rejectIndicates.indexOf(index) !== -1) {
+              window.rejectIndicates.splice(window.rejectIndicates.indexOf(index), 1)
             }
           }
           window.customSelection = window.acceptIndicates.concat(window.rejectIndicates)
@@ -799,7 +868,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     }
   }
   private getLabelFromIndex(pointIndex: number): string {
-    if(!window.flagindecatesList){
+    if (!window.flagindecatesList) {
       window.flagindecatesList = []
     }
     const metadata = this.projector.dataSet.points[pointIndex].metadata[
@@ -815,10 +884,10 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       original_label = `Unknown`;
     }
     let index = window.queryResPointIndices?.indexOf(pointIndex)
-   
+
     let suggest_label = this.labelMap[window.alSuggestLabelList[index]]
 
-    
+
     if (original_label == undefined) {
       original_label = `Unknown`;
     }
@@ -831,17 +900,17 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     const displayPointIndex = String(pointIndex)
     // return String(pointIndex) + "Label: " + stringMetaData + " Prediction: " + prediction + " Original label: " + original_label;
     let prediction_res = suggest_label === prediction || window.alSuggestLabelList.length === 0 ? ' - ' : ' ❗️ '
-    if(window.queryResAnormalCleanIndecates && window.queryResAnormalCleanIndecates.indexOf(pointIndex)!==-1){
+    if (window.queryResAnormalCleanIndecates && window.queryResAnormalCleanIndecates.indexOf(pointIndex) !== -1) {
       return `${displayPointIndex}|${displayStringMetaData}| clean | -`
     }
-    if(window.queryResAnormalIndecates && window.queryResAnormalIndecates.indexOf(pointIndex)!==-1){
+    if (window.queryResAnormalIndecates && window.queryResAnormalIndecates.indexOf(pointIndex) !== -1) {
       let prediction_res = suggest_label === displayStringMetaData ? ' - ' : ' ❗️ '
-     
+
       if (window.sessionStorage.isControlGroup == 'true') {
         return `${displayPointIndex}|${displayStringMetaData}|${score !== undefined ? score : '-'}`
-      }else{
-        if(prediction_res !== " - "){
-          if(window.flagindecatesList.indexOf(pointIndex) === -1){
+      } else {
+        if (prediction_res !== " - ") {
+          if (window.flagindecatesList.indexOf(pointIndex) === -1) {
             window.flagindecatesList.push(pointIndex)
           }
         }
@@ -853,8 +922,8 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       if (window.sessionStorage.isControlGroup == 'true') {
         return `${displayPointIndex}|${displayprediction}`
       } else {
-        if(prediction_res !== " - "){
-          if(window.flagindecatesList.indexOf(pointIndex) === -1){
+        if (prediction_res !== " - ") {
+          if (window.flagindecatesList.indexOf(pointIndex) === -1) {
             window.flagindecatesList.push(pointIndex)
           }
         }
@@ -864,8 +933,8 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     if (window.sessionStorage.isControlGroup == 'true') {
       return `${displayPointIndex}|${displayprediction}|${score !== undefined ? score : '-'}`
     } else {
-      if(prediction_res !== " - "){
-        if(window.flagindecatesList.indexOf(pointIndex) === -1){
+      if (prediction_res !== " - ") {
+        if (window.flagindecatesList.indexOf(pointIndex) === -1) {
           window.flagindecatesList.push(pointIndex)
         }
       }
@@ -1048,13 +1117,15 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     //   }
     // }
 
+
+
     this.queryByStrategtBtn.onclick = () => {
       this.queryByAl(projector, window.acceptIndicates, window.rejectIndicates)
     }
 
     // if(this.showSelectionBtn){
     this.showSelectionBtn.onclick = () => {
-     
+
       for (let i = 0; i < window.previousIndecates?.length; i++) {
         if (window.customSelection.indexOf(window.previousIndecates[i]) === -1) {
           window.customSelection.push(window.previousIndecates[i])
@@ -1076,7 +1147,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
     this.queryAnomalyBtn.onclick = () => {
       projector.queryAnormalyStrategy(
-        Number(this.anomalyRecNum), this.selectedAnormalyClass, [], [],window.acceptIndicates,window.rejectIndicates,'TBSampling',
+        Number(this.anomalyRecNum), this.selectedAnormalyClass, [], [], window.acceptIndicates, window.rejectIndicates, 'TBSampling',
         (indices: any, cleansIndices: any) => {
           if (indices != null) {
             // this.queryIndices = indices;
@@ -1106,7 +1177,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             this.checkAllQueryRes = false
             this.queryResultListTitle = 'Possible Abnormal Point List'
             let dom = this.$$("#queryResheader")
-       
+
             dom.innerHTML = 'label'
             this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isAnormalyQuery');
           }
@@ -1130,7 +1201,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         return a - b;
       }
       retrainList.sort(func)
-      this.projector.retrainBySelections(this.projector.iteration, window.acceptIndicates,window.rejectIndicates)
+      this.projector.retrainBySelections(this.projector.iteration, window.acceptIndicates, window.rejectIndicates)
       //  this.projectionsPanel.reTrainBySel(this.projector.iteration,this.selectedPointIndices)
     }
     this.distFunc = vector.cosDist;
@@ -1202,7 +1273,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       //   logging.setErrorMessage('Please query anomaly points first');
       //   return
       // }
-      if(window.customSelection.length == 0){
+      if (window.customSelection.length == 0) {
         alert('please confirm some points first')
         return
       }
@@ -1329,20 +1400,20 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
 
 
-  private queryByAl(projector, acceptIndicates, rejectIndicates, querNum?,isRecommend?) {
+  private queryByAl(projector, acceptIndicates, rejectIndicates, querNum?, isRecommend?) {
     let that = this
     let num = Number(this.budget)
     let stratergy = this.selectedStratergy
     if (querNum) {
       num = Number(querNum)
     }
-    if(isRecommend){
+    if (isRecommend) {
       stratergy = 'Feedback'
     }
-    if(!acceptIndicates){
+    if (!acceptIndicates) {
       acceptIndicates = []
     }
-    if(!rejectIndicates){
+    if (!rejectIndicates) {
       rejectIndicates = []
     }
     projector.queryByAL(

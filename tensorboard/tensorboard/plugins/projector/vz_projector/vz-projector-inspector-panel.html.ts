@@ -642,8 +642,12 @@ export const template = html`
      <!--<template is="dom-if" if="[[showCheckAllQueryRes]]">
      <paper-checkbox style="margin: 10px -2px 0px 5px;" id="label-points-toggle" checked="{{checkAllQueryRes}}"></paper-checkbox>
      </template>-->
-     <template is="dom-if" if="[[showCheckAllQueryRes]]"><span class="queryResColumnHeader" style="width:30px">acc</span></template>
-     <template is="dom-if" if="[[showCheckAllQueryRes]]"><span class="queryResColumnHeader" style="width:30px">rej</span></template>
+     <template is="dom-if" if="[[showCheckAllQueryRes]]"><span class="queryResColumnHeader" style="width:30px;line-height: 15px;">
+     <input type="radio" name="accAllOrRejAll" value="accAll" id="accAllRadio">
+     acc</span></template>
+     <template is="dom-if" if="[[showCheckAllQueryRes]]"><span class="queryResColumnHeader" style="width:30px;line-height: 15px;">
+     <input type="radio" name="accAllOrRejAll" value="rejAll" id="rejAllRadio">
+     rej</span></template>
      <span class="queryResColumnHeader">index</span><span class="queryResColumnHeader" id="queryResheader">predict</span>
      <template is="dom-if" if="[[showMoreRecommend]]"><span class="queryResColumnHeader">estimation</span></template> 
      <template is="dom-if" if="[[showCheckAllQueryRes]]"><span class="queryResColumnHeader">score</span></template>
