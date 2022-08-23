@@ -80,7 +80,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
   @property({ type: String })
   selectedLr: string = '0.0001'
   @property({ type: Number })
-  selectedTotalEpoch: number = 200
+  selectedTotalEpoch: number = 190
 
 
 
@@ -213,7 +213,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
     super.ready();
     this.learningRateList = ['0.001', '0.0001', '0.00000001']
     this.architectureList = ['ResNet-18', 'VGG-18']
-    this.totalEpochList = [100, 150, 200]
+    this.totalEpochList = [190, 200]
     this._showFilter = window.sessionStorage.taskType == 'anormaly detection'
     this.zDropdown = this.$$('#z-dropdown') as HTMLElement;
     //this.runTsneButton = this.$$('.run-tsne') as HTMLButtonElement;
@@ -797,6 +797,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
 
   }
   @observe('selectedArchitecture')
+     // TODO
   _selectedArchitectureChanged(){
     if(this.totalAccTrain){
       this.totalAccTrain.innerText = String(Math.random().toFixed(3))
@@ -814,14 +815,14 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
   }
   @observe('selectedTotalEpoch')
   _selectedTotalEpochChanged(){
-    if(this.totalAccTrain){
-      this.totalAccTrain.innerText = String(Math.random().toFixed(3))
-      this.totalAccTest.innerText = String(Math.random().toFixed(3))
+    window.selectedTotalEpoch = this.selectedTotalEpoch
+    if(this.projector){
+      this.projector.initialTree()
     }
-    console.log('ep', this.selectedArchitecture, this.selectedTotalEpoch, this.selectedLr)
   }
   @observe('selectedLr')
   _selectedLrChanged(){
+    // TODO
     if(this.projector){
       if(this.projector){
         if(this.selectedArchitecture == 'ResNet-18' && this.selectedLr == '0.0001'){

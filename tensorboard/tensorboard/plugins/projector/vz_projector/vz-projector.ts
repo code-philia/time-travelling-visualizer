@@ -60,7 +60,8 @@ declare global {
 
     acceptInputList: any,
     rejectInputList: any,
-    flagindecatesList: any
+    flagindecatesList: any,
+    selectedTotalEpoch: number
   }
 }
 
@@ -326,6 +327,7 @@ class Projector
       .then(response => response.json())
       .then(res => {
         window.treejson = res.structure
+        window.treejson.length = window.selectedTotalEpoch
         let data = res.structure
 
 

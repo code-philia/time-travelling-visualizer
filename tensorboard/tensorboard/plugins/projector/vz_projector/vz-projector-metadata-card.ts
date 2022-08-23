@@ -466,7 +466,10 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
     // window.customSelection.indexOf(7893)
     if (index >= 0) {
       window.acceptIndicates.splice(index, 1)
-      window.acceptInputList[e.target.id].checked = false
+      if(window.acceptInputList[e.target.id]){
+        window.acceptInputList[e.target.id].checked = false
+      }
+
       this.removeFromCustomSelection(Number(e.target.id))
     }
     // window.acceptInputList[e.target.id].checked = false
@@ -477,7 +480,9 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
     // window.customSelection.indexOf(7893)
     if (index >= 0) {
       window.rejectIndicates.splice(index, 1)
-      window.rejectInputList[e.target.id].checked = false
+      if(window.rejectInputList[e.target.id]){
+        window.rejectInputList[e.target.id].checked = false
+      }
       this.removeFromCustomSelection(Number(e.target.id))
     }
     // window.rejectInputList[e.target.id].checked = false

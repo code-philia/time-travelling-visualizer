@@ -18,212 +18,211 @@ import { html } from '@polymer/polymer';
 import './styles';
 
 export const template = html`
-    <style include="vz-projector-styles"></style>
-    <style>
-      :host {
-        transition: height 0.2s;
-      }
+<style include="vz-projector-styles"></style>
+<style>
+  :host {
+    transition: height 0.2s;
+  }
 
-      .ink-button {
-        border: none;
-        border-radius: 2px;
-        font-size: 13px;
-        padding: 10px;
-        min-width: 100px;
-        flex-shrink: 0;
-        background: #e3e3e3;
-      }
+  .ink-button {
+    border: none;
+    border-radius: 2px;
+    font-size: 13px;
+    padding: 10px;
+    min-width: 100px;
+    flex-shrink: 0;
+    background: #e3e3e3;
+  }
 
-      .ink-panel-buttons {
-        margin-bottom: 10px;
-      }
+  .ink-panel-buttons {
+    margin-bottom: 10px;
+  }
 
-      .two-way-toggle {
-        display: flex;
-        flex-direction: row;
-        align-items:center;
-      }
+  .two-way-toggle {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+  }
 
-      .two-way-toggle span {
-        padding-right: 15px;
-      }
+  .two-way-toggle span {
+    padding-right: 15px;
+  }
 
-      .has-border {
-        border: 1px solid rgba(0, 0, 0, 0.1);
-      }
+  .has-border {
+    border: 1px solid rgba(0, 0, 0, 0.1);
+  }
 
-      .toggle {
-        min-width: 0px;
-        font-size: 12px;
-        width: 17px;
-        min-height: 0px;
-        height: 21px;
-        padding: 0;
-        margin: 0px;
-      }
+  .toggle {
+    min-width: 0px;
+    font-size: 12px;
+    width: 17px;
+    min-height: 0px;
+    height: 21px;
+    padding: 0;
+    margin: 0px;
+  }
 
-      .toggle[active] {
-        background-color: #880e4f;
-        color: white;
-      }
+  .toggle[active] {
+    background-color: #880e4f;
+    color: white;
+  }
 
-      .two-columns {
-        display: flex;
-        justify-content: space-between;
-      }
+  .two-columns {
+    display: flex;
+    justify-content: space-between;
+  }
 
-      .two-columns > :first-child {
-        margin-right: 15px;
-      }
+  .two-columns> :first-child {
+    margin-right: 15px;
+  }
 
-      .two-columns > div {
-        width: 50%;
-      }
-      
-      .two-rows {
-        display: flex;
-        justify-content: space-between;
-        flex-direction: column;
-      }
-      
-      .row {
-        display: flex;
-        justify-content: space-between;
-        margin-top: 10px;
-      }
-      .jump-dvi{
-        height: 36px;
-        margin-top: 16px;
-      }
+  .two-columns>div {
+    width: 50%;
+  }
 
-      .dropdown-item {
-        justify-content: space-between;
-        min-height: 35px;
-      }
+  .two-rows {
+    display: flex;
+    justify-content: space-between;
+    flex-direction: column;
+  }
 
-      .tsne-supervise-factor {
-        margin-bottom: -8px;
-      }
-      .colorlabel-container{
-        display:flex;
-        height: 0;
-        visibility: hidden;
-      }
-      #labelby {
-        width: 100px;
-        margin-right: 10px;
-      }
-  
-      #colorby {
-        width: calc(100% - 110px);
-      }
+  .row {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+  }
 
-      #z-container {
-        display: flex;
-        align-items: center;
-        width: 50%;
-      }
+  .jump-dvi {
+    height: 36px;
+    margin-top: 16px;
+  }
 
-      #z-checkbox {
-        margin: 27px 0 0 5px;
-        width: 18px;
-      }
+  .dropdown-item {
+    justify-content: space-between;
+    min-height: 35px;
+  }
 
-      #z-dropdown {
-        flex-grow: 1;
-      }
+  .tsne-supervise-factor {
+    margin-bottom: -8px;
+  }
 
-      .notice {
-        color: #880e4f;
-      }
+  .colorlabel-container {
+    display: flex;
+    height: 0;
+    visibility: hidden;
+  }
 
-      .container {
-        padding: 20px;
-        padding-top: 0;
-        overflow:auto;
-      }
+  #labelby {
+    width: 100px;
+    margin-right: 10px;
+  }
 
-      .book-icon {
-        height: 20px;
-        color: rgba(0, 0, 0, 0.7);
-      }
+  #colorby {
+    width: calc(100% - 110px);
+  }
 
-      .item-details {
-        color: gray;
-        font-size: 12px;
-        margin-left: 5px;
-      }
+  #z-container {
+    display: flex;
+    align-items: center;
+    width: 50%;
+  }
 
-      .pca-dropdown {
-        width: 100%;
-      }
+  #z-checkbox {
+    margin: 27px 0 0 5px;
+    width: 18px;
+  }
 
-      .pca-dropdown paper-listbox {
-        width: 135px;
-      }
+  #z-dropdown {
+    flex-grow: 1;
+  }
 
-      .dropdown-item.header {
-        border-bottom: 1px solid #aaa;
-        color: #333;
-        font-weight: bold;
-      }
+  .notice {
+    color: #880e4f;
+  }
 
-      #total-variance {
-        color: rgba(0, 0, 0, 0.7);
-      }
-      table{
-        width: 276px;
-      }
-      table, th, td {
-        border: 1px solid black;
-        padding: 8px;
-        border-collapse: collapse;
-      }
-      button{
-        cursor:pointer;
-      }
-      button:hover{
-        background: #550831;
-        color:#fff;
-      }
+  .container {
+    padding: 20px;
+    padding-top: 0;
+    overflow: auto;
+  }
 
-      .filter-content{
-        width: 100%;
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: space-between;
-        margin-top: -20px;
-      }
-      
-    </style>
-    <div id="main">
-      <div class="ink-panel-header" style="height:0">
-        <div class="ink-tab-group" style="visibility:hidden;">
+  .book-icon {
+    height: 20px;
+    color: rgba(0, 0, 0, 0.7);
+  }
 
-          <div data-tab="tsne" id="tsne-tab" class="ink-tab projection-tab">
-            DVI
-          </div>
-          <paper-tooltip
-            for="tsne-tab"
-            position="bottom"
-            animation-delay="0"
-            fit-to-visible-bounds
-          >
-            Deep Visual Insight
-          </paper-tooltip>
+  .item-details {
+    color: gray;
+    font-size: 12px;
+    margin-left: 5px;
+  }
 
-        </div>
+  .pca-dropdown {
+    width: 100%;
+  }
+
+  .pca-dropdown paper-listbox {
+    width: 135px;
+  }
+
+  .dropdown-item.header {
+    border-bottom: 1px solid #aaa;
+    color: #333;
+    font-weight: bold;
+  }
+
+  #total-variance {
+    color: rgba(0, 0, 0, 0.7);
+  }
+
+  table {
+    width: 276px;
+  }
+
+  table,
+  th,
+  td {
+    border: 1px solid black;
+    padding: 8px;
+    border-collapse: collapse;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  button:hover {
+    background: #550831;
+    color: #fff;
+  }
+
+  .filter-content {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    margin-top: -20px;
+  }
+</style>
+<div id="main">
+  <div class="ink-panel-header" style="height:0">
+    <div class="ink-tab-group" style="visibility:hidden;">
+
+      <div data-tab="tsne" id="tsne-tab" class="ink-tab projection-tab">
+        DVI
       </div>
-      <div class="container">
-      <div class="colorlabel-container">
+      <paper-tooltip for="tsne-tab" position="bottom" animation-delay="0" fit-to-visible-bounds>
+        Deep Visual Insight
+      </paper-tooltip>
+
+    </div>
+  </div>
+  <div class="container">
+    <div class="colorlabel-container">
       <!-- Label by -->
       <paper-dropdown-menu id="labelby" no-animations label="Label by">
-        <paper-listbox
-          attr-for-selected="value"
-          class="dropdown-content"
-          selected="{{selectedLabelOption}}"
-          slot="dropdown-content"
-        >
+        <paper-listbox attr-for-selected="value" class="dropdown-content" selected="{{selectedLabelOption}}"
+          slot="dropdown-content">
           <template is="dom-repeat" items="[[labelOptions]]">
             <paper-item value="[[item]]" label="[[item]]">
               [[item]]
@@ -231,400 +230,310 @@ export const template = html`
           </template>
         </paper-listbox>
       </paper-dropdown-menu>
-       <!-- Color by -->
-        <paper-dropdown-menu id="colorby" no-animations label="Color by">
-          <paper-listbox
-            attr-for-selected="value"
-            class="dropdown-content"
-            selected="{{selectedColorOptionName}}"
-            slot="dropdown-content"
-          >
-            <template is="dom-repeat" items="[[colorOptions]]">
-              <paper-item
-                class$="[[getSeparatorClass(item.isSeparator)]]"
-                value="[[item.name]]"
-                label="[[item.name]]"
-                disabled="[[item.isSeparator]]"
-              >
-                [[item.name]]
-                <span class="item-details">[[item.desc]]</span>
-              </paper-item>
-            </template>
-          </paper-listbox>
-        </paper-dropdown-menu>
+      <!-- Color by -->
+      <paper-dropdown-menu id="colorby" no-animations label="Color by">
+        <paper-listbox attr-for-selected="value" class="dropdown-content" selected="{{selectedColorOptionName}}"
+          slot="dropdown-content">
+          <template is="dom-repeat" items="[[colorOptions]]">
+            <paper-item class$="[[getSeparatorClass(item.isSeparator)]]" value="[[item.name]]" label="[[item.name]]"
+              disabled="[[item.isSeparator]]">
+              [[item.name]]
+              <span class="item-details">[[item.desc]]</span>
+            </paper-item>
+          </template>
+        </paper-listbox>
+      </paper-dropdown-menu>
+    </div>
+    <!-- UMAP Controls -->
+    <div data-panel="umap" class="ink-panel-content">
+      <div class="slider">
+        <label>Dimension</label>
+        <div class="two-way-toggle">
+          <span>2D</span>
+          <paper-toggle-button id="umap-toggle" checked="{{umapIs3d}}">3D</paper-toggle-button>
         </div>
-        <!-- UMAP Controls -->
-        <div data-panel="umap" class="ink-panel-content">
-          <div class="slider">
-            <label>Dimension</label>
-            <div class="two-way-toggle">
-              <span>2D</span>
-              <paper-toggle-button id="umap-toggle" checked="{{umapIs3d}}"
-                >3D</paper-toggle-button
-              >
-            </div>
-          </div>
-          <div class="slider umap-neighbors">
-            <label>
-              Neighbors
-              <paper-icon-button
-                icon="help"
-                class="help-icon"
-              ></paper-icon-button>
-              <paper-tooltip
-                position="right"
-                animation-delay="0"
-                fit-to-visible-bounds
-              >
-                The number of nearest neighbors used to compute the fuzzy
-                simplicial set, which is used to approximate the overall shape
-                of the manifold. The default value is 15.
-              </paper-tooltip>
-            </label>
-            <paper-slider
-              id="umap-neighbors-slider"
-              value="{{umapNeighbors}}"
-              pin
-              min="5"
-              max="50"
-            ></paper-slider>
-            <span>[[umapNeighbors]]</span>
-          </div>
-          <p>
-            <button
-              id="run-umap"
-              class="ink-button"
-              title="Run UMAP"
-              on-tap="runUmap"
-            >
+      </div>
+      <div class="slider umap-neighbors">
+        <label>
+          Neighbors
+          <paper-icon-button icon="help" class="help-icon"></paper-icon-button>
+          <paper-tooltip position="right" animation-delay="0" fit-to-visible-bounds>
+            The number of nearest neighbors used to compute the fuzzy
+            simplicial set, which is used to approximate the overall shape
+            of the manifold. The default value is 15.
+          </paper-tooltip>
+        </label>
+        <paper-slider id="umap-neighbors-slider" value="{{umapNeighbors}}" pin min="5" max="50"></paper-slider>
+        <span>[[umapNeighbors]]</span>
+      </div>
+      <p>
+        <button id="run-umap" class="ink-button" title="Run UMAP" on-tap="runUmap">
+          Run
+        </button>
+      </p>
+      <p id="umap-sampling" class="notice">
+        For faster results, the data will be sampled down to
+        [[getUmapSampleSizeText()]] points.
+      </p>
+      <p>
+        <iron-icon icon="book" class="book-icon"></iron-icon>
+        <a target="_blank" rel="noopener" href="https://umap-learn.readthedocs.io/en/latest/how_umap_works.html">
+          Learn more about UMAP.
+        </a>
+      </p>
+    </div>
+    <!-- TSNE Controls -->
+    <div data-panel="tsne" class="ink-panel-content">
+      <!-- Subject Model Path -->
+      <div class="subject-model-path-editor">
+        <paper-input value="{{subjectModelPathEditorInput}}" label="Model Path"
+          on-input="subjectModelPathEditorInputChange">
+        </paper-input>
+      </div>
+      <!-- Misc Setting -->
+      <!-- <div class="misc-setting-editor">
+    </paper-input>
+    <paper-input
+      value="{{resolutionEditorInput}}"
+      label="Resolution"
+      on-input="resolutionEditorInputChange"
+    >
+    </paper-input>
+</div>-->
+      <!--<div class="slider">
+        <label>Status</label>
+        <div class="two-way-toggle">
+          <span>Indices</span>
+          <paper-toggle-button id="DVI-toggle" checked="{{temporalStatus}}">
+              Search Predicates
+          </paper-toggle-button>
+        </div>
+      </div>-->
+      <!--
+       <div class="two-rows">
+          <div class="row">
+            <button class="run-tsne ink-button" title="Re-run DVI">
               Run
             </button>
-          </p>
-          <p id="umap-sampling" class="notice">
-            For faster results, the data will be sampled down to
-            [[getUmapSampleSizeText()]] points.
-          </p>
-          <p>
-            <iron-icon icon="book" class="book-icon"></iron-icon>
-            <a
-              target="_blank"
-              rel="noopener"
-              href="https://umap-learn.readthedocs.io/en/latest/how_umap_works.html"
-            >
-              Learn more about UMAP.
-            </a>
-          </p>
-        </div>
-        <!-- TSNE Controls -->
-        <div data-panel="tsne" class="ink-panel-content">
-          <!-- Subject Model Path -->
-        <div class="subject-model-path-editor">
-            <paper-input
-              value="{{subjectModelPathEditorInput}}"
-              label="Model Path"
-              on-input="subjectModelPathEditorInputChange"
-            >
-            </paper-input>
-    </div>
-    <!-- Misc Setting -->
-    <!-- <div class="misc-setting-editor">
-        </paper-input>
-        <paper-input
-          value="{{resolutionEditorInput}}"
-          label="Resolution"
-          on-input="resolutionEditorInputChange"
-        >
-        </paper-input>
-    </div>-->
-        <!--<div class="slider">
-            <label>Status</label>
-            <div class="two-way-toggle">
-              <span>Indices</span>
-              <paper-toggle-button id="DVI-toggle" checked="{{temporalStatus}}">
-                  Search Predicates
-              </paper-toggle-button>
-            </div>
-          </div>-->
-          <!--
-           <div class="two-rows">
-              <div class="row">
-                <button class="run-tsne ink-button" title="Re-run DVI">
-                  Run
-                </button>
-                <button class="pause-tsne ink-button" title="Pause DVI">
-                  Pause
-                </button>
-              </div> 
-              <div class="row">
-                 <button class="previous-dvi ink-button" title="Previous DVI">
-                   Previous
-                 </button>
-                 <button class="next-dvi ink-button" title="Next DVI">
-                   Next
-                 </button>
-              </div>
-          </div> -->
+            <button class="pause-tsne ink-button" title="Pause DVI">
+              Pause
+            </button>
+          </div> 
           <div class="row">
-            <button class="previous-dvi ink-button" title="Previous DVI">
-              Previous
-            </button>
-            <button class="next-dvi ink-button" title="Next DVI">
-              Next
-            </button>
+             <button class="previous-dvi ink-button" title="Previous DVI">
+               Previous
+             </button>
+             <button class="next-dvi ink-button" title="Next DVI">
+               Next
+             </button>
           </div>
-            <div class="row">   </div>
-            
-            <div class="row" style="height: 0px;visibility: hidden;">
-                <div class="iteration-editor">
-                    <paper-input
-                      value="{{iterationEditorInput}}"
-                      label="Iteration"
-                      on-input="iterationEditorInputChange"
-                    ></paper-input>
-                </div>
-                <button class="jump-dvi ink-button" title="Jump DVI">Jump</button>
-            </div>
-          <div style="display:flex;justify-content: space-between;">
-          <p style="font-weight: 600;">Iteration: <span class="run-tsne-iter">0</span></p>
-          <p>Total iteration number: <span class="dvi-total-iter">0</span></p>
-          </div>
+      </div> -->
+      <div class="row">
+        <button class="previous-dvi ink-button" title="Previous DVI">
+          Previous
+        </button>
+        <button class="next-dvi ink-button" title="Next DVI">
+          Next
+        </button>
+      </div>
+      <div class="row"> </div>
 
-          <div style="border-bottom:1px solid #666; height:0; visibility:hidden;">
-              <table>
-                  <caption style="margin-bottom: 10px;">Visualization Confidence</caption>
-                <tr>
-                  <td></td>
-                  <td>train</td>
-                  <td>test</td>
-                </tr>
-                <tr>
-                  <td>nn</td>
-                  <td><span class="nn_train_15">NA</span> </td>
-                  <td><span class="nn_test_15">NA</span></td>
-                </tr>
-                  <tr>
-                      <td>boundary</td>
-                      <td><span class="bound_train_15">NA</span></td>
-                      <td><span class="bound_test_15">NA</span></td>
-                  </tr>
-                <tr>
-                  <td>PPR</td>
-                  <td><span class="inv_acc_train">NA</span> </td>
-                  <td> <span class="inv_acc_test">NA</span></td>
-                </tr>
-                <!--<tr>
-                  <td>CCR</td>
-                  <td><span class="inv_conf_train">NA</span></td>
-                  <td><span class="inv_conf_test">NA</span></td>
-                </tr>-->
-              </table>
-              <p>Accuracy:</p>
-              <p>train: <span class="acc_train">NA</span> test: <span class="acc_test">NA</span></p>
-              </div>
-             <p id="tsne-sampling" class="notice">
-              </p>
-<!--          <p>Projection nn perseverance knn: (train,15): <span class="nn_train_15">NA</span> (test,15): <span class="nn_test_15">NA</span></p>-->
-<!--          <p>Projection boundary perserverance knn: (train,15): <span class="bound_train_15">NA</span> (test,15): <span class="bound_test_15">NA</span></p>-->
-<!--          <p>PPR: train: <span class="inv_acc_train">NA</span> test: <span class="inv_acc_test">NA</span></p>-->
-<!--          <p>CCR: train: <span class="inv_conf_train">NA</span> test: <span class="inv_conf_test">NA</span></p>-->
-<template is="dom-if" if="[[_showFilter]]">
-<h2>Train Result Statistics</h2>
-<div class="filter-content">
-<paper-dropdown-menu style="width: 120px" no-animations label="Architecture">
-<paper-listbox attr-for-selected="value" class="dropdown-content" selected="{{selectedArchitecture}}"
-  slot="dropdown-content">
-  <template is="dom-repeat" items="[[architectureList]]">
-    <paper-item value="[[item]]" label="[[item]]">
-      [[item]]
-    </paper-item>
-  </template>
-</paper-listbox>
-</paper-dropdown-menu>
-<paper-dropdown-menu style="width: 120px" no-animations label="Learning Rate">
-<paper-listbox attr-for-selected="value" class="dropdown-content" selected="{{selectedLr}}"
-  slot="dropdown-content">
-  <template is="dom-repeat" items="[[learningRateList]]">
-    <paper-item value="[[item]]" label="[[item]]">
-      [[item]]
-    </paper-item>
-  </template>
-</paper-listbox>
-</paper-dropdown-menu>
-<paper-dropdown-menu style="width: 120px" no-animations label="Total Epoch">
-<paper-listbox attr-for-selected="value" class="dropdown-content" selected="{{selectedTotalEpoch}}"
-  slot="dropdown-content">
-  <template is="dom-repeat" items="[[totalEpochList]]">
-    <paper-item value="[[item]]" label="[[item]]">
-      [[item]]
-    </paper-item>
-  </template>
-</paper-listbox>
-</paper-dropdown-menu>
-</div>
-
-</template>
-<p style="font-weight: 600;">Task Model Accuracy:</p>
-<p style="font-size:20px;">train: <span class="total_acc_train">NA</span> test: <span class="total_acc_test">NA</span></p>
-
-          </div>
-          <p id="tsne-sampling" class="notice">
-          </p>
+      <div class="row" style="height: 0px;visibility: hidden;">
+        <div class="iteration-editor">
+          <paper-input value="{{iterationEditorInput}}" label="Iteration" on-input="iterationEditorInputChange">
+          </paper-input>
         </div>
-        <!-- PCA Controls -->
-        <div data-panel="pca" class="ink-panel-content">
-          <div class="two-columns">
-            <div>
-              <!-- Left column -->
-              <paper-dropdown-menu
-                class="pca-dropdown"
-                vertical-align="bottom"
-                no-animations
-                label="X"
-              >
-                <paper-listbox
-                  attr-for-selected="value"
-                  class="dropdown-content"
-                  selected="{{pcaX}}"
-                  slot="dropdown-content"
-                >
-                  <paper-item disabled class="dropdown-item header">
-                    <div>#</div>
-                    <div>Variance (%)</div>
-                  </paper-item>
-                  <template is="dom-repeat" items="[[pcaComponents]]">
-                    <paper-item
-                      class="dropdown-item"
-                      value="[[item.id]]"
-                      label="Component #[[item.componentNumber]]"
-                    >
-                      <div>[[item.componentNumber]]</div>
-                      <div class="item-details">[[item.percVariance]]</div>
-                    </paper-item>
-                  </template>
-                </paper-listbox>
-              </paper-dropdown-menu>
-              <paper-dropdown-menu
-                class="pca-dropdown"
-                no-animations
-                vertical-align="bottom"
-                label="Z"
-                disabled="[[!hasPcaZ]]"
-                id="z-dropdown"
-              >
-                <paper-listbox
-                  attr-for-selected="value"
-                  class="dropdown-content"
-                  selected="{{pcaZ}}"
-                  slot="dropdown-content"
-                >
-                  <paper-item disabled class="dropdown-item header">
-                    <div>#</div>
-                    <div>Variance (%)</div>
-                  </paper-item>
-                  <template is="dom-repeat" items="[[pcaComponents]]">
-                    <paper-item
-                      class="dropdown-item"
-                      value="[[item.id]]"
-                      label="Component #[[item.componentNumber]]"
-                    >
-                      <div>[[item.componentNumber]]</div>
-                      <div class="item-details">[[item.percVariance]]</div>
-                    </paper-item>
-                  </template>
-                </paper-listbox>
-              </paper-dropdown-menu>
-            </div>
-            <div>
-              <!-- Right column -->
-              <paper-dropdown-menu
-                class="pca-dropdown"
-                vertical-align="bottom"
-                no-animations
-                label="Y"
-              >
-                <paper-listbox
-                  attr-for-selected="value"
-                  class="dropdown-content"
-                  selected="{{pcaY}}"
-                  slot="dropdown-content"
-                >
-                  <paper-item disabled class="dropdown-item header">
-                    <div>#</div>
-                    <div>Variance (%)</div>
-                  </paper-item>
-                  <template is="dom-repeat" items="[[pcaComponents]]">
-                    <paper-item
-                      class="dropdown-item"
-                      value="[[item.id]]"
-                      label="Component #[[item.componentNumber]]"
-                    >
-                      <div>[[item.componentNumber]]</div>
-                      <div class="item-details">[[item.percVariance]]</div>
-                    </paper-item>
-                  </template>
-                </paper-listbox>
-              </paper-dropdown-menu>
-              <paper-checkbox
-                id="z-checkbox"
-                checked="{{pcaIs3d}}"
-              ></paper-checkbox>
-            </div>
-          </div>
-          <p id="pca-sampling" class="notice">
-            PCA is approximate.
-            <paper-icon-button
-              icon="help"
-              class="help-icon"
-            ></paper-icon-button>
-          </p>
-          <div id="total-variance">Total variance</div>
-          <paper-tooltip
-            for="pca-sampling"
-            position="top"
-            animation-delay="0"
-            fit-to-visible-bounds
-          >
-            For fast results, the data was sampled to [[getPcaSampleSizeText()]]
-            points and randomly projected down to [[getPcaSampledDimText()]]
-            dimensions.
-          </paper-tooltip>
-        </div>
-        <!-- Custom Controls -->
-        <div data-panel="custom" class="ink-panel-content">
-          <paper-dropdown-menu
-            style="width: 100%"
-            no-animations
-            label="Search by"
-          >
-            <paper-listbox
-              attr-for-selected="value"
-              class="dropdown-content"
-              selected="{{customSelectedSearchByMetadataOption}}"
-              slot="dropdown-content"
-            >
-              <template is="dom-repeat" items="[[searchByMetadataOptions]]">
-                <paper-item
-                  class="dropdown-item"
-                  value="[[item]]"
-                  label="[[item]]"
-                >
+        <button class="jump-dvi ink-button" title="Jump DVI">Jump</button>
+      </div>
+      <div style="display:flex;justify-content: space-between;">
+        <p style="font-weight: 600;">Iteration: <span class="run-tsne-iter">0</span></p>
+        <p>Total iteration number: <span class="dvi-total-iter">0</span></p>
+      </div>
+
+      <div style="border-bottom:1px solid #666; height:0; visibility:hidden;">
+        <table>
+          <caption style="margin-bottom: 10px;">Visualization Confidence</caption>
+          <tr>
+            <td></td>
+            <td>train</td>
+            <td>test</td>
+          </tr>
+          <tr>
+            <td>nn</td>
+            <td><span class="nn_train_15">NA</span> </td>
+            <td><span class="nn_test_15">NA</span></td>
+          </tr>
+          <tr>
+            <td>boundary</td>
+            <td><span class="bound_train_15">NA</span></td>
+            <td><span class="bound_test_15">NA</span></td>
+          </tr>
+          <tr>
+            <td>PPR</td>
+            <td><span class="inv_acc_train">NA</span> </td>
+            <td> <span class="inv_acc_test">NA</span></td>
+          </tr>
+          <!--<tr>
+              <td>CCR</td>
+              <td><span class="inv_conf_train">NA</span></td>
+              <td><span class="inv_conf_test">NA</span></td>
+            </tr>-->
+        </table>
+        <p>Accuracy:</p>
+        <p>train: <span class="acc_train">NA</span> test: <span class="acc_test">NA</span></p>
+      </div>
+      <p id="tsne-sampling" class="notice">
+      </p>
+      <!--          <p>Projection nn perseverance knn: (train,15): <span class="nn_train_15">NA</span> (test,15): <span class="nn_test_15">NA</span></p>-->
+      <!--          <p>Projection boundary perserverance knn: (train,15): <span class="bound_train_15">NA</span> (test,15): <span class="bound_test_15">NA</span></p>-->
+      <!--          <p>PPR: train: <span class="inv_acc_train">NA</span> test: <span class="inv_acc_test">NA</span></p>-->
+      <!--          <p>CCR: train: <span class="inv_conf_train">NA</span> test: <span class="inv_conf_test">NA</span></p>-->
+      <template is="dom-if" if="[[_showFilter]]">
+        <h2>Train Result Statistics</h2>
+        <div class="filter-content">
+          <paper-dropdown-menu style="width: 120px" no-animations label="Architecture">
+            <paper-listbox attr-for-selected="value" class="dropdown-content" selected="{{selectedArchitecture}}"
+              slot="dropdown-content">
+              <template is="dom-repeat" items="[[architectureList]]">
+                <paper-item value="[[item]]" label="[[item]]">
                   [[item]]
                 </paper-item>
               </template>
             </paper-listbox>
           </paper-dropdown-menu>
-          <div class="two-columns">
-            <vz-projector-input id="xLeft" label="Left"></vz-projector-input>
-            <vz-projector-input id="xRight" label="Right"></vz-projector-input>
-          </div>
-          <div class="two-columns">
-            <vz-projector-input id="yUp" label="Up"></vz-projector-input>
-            <vz-projector-input id="yDown" label="Down"></vz-projector-input>
-          </div>
+          <paper-dropdown-menu style="width: 120px" no-animations label="Learning Rate">
+            <paper-listbox attr-for-selected="value" class="dropdown-content" selected="{{selectedLr}}"
+              slot="dropdown-content">
+              <template is="dom-repeat" items="[[learningRateList]]">
+                <paper-item value="[[item]]" label="[[item]]">
+                  [[item]]
+                </paper-item>
+              </template>
+            </paper-listbox>
+          </paper-dropdown-menu>
+          <paper-dropdown-menu style="width: 120px" no-animations label="Total Epoch">
+            <paper-listbox attr-for-selected="value" class="dropdown-content" selected="{{selectedTotalEpoch}}"
+              slot="dropdown-content">
+              <template is="dom-repeat" items="[[totalEpochList]]">
+                <paper-item value="[[item]]" label="[[item]]">
+                  [[item]]
+                </paper-item>
+              </template>
+            </paper-listbox>
+          </paper-dropdown-menu>
         </div>
+
+      </template>
+      <table>
+        <caption style="margin-bottom: 10px; font-weight: 600;">Task Model Accuracy</caption>
+        <tr>
+          <td>Train Acc</td>
+          <td>Test Acc</td>
+        </tr>
+        <tr>
+          <td><span class="total_acc_train">NA</span></td>
+          <td><span class="total_acc_test">NA</span></td>
+        </tr>
+
+
+
+      </table>
+      <!--<p style="font-weight: 600;">Task Model Accuracy:</p>
+      <p style="font-size:20px;">train: <span class="total_acc_train">NA</span> test: <span
+          class="total_acc_test">NA</span></p>-->
+    </div>
+    <p id="tsne-sampling" class="notice">
+    </p>
+  </div>
+  <!-- PCA Controls -->
+  <div data-panel="pca" class="ink-panel-content">
+    <div class="two-columns">
+      <div>
+        <!-- Left column -->
+        <paper-dropdown-menu class="pca-dropdown" vertical-align="bottom" no-animations label="X">
+          <paper-listbox attr-for-selected="value" class="dropdown-content" selected="{{pcaX}}" slot="dropdown-content">
+            <paper-item disabled class="dropdown-item header">
+              <div>#</div>
+              <div>Variance (%)</div>
+            </paper-item>
+            <template is="dom-repeat" items="[[pcaComponents]]">
+              <paper-item class="dropdown-item" value="[[item.id]]" label="Component #[[item.componentNumber]]">
+                <div>[[item.componentNumber]]</div>
+                <div class="item-details">[[item.percVariance]]</div>
+              </paper-item>
+            </template>
+          </paper-listbox>
+        </paper-dropdown-menu>
+        <paper-dropdown-menu class="pca-dropdown" no-animations vertical-align="bottom" label="Z"
+          disabled="[[!hasPcaZ]]" id="z-dropdown">
+          <paper-listbox attr-for-selected="value" class="dropdown-content" selected="{{pcaZ}}" slot="dropdown-content">
+            <paper-item disabled class="dropdown-item header">
+              <div>#</div>
+              <div>Variance (%)</div>
+            </paper-item>
+            <template is="dom-repeat" items="[[pcaComponents]]">
+              <paper-item class="dropdown-item" value="[[item.id]]" label="Component #[[item.componentNumber]]">
+                <div>[[item.componentNumber]]</div>
+                <div class="item-details">[[item.percVariance]]</div>
+              </paper-item>
+            </template>
+          </paper-listbox>
+        </paper-dropdown-menu>
+      </div>
+      <div>
+        <!-- Right column -->
+        <paper-dropdown-menu class="pca-dropdown" vertical-align="bottom" no-animations label="Y">
+          <paper-listbox attr-for-selected="value" class="dropdown-content" selected="{{pcaY}}" slot="dropdown-content">
+            <paper-item disabled class="dropdown-item header">
+              <div>#</div>
+              <div>Variance (%)</div>
+            </paper-item>
+            <template is="dom-repeat" items="[[pcaComponents]]">
+              <paper-item class="dropdown-item" value="[[item.id]]" label="Component #[[item.componentNumber]]">
+                <div>[[item.componentNumber]]</div>
+                <div class="item-details">[[item.percVariance]]</div>
+              </paper-item>
+            </template>
+          </paper-listbox>
+        </paper-dropdown-menu>
+        <paper-checkbox id="z-checkbox" checked="{{pcaIs3d}}"></paper-checkbox>
       </div>
     </div>
-  </template>
-  <script src="vz-projector-projections-panel.js"></script>
+    <p id="pca-sampling" class="notice">
+      PCA is approximate.
+      <paper-icon-button icon="help" class="help-icon"></paper-icon-button>
+    </p>
+    <div id="total-variance">Total variance</div>
+    <paper-tooltip for="pca-sampling" position="top" animation-delay="0" fit-to-visible-bounds>
+      For fast results, the data was sampled to [[getPcaSampleSizeText()]]
+      points and randomly projected down to [[getPcaSampledDimText()]]
+      dimensions.
+    </paper-tooltip>
+  </div>
+  <!-- Custom Controls -->
+  <div data-panel="custom" class="ink-panel-content">
+    <paper-dropdown-menu style="width: 100%" no-animations label="Search by">
+      <paper-listbox attr-for-selected="value" class="dropdown-content"
+        selected="{{customSelectedSearchByMetadataOption}}" slot="dropdown-content">
+        <template is="dom-repeat" items="[[searchByMetadataOptions]]">
+          <paper-item class="dropdown-item" value="[[item]]" label="[[item]]">
+            [[item]]
+          </paper-item>
+        </template>
+      </paper-listbox>
+    </paper-dropdown-menu>
+    <div class="two-columns">
+      <vz-projector-input id="xLeft" label="Left"></vz-projector-input>
+      <vz-projector-input id="xRight" label="Right"></vz-projector-input>
+    </div>
+    <div class="two-columns">
+      <vz-projector-input id="yUp" label="Up"></vz-projector-input>
+      <vz-projector-input id="yDown" label="Down"></vz-projector-input>
+    </div>
+  </div>
+</div>
+</div>
+</template>
+<script src="vz-projector-projections-panel.js"></script>
 </dom-module>
 `;
