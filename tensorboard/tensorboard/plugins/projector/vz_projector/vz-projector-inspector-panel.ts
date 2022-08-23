@@ -1407,7 +1407,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     if (querNum) {
       num = Number(querNum)
     }
-    if (isRecommend) {
+    if (isRecommend === true) {
       stratergy = 'Feedback'
     }
     if (!acceptIndicates) {
@@ -1418,7 +1418,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     }
     projector.queryByAL(
       this.projector.iteration,
-      this.selectedStratergy,
+      stratergy,
       num,
       acceptIndicates,
       rejectIndicates,
