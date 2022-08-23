@@ -34,12 +34,13 @@ def update_projection():
     timevis = initialize_backend(CONTENT_PATH)
     EPOCH = (iteration-1)*timevis.data_provider.p + timevis.data_provider.s
 
-    embedding_2d, grid, decision_view, label_color_list, label_list, max_iter, training_data_index, \
+    embedding_2d, grid, decision_view, label_name_dict, label_color_list, label_list, max_iter, training_data_index, \
     testing_data_index, eval_new, prediction_list, selected_points, properties = update_epoch_projection(timevis, EPOCH, predicates)
 
     sys.path.remove(CONTENT_PATH)
 
     return make_response(jsonify({'result': embedding_2d, 'grid_index': grid, 'grid_color': 'data:image/png;base64,' + decision_view,
+                                  'label_name_dict':label_name_dict,
                                   'label_color_list': label_color_list, 'label_list': label_list,
                                   'maximum_iteration': max_iter, 
                                   'training_data': training_data_index,
@@ -182,7 +183,7 @@ def al_train():
     timevis.vis_train(NEW_ITERATION, **config)
 
     # update iteration projection
-    embedding_2d, grid, decision_view, label_color_list, label_list, _, training_data_index, \
+    embedding_2d, grid, decision_view, label_name_dict, label_color_list, label_list, _, training_data_index, \
     testing_data_index, eval_new, prediction_list, selected_points, properties = update_epoch_projection(timevis, NEW_ITERATION, dict())
     
     # rewirte json =========
@@ -202,6 +203,7 @@ def al_train():
 
     sys.path.remove(CONTENT_PATH)
     return make_response(jsonify({'result': embedding_2d, 'grid_index': grid, 'grid_color': 'data:image/png;base64,' + decision_view,
+                                  'label_name_dict': label_name_dict,
                                   'label_color_list': label_color_list, 'label_list': label_list,
                                   'maximum_iteration': NEW_ITERATION, 'training_data': training_data_index,
                                   'testing_data': testing_data_index, 'evaluation': eval_new,
@@ -300,7 +302,7 @@ def get_res():
                 grid = pickle.load(f)
             gridlist[str(i)] = grid
         else:
-            embedding_2d, grid, _, _, _, _, _, _, _, _, _, _ = update_epoch_projection(timevis, EPOCH, predicates)
+            embedding_2d, grid, _, _, _, _, _, _, _, _, _, _, _ = update_epoch_projection(timevis, EPOCH, predicates)
             results[str(i)] = embedding_2d
             gridlist[str(i)] = grid
         # read background img
