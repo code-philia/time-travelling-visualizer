@@ -307,6 +307,8 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
     //  this.invConfTest.innerText = ''+evaluation.inv_conf_test;
     this.accTrain.innerText = '' + evaluation.acc_train;
     this.accTest.innerText = '' + evaluation.acc_test;
+    this.totalAccTest.innerText = '' + Number(evaluation.test_acc * 100).toFixed(2) + '%';
+    this.totalAccTrain.innerText = '' + Number(evaluation.train_acc * 100).toFixed(2) + '%';
   }
   private setupUIControls() {
     {
