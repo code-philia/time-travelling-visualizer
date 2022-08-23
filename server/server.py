@@ -152,11 +152,12 @@ def anomaly_query():
     strategy = data["strategy"]
     acc_idxs = data["accIndices"]
     rej_idxs = data["rejIndices"]
+    user_name = data["username"]
 
     sys.path.append(CONTENT_PATH)
 
     timevis = initialize_backend(CONTENT_PATH)
-    timevis.save_acc_and_rej(acc_idxs, rej_idxs)
+    timevis.save_acc_and_rej(acc_idxs, rej_idxs, user_name)
     indices, scores, labels = timevis.suggest_abnormal(strategy, np.array(acc_idxs).astype(np.int64), np.array(rej_idxs).astype(np.int64), budget)
     clean_list,_ = timevis.suggest_normal(strategy, np.array(acc_idxs).astype(np.int64), np.array(rej_idxs).astype(np.int64), 1)
 
@@ -171,6 +172,7 @@ def al_train():
     acc_idxs = data["accIndices"]
     rej_idxs = data["rejIndices"]
     iteration = data["iteration"]
+    user_name = data["username"]
     sys.path.append(CONTENT_PATH)
 
     # default setting al_train is light version, we only save the last epoch
@@ -180,7 +182,7 @@ def al_train():
 
     from config import config
     NEW_ITERATION =  timevis.get_max_iter()
-    timevis.save_acc_and_rej(NEW_ITERATION, acc_idxs, rej_idxs)
+    timevis.save_acc_and_rej(NEW_ITERATION, acc_idxs, rej_idxs, user_name)
     timevis.vis_train(NEW_ITERATION, **config)
 
     # update iteration projection
@@ -337,5 +339,5 @@ if __name__ == "__main__":
         port = config["ServerPort"]
         
     # ip_adress = "localhost"
-    port = 5002
+    port = 5004
     app.run(host=ip_address, port=int(port))
