@@ -355,7 +355,7 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         train_dataset = torchvision.datasets.CIFAR10(root="..//data//CIFAR10", download=True, train=True, transform=self.hyperparameters["TRAINING"]['transform_tr'])
         test_dataset = torchvision.datasets.CIFAR10(root="..//data//CIFAR10", download=True, train=False, transform=self.hyperparameters["TRAINING"]['transform_te'])
         t1 = time.time()
-        q_strategy.train(total_epoch=TOTAL_EPOCH, task_model=resnet_model, complete_dataset=train_dataset,save_path=save_path)
+        q_strategy.train(total_epoch=TOTAL_EPOCH, task_model=resnet_model, complete_dataset=train_dataset,save_path=None)
         t2 = time.time()
         print("Training time is {:.2f}".format(t2-t1))
         self.save_subject_model(NEW_ITERATION, q_strategy.task_model.state_dict())
