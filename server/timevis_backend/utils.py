@@ -165,7 +165,7 @@ def update_epoch_projection(timevis, EPOCH, predicates):
 
     # TODO fix its structure
     file_name = timevis.hyperparameters["VISUALIZATION"]["EVALUATION_NAME"]
-    # evaluation = timevis.evaluator.get_eval(file_name=file_name)
+    evaluation = timevis.evaluator.get_eval(file_name=file_name)
     eval_new = dict()
     # eval_new["nn_train_15"] = evaluation["15"]['nn_train'][str(EPOCH)]
     # eval_new['nn_test_15'] = evaluation["15"]['nn_test'][str(EPOCH)]
@@ -173,14 +173,14 @@ def update_epoch_projection(timevis, EPOCH, predicates):
     # eval_new['bound_test_15'] = evaluation["15"]['b_test'][str(EPOCH)]
     # eval_new['ppr_train'] = evaluation["ppr_train"][str(EPOCH)]
     # eval_new['ppr_test'] = evaluation["ppr_test"][str(EPOCH)]
-    eval_new["nn_train_15"] = 1
-    eval_new['nn_test_15'] = 1
-    eval_new['bound_train_15'] = 1
-    eval_new['bound_test_15'] = 1
-    eval_new['ppr_train'] = 1
-    eval_new['ppr_test'] = 1
-    eval_new["train_accu"] = 1
-    eval_new["test_accu"] = 1
+    # eval_new["nn_train_15"] = 1
+    # eval_new['nn_test_15'] = 1
+    # eval_new['bound_train_15'] = 1
+    # eval_new['bound_test_15'] = 1
+    # eval_new['ppr_train'] = 1
+    # eval_new['ppr_test'] = 1
+    eval_new["train_acc"] = evaluation["train_acc"][str(EPOCH)]
+    eval_new["test_acc"] = evaluation["test_acc"][str(EPOCH)]
 
     label_color_list = []
     label_list = []
