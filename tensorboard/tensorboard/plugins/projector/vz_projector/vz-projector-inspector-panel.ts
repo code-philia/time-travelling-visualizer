@@ -50,7 +50,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   dataSet: DataSet;
 
   @property({ type: String })
-  selectedStratergy: string = 'Random';
+  selectedStratergy: string = 'TBSampling';
 
   @property({ type: String })
   selectedAnormalyStratergy: string;
@@ -224,9 +224,9 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     this.shownormal = window.sessionStorage.taskType == 'active learning' || window.taskType == 'active learning'
     this.isControlGroup = window.sessionStorage.isControlGroup == 'true'
 
-    if (window.sessionStorage.taskType == 'active learning') {
-      this.moreRecommednNum = 100
-    }
+    // if (window.sessionStorage.taskType == 'active learning') {
+    //   this.moreRecommednNum = 100
+    // }
     this.queryByStrategtBtn = this.$$('.query-by-stratergy') as HTMLButtonElement;
     this.moreRecommend = this.$$('.query-by-sel-btn') as HTMLButtonElement;
     this.showSelectionBtn = this.$$('.show-selection') as HTMLButtonElement;
@@ -273,7 +273,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     this.showTrace = false
     this.checkAllQueryRes = false
 
-    this.budget = 1000
+    this.budget = 10
     this.anomalyRecNum = 10
     this.suggestKNum = 10
   }
@@ -299,7 +299,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     // TODO change them based on metadata fields
     this.searchFields = ["type", "label", "new_selection"]
     // active learning statergy
-    this.statergyList = ["Random", "Uncertainty", "TBSampling"]
+    this.statergyList = ["TBSampling", "Uncertainty", "Random"]
     // anormaly detection statergy
     this.anormalyStatergyList = ['anormalyStageone', 'anormalyStageTwo', 'anormalyStageThree']
     // anormaly detcttion classes
@@ -927,7 +927,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             window.flagindecatesList.push(pointIndex)
           }
         }
-        return `${displayPointIndex}|${displayprediction}|${prediction_res}`
+        return `${displayPointIndex}|${displayprediction}`
       }
     }
     if (window.sessionStorage.isControlGroup == 'true') {
