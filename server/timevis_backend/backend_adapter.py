@@ -129,12 +129,12 @@ class TimeVisBackend:
     #                                                                                                               #
     #################################################################################################################
 
-    def save_acc_and_rej(self, acc_idxs, rej_idxs):
+    def save_acc_and_rej(self, acc_idxs, rej_idxs, file_name):
         d = {
             "acc_idxs": acc_idxs,
             "rej_idxs": rej_idxs
         }
-        path = os.path.join(self.data_provider.content_path, "acc_rej.json")
+        path = os.path.join(self.data_provider.content_path, "{}_acc_rej.json".format(file_name))
         with open(path, "w") as f:
             json.dump(d, f)
         print("Successfully save the acc and rej idxs selected by user...")
@@ -155,12 +155,12 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         self.trainer = trainer
         self.dense = dense
     
-    def save_acc_and_rej(self, iteration, acc_idxs, rej_idxs):
+    def save_acc_and_rej(self, iteration, acc_idxs, rej_idxs, file_name):
         d = {
             "acc_idxs": acc_idxs,
             "rej_idxs": rej_idxs
         }
-        path = os.path.join(self.data_provider.content_path, "Model", "Iteration_{}".format(iteration), "acc_rej.json")
+        path = os.path.join(self.data_provider.content_path, "Model", "Iteration_{}".format(iteration), "{}_acc_rej.json".format(file_name))
         with open(path, "w") as f:
             json.dump(d, f)
         print("Successfully save the acc and rej idxs selected by user at Iteration {}...".format(iteration))
