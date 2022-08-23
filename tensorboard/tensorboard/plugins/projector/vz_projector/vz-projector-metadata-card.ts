@@ -467,6 +467,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
     if (index >= 0) {
       window.acceptIndicates.splice(index, 1)
       window.acceptInputList[e.target.id].checked = false
+      this.removeFromCustomSelection(Number(e.target.id))
     }
     // window.acceptInputList[e.target.id].checked = false
     this.projectorEventContext.removecustomInMetaCard()
@@ -477,8 +478,15 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
     if (index >= 0) {
       window.rejectIndicates.splice(index, 1)
       window.rejectInputList[e.target.id].checked = false
+      this.removeFromCustomSelection(Number(e.target.id))
     }
     // window.rejectInputList[e.target.id].checked = false
     this.projectorEventContext.removecustomInMetaCard()
+  }
+  removeFromCustomSelection(indicate:number){
+    let index = window.customSelection.indexOf(indicate)
+    if(index !== -1){
+      window.customSelection.splice(index,1)
+    }
   }
 }
