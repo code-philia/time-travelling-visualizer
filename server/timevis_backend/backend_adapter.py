@@ -23,6 +23,7 @@ from singleVis.custom_weighted_random_sampler import CustomWeightedRandomSampler
 from singleVis.edge_dataset import DataHandler
 from singleVis.spatial_edge_constructor import SingleEpochSpatialEdgeConstructor
 from singleVis.trajectory_manager import Recommender
+from singleVis.eval.evaluator import ALEvaluator
 
 # active_learning_path = "D:\\code-space\\ActiveLearning"  # limy 
 active_learning_path = "../../ActiveLearning"
@@ -482,8 +483,10 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
                 json.dump(evaluation, f)
             save_dir = os.path.join(self.data_provider.model_path, "Iteration_{}".format(iteration))
             os.makedirs(save_dir, exist_ok=True)
-            self.trainer.save(save_dir=save_dir, file_name="al")
+            self.trainer.save(save_dir=save_dir, file_name=VIS_MODEL_NAME)
             # TODO evaluate visualization model, train and test
+            evaluator = ALEvaluator(self.data_provider, self.projector)
+            evaluator.save_epoch_eval(iteration, file_name=EVALUATION_NAME)
     
     #################################################################################################################
     #                                                                                                               #
