@@ -174,7 +174,8 @@ def al_train():
     sys.path.append(CONTENT_PATH)
 
     # default setting al_train is light version, we only save the last epoch
-    timevis = initialize_backend(CONTENT_PATH)
+    
+    timevis = initialize_backend(CONTENT_PATH, dense_al=False)
     timevis.al_train(iteration, acc_idxs)
 
     from config import config
@@ -252,11 +253,11 @@ def login():
         # return make_response(jsonify({"normal_content_path": '/Users/zhangyifan/Downloads/al',"unormaly_content_path":'/Users/zhangyifan/Downloads/toy_model/resnet18_cifar10'}), 200) #yvonne
     elif username == 'controlGroup' and password == '123qwe': # mock
         # reset active learning dataset
-        CONTENT_PATH = "/home/xianglin/projects/DVI_data/noisy/symmetric/cifar10"
-        sys.path.append(CONTENT_PATH)
-        timevis = initialize_backend(CONTENT_PATH)
-        timevis.reset(iteration=3)
-        sys.path.remove(CONTENT_PATH)
+        # CONTENT_PATH = "/home/xianglin/projects/DVI_data/noisy/symmetric/cifar10"
+        # sys.path.append(CONTENT_PATH)
+        # timevis = initialize_backend(CONTENT_PATH)
+        # timevis.reset(iteration=3)
+        # sys.path.remove(CONTENT_PATH)
         return make_response(jsonify({"normal_content_path": 'D:\\datasets\\al',"unormaly_content_path":'D:\\datasets\\timevis\\toy_model\\resnet18_cifar10',"isControl":True}), 200) #limy
     else:
         return make_response(jsonify({"message":"username or password is wrong"}), 200)
@@ -336,5 +337,5 @@ if __name__ == "__main__":
         port = config["ServerPort"]
         
     # ip_adress = "localhost"
-    # port = 5001
+    port = 5002
     app.run(host=ip_address, port=int(port))

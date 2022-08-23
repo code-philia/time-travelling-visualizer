@@ -20,10 +20,13 @@ timevis_path = "../../DLVisDebugger" #xianglin#yvonne
 sys.path.append(timevis_path)
 from singleVis.utils import *
 from singleVis.custom_weighted_random_sampler import CustomWeightedRandomSampler
-from singleVis.edge_dataset import DataHandler
+from singleVis.edge_dataset import DataHandler, HybridDataHandler
 from singleVis.spatial_edge_constructor import SingleEpochSpatialEdgeConstructor
+# kcHybridDenseALSpatialEdgeConstructor,GlobalTemporalEdgeConstructor
 from singleVis.trajectory_manager import Recommender
 from singleVis.eval.evaluator import ALEvaluator
+from singleVis.segmenter import DenseALSegmenter
+
 
 # active_learning_path = "D:\\code-space\\ActiveLearning"  # limy 
 active_learning_path = "../../ActiveLearning"
@@ -427,7 +430,114 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         NET = config["TRAINING"]["NET"]
 
         if self.dense:
+            # TODO test this part
             raise NotImplementedError
+            epoch_num = config["TRAINING"]["total_epoch"]
+            INIT_NUM = config["VISUALIZATION"]["INIT_NUM"]
+            MAX_HAUSDORFF = config["VISUALIZATION"]["MAX_HAUSDORFF"]
+            ALPHA = config["VISUALIZATION"]["ALPHA"]
+            BETA = config["VISUALIZATION"]["BETA"]
+            T_N_EPOCHS = config["VISUALIZATION"]["T_N_EPOCHS"]
+
+            segmenter = DenseALSegmenter(data_provider=self.data_provider, threshold=78.5, epoch_num=epoch_num)
+            # segment epoch
+            t0 = time.time()
+            SEGMENTS = segmenter.segment(iteration)
+            t1 = time.time()
+            print(SEGMENTS)
+
+            segment_path = os.path.join(self.data_provider.content_path, "Model", "Iteration_{}".format(iteration),"segments.json")
+            with open(segment_path, "w") as f:
+                json.dump(SEGMENTS, f)
+
+            LEN = self.data_provider.label_num(iteration)
+            prev_selected = np.random.choice(np.arange(LEN), size=INIT_NUM, replace=False)
+            prev_embedding = None
+            start_point = len(SEGMENTS)-1
+            c0=None
+            d0=None
+
+            for seg in range(start_point,-1,-1):
+                epoch_start, epoch_end = SEGMENTS[seg]
+                self.data_provider.update_interval(epoch_s=epoch_start, epoch_e=epoch_end)
+
+                optimizer = torch.optim.Adam(model.parameters(), lr=.01, weight_decay=1e-5)
+                lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=4, gamma=.1)
+
+                t2 = time.time()
+                spatial_cons = kcHybridDenseALSpatialEdgeConstructor(data_provider=self.data_provider, init_num=INIT_NUM, s_n_epochs=S_N_EPOCHS, b_n_epochs=B_N_EPOCHS, n_neighbors=N_NEIGHBORS, MAX_HAUSDORFF=MAX_HAUSDORFF, ALPHA=ALPHA, BETA=BETA, iteration=iteration, init_idxs=prev_selected, init_embeddings=prev_embedding, c0=c0, d0=d0)
+                s_edge_to, s_edge_from, s_probs, feature_vectors, embedded, coefficient, time_step_nums, time_step_idxs_list, knn_indices, sigmas, rhos, attention, (c0,d0) = spatial_cons.construct()
+
+                temporal_cons = GlobalTemporalEdgeConstructor(X=feature_vectors, time_step_nums=time_step_nums, sigmas=sigmas, rhos=rhos, n_neighbors=N_NEIGHBORS, n_epochs=T_N_EPOCHS)
+                t_edge_to, t_edge_from, t_probs = temporal_cons.construct()
+                t3 = time.time()
+
+                edge_to = np.concatenate((s_edge_to, t_edge_to),axis=0)
+                edge_from = np.concatenate((s_edge_from, t_edge_from), axis=0)
+                probs = np.concatenate((s_probs, t_probs), axis=0)
+                probs = probs / (probs.max()+1e-3)
+                eliminate_zeros = probs>1e-3
+                edge_to = edge_to[eliminate_zeros]
+                edge_from = edge_from[eliminate_zeros]
+                probs = probs[eliminate_zeros]
+
+                # save result
+                save_dir = os.path.join(self.data_provider.model_path, "Iteration_{}".format(iteration), "SV_time_al_hybrid.json")
+                if not os.path.exists(save_dir):
+                    evaluation = dict()
+                else:
+                    f = open(save_dir, "r")
+                    evaluation = json.load(f)
+                    f.close()
+                if "complex_construction" not in evaluation.keys():
+                    evaluation["complex_construction"] = dict()
+                evaluation["complex_construction"][str(seg)] = round(t3-t2, 3)
+                with open(save_dir, 'w') as f:
+                    json.dump(evaluation, f)
+                print("constructing timeVis complex for {}-th segment in {:.1f} seconds.".format(seg, t3-t2))
+
+                dataset = HybridDataHandler(edge_to, edge_from, feature_vectors, attention, embedded, coefficient)
+                n_samples = int(np.sum(S_N_EPOCHS * probs) // 1)
+                # chosse sampler based on the number of dataset
+                if len(edge_to) > 2^24:
+                    sampler = CustomWeightedRandomSampler(probs, n_samples, replacement=True)
+                else:
+                    sampler = WeightedRandomSampler(probs, n_samples, replacement=True)
+                
+                edge_loader = DataLoader(dataset, batch_size=1000, sampler=sampler)
+
+                self.trainer.update_vis_model(model)
+                self.trainer.update_optimizer(optimizer)
+                self.trainer.update_lr_scheduler(lr_scheduler)
+                self.trainer.update_edge_loader(edge_loader)
+
+                t2=time.time()
+                self.trainer.train(PATIENT, MAX_EPOCH)
+                t3 = time.time()
+                # save result
+                save_dir = os.path.join(self.data_provider.model_path, "Iteration_{}".format(iteration), "SV_time_al_hybrid.json")
+                if not os.path.exists(save_dir):
+                    evaluation = dict()
+                else:
+                    f = open(save_dir, "r")
+                    evaluation = json.load(f)
+                    f.close()
+                
+                if "training" not in evaluation.keys():
+                    evaluation["training"] = dict()
+                evaluation["training"][str(seg)] = round(t3-t2, 3)
+                with open(save_dir, 'w') as f:
+                    json.dump(evaluation, f)
+                self.trainer.save(save_dir=os.path.join(self.data_provider.model_path, "Iteration_{}".format(iteration)), file_name="{}_{}".format(VIS_MODEL_NAME, seg))
+                model = self.trainer.model
+
+                # update prev_idxs and prev_embedding
+                prev_selected = time_step_idxs_list[0]
+                prev_data = torch.from_numpy(feature_vectors[:len(prev_selected)]).to(dtype=torch.float32, device=self.data_provider.DEVICE)
+                model.to(device=self.data_provider.DEVICE)
+                prev_embedding = model.encoder(prev_data).cpu().detach().numpy()
+            # raise NotImplementedError
+            print("Successful train all visualization models!")
         else:
             t0 = time.time()
             spatial_cons = SingleEpochSpatialEdgeConstructor(self.data_provider, iteration, S_N_EPOCHS, B_N_EPOCHS, 15)
