@@ -389,7 +389,7 @@ export const template = html`
       <!--          <p>PPR: train: <span class="inv_acc_train">NA</span> test: <span class="inv_acc_test">NA</span></p>-->
       <!--          <p>CCR: train: <span class="inv_conf_train">NA</span> test: <span class="inv_conf_test">NA</span></p>-->
       <template is="dom-if" if="[[_showFilter]]">
-        <h2>Train Result Statistics</h2>
+        <h2 style="text-align:center">Train Result Statistics</h2>
         <div class="filter-content">
           <paper-dropdown-menu style="width: 120px" no-animations label="Architecture">
             <paper-listbox attr-for-selected="value" class="dropdown-content" selected="{{selectedArchitecture}}"
@@ -425,7 +425,9 @@ export const template = html`
 
       </template>
       <table>
-        <caption style="margin-bottom: 10px; font-weight: 600;">Task Model Accuracy</caption>
+        <caption style="margin-bottom: 10px; font-weight: 600;">
+        <h2>Task Model Accuracy</h2>
+        </caption>
         <tr>
           <td>Train Acc</td>
           <td>Test Acc</td>

@@ -826,6 +826,7 @@ export class DataSet {
         "accIndices": indices,
         "rejIndices": rejIndices,
         "content_path": this.DVIsubjectModelPath,
+        "username": window.sessionStorage.username
       }),
       headers: headers,
       mode: 'cors'
