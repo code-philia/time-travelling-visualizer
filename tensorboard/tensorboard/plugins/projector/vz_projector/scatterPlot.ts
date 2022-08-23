@@ -182,6 +182,7 @@ export class ScatterPlot {
         this.scene.remove(temp)
       }
       window.backgroundMesh = newMesh
+      window.scene = this.scene
       this.render();
     }
   }

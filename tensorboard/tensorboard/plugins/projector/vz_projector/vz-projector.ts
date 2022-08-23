@@ -55,12 +55,12 @@ declare global {
     d3: any,
     treejson: any,
 
-    rejectIndicates:any,
-    acceptIndicates:any,
+    rejectIndicates: any,
+    acceptIndicates: any,
 
-    acceptInputList:any,
-    rejectInputList:any,
-    flagindecatesList:any
+    acceptInputList: any,
+    rejectInputList: any,
+    flagindecatesList: any
   }
 }
 
@@ -309,7 +309,7 @@ class Projector
 
     const d3 = window.d3;
 
-    let svgDom:any = this.$$("#mysvggg")
+    let svgDom: any = this.$$("#mysvggg")
 
     while (svgDom?.firstChild) {
       svgDom.removeChild(svgDom.lastChild);
@@ -386,11 +386,11 @@ class Projector
         //create tree
         let len = res.structure.length
         let svgWidth = len * 35
-        if(svgWidth<1000){
+        if (svgWidth < 1000) {
           svgWidth = 1000
         }
         svgDom.style.width = svgWidth + 200
-  
+
         var tree = d3.tree()
           .size([100, svgWidth])
           .separation(function (a, b) {
@@ -651,7 +651,7 @@ class Projector
     let indicates = []
     this.iteration = num;
     if (!window.isAnimatating) {
-      if(this.showTesting === false){
+      if (this.showTesting === false) {
         for (let i = 0; i < window.properties[window.iteration].length; i++) {
           if (window.properties[window.iteration][i] !== 2 && window.nowShowIndicates.indexOf(i) !== -1) {
             indicates.push(i)
@@ -976,14 +976,14 @@ class Projector
     if (!this.registered) {
       this.readyregis()
     }
-    if(!window.acceptIndicates){
+    if (!window.acceptIndicates) {
       window.acceptIndicates = []
     }
-    if(!window.rejectIndicates){
+    if (!window.rejectIndicates) {
       window.rejectIndicates = []
     }
     window.customSelection = window.acceptIndicates.concat(window.rejectIndicates)
-    if (selectionType === 'isALQuery' || selectionType === 'normal' || selectionType === 'isAnormalyQuery' ||selectionType === 'boundingbox') {
+    if (selectionType === 'isALQuery' || selectionType === 'normal' || selectionType === 'isAnormalyQuery' || selectionType === 'boundingbox') {
       // window.customSelection = []
       window.queryResPointIndices = newSelectedPointIndices
       if (selectionType === 'isALQuery') {
@@ -1017,8 +1017,8 @@ class Projector
       this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
       this.projectorScatterPlotAdapter.render()
       this.selectionChangedListeners.forEach((l) =>
-      l(this.selectedPointIndices, [])
-    );
+        l(this.selectedPointIndices, [])
+      );
       return
     }
 
@@ -1124,7 +1124,7 @@ class Projector
             index: newSelectedPointIndices[0],
             dist: 0
           };
-       
+
       } else {
         this.metadataCard.updateMetadata(null);
       }
@@ -1341,7 +1341,10 @@ class Projector
       }
       // if(window.scene.children)
       if (window.scene.children[2] && window.scene.children[2].type === 'Mesh') {
-        window.scene.children[2].visible = !window.hiddenBackground
+        for (let i = 2; i < window.scene.children.length; i++) {
+          window.scene.children[i].visible = !window.hiddenBackground
+        }
+
       }
       this.projectorScatterPlotAdapter.scatterPlot.render()
       // this.projectorScatterPlotAdapter.scatterPlot.hiddenBackground(
@@ -1697,14 +1700,14 @@ class Projector
     });
   }
   // anormaly detection
-  queryAnormalyStrategy(budget: number, cls: number, currentIndices: number[], comfirm_info: any[],accIndicates:number[],rejIndicates:number[],strategy:string,
+  queryAnormalyStrategy(budget: number, cls: number, currentIndices: number[], comfirm_info: any[], accIndicates: number[], rejIndicates: number[], strategy: string,
     callback: (indices: any, cleanIndices?: any) => void) {
     const msgId = logging.setModalMessage('Querying...');
     let headers = new Headers();
-    if(!accIndicates){
+    if (!accIndicates) {
       accIndicates = []
     }
-    if(!rejIndicates){
+    if (!rejIndicates) {
       rejIndicates = []
     }
     headers.append('Content-Type', 'application/json');
@@ -1720,7 +1723,7 @@ class Projector
         "accIndices": accIndicates,
         "rejIndices": rejIndicates,
         "strategy": strategy
-        
+
       }),
       headers: headers,
       mode: 'cors'
