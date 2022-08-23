@@ -108,6 +108,15 @@ class TimeVisBackend:
             test_num = self.data_provider.test_num
             res = list(range(0, train_num + test_num, 1))
         return res
+    
+    def filter_conf(self, conf_min, conf_max, epoch_id):
+        train_data = self.data_provider.train_representation(epoch_id)
+        test_data =self.data_provider.test_representation(epoch_id)
+        data = np.concatenate((train_data, test_data), axis=0)
+        pred = self.data_provider.get_pred(epoch_id, data)
+        scores = np.amax(softmax(pred, axis=1), axis=1)
+        res = np.argwhere(np.logical_and(scores<=conf_max, scores>=conf_min)).squeeze().tolist()
+        return res
 
 
     #################################################################################################################

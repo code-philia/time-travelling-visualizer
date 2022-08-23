@@ -72,8 +72,7 @@ def filter():
         elif key == "type":
             tmp = np.array(timevis.filter_type(predicates[key], int(EPOCH)))
         elif key == "confidence":
-            # TODO
-            continue
+            tmp = np.array(timevis.filter_conf(predicates[key][0],predicates[key][1],int(EPOCH)))
         else:
             tmp = np.arange(training_data_number + testing_data_number)
         selected_points = np.intersect1d(selected_points, tmp)
