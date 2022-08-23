@@ -412,7 +412,7 @@ export function retrieveSpriteAndMetadataInfo(
         if (request.readyState === 4) {
           if (request.status === 200) {
             // The metadata was successfully retrieved. Parse it.
-            console.log('request after parse',parseMetadata(request.response))
+            // console.log('request after parse',parseMetadata(request.response))
             resolve(parseMetadata(request.response));
           } else {
             // The response contains the error message, but we must convert it

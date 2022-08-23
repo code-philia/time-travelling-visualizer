@@ -327,7 +327,7 @@ class Projector
       .then(response => response.json())
       .then(res => {
         window.treejson = res.structure
-        window.treejson.length = window.selectedTotalEpoch
+        
         let data = res.structure
 
 
@@ -388,9 +388,11 @@ class Projector
         //create tree
         let len = res.structure.length
         let svgWidth = len * 35
-        if (svgWidth < 1000) {
+        if(window.sessionStorage.taskType ==='active learning'){
           svgWidth = 1000
         }
+          // svgWidth = 1000
+        console.log('svgWid', len,svgWidth)
         svgDom.style.width = svgWidth + 200
 
         var tree = d3.tree()
@@ -1734,8 +1736,8 @@ class Projector
         "comfirm_info": comfirm_info,
         "accIndices": accIndicates,
         "rejIndices": rejIndicates,
-        "strategy": strategy
-
+        "strategy": strategy,
+        "username": window.sessionStorage.username
       }),
       headers: headers,
       mode: 'cors'
