@@ -530,12 +530,12 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
     def _suggest_abnormal(self, strategy, iteration, acc_idxs, rej_idxs, budget, period):
         ntd = self._init_detection(iteration, period)
         if strategy == "TBSampling":
-            suggest_idxs, _ = ntd.sample_batch_init(acc_idxs, rej_idxs, budget)
+            suggest_idxs, scores = ntd.sample_batch_init(acc_idxs, rej_idxs, budget)
         elif strategy == "Feedback":
-            suggest_idxs, _ = ntd.sample_batch(acc_idxs, rej_idxs, budget)
+            suggest_idxs, scores = ntd.sample_batch(acc_idxs, rej_idxs, budget)
         else:
             raise NotImplementedError
-        return suggest_idxs
+        return suggest_idxs, scores
     
     def _suggest_normal(self, strategy, iteration, acc_idxs, rej_idxs, budget, period):
         ntd = self._init_detection(iteration, period)
@@ -593,6 +593,7 @@ class AnormalyTimeVisBackend(TimeVisBackend):
         if os.path.exists(uncertainty_path):
             uncertainty = np.load(uncertainty_path)
         else:
+            epoch_num = (self.data_provider.e - self.data_provider.s)//self.data_provider.p + 1
             samples = self.data_provider.train_representation(epoch_num)
             pred = self.data_provider.get_pred(epoch_num, samples)
             uncertainty = 1 - np.amax(softmax(pred, axis=1), axis=1)

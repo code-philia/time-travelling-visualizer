@@ -152,7 +152,6 @@ def anomaly_query():
     strategy = data["strategy"]
     acc_idxs = data["accIndices"]
     rej_idxs = data["rejIndices"]
-    print(data)
 
     sys.path.append(CONTENT_PATH)
 
