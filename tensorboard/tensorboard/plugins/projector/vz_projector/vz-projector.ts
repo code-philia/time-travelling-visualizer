@@ -477,12 +477,15 @@ class Projector
       let list = svgDom.querySelectorAll("circle");
       for (let i = 0; i <= list.length; i++) {
         let c = list[i]
-        c.style.cursor = "pointer"
-        c.addEventListener('click', (e: any) => {
-          if (e.target.nextSibling.innerHTML != window.iteration) {
-            that.projectionsPanel.jumpTo(Number(e.target.nextSibling.innerHTML))
-          }
-        })
+        if(c){
+          c.style.cursor = "pointer"
+          c.addEventListener('click', (e: any) => {
+            if (e.target.nextSibling.innerHTML != window.iteration) {
+              that.projectionsPanel.jumpTo(Number(e.target.nextSibling.innerHTML))
+            }
+          })
+        }
+
       }
     })
   }
