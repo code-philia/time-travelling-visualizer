@@ -346,15 +346,27 @@ def get_tree():
         json_data = json.load(fp)
     return make_response(jsonify({"structure":json_data}), 200)
 
+def check_port_inuse(port, host):
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(1)
+        s.connect((host, port))
+        return True
+    except socket.error:
+        return False
+    finally:
+        if s:
+            s.close()
+
 if __name__ == "__main__":
     import socket
     hostname = socket.gethostname()
     ip_address = socket.gethostbyname(hostname)
-    with open('config.json', 'r') as f:
-        config = json.load(f)
-        # ip_address = config["ServerIP"]
-        port = config["ServerPort"]
-        
-    # ip_adress = "localhost"
-    port = 5004
+    # with open('config.json', 'r') as f:
+    #     config = json.load(f)
+    #     ip_address = config["ServerIP"]
+    #     port = config["ServerPort"]
+    port = 5000
+    while check_port_inuse(port, ip_address):
+        port = port + 1
     app.run(host=ip_address, port=int(port))
