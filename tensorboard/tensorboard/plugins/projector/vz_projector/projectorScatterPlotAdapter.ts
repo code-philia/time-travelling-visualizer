@@ -978,9 +978,10 @@ export class ProjectorScatterPlotAdapter {
     }
     if (window.queryResPointIndices?.length) {
       if (window.queryResPointIndices?.indexOf(i) !== -1) {
-        return ds.points[i]?.metadata[accessor] !== undefined
-          ? (ds.points[i]?.metadata[accessor] !== "background" ? String(ds.points[i]?.metadata[accessor]) : "")
-          : `Unknown #${i}`;
+        // return ds.points[i]?.metadata[accessor] !== undefined
+        //   ? (ds.points[i]?.metadata[accessor] !== "background" ? String(ds.points[i]?.metadata[accessor]) : "")
+        //   : `Unknown #${i}`;
+        return `${i}`
       }
     }
     if (window.isAdjustingSel && window.sessionStorage.isControlGroup !=='true') {
@@ -993,9 +994,10 @@ export class ProjectorScatterPlotAdapter {
         return `#${i}`
       }
     }
-    return ds.points[i]?.metadata[accessor] !== undefined
-      ? (ds.points[i]?.metadata[accessor] !== "background" ? String(ds.points[i]?.metadata[accessor]) : "")
-      : `Unknown #${i}`;
+    return `${i}`
+    // return ds.points[i]?.metadata[accessor] !== undefined
+    //   ? (ds.points[i]?.metadata[accessor] !== "background" ? String(ds.points[i]?.metadata[accessor]) : "")
+    //   : `Unknown #${i}`;
   }
   private updateScatterPlotWithNewProjection(projection: Projection) {
     if (projection == null) {

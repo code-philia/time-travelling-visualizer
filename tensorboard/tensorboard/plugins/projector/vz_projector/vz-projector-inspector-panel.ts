@@ -91,6 +91,9 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   @property({ type: Number })
   confidenceThresholdTo: number
 
+  @property({ type: Boolean })
+  disabledAlExBase: boolean = false
+
 
   // @property({ type: Number })
   // epochFrom: number
@@ -268,6 +271,8 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     // this.selectinMessage.innerText = "0 seleted.";
     this.confidenceThresholdFrom = 0
     this.confidenceThresholdTo = 1
+
+    this.disabledAlExBase = false
     // this.epochFrom = 1
     // this.epochTo = 1
     this.showTrace = false
@@ -297,7 +302,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       (selection, neighbors) => this.updateInspectorPane(selection, neighbors)
     );
     // TODO change them based on metadata fields
-    this.searchFields = ["type", "label", "new_selection"]
+    this.searchFields = ["type", "label"]
     // active learning statergy
     this.statergyList = ["TBSampling", "Uncertainty", "Random"]
     // anormaly detection statergy
@@ -532,6 +537,10 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   }
   private async updateSearchResults(indices: number[]) {
 
+     if(this.accAllRadio?.checked || this.rejAllRadio?.checked){
+      this.accAllRadio.checked = false
+      this.rejAllRadio.checked = false
+     }
     const container = this.$$('.matches-list') as HTMLDivElement;
     const list = container.querySelector('.list') as HTMLDivElement;
     list.textContent = '';
@@ -756,7 +765,18 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         accInput.setAttribute('value', `accept`)
         window.acceptInputList[indices[i]] = accInput
         newacctd.append(accInput)
-        row.appendChild(newacctd)
+        if(window.queryResAnormalCleanIndecates && window.queryResAnormalCleanIndecates.indexOf(index)!== -1){
+          let span = document.createElement('span');
+          span.innerText=" "
+          let newtd:any = document.createElement('td')
+          newtd.style.width = "50px"
+          newtd.append(span)
+
+          row.appendChild(newtd)
+        }else{
+          row.appendChild(newacctd)
+        }
+
 
 
         accInput.addEventListener('mouseup', (e: any) => {
@@ -798,7 +818,17 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         accInput.setAttribute('id', `reject${index}`)
         rejectInput.setAttribute('value', `reject`)
         newrejtd.append(rejectInput)
-        row.appendChild(newrejtd)
+        if(window.queryResAnormalCleanIndecates && window.queryResAnormalCleanIndecates.indexOf(index)!== -1){
+          let span = document.createElement('span');
+          span.innerText="  "
+          let newtd:any = document.createElement('td')
+          newtd.style.width = "50px"
+          newtd.append(span)
+          row.appendChild(newtd)
+        }else{
+          row.appendChild(newrejtd)
+        }
+      
 
         rejectInput.addEventListener('change', () => {
           if (rejectInput.checked) {
@@ -922,7 +952,8 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             window.flagindecatesList.push(pointIndex)
           }
         }
-        return `${displayPointIndex}|${displayStringMetaData}|${prediction_res}|${score !== undefined ? score : '-'}`
+        // return `${displayPointIndex}|${displayStringMetaData}|${prediction_res}|${score !== undefined ? score : '-'}`
+        return `${displayPointIndex}|${displayStringMetaData}|${score !== undefined ? score : '-'}`
       }
 
     }
@@ -946,7 +977,8 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
           window.flagindecatesList.push(pointIndex)
         }
       }
-      return `${displayPointIndex}|${displayprediction}|${prediction_res}|${score !== undefined ? score : '-'}`
+      // return `${displayPointIndex}|${displayprediction}|${prediction_res}|${score !== undefined ? score : '-'}`
+      return `${displayPointIndex}|${displayprediction}|${score !== undefined ? score : '-'}`
     }
   }
   private getnnLabelFromIndex(pointIndex: number): string {
@@ -1377,7 +1409,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             } else {
               this.searchBox.message = `${this.queryIndices.length} matches.`;
             }
-            this.showCheckAllQueryRes = false
+            this.showCheckAllQueryRes = true
             this.showMoreRecommend = false
             this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'normal');
             this.queryResultListTitle = 'Query Result List'
@@ -1528,6 +1560,11 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       });
     }
     console.log(id);
+  }
+
+
+  updateDisabledStatues(value:boolean){
+    this.disabledAlExBase = value
   }
 
 

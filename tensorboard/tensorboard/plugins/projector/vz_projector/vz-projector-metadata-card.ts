@@ -148,7 +148,9 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
           </div>
           </template>
         </template>
-          <div class="custom-list-header">selected list | [[selectedNum]]</div>
+          <div class="custom-list-header">selected list | [[selectedNum]]<br/>
+          <span style="display:inline-block;width:150px;">Interest([[interestNum]])</span><span>Not Interest([[notInterestNum]])</span>
+          </div>
           <!--<div class="metadata-row">
           <div class="metadata-key" style="padding-left: 15px;">| img |</div>
           <div class="metadata-key">index |</div>
@@ -159,7 +161,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
           <div style="max-height: calc(100vh - 440px);overflow: auto; padding: 0 15px;">
           <div style="display:flex;">
           <div style="width:150px;">
-          accept
+         Interest
           <template is="dom-repeat" items="[[customMetadata]]">
           <div class="metadata-row custom-list-Row" id=[[item.key]]>
             <div style="text-align: center;display: inline-block;position: absolute;left: -16px;" class="metadata-value">[[item.flag]]</div>
@@ -173,7 +175,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
         </template>
         </div>
         <div style="width:150px;">
-        reject
+        Not Interest
         <template is="dom-repeat" items="[[rejectMetadata]]">
         <div class="metadata-row custom-list-Row" id=[[item.key]]>
           <div style="text-align: center;display: inline-block;position: absolute;left: -16px;" class="metadata-value">[[item.flag]]</div>
@@ -200,6 +202,12 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
 
   @property({ type: Number })
   selectedNum: Number = 0;
+
+  @property({ type: Number})
+  interestNum: Number = 0;
+
+  @property({ type: Number})
+  notInterestNum: Number = 0
 
   @property({ type: Boolean })
   isCollapsed: boolean = false;
@@ -303,6 +311,8 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
     }
     this.hasMetadata = true;
     this.selectedNum = window.acceptIndicates?.length + window.rejectIndicates?.length
+    this.interestNum = window.acceptIndicates?.length
+    this.notInterestNum = window.rejectIndicates?.length
     let metadata = [];
     let DVIServer = window.sessionStorage.ipAddress;
     let basePath = window.modelMath
@@ -327,12 +337,12 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
           let src = data.urlList[window.acceptIndicates[i]]
           // let flag = points[window.acceptIndicates[i]]?.metadata.label === points[window.acceptIndicates[i]]?.current_prediction ? '' : '❗️'
           let flag = ""
-          if(window.flagindecatesList?.indexOf(window.acceptIndicates[i]) !== -1){
-            flag = '❗️'
-          }
-          if (window.sessionStorage.isControlGroup === 'true') {
-            flag = ''
-          }
+          // if(window.flagindecatesList?.indexOf(window.acceptIndicates[i]) !== -1){
+          //   flag = '❗️'
+          // }
+          // if (window.sessionStorage.isControlGroup === 'true') {
+          //   flag = ''
+          // }
           metadata.push({ key: window.acceptIndicates[i], value: points[window.acceptIndicates[i]].metadata.label, src: src, prediction: points[window.acceptIndicates[i]].current_prediction, flag: flag });
         }
         if (msgId) {
@@ -347,9 +357,9 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
           let src = ''
           // let flag = points[window.acceptIndicates[i]]?.metadata.label === points[window.acceptIndicates[i]]?.current_prediction ? '' : '❗️'
           let flag = ""
-          if(window.flagindecatesList?.indexOf(window.rejectIndicates[i]) !== -1){
-            flag = '❗️'
-          }
+          // if(window.flagindecatesList?.indexOf(window.rejectIndicates[i]) !== -1){
+          //   flag = '❗️'
+          // }
           metadata.push({ key: window.acceptIndicates[i], value: points[window.acceptIndicates[i]].metadata.label, src: src, prediction: points[window.acceptIndicates[i]].current_prediction, flag: flag });
         }
       });
@@ -375,6 +385,8 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
     }
     this.hasMetadata = true;
     this.selectedNum = window.acceptIndicates?.length + window.rejectIndicates?.length
+    this.interestNum = window.acceptIndicates?.length
+    this.notInterestNum = window.rejectIndicates?.length
     let metadata = [];
     let DVIServer = window.sessionStorage.ipAddress;
     let basePath = window.modelMath
@@ -399,12 +411,12 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
           let src = data.urlList[window.rejectIndicates[i]]
           // let flag = points[window.rejectIndicates[i]]?.metadata.label === points[window.rejectIndicates[i]]?.current_prediction ? '' : '❗️'
           let flag = ""
-          if(window.flagindecatesList?.indexOf(window.rejectIndicates[i]) !== -1){
-            flag = '❗️'
-          }
-          if (window.sessionStorage.isControlGroup === 'true') {
-            flag = ''
-          }
+          // if(window.flagindecatesList?.indexOf(window.rejectIndicates[i]) !== -1){
+          //   flag = '❗️'
+          // }
+          // if (window.sessionStorage.isControlGroup === 'true') {
+          //   flag = ''
+          // }
           metadata.push({ key: window.rejectIndicates[i], value: points[window.rejectIndicates[i]].metadata.label, src: src, prediction: points[window.rejectIndicates[i]].current_prediction, flag: flag });
         }
         if (msgId) {
@@ -423,9 +435,9 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
           //   flag = points[window.rejectIndicates[i]]?.metadata.label === points[window.rejectIndicates[i]]?.current_prediction ? '' : '❗️'
           // }
           let flag = ""
-          if(window.flagindecatesList?.indexOf(window.rejectIndicates[i]) !== -1){
-            flag = '❗️'
-          }
+          // if(window.flagindecatesList?.indexOf(window.rejectIndicates[i]) !== -1){
+          //   flag = '❗️'
+          // }
           metadata.push({ key: window.rejectIndicates[i], value: points[window.rejectIndicates[i]].metadata.label, src: src, prediction: points[window.rejectIndicates[i]].current_prediction, flag: flag });
         }
       });

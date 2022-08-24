@@ -675,6 +675,14 @@ class Projector
       this.filterDataset(window.nowShowIndicates)
 
     }
+    if(this.inspectorPanel){
+      if(window.sessionStorage.taskType === 'active learning' && window.iteration !== 1){
+        this.inspectorPanel.updateDisabledStatues(true)
+      }else{
+        this.inspectorPanel.updateDisabledStatues(false)
+      }
+      
+    }
     this.initialTree()
   }
 
