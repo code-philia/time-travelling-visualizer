@@ -651,20 +651,26 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         
     def _suggest_abnormal(self, strategy, iteration, lb_idxs, acc_idxs, rej_idxs, budget, period):
         ntd,ulb_idxs = self._init_detection(iteration, lb_idxs, period)
+        map_ulb = ulb_idxs.tolist()
+        map_acc_idxs = np.array([map_ulb.index(i) for i in acc_idxs]).astype(np.int32)
+        map_rej_idxs = np.array([map_ulb.index(i) for i in rej_idxs]).astype(np.int32)
         if strategy == "TBSampling":
-            suggest_idxs, scores = ntd.sample_batch_init(acc_idxs, rej_idxs, budget)
+            suggest_idxs, scores = ntd.sample_batch_init(map_acc_idxs, map_rej_idxs, budget)
         elif strategy == "Feedback":
-            suggest_idxs, scores = ntd.sample_batch(acc_idxs, rej_idxs, budget)
+            suggest_idxs, scores = ntd.sample_batch(map_acc_idxs, map_rej_idxs, budget)
         else:
             raise NotImplementedError
         return ulb_idxs[suggest_idxs], scores
     
     def _suggest_normal(self, strategy, iteration, lb_idxs, acc_idxs, rej_idxs, budget, period):
         ntd, ulb_idxs = self._init_detection(iteration, lb_idxs, period)
+        map_ulb = ulb_idxs.tolist()
+        map_acc_idxs = np.array([map_ulb.index(i) for i in acc_idxs]).astype(np.int32)
+        map_rej_idxs = np.array([map_ulb.index(i) for i in rej_idxs]).astype(np.int32)
         if strategy == "TBSampling":
-            suggest_idxs, _ = ntd.sample_batch_normal_init(acc_idxs, rej_idxs, budget)
+            suggest_idxs, _ = ntd.sample_batch_normal_init(map_acc_idxs, map_rej_idxs, budget)
         elif strategy == "Feedback":
-            suggest_idxs, _ = ntd.sample_batch_normal(acc_idxs, rej_idxs, budget)
+            suggest_idxs, _ = ntd.sample_batch_normal(map_acc_idxs, map_rej_idxs, budget)
         else:
             raise NotImplementedError
         return ulb_idxs[suggest_idxs]
