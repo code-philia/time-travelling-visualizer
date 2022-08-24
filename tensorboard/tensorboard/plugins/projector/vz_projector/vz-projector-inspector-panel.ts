@@ -587,7 +587,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
           }
           this.projector.queryAnormalyStrategy(
             
-            Number(this.moreRecommednNum), this.selectedAnormalyClass, window.queryResAnormalIndecates, confirmInfo, window.acceptIndicates, window.rejectIndicates, 'Feedback',
+            Number(this.moreRecommednNum), this.selectedAnormalyClass, window.queryResAnormalIndecates, confirmInfo, window.acceptIndicates, window.rejectIndicates, AnormalyStrategy,
             (indices: any, cleansIndices: any) => {
               if (indices != null) {
                 // this.queryIndices = indices;
