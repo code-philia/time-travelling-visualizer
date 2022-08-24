@@ -287,7 +287,7 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
             print("TBSampling")
             print('================Round {:d}==============='.format(iteration+1))
             t0 = time.time()
-            new_indices, scores = self._suggest_abnormal(strategy, iteration, acc_idxs, rej_idxs, budget, period)
+            new_indices, scores = self._suggest_abnormal(strategy, iteration, idxs_lb, acc_idxs, rej_idxs, budget, period)
             t1 = time.time()
             print("Query time is {:.2f}".format(t1-t0))
         
@@ -298,7 +298,7 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
             print("Feedback")
             print('================Round {:d}==============='.format(iteration+1))
             t0 = time.time()
-            new_indices, scores = self._suggest_abnormal(strategy, iteration, acc_idxs, rej_idxs, budget, period)
+            new_indices, scores = self._suggest_abnormal(strategy, iteration, idxs_lb, acc_idxs, rej_idxs, budget, period)
             t1 = time.time()
             print("Query time is {:.2f}".format(t1-t0))
         else:
@@ -607,7 +607,7 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
         with open(os.path.join(self.data_provider.content_path, "Model","Iteration_{}".format(iteration), 'sample_recommender.pkl'), 'wb') as f:
             pickle.dump(ftm, f, pickle.HIGHEST_PROTOCOL)
 
-    def _init_detection(self, iteration, period=80):
+    def _init_detection(self, iteration, lb_idxs, period=80):
         # prepare trajectory
         embedding_path = os.path.join(self.data_provider.content_path,"Model", "Iteration_{}".format(iteration),'trajectory_embeddings.npy')
         if os.path.exists(embedding_path):
@@ -635,39 +635,39 @@ class ActiveLearningTimeVisBackend(TimeVisBackend):
             pred = self.data_provider.get_pred(iteration, epoch_num, samples)
             uncertainty = 1 - np.amax(softmax(pred, axis=1), axis=1)
             np.save(uncertainty_path, uncertainty)
-        
+        ulb_idxs = self.data_provider.get_unlabeled_idx(len(uncertainty), lb_idxs)
         # prepare sampling manager
         ntd_path = os.path.join(self.data_provider.content_path, "Model","Iteration_{}".format(iteration), 'sample_recommender.pkl')
         if os.path.exists(ntd_path):
             with open(ntd_path, 'rb') as f:
                 ntd = pickle.load(f)
         else:
-            ntd = Recommender(uncertainty, trajectories, 30, period=period,metric="a")
+            ntd = Recommender(uncertainty[ulb_idxs], trajectories[ulb_idxs], 30, period=period,metric="a")
             print("Detecting abnormal....")
             ntd.clustered()
             print("Finish detection!")
             self._save(iteration, ntd)
-        return ntd
+        return ntd, ulb_idxs
         
-    def _suggest_abnormal(self, strategy, iteration, acc_idxs, rej_idxs, budget, period):
-        ntd = self._init_detection(iteration, period)
+    def _suggest_abnormal(self, strategy, iteration, lb_idxs, acc_idxs, rej_idxs, budget, period):
+        ntd,ulb_idxs = self._init_detection(iteration, lb_idxs, period)
         if strategy == "TBSampling":
             suggest_idxs, scores = ntd.sample_batch_init(acc_idxs, rej_idxs, budget)
         elif strategy == "Feedback":
             suggest_idxs, scores = ntd.sample_batch(acc_idxs, rej_idxs, budget)
         else:
             raise NotImplementedError
-        return suggest_idxs, scores
+        return ulb_idxs[suggest_idxs], scores
     
-    def _suggest_normal(self, strategy, iteration, acc_idxs, rej_idxs, budget, period):
-        ntd = self._init_detection(iteration, period)
+    def _suggest_normal(self, strategy, iteration, lb_idxs, acc_idxs, rej_idxs, budget, period):
+        ntd, ulb_idxs = self._init_detection(iteration, lb_idxs, period)
         if strategy == "TBSampling":
             suggest_idxs, _ = ntd.sample_batch_normal_init(acc_idxs, rej_idxs, budget)
         elif strategy == "Feedback":
             suggest_idxs, _ = ntd.sample_batch_normal(acc_idxs, rej_idxs, budget)
         else:
             raise NotImplementedError
-        return suggest_idxs
+        return ulb_idxs[suggest_idxs]
 
 
 class AnormalyTimeVisBackend(TimeVisBackend):
