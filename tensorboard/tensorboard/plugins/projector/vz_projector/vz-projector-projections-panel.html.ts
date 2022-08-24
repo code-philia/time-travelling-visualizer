@@ -285,7 +285,7 @@ export const template = html`
     <!-- TSNE Controls -->
     <div data-panel="tsne" class="ink-panel-content">
       <!-- Subject Model Path -->
-      <div class="subject-model-path-editor">
+      <div class="subject-model-path-editor" style="visibility:hidden;height:0;">
         <paper-input value="{{subjectModelPathEditorInput}}" label="Model Path"
           on-input="subjectModelPathEditorInputChange">
         </paper-input>
@@ -328,7 +328,7 @@ export const template = html`
              </button>
           </div>
       </div> -->
-      <div class="row">
+      <div class="row" style="visibility:hidden;height:0;">
         <button class="previous-dvi ink-button" title="Previous DVI">
           Previous
         </button>
