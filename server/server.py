@@ -222,11 +222,12 @@ def login():
     username = data["username"]
     password = data["password"]
     
-    # active_learning_path = '/home/xianglin/data/al'
-    # noisy_detection_path = '/home/xianglin/data/anormaly'
+    active_learning_path = '/home/xianglin/projects/DVI_data/exp_al'
+    noisy_detection_path = '/home/xianglin/projects/DVI_data/noisy/symmetric/mnist/10'
+    active_learning_path = noisy_detection_path
     
-    active_learning_path = 'D:\\datasets\\data\\al'
-    noisy_detection_path = 'D:\\datasets\\data\\anormaly'
+    # active_learning_path = 'D:\\datasets\\data\\al'
+    # noisy_detection_path = 'D:\\datasets\\data\\anormaly'
     
     # Verify username and password
     # if pass return normal_content_path and anormaly_content_path
@@ -287,6 +288,9 @@ def login():
                     json.dump(new_is, f)
                 print("Successfully remove cache data!")
         return make_response(jsonify({"normal_content_path": active_learning_path, "unormaly_content_path": noisy_detection_path, "isControl":True}), 200)
+    elif username == "tutorial":
+        path  = "/home/xianglin/projects/DVI_data/tutorial"
+        return make_response(jsonify({"normal_content_path": path, "unormaly_content_path": path}), 200)
     else:
         return make_response(jsonify({"message":"username or password is wrong"}), 200)
   
