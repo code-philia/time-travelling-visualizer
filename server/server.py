@@ -178,11 +178,11 @@ def al_train():
     # default setting al_train is light version, we only save the last epoch
     
     timevis = initialize_backend(CONTENT_PATH, dense_al=False)
+    timevis.save_acc_and_rej(iteration, acc_idxs, rej_idxs, user_name)
     timevis.al_train(iteration, acc_idxs)
 
     from config import config
     NEW_ITERATION =  timevis.get_max_iter()
-    timevis.save_acc_and_rej(NEW_ITERATION, acc_idxs, rej_idxs, user_name)
     timevis.vis_train(NEW_ITERATION, **config)
 
     # update iteration projection
