@@ -228,7 +228,7 @@ def login():
         # reset active learning dataset
         # return make_response(jsonify({"normal_content_path": 'D:\\datasets\\al',"unormaly_content_path":'D:\\datasets\\timevis\\toy_model\\resnet18_cifar10'}), 200) #limy
         # delete [iteration,...)
-        con_paths = {"normal_content_path": '/home/xianglin/data/al',"unormaly_content_path":'/home/xianglin/data/noisy/symmetric'}
+        con_paths = {"normal_content_path": '/home/xianglin/data/al',"unormaly_content_path":'/home/xianglin/data/anormaly'}
         for CONTENT_PATH in con_paths.values():
             ac_flag = False
             target_path = os.path.join(CONTENT_PATH, "Model")
@@ -251,10 +251,10 @@ def login():
                 with open(iter_structure_path, "w") as f:
                     json.dump(new_is, f)
                 print("Successfully remove cache data!")
-        return make_response(jsonify({"normal_content_path": '/home/xianglin/data/al',"unormaly_content_path":'/home/xianglin/data/noisy/symmetric'}), 200) #xianglin
+        return make_response(jsonify({"normal_content_path": '/home/xianglin/data/al',"unormaly_content_path":'/home/xianglin/data/anormaly'}), 200) #xianglin
     elif username == 'linyun' and password == '123qwe': # mock
         # reset active learning dataset
-        con_paths = {"normal_content_path": '/home/xianglin/data/al',"unormaly_content_path":'/home/xianglin/data/noisy/symmetric'}
+        con_paths = {"normal_content_path": '/home/xianglin/data/al',"unormaly_content_path":'/home/xianglin/data/anormaly'}
         for CONTENT_PATH in con_paths.values():
             ac_flag = False
             target_path = os.path.join(CONTENT_PATH, "Model")
@@ -277,7 +277,7 @@ def login():
                 with open(iter_structure_path, "w") as f:
                     json.dump(new_is, f)
                 print("Successfully remove cache data!")
-        return make_response(jsonify({"normal_content_path": '/home/xianglin/data/al',"unormaly_content_path":'/home/xianglin/data/noisy/symmetric',"isControl":True}), 200)
+        return make_response(jsonify({"normal_content_path": '/home/xianglin/data/al',"unormaly_content_path":'/home/xianglin/data/anormaly',"isControl":True}), 200)
     else:
         return make_response(jsonify({"message":"username or password is wrong"}), 200)
   
