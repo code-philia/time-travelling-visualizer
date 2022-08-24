@@ -886,7 +886,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         }).then(response => response.json()).then(data => {
           // console.log("response", data);
           let imgsrc = data.imgUrl;
-          this.projectorEventContext.updateMetaDataByIndices(indices[i], imgsrc)
+          // this.projectorEventContext.updateMetaDataByIndices(indices[i], imgsrc)
           this.projectorEventContext.notifyHoverOverPoint(index);
           // logging.setModalMessage(null, msgId);
         }).catch(error => {

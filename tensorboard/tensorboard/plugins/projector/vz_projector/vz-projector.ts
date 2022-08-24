@@ -1160,6 +1160,7 @@ class Projector
       this.metadataCard.updateMetadata(null);
       return
     }
+    console.log('bububububuuu here')
     this.metadataCard.updateMetadata(
       this.dataSet.points[indices].metadata, src, this.dataSet.points[indices]
     );

@@ -629,7 +629,7 @@ export const template = html`
      <div style="display:flex;">
      <paper-input value="{{moreRecommednNum}}" label="more recommend num:">
      </paper-input>
-     <button style="margin:10px 0;" class="button query-by-sel-btn">More Recommend</button>
+     <button disabled="[[disabledAlExBase]]" style="margin:10px 0;" class="button query-by-sel-btn">More Recommend</button>
      </div>
      </template>
 

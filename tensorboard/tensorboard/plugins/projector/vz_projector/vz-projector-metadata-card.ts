@@ -282,6 +282,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
             value = 'unlabeled'
           }
         }
+        console.log('vvvv',value)
         metadata.push({ key: metadataKey, value: value, prediction: point['current_prediction'], possibelWroung: value !== point['current_prediction'], isSelected: window.previousIndecates?.indexOf(indicate) !== -1 });
       }
       this.metadata = metadata;
