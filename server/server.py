@@ -221,15 +221,23 @@ def login():
     data = request.get_json()
     username = data["username"]
     password = data["password"]
+    
+    # active_learning_path = '/home/xianglin/data/al'
+    # noisy_detection_path = '/home/xianglin/data/anormaly'
+    
+    active_learning_path = 'D:\\datasets\\data\\al'
+    noisy_detection_path = 'D:\\datasets\\data\\anormaly'
+    
     # Verify username and password
     # if pass return normal_content_path and anormaly_content_path
     # TODO copy datasets
     # TODO reset dataset when login
-    if username == 'xianglin' and password == '123qwe': # mock
+    if username == 'admin-e' and password == '123qwe': # mock
         # reset active learning dataset
         # return make_response(jsonify({"normal_content_path": 'D:\\datasets\\al',"unormaly_content_path":'D:\\datasets\\timevis\\toy_model\\resnet18_cifar10'}), 200) #limy
         # delete [iteration,...)
-        con_paths = {"normal_content_path": '/home/xianglin/data/al',"unormaly_content_path":'/home/xianglin/data/anormaly'}
+        # con_paths = {"normal_content_path": '/home/xianglin/data/al',"unormaly_content_path":'/home/xianglin/data/anormaly'}
+        con_paths = {"normal_content_path": active_learning_path,"unormaly_content_path":noisy_detection_path}
         for CONTENT_PATH in con_paths.values():
             ac_flag = False
             target_path = os.path.join(CONTENT_PATH, "Model")
@@ -252,10 +260,10 @@ def login():
                 with open(iter_structure_path, "w") as f:
                     json.dump(new_is, f)
                 print("Successfully remove cache data!")
-        return make_response(jsonify({"normal_content_path": '/home/xianglin/data/al',"unormaly_content_path":'/home/xianglin/data/anormaly'}), 200) #xianglin
-    elif username == 'linyun' and password == '123qwe': # mock
+        return make_response(jsonify({"normal_content_path": active_learning_path, "unormaly_content_path": noisy_detection_path}), 200) #xianglin
+    elif username == 'admin-c' and password == '123qwe': # mock
         # reset active learning dataset
-        con_paths = {"normal_content_path": '/home/xianglin/data/al',"unormaly_content_path":'/home/xianglin/data/anormaly'}
+        con_paths = {"normal_content_path": active_learning_path, "unormaly_content_path": noisy_detection_path}
         for CONTENT_PATH in con_paths.values():
             ac_flag = False
             target_path = os.path.join(CONTENT_PATH, "Model")
@@ -278,7 +286,7 @@ def login():
                 with open(iter_structure_path, "w") as f:
                     json.dump(new_is, f)
                 print("Successfully remove cache data!")
-        return make_response(jsonify({"normal_content_path": '/home/xianglin/data/al',"unormaly_content_path":'/home/xianglin/data/anormaly',"isControl":True}), 200)
+        return make_response(jsonify({"normal_content_path": active_learning_path, "unormaly_content_path": noisy_detection_path, "isControl":True}), 200)
     else:
         return make_response(jsonify({"message":"username or password is wrong"}), 200)
   
