@@ -64,9 +64,10 @@ def filter():
     training_data_number = timevis.hyperparameters["TRAINING"]["train_num"]
     testing_data_number = timevis.hyperparameters["TRAINING"]["test_num"]
 
-    # current_index = timevis.get_epoch_index(EPOCH)
-    # selected_points = np.arange(training_data_number + testing_data_number)[current_index]
-    selected_points = np.arange(training_data_number + testing_data_number)
+    current_index = timevis.get_epoch_index(EPOCH)
+    selected_points = np.arange(training_data_number)[current_index]
+    selected_points = np.concatenate((selected_points, np.arange(training_data_number, training_data_number + testing_data_number, 1)), axis=0)
+    # selected_points = np.arange(training_data_number + testing_data_number)
     for key in predicates.keys():
         if key == "label":
             tmp = np.array(timevis.filter_label(predicates[key], int(EPOCH)))
