@@ -224,11 +224,11 @@ def login():
     # if pass return normal_content_path and anormaly_content_path
     # TODO copy datasets
     # TODO reset dataset when login
-    if username == 'admin' and password == '123qwe': # mock
+    if username == 'xianglin' and password == '123qwe': # mock
         # reset active learning dataset
         # return make_response(jsonify({"normal_content_path": 'D:\\datasets\\al',"unormaly_content_path":'D:\\datasets\\timevis\\toy_model\\resnet18_cifar10'}), 200) #limy
         # delete [iteration,...)
-        con_paths = {"normal_content_path": '/home/xianglin/DVI_data/active_learning/random/resnet18/CIFAR10',"unormaly_content_path":'/home/xianglin/data/noisy/symmetric'}
+        con_paths = {"normal_content_path": '/home/xianglin/data/al',"unormaly_content_path":'/home/xianglin/data/noisy/symmetric'}
         for CONTENT_PATH in con_paths.values():
             ac_flag = False
             target_path = os.path.join(CONTENT_PATH, "Model")
@@ -251,16 +251,33 @@ def login():
                 with open(iter_structure_path, "w") as f:
                     json.dump(new_is, f)
                 print("Successfully remove cache data!")
-        return make_response(jsonify({"normal_content_path": '/home/xianglin/DVI_data/active_learning/random/resnet18/CIFAR10',"unormaly_content_path":'/home/xianglin/data/noisy/symmetric'}), 200) #xianglin
-        # return make_response(jsonify({"normal_content_path": '/Users/zhangyifan/Downloads/al',"unormaly_content_path":'/Users/zhangyifan/Downloads/toy_model/resnet18_cifar10'}), 200) #yvonne
-    elif username == 'controlGroup' and password == '123qwe': # mock
+        return make_response(jsonify({"normal_content_path": '/home/xianglin/data/al',"unormaly_content_path":'/home/xianglin/data/noisy/symmetric'}), 200) #xianglin
+    elif username == 'linyun' and password == '123qwe': # mock
         # reset active learning dataset
-        # CONTENT_PATH = "/home/xianglin/projects/DVI_data/noisy/symmetric/cifar10"
-        # sys.path.append(CONTENT_PATH)
-        # timevis = initialize_backend(CONTENT_PATH)
-        # timevis.reset(iteration=3)
-        # sys.path.remove(CONTENT_PATH)
-        return make_response(jsonify({"normal_content_path": 'D:\\datasets\\al',"unormaly_content_path":'D:\\datasets\\timevis\\toy_model\\resnet18_cifar10',"isControl":True}), 200) #limy
+        con_paths = {"normal_content_path": '/home/xianglin/data/al',"unormaly_content_path":'/home/xianglin/data/noisy/symmetric'}
+        for CONTENT_PATH in con_paths.values():
+            ac_flag = False
+            target_path = os.path.join(CONTENT_PATH, "Model")
+            dir_list = os.listdir(target_path)
+            for dir in dir_list:
+                if "Iteration_" in dir:
+                    ac_flag=True
+                    i = int(dir.replace("Iteration_", ""))
+                    if i > 2:
+                        shutil.rmtree(os.path.join(target_path, dir))
+            if ac_flag:
+                iter_structure_path = os.path.join(CONTENT_PATH, "iteration_structure.json")
+                with open(iter_structure_path, "r") as f:
+                    i_s = json.load(f)
+                new_is = list()
+                for item in i_s:
+                    value = item["value"]
+                    if value < 3:
+                        new_is.append(item)
+                with open(iter_structure_path, "w") as f:
+                    json.dump(new_is, f)
+                print("Successfully remove cache data!")
+        return make_response(jsonify({"normal_content_path": '/home/xianglin/data/al',"unormaly_content_path":'/home/xianglin/data/noisy/symmetric',"isControl":True}), 200)
     else:
         return make_response(jsonify({"message":"username or password is wrong"}), 200)
   
