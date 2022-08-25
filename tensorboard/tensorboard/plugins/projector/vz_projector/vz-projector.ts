@@ -173,6 +173,9 @@ class Projector
   @property({ type: Boolean })
   _showNotAvaliable: boolean = false
 
+  @property({type: Boolean})
+  showUnlabeledCheckbox: boolean = true
+
   // The working subset of the data source's original data set.
   dataSet: DataSet;
   iteration: number;
@@ -270,6 +273,8 @@ class Projector
     this.showTesting = false
 
     this.registered = false
+
+    this.showUnlabeledCheckbox = window.sessionStorage.taskType === 'active learning'
 
 
     this.intervalFlag = true

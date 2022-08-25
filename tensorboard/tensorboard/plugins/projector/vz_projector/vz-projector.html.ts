@@ -381,12 +381,20 @@ export const template = html`
             >
           </div>
           <div class="layers-checkbox">
+          <template is="dom-if" if="[[!showUnlabeledCheckbox]]">
+          <paper-checkbox class="diff-layer-checkbox" id="label-points-toggle" checked="{{showlabeled}}">
+            training
+          </paper-checkbox>
+          </template>
+          <template is="dom-if" if="[[showUnlabeledCheckbox]]">
           <paper-checkbox class="diff-layer-checkbox" id="label-points-toggle" checked="{{showlabeled}}">
             labeled
           </paper-checkbox>
+         
           <paper-checkbox class="diff-layer-checkbox" id="unlabel-points-toggle" checked="{{showUnlabeled}}">
             unlabeled
           </paper-checkbox>
+          </template>
           </paper-checkbox>
           <paper-checkbox class="diff-layer-checkbox" id="testing-points-toggle" checked="{{showTesting}}">
             testing
