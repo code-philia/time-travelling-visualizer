@@ -503,7 +503,13 @@ export class ScatterPlot {
   /** For using ctrl + left click as right click, and for circle select */
   private onKeyUp(e: any) {
     this.isctrling = false
-    this.isShifting = false
+    if(!(this.isShifting === true && this.mouseIsDown === true)){
+      this.isShifting = false
+    }else{
+      setTimeout(()=>{
+        this.isShifting = false
+      }, 600)
+    }
     if (this.selecting) {
       this.container.style.cursor = 'crosshair';
     } else {

@@ -153,6 +153,10 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   rejAll: boolean = false
 
 
+  @property({ type: Boolean })
+  showUnlabeledChecked: boolean = true
+
+
   distFunc: DistanceFunction;
 
   public scatterPlot: ScatterPlot;
@@ -226,6 +230,8 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     this.showAnomaly = window.sessionStorage.taskType == 'anormaly detection'
     this.shownormal = window.sessionStorage.taskType == 'active learning' || window.taskType == 'active learning'
     this.isControlGroup = window.sessionStorage.isControlGroup == 'true'
+
+    // this.showUnlabeledChecked = window.sessionStorage.taskType == 'active learning' || window.taskType == 'active learning'
 
     // if (window.sessionStorage.taskType == 'active learning') {
     //   this.moreRecommednNum = 100
@@ -627,9 +633,9 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
                 // }
                 this.checkAllQueryRes = false
                 this.queryResultListTitle = 'Possible Abnormal Point List'
-                let dom = this.$$("#queryResheader")
+                // let dom = this.$$("#queryResheader")
 
-                dom.innerHTML = 'label'
+                // dom.innerHTML = 'label'
                 this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isAnormalyQuery');
               }
             })
@@ -957,7 +963,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       let prediction_res = suggest_label === displayStringMetaData ? ' - ' : ' ❗️ '
 
       if (window.sessionStorage.isControlGroup == 'true') {
-        return `${displayPointIndex}|${displayStringMetaData}|${score !== undefined ? score : '-'}`
+        return `${displayPointIndex}|${displayprediction}|${score !== undefined ? score : '-'}`
       } else {
         if (prediction_res !== " - ") {
           if (window.flagindecatesList.indexOf(pointIndex) === -1) {
@@ -965,7 +971,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
           }
         }
         // return `${displayPointIndex}|${displayStringMetaData}|${prediction_res}|${score !== undefined ? score : '-'}`
-        return `${displayPointIndex}|${displayStringMetaData}|${score !== undefined ? score : '-'}`
+        return `${displayPointIndex}|${displayprediction}|${score !== undefined ? score : '-'}`
       }
 
     }
@@ -1229,9 +1235,9 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             // }
             this.checkAllQueryRes = false
             this.queryResultListTitle = 'Possible Abnormal Point List'
-            let dom = this.$$("#queryResheader")
+            // let dom = this.$$("#queryResheader")
 
-            dom.innerHTML = 'label'
+            // dom.innerHTML = 'label'
             this.projectorEventContext.notifySelectionChanged(this.queryIndices, false, 'isAnormalyQuery');
           }
         })
@@ -1239,6 +1245,11 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
 
     this.trainBySelBtn.onclick = () => {
+      if(window.acceptIndicates?.length < 500){
+         logging.setErrorMessage(`Current selected interested samples: ${window.acceptIndicates?.length},
+          Please Select 500 interest samples`);
+         return
+      }
       this.resetStatus()
       // this.boundingSelectionBtn.classList.remove('actived')
       // this.projectorEventContext.setMouseMode(MouseMode.CAMERA_AND_CLICK_SELECT);

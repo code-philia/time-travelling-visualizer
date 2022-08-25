@@ -384,7 +384,7 @@ export const template = html`
     <div class="ink-tab-group">
       <template is="dom-if" if="[[shownormal]]">
       <div data-tab="advanced" id="al-filter-tab" class="ink-tab projection-tab">
-        Active Learning
+        Sample Selection
       </div>
       </template>
       <paper-tooltip for="al-filter-tab" position="bottom" animation-delay="0" fit-to-visible-bounds>
@@ -393,7 +393,7 @@ export const template = html`
 
       <template is="dom-if" if="[[showAnomaly]]">
       <div data-tab="anomaly" id="anomaly-filter-tab" class="ink-tab projection-tab">
-      Anomaly Detection
+      Interest Potential
       </div>
      </template>
 
@@ -453,11 +453,11 @@ export const template = html`
           </template>
         </paper-listbox>
       </paper-dropdown-menu>
-      <paper-input value="{{budget}}" label="number of query" style="margin-right: 10px;"></paper-input>
+      <paper-input value="{{budget}}" label="recommend num" style="margin-right: 10px;"></paper-input>
       <paper-tooltip position="bottom" animation-delay="0" fit-to-visible-bounds>
       query By active Learning
       </paper-tooltip>
-      <button style="width: 100px; margin-top: 14px;" class="query-by-stratergy search-button search">Query</button>
+      <button style="width: 100px; margin-top: 14px;" class="query-by-stratergy search-button search">Recommend</button>
     </div>
 
     <!--<div style="display:flex;">
@@ -487,8 +487,8 @@ export const template = html`
         </template>
       </paper-listbox>
     </paper-dropdown-menu>-->
-      <paper-input value="{{anomalyRecNum}}" label="number of query" style="margin-right: 10px;"></paper-input>
-      <button style="width: 100px;" class="query-anomaly search-button search">Query</button>
+      <paper-input value="{{anomalyRecNum}}" label="recommend num" style="margin-right: 10px;"></paper-input>
+      <button style="width: 100px;" class="query-anomaly search-button search">Recommend</button>
     </div>
 
     <!--<div class="buttons">
@@ -519,12 +519,20 @@ export const template = html`
   </div>
 
   <!--<div style="display:flex;width: 280px;justify-content: space-around;margin-bottom: 10px;">
-  <paper-checkbox id="label-points-toggle" checked="{{showlabeled}}">
+  <template is="dom-if" if="[[showAnomaly]]">
+  <paper-checkbox id="label-points-toggle" checked="{{showlabeled}}" id="labeledCheckbox">
+  training
+  </paper-checkbox>
+  </template>
+
+  <template is="dom-if" if="[[!showAnomaly]]">
+  <paper-checkbox id="label-points-toggle" checked="{{showlabeled}}" id="labeledCheckbox">
   labeled
   </paper-checkbox>
   <paper-checkbox id="unlabel-points-toggle" checked="{{showUnlabeled}}">
   unlabeled
   </paper-checkbox>
+  </template>
   </paper-checkbox>
   <paper-checkbox id="testing-points-toggle" checked="{{showTesting}}">
   testing
