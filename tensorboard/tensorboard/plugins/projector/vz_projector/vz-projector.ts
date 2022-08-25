@@ -327,7 +327,7 @@ class Projector
       .then(response => response.json())
       .then(res => {
         window.treejson = res.structure
-        
+
         let data = res.structure
 
 
@@ -388,11 +388,11 @@ class Projector
         //create tree
         let len = res.structure.length
         let svgWidth = len * 35
-        if(window.sessionStorage.taskType ==='active learning'){
+        if (window.sessionStorage.taskType === 'active learning') {
           svgWidth = 1000
         }
-          // svgWidth = 1000
-        console.log('svgWid', len,svgWidth)
+        // svgWidth = 1000
+        console.log('svgWid', len, svgWidth)
         svgDom.style.width = svgWidth + 200
 
         var tree = d3.tree()
@@ -473,12 +473,12 @@ class Projector
           })
           .attr('dy', 10)
           .text(function (d, i) {
-            if(window.sessionStorage.taskType === 'active learning'){
+            if (window.sessionStorage.taskType === 'active learning') {
               return `${d.data.value}|${d.data.name}`;
-            }else{
+            } else {
               return `${d.data.value}`;
             }
-        
+
           })
       })
     let that = this
@@ -486,12 +486,14 @@ class Projector
       let list = svgDom.querySelectorAll("circle");
       for (let i = 0; i <= list.length; i++) {
         let c = list[i]
-        if(c){
+        if (c) {
           c.style.cursor = "pointer"
           c.addEventListener('click', (e: any) => {
             if (e.target.nextSibling.innerHTML != window.iteration) {
               let value = e.target.nextSibling.innerHTML.split("|")[0]
               that.projectionsPanel.jumpTo(Number(value))
+              window.sessionStorage.setItem('acceptIndicates', "")
+              window.sessionStorage.setItem('rejectIndicates', "")
             }
           })
         }
@@ -660,6 +662,7 @@ class Projector
   }
 
   onIterationChange(num: number) {
+    window.sessionStorage.setItem('iteration', String(num))
     // window.iteration = num;
     let indicates = []
     this.iteration = num;
@@ -675,13 +678,13 @@ class Projector
       this.filterDataset(window.nowShowIndicates)
 
     }
-    if(this.inspectorPanel){
-      if(window.sessionStorage.taskType === 'active learning' && window.iteration !== 1){
+    if (this.inspectorPanel) {
+      if (window.sessionStorage.taskType === 'active learning' && window.iteration !== 1) {
         this.inspectorPanel.updateDisabledStatues(true)
-      }else{
+      } else {
         this.inspectorPanel.updateDisabledStatues(false)
       }
-      
+
     }
     this.initialTree()
   }
@@ -747,6 +750,22 @@ class Projector
       this.inspectorPanel.metadataChanged(spriteAndMetadata);
       this.projectionsPanel.metadataChanged(spriteAndMetadata);
       this.dataPanel.metadataChanged(spriteAndMetadata, metadataFile);
+      //reset
+      if (window.sessionStorage.iteration) {
+        this.projectionsPanel.jumpTo(Number(window.sessionStorage.iteration))
+      } else {
+        this.projectionsPanel.jumpTo(Number(1))
+      }
+      //reset
+      if (window.sessionStorage.acceptIndicates) {
+        window.acceptIndicates = window.sessionStorage.acceptIndicates.split(",").map(parseFloat)
+      }
+      if (window.sessionStorage.rejectIndicates) {
+        window.rejectIndicates = window.sessionStorage.rejectIndicates.split(",").map(parseFloat)
+      }
+      if (window.sessionStorage.customSelection) {
+        window.customSelection = window.sessionStorage.customSelection.split(",").map(parseFloat)
+      }
     } else {
       this.setCurrentDataSet(null);
       // this.projectorScatterPlotAdapter
@@ -988,6 +1007,7 @@ class Projector
     this.metadataCard.updateCustomList(this.dataSet.points, this as ProjectorEventContext)
     this.metadataCard.updateRejectList(this.dataSet.points, this as ProjectorEventContext)
     // this.inspectorPanel.refreshSearchResult()
+    this.inspectorPanel.updateSessionStorage()
     this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
     this.projectorScatterPlotAdapter.render()
   }

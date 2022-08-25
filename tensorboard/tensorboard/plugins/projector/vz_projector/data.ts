@@ -455,6 +455,8 @@ export class DataSet {
 
 
     this.iterationChangeReset()
+    // window.sessionStorage.setItem('acceptIndicates',"")
+    // window.sessionStorage.setItem('rejectIndicates',"")
     window.acceptIndicates = []
     window.rejectIndicates = []
 

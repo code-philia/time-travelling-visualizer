@@ -680,6 +680,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             }
 
             window.customSelection = window.rejectIndicates.concat(window.acceptIndicates)
+            this.updateSessionStorage()
             this.projectorEventContext.refresh()
           })
           this.rejAllRadio.addEventListener('change', (e) => {
@@ -696,6 +697,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
               }
             }
             window.customSelection = window.rejectIndicates.concat(window.acceptIndicates)
+            this.updateSessionStorage()
             this.projectorEventContext.refresh()
           })
         // })
@@ -806,6 +808,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             }
           }
           window.customSelection = window.acceptIndicates.concat(window.rejectIndicates)
+          this.updateSessionStorage()
           this.projectorEventContext.refresh()
         })
 
@@ -848,6 +851,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             }
           }
           window.customSelection = window.acceptIndicates.concat(window.rejectIndicates)
+          this.updateSessionStorage()
           this.projectorEventContext.refresh()
         })
 
@@ -904,6 +908,12 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       queryListTable.appendChild(row)
       list.appendChild(queryListTable);
     }
+  }
+  updateSessionStorage(){
+    console.log('update session')
+    window.sessionStorage.setItem('acceptIndicates',window.acceptIndicates.join(","))
+    window.sessionStorage.setItem('rejectIndicates',window.rejectIndicates.join(","))
+    window.sessionStorage.setItem('customSelection',window.customSelection.join(","))
   }
   private getLabelFromIndex(pointIndex: number): string {
     if (!window.flagindecatesList) {
