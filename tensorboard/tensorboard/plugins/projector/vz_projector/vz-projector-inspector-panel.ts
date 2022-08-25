@@ -536,7 +536,6 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     this.updateSearchResults(list)
   }
   private async updateSearchResults(indices: number[]) {
-
      if(this.accAllRadio?.checked || this.rejAllRadio?.checked){
       this.accAllRadio.checked = false
       this.rejAllRadio.checked = false
@@ -704,6 +703,9 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       
       // }
     }
+    if(indices.length > 2000){
+      indices.length = 2000
+   }
     for (let i = 0; i < indices.length; i++) {
       const index = indices[i];
       const row = document.createElement('th');
@@ -899,7 +901,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
       };
       row.onmouseleave = () => {
-        this.projectorEventContext.updateMetaDataByIndices(-1, '')
+        // this.projectorEventContext.updateMetaDataByIndices(-1, '')
         this.projectorEventContext.notifyHoverOverPoint(null);
       };
 

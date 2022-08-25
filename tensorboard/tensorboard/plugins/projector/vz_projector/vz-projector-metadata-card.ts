@@ -120,6 +120,10 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
             <template is="dom-repeat" items="[[metadata]]">
               <div class="metadata-row">
                 <div>
+                <div class="metadata-key">index</div>
+                <div class="metadata-value">[[item.index]]</div>
+                </div>
+                <div>
                 <div class="metadata-key">[[item.key]]</div>
                 <div class="metadata-value">[[item.value]]</div>
                 </div>
@@ -283,7 +287,7 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
           }
         }
         console.log('vvvv',value)
-        metadata.push({ key: metadataKey, value: value, prediction: point['current_prediction'], possibelWroung: value !== point['current_prediction'], isSelected: window.previousIndecates?.indexOf(indicate) !== -1 });
+        metadata.push({ index:indicate, key: metadataKey, value: value, prediction: point['current_prediction'], possibelWroung: value !== point['current_prediction'], isSelected: window.previousIndecates?.indexOf(indicate) !== -1 });
       }
       this.metadata = metadata;
       this.label = '' + this.pointMetadata[this.labelOption];

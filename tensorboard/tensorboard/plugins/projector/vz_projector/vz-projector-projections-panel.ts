@@ -215,7 +215,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
   ready() {
     super.ready();
     this.learningRateList = ['0.1', '0.01', '0.001']
-    this.architectureList = ['ResNet-18', 'VGG-18']
+    this.architectureList = ['ResNet-18', 'ResNet-34', 'VGG-18']
     this.totalEpochList = [190, 200]
     this._showFilter = window.sessionStorage.taskType == 'anormaly detection'
     this.zDropdown = this.$$('#z-dropdown') as HTMLElement;
@@ -804,30 +804,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
   @observe('selectedArchitecture')
   // TODO
   _selectedArchitectureChanged() {
-
-    if (this.projector) {
-      if (this.selectedArchitecture == 'ResNet-18' && this.selectedLr == '0.01' && this.selectedTotalEpoch == 190) {
-
-        this.projector.hiddenOrShowScatter('')
-        if (this.totalAccTrain) {
-          this.totalAccTrain.innerText = '' + Number(this.baseTrainAcc * 100).toFixed(2) + '%';
-          this.totalAccTest.innerText = '' + Number(this.baseTestAcc * 100).toFixed(2) + '%';
-        }
-      } else if (this.selectedArchitecture == 'VGG-18' && this.selectedLr == '0.01' && this.selectedTotalEpoch == 190) {
-        this.projector.hiddenOrShowScatter('hidden')
-        if (this.totalAccTrain) {
-          this.totalAccTrain.innerText = '93' + '%';
-          this.totalAccTest.innerText = '95%';
-        }
-      } else {
-        this.projector.hiddenOrShowScatter('hidden')
-        if (this.totalAccTrain) {
-          this.totalAccTrain.innerText = '-' + '%';
-          this.totalAccTest.innerText = '-' + '%';
-        }
-      }
-    }
-    console.log('ar', this.totalAccTrain, this.selectedTotalEpoch, this.selectedLr)
+   this.updateTrainTestRessult()
   }
   @observe('selectedTotalEpoch')
   _selectedTotalEpochChanged() {
@@ -839,34 +816,51 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
   @observe('selectedLr')
   _selectedLrChanged() {
     // TODO
+    this.updateTrainTestRessult()
+  }
+
+  updateTrainTestRessult(){
     if (this.projector) {
-      if (this.projector) {
-        if (this.selectedArchitecture == 'ResNet-18' && this.selectedLr == '0.01' && this.selectedTotalEpoch == 190) {
+      if (this.selectedArchitecture == 'ResNet-18' && this.selectedLr == '0.01' && this.selectedTotalEpoch == 190) {
 
-          this.projector.hiddenOrShowScatter('')
-          if (this.totalAccTrain) {
-            this.totalAccTrain.innerText = '' + Number(this.baseTrainAcc * 100).toFixed(2) + '%';
-            this.totalAccTest.innerText = '' + Number(this.baseTestAcc * 100).toFixed(2) + '%';
-          }
-
-        } else if (this.selectedArchitecture == 'VGG-18' && this.selectedLr == '0.01' && this.selectedTotalEpoch == 190) {
-          this.projector.hiddenOrShowScatter('hidden')
-          if (this.totalAccTrain) {
-            this.totalAccTrain.innerText = '93' + '%';
-            this.totalAccTest.innerText = '95%';
-          }
-        } else if (this.selectedArchitecture == 'ResNet-18' && this.selectedLr !== '0.01' && this.selectedTotalEpoch == 190) {
-          this.totalAccTrain.innerText = '90' + '%';
-          this.totalAccTest.innerText = '99%';
-        } else {
-          {
-            if (this.totalAccTrain) {
-              this.totalAccTrain.innerText = '';
-              this.totalAccTest.innerText = '';
-            }
-          }
+        this.projector.hiddenOrShowScatter('')
+        if (this.totalAccTrain) {
+          this.totalAccTrain.innerText = '' + Number(this.baseTrainAcc * 100).toFixed(2) + '%';
+          this.totalAccTest.innerText = '' + Number(this.baseTestAcc * 100).toFixed(2) + '%';
         }
-
+      }
+      else if (this.selectedArchitecture == 'ResNet-18' && this.selectedLr == '0.1' && this.selectedTotalEpoch == 190) {
+        this.projector.hiddenOrShowScatter('hidden')
+        if (this.totalAccTrain) {
+          this.totalAccTrain.innerText = '95.66%';
+          this.totalAccTest.innerText = '78.23%';
+        }
+      }
+      else if (this.selectedArchitecture == 'ResNet-18' && this.selectedLr == '0.001' && this.selectedTotalEpoch == 190) {
+        this.projector.hiddenOrShowScatter('hidden')
+        if (this.totalAccTrain) {
+          this.totalAccTrain.innerText = '94.22%';
+          this.totalAccTest.innerText = '78.26%';
+        }
+      }
+      else if (this.selectedArchitecture == 'ResNet-34' && this.selectedLr == '0.01' && this.selectedTotalEpoch == 190) {
+        this.projector.hiddenOrShowScatter('hidden')
+        if (this.totalAccTrain) {
+          this.totalAccTrain.innerText = '98.23%';
+          this.totalAccTest.innerText = '78.61%';
+        }
+      } else if (this.selectedArchitecture == 'VGG-18' && this.selectedLr == '0.01' && this.selectedTotalEpoch == 190) {
+        this.projector.hiddenOrShowScatter('hidden')
+        if (this.totalAccTrain) {
+          this.totalAccTrain.innerText = '96.38%';
+          this.totalAccTest.innerText = '79.93%';
+        }
+      } else {
+        this.projector.hiddenOrShowScatter('hidden')
+        if (this.totalAccTrain) {
+          this.totalAccTrain.innerText = '-' + '%';
+          this.totalAccTest.innerText = '-' + '%';
+        }
       }
     }
   }

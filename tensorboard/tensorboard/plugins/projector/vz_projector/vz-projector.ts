@@ -326,10 +326,10 @@ class Projector
     })
       .then(response => response.json())
       .then(res => {
+        res.structure.length = window.selectedTotalEpoch
         window.treejson = res.structure
 
         let data = res.structure
-
 
         function tranListToTreeData(arr) {
           const newArr = []
