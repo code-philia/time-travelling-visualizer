@@ -50,7 +50,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   dataSet: DataSet;
 
   @property({ type: String })
-  selectedStratergy: string = 'TBSampling';
+  selectedStratergy: string = 'Interest potential';
 
   @property({ type: String })
   selectedAnormalyStratergy: string;
@@ -304,7 +304,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     // TODO change them based on metadata fields
     this.searchFields = ["type", "label"]
     // active learning statergy
-    this.statergyList = ["TBSampling", "Uncertainty", "Random"]
+    this.statergyList = ["Interest potential", "Random"]
     // anormaly detection statergy
     this.anormalyStatergyList = ['anormalyStageone', 'anormalyStageTwo', 'anormalyStageThree']
     // anormaly detcttion classes
@@ -1455,6 +1455,9 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     let that = this
     let num = Number(this.budget)
     let stratergy = this.selectedStratergy
+    if(this.selectedStratergy === 'Interest potential'){
+      stratergy = 'TBSampling'
+    }
     if (querNum) {
       num = Number(querNum)
     }

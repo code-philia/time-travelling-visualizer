@@ -397,7 +397,7 @@ export const template = html`
         <template is="dom-if" if="[[_showNotAvaliable]]">
         <div style="position:absolute;top: 20%;width: 100%;text-align: center;">
         <h1 style="color:red;">Not Avaliable!</h1>
-        <h4>you can choose ResNet and lr: 0.0001 to see the visualization </h4>
+        <h4>you can choose ResNet-18 and lr: 0.01 to see the visualization </h4>
         </div>
         </template>
           <div id="scatter">
@@ -435,7 +435,7 @@ export const template = html`
               suggest label: 👍<br/>
               custom accept: ✅<br/>
               custom reject: ❌<br/>
-              
+
               anomaly data: ⭕️<br/>
               clean data: 🟢<br/>
               <!-- <b>Zoom</b> Mouse wheel.<br />

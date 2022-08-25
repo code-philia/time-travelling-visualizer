@@ -443,7 +443,7 @@ export const template = html`
 
   <div data-panel="advanced" class="ink-panel-content query-content">
     <div class="statergy-by" style="display:flex">
-      <paper-dropdown-menu no-animations label="Potential Interest">
+      <paper-dropdown-menu no-animations label="Strategies">
         <paper-listbox attr-for-selected="value" class="dropdown-content" selected="{{selectedStratergy}}"
           slot="dropdown-content">
           <template is="dom-repeat" items="[[statergyList]]">

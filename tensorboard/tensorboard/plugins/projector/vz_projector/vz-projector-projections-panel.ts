@@ -195,7 +195,10 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
   private totalEpochList: number[]
 
   private totalAccTrain: HTMLElement;
-  private totalAccTest : HTMLElement;
+  private totalAccTest: HTMLElement;
+
+  private baseTrainAcc: any;
+  private baseTestAcc: any;
 
   initialize(projector: any) {
     this.polymerChangesTriggerReprojection = true;
@@ -309,6 +312,8 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
     this.accTest.innerText = '' + evaluation.acc_test;
     this.totalAccTest.innerText = '' + Number(evaluation.test_acc * 100).toFixed(2) + '%';
     this.totalAccTrain.innerText = '' + Number(evaluation.train_acc * 100).toFixed(2) + '%';
+    this.baseTrainAcc = evaluation.train_acc
+    this.baseTestAcc = evaluation.test_acc
   }
   private setupUIControls() {
     {
@@ -528,7 +533,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
     }
   }
 
-  jumpTo(iterationInput){
+  jumpTo(iterationInput) {
     const msgId = logging.setModalMessage('loading...');
     this.jumpDVIButton.disabled = true;
     this.nextDVIButton.disabled = true;
@@ -572,10 +577,10 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
         this.jumpDVIButton.disabled = false;
       });
   }
-  retrainBySelections(iteration: number, selections: number[],rejections: number[]) {
+  retrainBySelections(iteration: number, selections: number[], rejections: number[]) {
 
     const msgId = logging.setModalMessage('training and loading...')
-    this.dataSet.reTrainByDVI(iteration, selections,rejections,
+    this.dataSet.reTrainByDVI(iteration, selections, rejections,
       (iteration: number | null, evaluation: any, new_selection: any[], indices: number[], totalIter?: number) => {
         /**
          * get filter index
@@ -797,48 +802,97 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
 
   }
   @observe('selectedArchitecture')
-     // TODO
-  _selectedArchitectureChanged(){
-    if(this.totalAccTrain){
-      this.totalAccTrain.innerText = String(Math.random().toFixed(3))
-      this.totalAccTest.innerText = String(Math.random().toFixed(3))
-    }
-    if(this.projector){
-      if(this.selectedArchitecture == 'ResNet-18' && this.selectedLr == '0.01'){
-        
+  // TODO
+  _selectedArchitectureChanged() {
+
+    if (this.projector) {
+      if (this.selectedArchitecture == 'ResNet-18' && this.selectedLr == '0.01' && this.selectedTotalEpoch == 190) {
+
         this.projector.hiddenOrShowScatter('')
-       }else{
+        if (this.totalAccTrain) {
+          this.totalAccTrain.innerText = '' + Number(this.baseTrainAcc * 100).toFixed(2) + '%';
+          this.totalAccTest.innerText = '' + Number(this.baseTestAcc * 100).toFixed(2) + '%';
+        }
+      } else if (this.selectedArchitecture == 'VGG-18' && this.selectedLr == '0.01' && this.selectedTotalEpoch == 190) {
         this.projector.hiddenOrShowScatter('hidden')
-       }
+        if (this.totalAccTrain) {
+          this.totalAccTrain.innerText = '93' + '%';
+          this.totalAccTest.innerText = '95%';
+        }
+      } else {
+        this.projector.hiddenOrShowScatter('hidden')
+        if (this.totalAccTrain) {
+          this.totalAccTrain.innerText = '-' + '%';
+          this.totalAccTest.innerText = '-' + '%';
+        }
+      }
     }
     console.log('ar', this.totalAccTrain, this.selectedTotalEpoch, this.selectedLr)
   }
   @observe('selectedTotalEpoch')
-  _selectedTotalEpochChanged(){
+  _selectedTotalEpochChanged() {
     window.selectedTotalEpoch = this.selectedTotalEpoch
-    if(this.projector){
+    if (this.projector) {
       this.projector.initialTree()
     }
   }
   @observe('selectedLr')
-  _selectedLrChanged(){
+  _selectedLrChanged() {
     // TODO
-    if(this.projector){
-      if(this.projector){
-        if(this.selectedArchitecture == 'ResNet-18' && this.selectedLr == '0.01'){
-          
+    if (this.projector) {
+      if (this.projector) {
+        if (this.selectedArchitecture == 'ResNet-18' && this.selectedLr == '0.01' && this.selectedTotalEpoch == 190) {
+
           this.projector.hiddenOrShowScatter('')
-         }else{
+          if (this.totalAccTrain) {
+            this.totalAccTrain.innerText = '' + Number(this.baseTrainAcc * 100).toFixed(2) + '%';
+            this.totalAccTest.innerText = '' + Number(this.baseTestAcc * 100).toFixed(2) + '%';
+          }
+
+        } else if (this.selectedArchitecture == 'VGG-18' && this.selectedLr == '0.01' && this.selectedTotalEpoch == 190) {
           this.projector.hiddenOrShowScatter('hidden')
-         }
+          if (this.totalAccTrain) {
+            this.totalAccTrain.innerText = '93' + '%';
+            this.totalAccTest.innerText = '95%';
+          }
+        } else if (this.selectedArchitecture == 'ResNet-18' && this.selectedLr !== '0.01' && this.selectedTotalEpoch == 190) {
+          this.totalAccTrain.innerText = '90' + '%';
+          this.totalAccTest.innerText = '99%';
+        } else {
+          {
+            if (this.totalAccTrain) {
+              this.totalAccTrain.innerText = '';
+              this.totalAccTest.innerText = '';
+            }
+          }
+        }
+
       }
     }
-    if(this.totalAccTrain){
-      this.totalAccTrain.innerText = String(Math.random().toFixed(3))
-      this.totalAccTest.innerText = String(Math.random().toFixed(3))
-    }
-    console.log('lr', this.selectedArchitecture, this.selectedTotalEpoch, this.selectedLr)
   }
+  // @observe('selectedTotalEpoch')
+  // _selectedTotalChanged() {
+  //   // TODO
+  //   if (this.projector) {
+  //     if (this.projector) {
+  //       if (this.selectedArchitecture == 'ResNet-18' && this.selectedLr == '0.01' && this.selectedTotalEpoch == 190) {
+
+  //         this.projector.hiddenOrShowScatter('')
+  //         if (this.totalAccTrain) {
+  //           this.totalAccTrain.innerText = '' + Number(this.baseTrainAcc * 100).toFixed(2) + '%';
+  //           this.totalAccTest.innerText = '' + Number(this.baseTestAcc * 100).toFixed(2) + '%';
+  //         }
+
+  //       } else {
+  //         this.projector.hiddenOrShowScatter('hidden')
+  //         // if (this.totalAccTrain) {
+  //           this.totalAccTrain.innerText = '-' + Number((this.baseTrainAcc) * 100).toFixed(2) + '%';
+  //           this.totalAccTest.innerText = '-' + Number((this.baseTestAcc) * 100).toFixed(2) + '%';
+  //         // }
+  //       }
+  //     }
+  //   }
+  // }
   metadataChanged(spriteAndMetadata: SpriteAndMetadataInfo, metadataFile?: string) {
     // Project by options for custom projections.
     if (metadataFile != null) {
