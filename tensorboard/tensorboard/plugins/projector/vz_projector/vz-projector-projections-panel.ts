@@ -78,7 +78,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
   @property({ type: String })
   selectedArchitecture: string = 'ResNet-18'
   @property({ type: String })
-  selectedLr: string = '0.0001'
+  selectedLr: string = '0.01'
   @property({ type: Number })
   selectedTotalEpoch: number = 190
 
@@ -211,7 +211,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
 
   ready() {
     super.ready();
-    this.learningRateList = ['0.001', '0.0001', '0.00000001']
+    this.learningRateList = ['0.1', '0.01', '0.001']
     this.architectureList = ['ResNet-18', 'VGG-18']
     this.totalEpochList = [190, 200]
     this._showFilter = window.sessionStorage.taskType == 'anormaly detection'
@@ -804,7 +804,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
       this.totalAccTest.innerText = String(Math.random().toFixed(3))
     }
     if(this.projector){
-      if(this.selectedArchitecture == 'ResNet-18' && this.selectedLr == '0.0001'){
+      if(this.selectedArchitecture == 'ResNet-18' && this.selectedLr == '0.01'){
         
         this.projector.hiddenOrShowScatter('')
        }else{
@@ -825,7 +825,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
     // TODO
     if(this.projector){
       if(this.projector){
-        if(this.selectedArchitecture == 'ResNet-18' && this.selectedLr == '0.0001'){
+        if(this.selectedArchitecture == 'ResNet-18' && this.selectedLr == '0.01'){
           
           this.projector.hiddenOrShowScatter('')
          }else{

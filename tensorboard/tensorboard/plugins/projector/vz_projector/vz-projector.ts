@@ -466,7 +466,7 @@ class Projector
 
         gs.append('text')
           .attr('x', function (d, i) {
-            return d.children ? 15 : 10;
+            return d.children ? 5 : 10;
           })
           .attr('y', function (d, i) {
             return d.children ? -20 : -5;
