@@ -331,8 +331,10 @@ export const template = html`
           alt="show background"
           toggles
           icon="image:texture"
+          style="visibility:hidden;width:0px;"
           ></paper-icon-button>
           <paper-tooltip
+          style="visibility:hidden;width:0px;margin: 0;padding: 0;"
             for="hiddenBackground"
             position="bottom"
             animation-delay="0"
@@ -350,6 +352,7 @@ export const template = html`
          
 
           <paper-icon-button
+          style="visibility:hidden;width:0px;margin: 0;padding: 0;"
           id="triangleMode"
           alt="Enable/disable selected triangle"
           toggles

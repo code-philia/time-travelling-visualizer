@@ -120,6 +120,6 @@ class VzProjectorApp extends PolymerElement {
   bugReportLink: string = '';
 
   @property({type: String})
-  title:string = `Embedding Projector | ${window.sessionStorage.taskType}`
+  title:string = `Deep Debugger | task: ${window.sessionStorage.taskType==='active learning'?'Sample Selection':'Interest potential'}`
  
 }
