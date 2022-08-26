@@ -506,16 +506,17 @@ class Projector
         let c = list[i]
         if (c) {
           c.style.cursor = "pointer"
-          c.addEventListener('click', (e: any) => {
-            if (e.target.nextSibling.innerHTML != window.iteration) {
-              let value = e.target.nextSibling.innerHTML.split("|")[0]
-              that.projectionsPanel.jumpTo(Number(value))
-              window.sessionStorage.setItem('acceptIndicates', "")
-              window.sessionStorage.setItem('rejectIndicates', "")
-            }
-          })
+          if(!only){
+            c.addEventListener('click', (e: any) => {
+              if (e.target.nextSibling.innerHTML != window.iteration) {
+                let value = e.target.nextSibling.innerHTML.split("|")[0]
+                that.projectionsPanel.jumpTo(Number(value))
+                window.sessionStorage.setItem('acceptIndicates', "")
+                window.sessionStorage.setItem('rejectIndicates', "")
+              }
+            })
+          }
         }
-
       }
     })
   }
