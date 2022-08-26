@@ -941,7 +941,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     // return String(pointIndex) + "Label: " + stringMetaData + " Prediction: " + prediction + " Original label: " + original_label;
     let prediction_res = suggest_label === prediction || window.alSuggestLabelList.length === 0 ? ' - ' : ' ❗️ '
     if (window.queryResAnormalCleanIndecates && window.queryResAnormalCleanIndecates.indexOf(pointIndex) !== -1) {
-      return `${displayPointIndex}|${displayStringMetaData}| clean`
+      return `${displayPointIndex}|${displayStringMetaData}| mojority`
     }
     if (window.queryResAnormalIndecates && window.queryResAnormalIndecates.indexOf(pointIndex) !== -1) {
       let prediction_res = suggest_label === displayStringMetaData ? ' - ' : ' ❗️ '
