@@ -1660,6 +1660,7 @@ class Projector
         "iteration_start": 1,
         "iteration_end": 2,
         "content_path": this.dataSet.DVIsubjectModelPath,
+        "username": window.sessionStorage.username
       }),
       headers: headers,
       mode: 'cors'
