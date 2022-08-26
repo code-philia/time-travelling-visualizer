@@ -99,7 +99,7 @@ class TimeVisBackend:
         elif type == "test":
             train_num = self.data_provider.train_num
             test_num = self.data_provider.test_num
-            res = list(range(train_num, test_num, 1))
+            res = list(range(train_num, train_num+ test_num, 1))
         elif type == "unlabel":
             labeled = np.array(self.get_epoch_index(epoch_id))
             train_num = self.data_provider.train_num
