@@ -1630,7 +1630,7 @@ class Projector
       method: 'POST',
       body: JSON.stringify({
         "predicates": dummyCurrPredicates, "content_path": this.dataSet.DVIsubjectModelPath,
-        "iteration": iteration
+        "iteration": iteration,"username": window.sessionStorage.username
       }),
       headers: headers,
       mode: 'cors'
@@ -1684,7 +1684,7 @@ class Projector
       method: 'POST',
       body: JSON.stringify({
         "predicates": predicates, "content_path": this.dataSet.DVIsubjectModelPath,
-        "iteration": iteration
+        "iteration": iteration, "username": window.sessionStorage.username
       }),
       headers: headers,
       mode: 'cors'
@@ -1697,20 +1697,28 @@ class Projector
     });
   }
   // active learning
-  queryByAL(iteration: number, strategy: string, budget: number, acceptIndicates: number[], rejectIndicates: number[],
+  queryByAL(iteration: number, strategy: string, budget: number, acceptIndicates: number[], rejectIndicates: number[],isRecommend:boolean,
     callback: (indices: any, scores: any, labels: any) => void) {
     const msgId = logging.setModalMessage('Querying...');
     let headers = new Headers();
     headers.append('Content-Type', 'application/json');
     headers.append('Accept', 'application/json');
-    let accIndicates = acceptIndicates.filter((item, i, arr) => {
-      //函数自身返回的是一个布尔值，只当返回值为true时，当前元素才会存入新的数组中。            
-      return item <= 49999
-    })
-    let rejIndicates = rejectIndicates.filter((item, i, arr) => {
-      //函数自身返回的是一个布尔值，只当返回值为true时，当前元素才会存入新的数组中。            
-      return item <= 49999
-    })
+   
+   
+    let accIndicates = []
+    if(window.acceptIndicates){
+      accIndicates = window.acceptIndicates.filter((item, i, arr) => {
+        //函数自身返回的是一个布尔值，只当返回值为true时，当前元素才会存入新的数组中。            
+        return window.properties[window.iteration][item] === 1
+      })
+    }
+    let rejIndicates = []
+    if(window.rejectIndicates){
+      rejIndicates = window.rejectIndicates.filter((item, i, arr) => {
+        //函数自身返回的是一个布尔值，只当返回值为true时，当前元素才会存入新的数组中。            
+        return window.properties[window.iteration][item] === 1
+      })
+    }
 
     fetch(`http://${this.DVIServer}/al_query`, {
       method: 'POST',
@@ -1720,7 +1728,9 @@ class Projector
         "budget": budget,
         "content_path": this.dataSet.DVIsubjectModelPath,
         "accIndices": accIndicates,
-        "rejIndices": rejIndicates
+        "rejIndices": rejIndicates,
+        "isRecommend":isRecommend,
+        "username": window.sessionStorage.username
       }),
       headers: headers,
       mode: 'cors'
@@ -1761,7 +1771,7 @@ class Projector
     });
   }
   // anormaly detection
-  queryAnormalyStrategy(budget: number, cls: number, currentIndices: number[], comfirm_info: any[], accIndicates: number[], rejIndicates: number[], strategy: string,
+  queryAnormalyStrategy(budget: number, cls: number, currentIndices: number[], comfirm_info: any[], accIndicates: number[], rejIndicates: number[], strategy: string,isRecommend:boolean,
     callback: (indices: any, cleanIndices?: any) => void) {
     const msgId = logging.setModalMessage('Querying...');
     let headers = new Headers();
@@ -1770,6 +1780,20 @@ class Projector
     }
     if (!rejIndicates) {
       rejIndicates = []
+    }
+    let accIn = []
+    if(window.acceptIndicates){
+      accIndicates = window.acceptIndicates.filter((item, i, arr) => {
+        //函数自身返回的是一个布尔值，只当返回值为true时，当前元素才会存入新的数组中。            
+        return window.properties[window.iteration][item] === 1
+      })
+    }
+    let rejIn = []
+    if(window.rejectIndicates){
+      rejIndicates = window.rejectIndicates.filter((item, i, arr) => {
+        //函数自身返回的是一个布尔值，只当返回值为true时，当前元素才会存入新的数组中。            
+        return window.properties[window.iteration][item] === 1
+      })
     }
     headers.append('Content-Type', 'application/json');
     headers.append('Accept', 'application/json');
@@ -1781,10 +1805,11 @@ class Projector
         "indices": currentIndices,
         "content_path": this.dataSet.DVIsubjectModelPath,
         "comfirm_info": comfirm_info,
-        "accIndices": accIndicates,
-        "rejIndices": rejIndicates,
+        "accIndices": accIn,
+        "rejIndices": rejIn,
         "strategy": strategy,
-        "username": window.sessionStorage.username
+        "username": window.sessionStorage.username,
+        "isRecommend":isRecommend
       }),
       headers: headers,
       mode: 'cors'

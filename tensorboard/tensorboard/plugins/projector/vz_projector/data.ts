@@ -480,7 +480,9 @@ export class DataSet {
         method: 'POST',
         body: JSON.stringify({
           "path": this.DVIsubjectModelPath, "iteration": iteration,
-          "resolution": this.DVIResolution, "predicates": predicates
+          "resolution": this.DVIResolution, "predicates": predicates,
+          "username": window.sessionStorage.username
+          
         }),
         headers: headers,
         mode: 'cors'
@@ -761,7 +763,7 @@ export class DataSet {
         method: 'POST',
         body: JSON.stringify({
           "predicates": predicates, "content_path": this.DVIsubjectModelPath,
-          "iteration": iteration
+          "iteration": iteration,"username": window.sessionStorage.username
         }),
         headers: headers,
         mode: 'cors'
@@ -808,14 +810,14 @@ export class DataSet {
     if(window.acceptIndicates){
       indices = window.acceptIndicates.filter((item, i, arr) => {
         //函数自身返回的是一个布尔值，只当返回值为true时，当前元素才会存入新的数组中。            
-        return item <= 49999
+        return window.properties[window.iteration][item] === 1
       })
     }
     let rejIndices = []
     if(window.rejectIndicates){
       rejIndices = window.rejectIndicates.filter((item, i, arr) => {
         //函数自身返回的是一个布尔值，只当返回值为true时，当前元素才会存入新的数组中。            
-        return item <= 49999
+        return window.properties[window.iteration][item] === 1
       })
     }
 
@@ -1107,7 +1109,7 @@ export class DataSet {
     // .then(response => response.json())
     // .then(data => {  this.DVIsubjectModelPath = data.DVIsubjectModelPath })
 
-    await fetch(`http://${this.DVIServer}/sprite?index=${id}&path=${this.DVIsubjectModelPath}`, {
+    await fetch(`http://${this.DVIServer}/sprite?index=${id}&path=${this.DVIsubjectModelPath}&username=${window.sessionStorage.username}`, {
       method: 'GET',
       mode: 'cors'
     }).then(response => response.json()).then(data => {

@@ -542,10 +542,10 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     this.updateSearchResults(list)
   }
   private async updateSearchResults(indices: number[]) {
-     if(this.accAllRadio?.checked || this.rejAllRadio?.checked){
+    if (this.accAllRadio?.checked || this.rejAllRadio?.checked) {
       this.accAllRadio.checked = false
       this.rejAllRadio.checked = false
-     }
+    }
     const container = this.$$('.matches-list') as HTMLDivElement;
     const list = container.querySelector('.list') as HTMLDivElement;
     list.textContent = '';
@@ -584,7 +584,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
           //     }
           //   }
           // }
-          this.queryByAl(this.projector, window.acceptIndicates, window.rejectIndicates, this.moreRecommednNum, true)
+          this.queryByAl(this.projector, window.acceptIndicates, window.rejectIndicates, this.moreRecommednNum, false)
         } else if (window.sessionStorage.taskType === 'anormaly detection') {
           let confirmInfo: any[] = []
           for (let i = 0; i < window.queryResAnormalIndecates.length; i++) {
@@ -596,12 +596,12 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
           }
           let AnormalyStrategy = 'Feedback'
           // if is control group
-          if(window.sessionStorage.isControlGroup == 'true'){
+          if (window.sessionStorage.isControlGroup == 'true') {
             AnormalyStrategy = 'TBSampling'
           }
           this.projector.queryAnormalyStrategy(
-            
-            Number(this.moreRecommednNum), this.selectedAnormalyClass, window.queryResAnormalIndecates, confirmInfo, window.acceptIndicates, window.rejectIndicates, AnormalyStrategy,
+
+            Number(this.moreRecommednNum), this.selectedAnormalyClass, window.queryResAnormalIndecates, confirmInfo, window.acceptIndicates, window.rejectIndicates, AnormalyStrategy, false,
             (indices: any, cleansIndices: any) => {
               if (indices != null) {
                 // this.queryIndices = indices;
@@ -667,51 +667,51 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       this.accAllRadio = this.$$('#accAllRadio') as any;
       this.rejAllRadio = this.$$('#rejAllRadio') as any;
       // if (this.accAllRadio && this.rejAllRadio) {
-        // setTimeout(()=>{
-          this.accAllRadio.addEventListener('change', (e) => {
-            console.log('acc e', this.accAllRadio.checked)
-            if(this.accAllRadio.checked){
-              for (let i = 0; i < indices.length; i++) {
-                window.acceptInputList[indices[i]].checked = true
-                window.rejectInputList[indices[i]].checked = false
-                if (window.acceptIndicates.indexOf(indices[i]) === -1) {
-                  window.acceptIndicates.push(indices[i])
-                }
-                if(window.rejectIndicates.indexOf(indices[i]) !== -1) {
-                  let index = window.rejectIndicates.indexOf(indices[i])
-                  window.rejectIndicates.splice(index,1)
-                }
-              }
+      // setTimeout(()=>{
+      this.accAllRadio.addEventListener('change', (e) => {
+        console.log('acc e', this.accAllRadio.checked)
+        if (this.accAllRadio.checked) {
+          for (let i = 0; i < indices.length; i++) {
+            window.acceptInputList[indices[i]].checked = true
+            window.rejectInputList[indices[i]].checked = false
+            if (window.acceptIndicates.indexOf(indices[i]) === -1) {
+              window.acceptIndicates.push(indices[i])
             }
+            if (window.rejectIndicates.indexOf(indices[i]) !== -1) {
+              let index = window.rejectIndicates.indexOf(indices[i])
+              window.rejectIndicates.splice(index, 1)
+            }
+          }
+        }
 
-            window.customSelection = window.rejectIndicates.concat(window.acceptIndicates)
-            this.updateSessionStorage()
-            this.projectorEventContext.refresh()
-          })
-          this.rejAllRadio.addEventListener('change', (e) => {
-            console.log('rej e', this.rejAllRadio.checked)
-            for (let i = 0; i < indices.length; i++) {
-              window.acceptInputList[indices[i]].checked = false
-              window.rejectInputList[indices[i]].checked = true
-              if (window.rejectIndicates.indexOf(indices[i]) === -1) {
-                window.rejectIndicates.push(indices[i])
-              }
-              if(window.acceptIndicates.indexOf(indices[i]) !== -1) {
-                let index = window.acceptIndicates.indexOf(indices[i])
-                window.acceptIndicates.splice(index,1)
-              }
-            }
-            window.customSelection = window.rejectIndicates.concat(window.acceptIndicates)
-            this.updateSessionStorage()
-            this.projectorEventContext.refresh()
-          })
-        // })
-      
+        window.customSelection = window.rejectIndicates.concat(window.acceptIndicates)
+        this.updateSessionStorage()
+        this.projectorEventContext.refresh()
+      })
+      this.rejAllRadio.addEventListener('change', (e) => {
+        console.log('rej e', this.rejAllRadio.checked)
+        for (let i = 0; i < indices.length; i++) {
+          window.acceptInputList[indices[i]].checked = false
+          window.rejectInputList[indices[i]].checked = true
+          if (window.rejectIndicates.indexOf(indices[i]) === -1) {
+            window.rejectIndicates.push(indices[i])
+          }
+          if (window.acceptIndicates.indexOf(indices[i]) !== -1) {
+            let index = window.acceptIndicates.indexOf(indices[i])
+            window.acceptIndicates.splice(index, 1)
+          }
+        }
+        window.customSelection = window.rejectIndicates.concat(window.acceptIndicates)
+        this.updateSessionStorage()
+        this.projectorEventContext.refresh()
+      })
+      // })
+
       // }
     }
-    if(indices.length > 2000){
+    if (indices.length > 2000) {
       indices.length = 2000
-   }
+    }
     for (let i = 0; i < indices.length; i++) {
       const index = indices[i];
       const row = document.createElement('th');
@@ -775,15 +775,15 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         accInput.setAttribute('value', `accept`)
         window.acceptInputList[indices[i]] = accInput
         newacctd.append(accInput)
-        if(window.queryResAnormalCleanIndecates && window.queryResAnormalCleanIndecates.indexOf(index)!== -1){
+        if (window.queryResAnormalCleanIndecates && window.queryResAnormalCleanIndecates.indexOf(index) !== -1) {
           let span = document.createElement('span');
-          span.innerText=" "
-          let newtd:any = document.createElement('td')
+          span.innerText = " "
+          let newtd: any = document.createElement('td')
           newtd.style.width = "50px"
           newtd.append(span)
 
           row.appendChild(newtd)
-        }else{
+        } else {
           row.appendChild(newacctd)
         }
 
@@ -798,7 +798,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
           // if(newacctd.)
         })
         accInput.addEventListener('change', () => {
-          
+
 
           if (accInput.checked) {
             if (window.acceptIndicates.indexOf(index) === -1) {
@@ -829,17 +829,17 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         accInput.setAttribute('id', `reject${index}`)
         rejectInput.setAttribute('value', `reject`)
         newrejtd.append(rejectInput)
-        if(window.queryResAnormalCleanIndecates && window.queryResAnormalCleanIndecates.indexOf(index)!== -1){
+        if (window.queryResAnormalCleanIndecates && window.queryResAnormalCleanIndecates.indexOf(index) !== -1) {
           let span = document.createElement('span');
-          span.innerText="  "
-          let newtd:any = document.createElement('td')
+          span.innerText = "  "
+          let newtd: any = document.createElement('td')
           newtd.style.width = "50px"
           newtd.append(span)
           row.appendChild(newtd)
-        }else{
+        } else {
           row.appendChild(newrejtd)
         }
-      
+
 
         rejectInput.addEventListener('change', () => {
           if (rejectInput.checked) {
@@ -873,26 +873,10 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         newtd.innerText = arr[i]
         row.appendChild(newtd)
       }
-      // await fetch(`http://${DVIServer}/sprite?index=${indices[i]}&path=${basePath}`, {
-      //   method: 'GET',
-      //   mode: 'cors'
-      // }).then(response => response.json()).then(data => {
-      //   // console.log("response", data);
-      //   let img = document.createElement('img');
-      //   let input = document.createElement('input');
-      //   input.type = 'checkbox'
-      //   input.setAttribute('id', `resCheckbox${indices[i]}`)
-      //   img.src = 'data:image/png;base64,' + data.imgUrl;
 
-      //   row.appendChild(input);
-      //   row.appendChild(img);
-      //   // logging.setModalMessage(null, msgId);
-      // }).catch(error => {
-      //   console.log("error", error);
-      // });
 
       row.onmouseenter = async () => {
-        await fetch(`http://${DVIServer}/sprite?index=${indices[i]}&path=${basePath}`, {
+        await fetch(`http://${DVIServer}/sprite?index=${indices[i]}&path=${basePath}&username=${window.sessionStorage.username}`, {
           method: 'GET',
           mode: 'cors'
         }).then(response => response.json()).then(data => {
@@ -917,11 +901,11 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       list.appendChild(queryListTable);
     }
   }
-  updateSessionStorage(){
+  updateSessionStorage() {
     console.log('update session')
-    window.sessionStorage.setItem('acceptIndicates',window.acceptIndicates.join(","))
-    window.sessionStorage.setItem('rejectIndicates',window.rejectIndicates.join(","))
-    window.sessionStorage.setItem('customSelection',window.customSelection.join(","))
+    window.sessionStorage.setItem('acceptIndicates', window.acceptIndicates.join(","))
+    window.sessionStorage.setItem('rejectIndicates', window.rejectIndicates.join(","))
+    window.sessionStorage.setItem('customSelection', window.customSelection.join(","))
   }
   private getLabelFromIndex(pointIndex: number): string {
     if (!window.flagindecatesList) {
@@ -1160,25 +1144,11 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         self.showTab('normal');
       }
 
-    // this.boundingSelectionBtn.onclick = (e: any) => {
-
-    //   this.isAlSelecting = !this.isAlSelecting
-    //   if (this.isAlSelecting) {
-    //     window.isAdjustingSel = true
-    //     this.boundingSelectionBtn.classList.add('actived')
-    //     this.projectorEventContext.setMouseMode(MouseMode.AREA_SELECT)
-    //     // this.projectorScatterPlotAdapter.scatterPlot.setMouseMode(MouseMode.AREA_SELECT);
-    //   } else {
-    //     window.isAdjustingSel = false
-    //     this.boundingSelectionBtn.classList.remove('actived')
-    //     this.projectorEventContext.setMouseMode(MouseMode.CAMERA_AND_CLICK_SELECT);
-    //   }
-    // }
 
 
 
     this.queryByStrategtBtn.onclick = () => {
-      this.queryByAl(projector, window.acceptIndicates, window.rejectIndicates)
+      this.queryByAl(projector, window.acceptIndicates, window.rejectIndicates,this.budget, true)
     }
 
     // if(this.showSelectionBtn){
@@ -1205,7 +1175,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
     this.queryAnomalyBtn.onclick = () => {
       projector.queryAnormalyStrategy(
-        Number(this.anomalyRecNum), this.selectedAnormalyClass, [], [], window.acceptIndicates, window.rejectIndicates, 'TBSampling',
+        Number(this.anomalyRecNum), this.selectedAnormalyClass, [], [], window.acceptIndicates, window.rejectIndicates, 'TBSampling', true,
         (indices: any, cleansIndices: any) => {
           if (indices != null) {
             // this.queryIndices = indices;
@@ -1245,10 +1215,10 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
 
     this.trainBySelBtn.onclick = () => {
-      if(window.acceptIndicates?.length < 500){
-         logging.setErrorMessage(`Current selected interested samples: ${window.acceptIndicates?.length},
+      if (window.acceptIndicates?.length < 500) {
+        logging.setErrorMessage(`Current selected interested samples: ${window.acceptIndicates?.length},
           Please Select 500 interest samples`);
-         return
+        return
       }
       this.resetStatus()
       // this.boundingSelectionBtn.classList.remove('actived')
@@ -1302,41 +1272,9 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       this.updateNeighborsList(neighbors);
     };
 
-    // Called whenever the search text input changes.
-    // const updateInput = (value: string, inRegexMode: boolean) => {
-    //   if (value == null || value.trim() === '') {
-    //     this.searchBox.message = '';
-    //     this.projectorEventContext.notifySelectionChanged([]);
-    //     return;
-    //   }
-    //   projector.query(
-    //     value,
-    //     inRegexMode,
-    //     this.selectedMetadataField,
-    //     this.currentPredicate,
-    //     (currPredicates:{[key:string]: any}, indices:any)=>{
-    //       this.currentPredicate = currPredicates;
-    //       this.queryIndices = indices;
-    //   }
-    //   );
-    //
-    //   if (this.queryIndices.length == 0) {
-    //     this.searchBox.message = '0 matches.';
-    //   } else {
-    //     this.searchBox.message = `${this.queryIndices.length} matches.`;
-    //   }
-    //   this.projectorEventContext.notifySelectionChanged(this.queryIndices);
-    // };
-    // this.searchBox.registerInputChangedListener((value, inRegexMode) => {
-    //   updateInput(value, inRegexMode);
-    // });
-    // Filtering dataset.
 
     this.noisyBtn.onclick = () => {
-      // if (!window.queryResAnormalIndecates?.length) {
-      //   logging.setErrorMessage('Please query anomaly points first');
-      //   return
-      // }
+
       if (window.customSelection.length == 0) {
         alert('please confirm some points first')
         return
@@ -1365,39 +1303,6 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       }
     }
 
-
-
-    // this.setFilterButton.onclick = () => {
-    //   window.isFilter = true
-    //   var indices = this.selectedPointIndices.concat(
-    //     this.neighborsOfFirstPoint.map((n) => n.index)
-    //   );
-
-    //   this.currentPredicate[this.selectedMetadataField] = this.searchPredicate;
-    //   this.filterIndices = this.selectedPointIndices.sort()
-
-    //   projector.filterDataset(indices, true);
-    //   this.enableResetFilterButton(true);
-    //   this.updateFilterButtons(this.filterIndices.length);
-    // };
-    // this.resetFilterButton.onclick = () => {
-    //   window.isFilter = false
-    //   this.queryIndices = [];
-    //   this.currentPredicate = {};
-    //   this.filterIndices = [];
-    //   projector.resetFilterDataset(projector.dataSet.DVICurrentRealDataNumber);
-    //   this.enableResetFilterButton(false);
-    //   this.searchBox.setValue("", false);
-    // };
-    // this.clearSelectionButton.onclick = () => {
-    //   window.customSelection = []
-    //   window.suggestionIndicates = []
-    //   window.queryResPointIndices = []
-    //   this.projectorEventContext.refresh()
-    //   this.updateFilterButtons(0)
-    //   projector.adjustSelectionAndHover([]);
-    //   this.queryIndices = [];
-    // };
     this.enableResetFilterButton(false);
 
     const updateInput = (value: string, inRegexMode: boolean) => {
@@ -1440,26 +1345,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         }
       );
     }
-    // this.addButton.onclick = () => {
-    //   for (let i = 0; i < this.currentBoundingBoxSelection.length; i++) {
-    //     if (this.boundingBoxSelection.indexOf(this.currentBoundingBoxSelection[i]) < 0) {
-    //       this.boundingBoxSelection.push(this.currentBoundingBoxSelection[i]);
-    //     }
-    //   }
-    // }
-    // this.resetButton.onclick = () => {
-    //   this.boundingBoxSelection = [];
-    // }
-    //this.sentButton.onclick = () => {
-    //console.log(this.selectedPointIndices, this.boundingBoxSelection)
-    // this.projector.saveDVISelection(this.boundingBoxSelection, (msg: string) => {
-    //   this.selectinMessage.innerText = msg;
-    //   logging.setWarnMessage(msg, null);
-    // });
-    //}
-    // this.showButton.onclick = () => {
-    //   this.projectorEventContext.notifySelectionChanged(this.boundingBoxSelection, true);
-    // }
+  
   }
 
 
@@ -1468,16 +1354,16 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     let that = this
     let num = Number(this.budget)
     let stratergy = this.selectedStratergy
-    if(this.selectedStratergy === 'Interest potential'){
+    if (this.selectedStratergy === 'Interest potential') {
       stratergy = 'TBSampling'
     }
     if (querNum) {
       num = Number(querNum)
     }
-    if (isRecommend === true) {
-      if(window.sessionStorage.isControlGroup == 'true'){
+    if (isRecommend === false) {
+      if (window.sessionStorage.isControlGroup == 'true') {
         stratergy = 'TBSampling'
-      }else{
+      } else {
         stratergy = 'Feedback'
       }
     }
@@ -1493,6 +1379,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       num,
       acceptIndicates,
       rejectIndicates,
+      isRecommend,
       (indices: any, scores: any, labels: any) => {
         if (indices != null) {
           this.queryIndices = indices;
@@ -1529,26 +1416,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       }
     );
   }
-  recommendBysel() {
-    let currentIndices = []
-    let previoustIIndices = []
-    if (!window.previousIndecates) {
-      window.previousIndecates = []
-    }
-    if (!window.customSelection) {
-      window.customSelection = []
-    } else {
-      for (let i = 0; i < window.customSelection.length; i++) {
-        if (window.previousIndecates.indexOf(window.customSelection[i]) == -1) {
-          currentIndices.push(window.customSelection[i])
-        } else {
-          previoustIIndices.push(window.customSelection[i])
-        }
-      }
-    }
-    this.queryByAl(this.projector, currentIndices, previoustIIndices)
 
-  }
   resetStatus() {
     this.isAlSelecting = false
     window.isAdjustingSel = false
@@ -1589,7 +1457,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   }
 
 
-  updateDisabledStatues(value:boolean){
+  updateDisabledStatues(value: boolean) {
     this.disabledAlExBase = value
   }
 
