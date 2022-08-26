@@ -35,7 +35,7 @@ def update_projection():
     testing_data_index, eval_new, prediction_list, selected_points, properties = update_epoch_projection(timevis, EPOCH, predicates)
 
     sys.path.remove(CONTENT_PATH)
-    add_line(path,['TT',username])
+    add_line(API_result_path,['TT',username])
     return make_response(jsonify({'result': embedding_2d, 'grid_index': grid, 'grid_color': 'data:image/png;base64,' + decision_view,
                                   'label_name_dict':label_name_dict,
                                   'label_color_list': label_color_list, 'label_list': label_list,
@@ -77,7 +77,7 @@ def filter():
             tmp = np.arange(training_data_number + testing_data_number)
         selected_points = np.intersect1d(selected_points, tmp)
     sys.path.remove(CONTENT_PATH)
-    add_line(path,['SQ',username])
+    add_line(API_result_path,['SQ',username])
     return make_response(jsonify({"selectedPoints": selected_points.tolist()}), 200)
 
 
@@ -86,7 +86,7 @@ def filter():
 @cross_origin()
 def sprite_image():
     path = request.args.get("path")
-    index=request.args.get("index")
+    index = request.args.get("index")
     username = request.args.get("username")
 
     CONTENT_PATH = os.path.normpath(path)
@@ -97,7 +97,7 @@ def sprite_image():
     with open(pic_save_dir_path, 'rb') as img_f:
         img_stream = img_f.read()
         img_stream = base64.b64encode(img_stream).decode()
-    add_line(path,['SI',username])
+    add_line(API_result_path,['SI',username])
     return make_response(jsonify({"imgUrl":'data:image/png;base64,' + img_stream}), 200)
 
 
@@ -107,7 +107,7 @@ def sprite_list_image():
     data = request.get_json()
     indices = data["index"]
     path = data["path"]
-    username = res['username']
+    username = data['username']
     
 
     CONTENT_PATH = os.path.normpath(path)
@@ -147,9 +147,9 @@ def al_query():
 
     sys.path.remove(CONTENT_PATH)
     if isFeedback: 
-        add_line(path,['Feedback', username]) 
+        add_line(API_result_path,['Feedback', user_name]) 
     else:
-        add_line(path,['Recommand', username])
+        add_line(API_result_path,['Recommend', user_name])
     return make_response(jsonify({"selectedPoints": indices.tolist(), "scores": scores.tolist(), "suggestLabels":labels.tolist()}), 200)
 
 @app.route('/anomaly_query', methods=["POST"])
@@ -173,9 +173,9 @@ def anomaly_query():
 
     sys.path.remove(CONTENT_PATH)
     if isFeedback: 
-        add_line(path,['Feedback', username]) 
+        add_line(API_result_path,['Feedback', user_name]) 
     else:
-        add_line(path,['Recommand', username])
+        add_line(API_result_path,['Recommend', user_name])
     return make_response(jsonify({"selectedPoints": indices.tolist(), "scores": scores.tolist(), "suggestLabels":labels.tolist(),"cleanList":clean_list.tolist()}), 200)
 
 @app.route('/al_train', methods=["POST"])
@@ -220,7 +220,7 @@ def al_train():
 
     sys.path.remove(CONTENT_PATH)
  
-    add_line(path,['al_train', username])
+    add_line(API_result_path,['al_train', user_name])
     return make_response(jsonify({'result': embedding_2d, 'grid_index': grid, 'grid_color': 'data:image/png;base64,' + decision_view,
                                   'label_name_dict': label_name_dict,
                                   'label_color_list': label_color_list, 'label_list': label_list,
@@ -358,7 +358,7 @@ def get_res():
     del config
     gc.collect()  
 
-    add_line(path,['animation', username])  
+    add_line(API_result_path,['animation', username])  
     return make_response(jsonify({"results":results,"bgimgList":imglist, "grid": gridlist}), 200)
 
 @app.route('/get_itertaion_structure', methods=["POST", "GET"])
