@@ -836,6 +836,8 @@ export class DataSet {
       iteration = data.maximum_iteration
       window.acceptIndicates = []
       window.rejectIndicates = []
+      window.sessionStorage.setItem('acceptIndicates', "")
+      window.sessionStorage.setItem('rejectIndicates', "")
 
       window.iteration = iteration
       const result = data.result;

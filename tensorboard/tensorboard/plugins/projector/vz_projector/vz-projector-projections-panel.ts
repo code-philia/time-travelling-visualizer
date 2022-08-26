@@ -200,6 +200,8 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
   private baseTrainAcc: any;
   private baseTestAcc: any;
 
+  private timer: any;
+
   initialize(projector: any) {
     this.polymerChangesTriggerReprojection = true;
     this.projector = projector;
@@ -229,6 +231,8 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
     this.nextDVIButton = this.$$('.next-dvi') as HTMLButtonElement;
     this.jumpDVIButton = this.$$('.jump-dvi') as HTMLButtonElement;
     this.jumpDVIButton.disabled = true;
+
+    this.timer = null
 
     //this.nextDVIButton.disabled = true;
     //this.perplexitySlider = this.$$('#perplexity-slider') as HTMLInputElement;
@@ -580,6 +584,26 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
   retrainBySelections(iteration: number, selections: number[], rejections: number[]) {
 
     const msgId = logging.setModalMessage('training and loading...')
+
+    // Get the tensor.
+    let percent = 0
+    this.timer = window.setInterval(() => {
+      percent = percent+0.1;
+      logging.setModalMessage(
+        `training and loading... ${Number(percent.toFixed(1))}%`,
+      msgId);
+      if(percent > 98){
+        clearInterval(this.timer)
+      }
+    }, 250)
+
+    // let xhr = new XMLHttpRequest();
+    // xhr.open('GET', tensorsPath);
+    // xhr.responseType = 'arraybuffer';
+    // xhr.onprogress = (ev) => {
+
+
+    // };
     this.dataSet.reTrainByDVI(iteration, selections, rejections,
       (iteration: number | null, evaluation: any, new_selection: any[], indices: number[], totalIter?: number) => {
         /**
@@ -612,6 +636,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
           this.previousDVIButton.disabled = false;
         }
         logging.setModalMessage(null, msgId);
+        window.clearInterval(this.timer)
         this.nextDVIButton.disabled = false;
         this.jumpDVIButton.disabled = false;
       });
@@ -804,7 +829,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
   @observe('selectedArchitecture')
   // TODO
   _selectedArchitectureChanged() {
-   this.updateTrainTestRessult()
+    this.updateTrainTestRessult()
   }
   @observe('selectedTotalEpoch')
   _selectedTotalEpochChanged() {
@@ -817,7 +842,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
     this.updateTrainTestRessult()
   }
 
-  updateTrainTestRessult(){
+  updateTrainTestRessult() {
     if (this.projector) {
       if (this.selectedArchitecture == 'ResNet-18' && this.selectedLr == '0.01') {
         this.projector.hiddenOrShowScatter('')
@@ -858,16 +883,16 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
           this.totalAccTest.innerText = '79.93%';
         }
         this.projector.initialTree(this.selectedTotalEpoch)
-      } else if(this.selectedTotalEpoch == 200 && !(this.selectedArchitecture == 'ResNet-18' && this.selectedLr == '0.01')) {
+      } else if (this.selectedTotalEpoch == 200 && !(this.selectedArchitecture == 'ResNet-18' && this.selectedLr == '0.01')) {
         this.projector.hiddenOrShowScatter('hidden')
-        this.projector.initialTree(this.selectedTotalEpoch,true)
+        this.projector.initialTree(this.selectedTotalEpoch, true)
         if (this.totalAccTrain) {
           this.totalAccTrain.innerText = '-' + '%';
           this.totalAccTest.innerText = '-' + '%';
         }
-      }else{
+      } else {
         this.projector.hiddenOrShowScatter('hidden')
-        this.projector.initialTree(this.selectedTotalEpoch,true)
+        this.projector.initialTree(this.selectedTotalEpoch, true)
         if (this.totalAccTrain) {
           this.totalAccTrain.innerText = '-' + '%';
           this.totalAccTest.innerText = '-' + '%';
