@@ -9,11 +9,14 @@ import gc
 import shutil
 
 from timevis_backend.utils import *
+from timevis_backend.res_logging import add_line
 
 # flask for API server
 app = Flask(__name__)
 cors = CORS(app, supports_credentials=True)
 app.config['CORS_HEADERS'] = 'Content-Type'
+
+API_result_path = "./API_result.csv"
 
 @app.route('/updateProjection', methods=["POST", "GET"])
 @cross_origin()
@@ -22,6 +25,7 @@ def update_projection():
     CONTENT_PATH = os.path.normpath(res['path'])
     iteration = int(res['iteration'])
     predicates = res["predicates"]
+    username = res['username']
     
     sys.path.append(CONTENT_PATH)
     timevis = initialize_backend(CONTENT_PATH)
@@ -31,7 +35,7 @@ def update_projection():
     testing_data_index, eval_new, prediction_list, selected_points, properties = update_epoch_projection(timevis, EPOCH, predicates)
 
     sys.path.remove(CONTENT_PATH)
-
+    add_line(path,['TT',username])
     return make_response(jsonify({'result': embedding_2d, 'grid_index': grid, 'grid_color': 'data:image/png;base64,' + decision_view,
                                   'label_name_dict':label_name_dict,
                                   'label_color_list': label_color_list, 'label_list': label_list,
@@ -49,6 +53,7 @@ def filter():
     CONTENT_PATH = os.path.normpath(res['content_path'])
     iteration = int(res['iteration'])
     predicates = res["predicates"]
+    username = res['username']
 
     sys.path.append(CONTENT_PATH)
     timevis = initialize_backend(CONTENT_PATH)
@@ -72,7 +77,7 @@ def filter():
             tmp = np.arange(training_data_number + testing_data_number)
         selected_points = np.intersect1d(selected_points, tmp)
     sys.path.remove(CONTENT_PATH)
-
+    add_line(path,['SQ',username])
     return make_response(jsonify({"selectedPoints": selected_points.tolist()}), 200)
 
 
@@ -82,6 +87,7 @@ def filter():
 def sprite_image():
     path = request.args.get("path")
     index=request.args.get("index")
+    username = request.args.get("username")
 
     CONTENT_PATH = os.path.normpath(path)
     print('index', index)
@@ -91,6 +97,7 @@ def sprite_image():
     with open(pic_save_dir_path, 'rb') as img_f:
         img_stream = img_f.read()
         img_stream = base64.b64encode(img_stream).decode()
+    add_line(path,['SI',username])
     return make_response(jsonify({"imgUrl":'data:image/png;base64,' + img_stream}), 200)
 
 
@@ -100,6 +107,8 @@ def sprite_list_image():
     data = request.get_json()
     indices = data["index"]
     path = data["path"]
+    username = res['username']
+    
 
     CONTENT_PATH = os.path.normpath(path)
     length = len(indices)
@@ -127,6 +136,8 @@ def al_query():
     budget = int(data["budget"])
     acc_idxs = data["accIndices"]
     rej_idxs = data["rejIndices"]
+    user_name = data["username"]
+    isFeedback = data["isFeedback"]
     # TODO dense_al parameter from frontend
 
     sys.path.append(CONTENT_PATH)
@@ -135,6 +146,10 @@ def al_query():
     indices, labels, scores = timevis.al_query(iteration, budget, strategy, np.array(acc_idxs).astype(np.int64), np.array(rej_idxs).astype(np.int64))
 
     sys.path.remove(CONTENT_PATH)
+    if isFeedback: 
+        add_line(path,['Feedback', username]) 
+    else:
+        add_line(path,['Recommand', username])
     return make_response(jsonify({"selectedPoints": indices.tolist(), "scores": scores.tolist(), "suggestLabels":labels.tolist()}), 200)
 
 @app.route('/anomaly_query', methods=["POST"])
@@ -147,6 +162,7 @@ def anomaly_query():
     acc_idxs = data["accIndices"]
     rej_idxs = data["rejIndices"]
     user_name = data["username"]
+    isFeedback = data["isFeedback"]
 
     sys.path.append(CONTENT_PATH)
 
@@ -156,6 +172,10 @@ def anomaly_query():
     clean_list,_ = timevis.suggest_normal(strategy, np.array(acc_idxs).astype(np.int64), np.array(rej_idxs).astype(np.int64), 1)
 
     sys.path.remove(CONTENT_PATH)
+    if isFeedback: 
+        add_line(path,['Feedback', username]) 
+    else:
+        add_line(path,['Recommand', username])
     return make_response(jsonify({"selectedPoints": indices.tolist(), "scores": scores.tolist(), "suggestLabels":labels.tolist(),"cleanList":clean_list.tolist()}), 200)
 
 @app.route('/al_train', methods=["POST"])
@@ -199,6 +219,8 @@ def al_train():
     gc.collect()
 
     sys.path.remove(CONTENT_PATH)
+ 
+    add_line(path,['al_train', username])
     return make_response(jsonify({'result': embedding_2d, 'grid_index': grid, 'grid_color': 'data:image/png;base64,' + decision_view,
                                   'label_name_dict': label_name_dict,
                                   'label_color_list': label_color_list, 'label_list': label_list,
@@ -294,6 +316,8 @@ def get_res():
 
     sys.path.append(CONTENT_PATH)
 
+    username = data["username"]
+
     from config import config
     EPOCH_START = config["EPOCH_START"]
     EPOCH_PERIOD = config["EPOCH_PERIOD"]
@@ -332,7 +356,9 @@ def get_res():
     sys.path.remove(CONTENT_PATH)
     
     del config
-    gc.collect()    
+    gc.collect()  
+
+    add_line(path,['animation', username])  
     return make_response(jsonify({"results":results,"bgimgList":imglist, "grid": gridlist}), 200)
 
 @app.route('/get_itertaion_structure', methods=["POST", "GET"])
