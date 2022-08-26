@@ -107,8 +107,7 @@ def sprite_list_image():
     data = request.get_json()
     indices = data["index"]
     path = data["path"]
-    username = data['username']
-    
+
 
     CONTENT_PATH = os.path.normpath(path)
     length = len(indices)
@@ -137,7 +136,7 @@ def al_query():
     acc_idxs = data["accIndices"]
     rej_idxs = data["rejIndices"]
     user_name = data["username"]
-    isFeedback = data["isFeedback"]
+    isRecommend = data["isRecommend"]
     # TODO dense_al parameter from frontend
 
     sys.path.append(CONTENT_PATH)
@@ -146,7 +145,7 @@ def al_query():
     indices, labels, scores = timevis.al_query(iteration, budget, strategy, np.array(acc_idxs).astype(np.int64), np.array(rej_idxs).astype(np.int64))
 
     sys.path.remove(CONTENT_PATH)
-    if isFeedback: 
+    if not isRecommend: 
         add_line(API_result_path,['Feedback', user_name]) 
     else:
         add_line(API_result_path,['Recommend', user_name])
@@ -162,7 +161,7 @@ def anomaly_query():
     acc_idxs = data["accIndices"]
     rej_idxs = data["rejIndices"]
     user_name = data["username"]
-    isFeedback = data["isFeedback"]
+    isRecommend = data["isRecommend"]
 
     sys.path.append(CONTENT_PATH)
 
@@ -172,7 +171,7 @@ def anomaly_query():
     clean_list,_ = timevis.suggest_normal(strategy, np.array(acc_idxs).astype(np.int64), np.array(rej_idxs).astype(np.int64), 1)
 
     sys.path.remove(CONTENT_PATH)
-    if isFeedback: 
+    if not isRecommend: 
         add_line(API_result_path,['Feedback', user_name]) 
     else:
         add_line(API_result_path,['Recommend', user_name])
