@@ -285,7 +285,7 @@ def login():
         con_paths = {"normal_content_path": active_learning_path, "unormaly_content_path": noisy_detection_path}
         clear_cache(con_paths)
         return make_response(jsonify({"normal_content_path": active_learning_path, "unormaly_content_path": noisy_detection_path, "isControl":True}), 200)
-    elif username == "tutorial":
+    elif username == "tutorial" and password == '123qwe':
         return make_response(jsonify({"normal_content_path": tutorial_path, "unormaly_content_path": tutorial_path}), 200)
     elif username in exp_group.keys():
         a_path = exp_group[username]

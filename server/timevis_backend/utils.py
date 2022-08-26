@@ -6,6 +6,7 @@ import numpy as np
 from umap.umap_ import find_ab_params
 import pickle
 import gc
+import base64
 from .backend_adapter import TimeVisBackend, ActiveLearningTimeVisBackend, AnormalyTimeVisBackend
 
 timevis_path = "../../DLVisDebugger"
@@ -128,12 +129,17 @@ def initialize_backend(CONTENT_PATH, dense_al=False):
 
 
 def update_epoch_projection(timevis, EPOCH, predicates):
-    # TODO, preprocess
     train_data = timevis.data_provider.train_representation(EPOCH)
     test_data = timevis.data_provider.test_representation(EPOCH)
     all_data = np.concatenate((train_data, test_data), axis=0)
-
-    embedding_2d = timevis.projector.batch_project(EPOCH, all_data)
+    
+    fname = "Epoch" if timevis.data_provider.mode == "normal" or timevis.data_provider.mode == "abnormal" else "Iteration"
+    embedding_path = os.path.join(timevis.data_provider.model_path, "{}_{}".format(fname, EPOCH), "embedding.npy")
+    if os.path.exists(embedding_path):
+        embedding_2d = np.load(embedding_path)
+    else:
+        embedding_2d = timevis.projector.batch_project(EPOCH, all_data)
+        np.save(embedding_path, embedding_2d)
 
     train_labels = timevis.data_provider.train_labels(EPOCH)
     test_labels = timevis.data_provider.test_labels(EPOCH)
@@ -145,17 +151,27 @@ def update_epoch_projection(timevis, EPOCH, predicates):
     testing_data_index = list(range(training_data_number, training_data_number + testing_data_number))
 
     # return the image of background
-    x_min, y_min, x_max, y_max, b_fig = timevis.vis.get_background(EPOCH, timevis.hyperparameters["VISUALIZATION"]["RESOLUTION"])
-    grid = [x_min, y_min, x_max, y_max]
-    # formating
-    grid = [float(i) for i in grid]
-    b_fig = str(b_fig, encoding='utf-8')
+    # read cache if exists
+    fname = "Epoch" if timevis.data_provider.mode == "normal" or timevis.data_provider.mode == "abnormal" else "Iteration"
+    bgimg_path = os.path.join(timevis.data_provider.model_path, "{}_{}".format(fname, EPOCH), "bgimg.png")
+    grid_path = os.path.join(timevis.data_provider.model_path, "{}_{}".format(fname, EPOCH), "grid.pkl")
+    if os.path.exists(bgimg_path) and os.path.exists(grid_path):
+        with open(os.path.join(grid_path), "rb") as f:
+            grid = pickle.load(f)
+        with open(bgimg_path, 'rb') as img_f:
+            img_stream = img_f.read()
+        b_fig = base64.b64encode(img_stream).decode()
+    else:
+        x_min, y_min, x_max, y_max, b_fig = timevis.vis.get_background(EPOCH, timevis.hyperparameters["VISUALIZATION"]["RESOLUTION"])
+        grid = [x_min, y_min, x_max, y_max]
+        # formating
+        grid = [float(i) for i in grid]
+        b_fig = str(b_fig, encoding='utf-8')
 
     # save results, grid and decision_view
     save_path = timevis.data_provider.model_path
     iteration_name = "Epoch" if timevis.data_provider.mode == "normal" or timevis.data_provider.mode == "abnormal" else "Iteration"
     save_path = os.path.join(save_path, "{}_{}".format(iteration_name, EPOCH))
-    print(save_path)
     with open(os.path.join(save_path, "grid.pkl"), "wb") as f:
         pickle.dump(grid, f)
     np.save(os.path.join(save_path, "embedding.npy"), embedding_2d)
