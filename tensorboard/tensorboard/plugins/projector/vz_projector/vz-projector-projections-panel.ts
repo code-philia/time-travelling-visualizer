@@ -219,7 +219,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
     this.learningRateList = ['0.1', '0.01', '0.001']
     this.architectureList = ['ResNet-18', 'ResNet-34', 'VGG-18']
     this.totalEpochList = [190, 200]
-    this._showFilter = window.sessionStorage.taskType == 'anormaly detection'
+    this._showFilter = window.sessionStorage.taskType == 'anormaly detection' && window.sessionStorage.username !== 'tutorial'
     this.zDropdown = this.$$('#z-dropdown') as HTMLElement;
     //this.runTsneButton = this.$$('.run-tsne') as HTMLButtonElement;
     //this.runTsneButton.innerText = 'Run';
