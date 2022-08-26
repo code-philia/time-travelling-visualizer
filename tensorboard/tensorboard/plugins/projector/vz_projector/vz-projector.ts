@@ -310,7 +310,7 @@ class Projector
   }
 
 
-  async initialTree() {
+  async initialTree(only?:number,needRemove?:boolean) {
     // this.d3loader()
 
     const d3 = window.d3;
@@ -320,6 +320,13 @@ class Projector
     while (svgDom?.firstChild) {
       svgDom.removeChild(svgDom.lastChild);
     }
+    if(needRemove){
+      return
+    }
+
+    console.log('isOnly?',only)
+
+    
 
     // document.body.append(svgDom)
 
@@ -331,10 +338,16 @@ class Projector
     })
       .then(response => response.json())
       .then(res => {
+        if(only){
+          res.structure = [{value:only,name:only,pid:""}]
+        }
         res.structure.length = window.selectedTotalEpoch
         window.treejson = res.structure
 
         let data = res.structure
+        if(only){
+
+        }
 
         function tranListToTreeData(arr) {
           const newArr = []
