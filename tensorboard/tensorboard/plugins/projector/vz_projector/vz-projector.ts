@@ -1782,19 +1782,19 @@ class Projector
       rejIndicates = []
     }
     let accIn = []
-    if(window.acceptIndicates){
-      accIndicates = window.acceptIndicates.filter((item, i, arr) => {
-        //函数自身返回的是一个布尔值，只当返回值为true时，当前元素才会存入新的数组中。            
-        return window.properties[window.iteration][item] === 1
-      })
-    }
-    let rejIn = []
-    if(window.rejectIndicates){
-      rejIndicates = window.rejectIndicates.filter((item, i, arr) => {
-        //函数自身返回的是一个布尔值，只当返回值为true时，当前元素才会存入新的数组中。            
-        return window.properties[window.iteration][item] === 1
-      })
-    }
+    // if(window.acceptIndicates){
+    //   accIndicates = window.acceptIndicates.filter((item, i, arr) => {
+    //     //函数自身返回的是一个布尔值，只当返回值为true时，当前元素才会存入新的数组中。            
+    //     return window.properties[window.iteration][item] === 1
+    //   })
+    // }
+    // let rejIn = []
+    // if(window.rejectIndicates){
+    //   rejIndicates = window.rejectIndicates.filter((item, i, arr) => {
+    //     //函数自身返回的是一个布尔值，只当返回值为true时，当前元素才会存入新的数组中。            
+    //     return window.properties[window.iteration][item] === 1
+    //   })
+    // }
     headers.append('Content-Type', 'application/json');
     headers.append('Accept', 'application/json');
     fetch(`http://${this.DVIServer}/anomaly_query`, {
@@ -1805,8 +1805,8 @@ class Projector
         "indices": currentIndices,
         "content_path": this.dataSet.DVIsubjectModelPath,
         "comfirm_info": comfirm_info,
-        "accIndices": accIn,
-        "rejIndices": rejIn,
+        "accIndices": accIndicates,
+        "rejIndices": rejIndicates,
         "strategy": strategy,
         "username": window.sessionStorage.username,
         "isRecommend":isRecommend
