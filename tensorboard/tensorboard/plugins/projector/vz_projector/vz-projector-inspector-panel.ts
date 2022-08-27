@@ -143,6 +143,10 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   @property({ type: Boolean })
   showMoreRecommend: boolean = true
 
+  @property({ type: Boolean })
+  showPlayAndStop: boolean = false
+  
+
   @property({ type: Number })
   moreRecommednNum: number = 10
 
@@ -224,6 +228,8 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     this.isAlSelecting = false
 
     this.currentFilterType = 'normal'
+
+    this.showPlayAndStop = Boolean(window.customSelection?.length)
 
 
 
@@ -444,6 +450,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
                 window.checkboxDom[index].checked = false
               }
               window.customSelection.splice(m, 1)
+              this.showPlayAndStop = Boolean(window.customSelection?.length)
             }
           }
           this.projectorEventContext.refresh()
@@ -685,6 +692,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         }
 
         window.customSelection = window.rejectIndicates.concat(window.acceptIndicates)
+        this.showPlayAndStop = Boolean(window.customSelection?.length)
         this.updateSessionStorage()
         this.projectorEventContext.refresh()
       })
@@ -702,6 +710,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
           }
         }
         window.customSelection = window.rejectIndicates.concat(window.acceptIndicates)
+        this.showPlayAndStop = Boolean(window.customSelection?.length)
         this.updateSessionStorage()
         this.projectorEventContext.refresh()
       })
@@ -816,8 +825,10 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             }
           }
           window.customSelection = window.acceptIndicates.concat(window.rejectIndicates)
+          this.showPlayAndStop = Boolean(window.customSelection?.length)
           this.updateSessionStorage()
           this.projectorEventContext.refresh()
+  
         })
 
 
@@ -859,6 +870,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             }
           }
           window.customSelection = window.acceptIndicates.concat(window.rejectIndicates)
+          this.showPlayAndStop = Boolean(window.customSelection?.length)
           this.updateSessionStorage()
           this.projectorEventContext.refresh()
         })
@@ -941,7 +953,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     // return String(pointIndex) + "Label: " + stringMetaData + " Prediction: " + prediction + " Original label: " + original_label;
     let prediction_res = suggest_label === prediction || window.alSuggestLabelList.length === 0 ? ' - ' : ' ❗️ '
     if (window.queryResAnormalCleanIndecates && window.queryResAnormalCleanIndecates.indexOf(pointIndex) !== -1) {
-      return `${displayPointIndex}|${displayStringMetaData}| mojority`
+      return `${displayPointIndex}|${displayStringMetaData}| majority`
     }
     if (window.queryResAnormalIndecates && window.queryResAnormalIndecates.indexOf(pointIndex) !== -1) {
       let prediction_res = suggest_label === displayStringMetaData ? ' - ' : ' ❗️ '
@@ -1468,6 +1480,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     if (!window.customSelection) {
       window.customSelection = []
     }
+
     for (let i = 0; i < this.currentBoundingBoxSelection.length; i++) {
       if (window.customSelection.indexOf(this.currentBoundingBoxSelection[i]) < 0) {
         window.customSelection.push(this.currentBoundingBoxSelection[i]);
@@ -1476,6 +1489,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         window.customSelection.splice(index, 1)
       }
     }
+    this.showPlayAndStop = Boolean(window.customSelection?.length)
     // window.customSelection = this.currentBoundingBoxSelection
   }
   private updateNumNN() {
