@@ -443,12 +443,11 @@ export const template = html`
               <b>Number</b> 10<br />
               <h3>3D Label Intro</h3>
               disagreement between prediction and pseudo label : ❗<br/>
-              suggest label: 👍<br/>
-              custom accept: ✅<br/>
-              custom reject: ❌<br/>
+              recommned: 👍<br/>
+              custom interest: ✅<br/>
+              custom not interest: ❌<br/>
 
-              anomaly data: ⭕️<br/>
-              clean data: 🟢<br/>
+              majority: 🟢<br/>
               <!-- <b>Zoom</b> Mouse wheel.<br />
               <h3>Meta Card</h3>
               previous selected：☑️

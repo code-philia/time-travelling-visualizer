@@ -950,18 +950,6 @@ export class ProjectorScatterPlotAdapter {
     return labels;
   }
   private getLabelText(ds: DataSet, i: number, accessor: string): string {
-    if (window.queryResAnormalIndecates?.length && window.queryResAnormalIndecates.indexOf(i) >= 0) {
-      if (window.isAnimatating && window.customSelection.indexOf(i) == -1) {
-        return ``
-      }else{
-        return `⭕️ ${i}`
-      }
-    }
-    if (window.queryResAnormalCleanIndecates?.length) {
-      if (window.queryResAnormalCleanIndecates.indexOf(i) >= 0) {
-        return `🟢clean`
-      }
-    }
     if (window.customSelection?.length) {
       if (window.rejectIndicates && window.rejectIndicates.indexOf(i) >= 0) {
         return `❌ ${i}`
@@ -970,6 +958,19 @@ export class ProjectorScatterPlotAdapter {
         return `✅ ${i}`
       }
     }
+    if (window.queryResAnormalIndecates?.length && window.queryResAnormalIndecates.indexOf(i) >= 0) {
+      if (window.isAnimatating && window.customSelection.indexOf(i) == -1) {
+        return ``
+      }else{
+        return `👍${i}`
+      }
+    }
+    if (window.queryResAnormalCleanIndecates?.length) {
+      if (window.queryResAnormalCleanIndecates.indexOf(i) >= 0) {
+        return `🟢clean`
+      }
+    }
+
 
     if (window.alQueryResPointIndices?.length) {
       if (window.alQueryResPointIndices?.indexOf(i) !== -1) {
@@ -986,7 +987,7 @@ export class ProjectorScatterPlotAdapter {
     }
     if (window.isAdjustingSel && window.sessionStorage.isControlGroup !=='true') {
       if (ds.points[i]?.metadata[accessor] !== undefined && ds.points[i]?.current_prediction !== ds.points[i]?.metadata[accessor]) {
-        return ` ❗${i}`
+        return ` ${i}`
       }
     }
     if (window.properties && window.properties[window.iteration]?.length) {
