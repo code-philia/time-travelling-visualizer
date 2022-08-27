@@ -229,8 +229,6 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
 
     this.currentFilterType = 'normal'
 
-    this.showPlayAndStop = Boolean(window.customSelection?.length)
-
 
 
     this.showAnomaly = window.sessionStorage.taskType == 'anormaly detection'
@@ -325,6 +323,8 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     for (let i = 0; i < 60000; i++) {
       this.filterIndices.push(i);
     }
+    this.noisyBtn.style.visibility = Boolean(window.customSelection?.length)?'':'hidden'
+    this.stopBtn.style.visibility = Boolean(window.customSelection?.length)?'':'hidden'
   }
   /** Updates the nearest neighbors list in the inspector. */
   private updateInspectorPane(
@@ -450,7 +450,8 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
                 window.checkboxDom[index].checked = false
               }
               window.customSelection.splice(m, 1)
-              this.showPlayAndStop = Boolean(window.customSelection?.length)
+              this.noisyBtn.style.visibility = Boolean(window.customSelection?.length)?'':'hidden'
+              this.stopBtn.style.visibility = Boolean(window.customSelection?.length)?'':'hidden'
             }
           }
           this.projectorEventContext.refresh()
@@ -692,7 +693,8 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         }
 
         window.customSelection = window.rejectIndicates.concat(window.acceptIndicates)
-        this.showPlayAndStop = Boolean(window.customSelection?.length)
+        this.noisyBtn.style.visibility = Boolean(window.customSelection?.length)?'':'hidden'
+        this.stopBtn.style.visibility = Boolean(window.customSelection?.length)?'':'hidden'
         this.updateSessionStorage()
         this.projectorEventContext.refresh()
       })
@@ -710,7 +712,8 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
           }
         }
         window.customSelection = window.rejectIndicates.concat(window.acceptIndicates)
-        this.showPlayAndStop = Boolean(window.customSelection?.length)
+        this.noisyBtn.style.visibility = Boolean(window.customSelection?.length)?'':'hidden'
+        this.stopBtn.style.visibility = Boolean(window.customSelection?.length)?'':'hidden'
         this.updateSessionStorage()
         this.projectorEventContext.refresh()
       })
@@ -825,7 +828,8 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             }
           }
           window.customSelection = window.acceptIndicates.concat(window.rejectIndicates)
-          this.showPlayAndStop = Boolean(window.customSelection?.length)
+          this.noisyBtn.style.visibility = Boolean(window.customSelection?.length)?'':'hidden'
+          this.stopBtn.style.visibility = Boolean(window.customSelection?.length)?'':'hidden'
           this.updateSessionStorage()
           this.projectorEventContext.refresh()
   
@@ -870,7 +874,8 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
             }
           }
           window.customSelection = window.acceptIndicates.concat(window.rejectIndicates)
-          this.showPlayAndStop = Boolean(window.customSelection?.length)
+          this.noisyBtn.style.visibility = Boolean(window.customSelection?.length)?'':'hidden'
+          this.stopBtn.style.visibility = Boolean(window.customSelection?.length)?'':'hidden'
           this.updateSessionStorage()
           this.projectorEventContext.refresh()
         })
@@ -1489,7 +1494,8 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         window.customSelection.splice(index, 1)
       }
     }
-    this.showPlayAndStop = Boolean(window.customSelection?.length)
+    this.noisyBtn.style.visibility = Boolean(window.customSelection?.length)?'':'hidden'
+    this.stopBtn.style.visibility = Boolean(window.customSelection?.length)?'':'hidden'
     // window.customSelection = this.currentBoundingBoxSelection
   }
   private updateNumNN() {

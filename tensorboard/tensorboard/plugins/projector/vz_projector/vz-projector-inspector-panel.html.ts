@@ -507,7 +507,6 @@ export const template = html`
       <p class="current-epoch" style="margin-top:26px;">iteration: {{currentPlayedEpoch}}</p>
       <button style="width: 0px; visibility:hidden; white-space: nowrap;" class="noisy-show-selection search-button search">Prev Selection</button>
     </div>
-    <template is="dom-if" if="[[showPlayAndStop]]">
     <div class="flex-container" style="position: fixed;bottom: 200px;z-index: 9;left: 50%;margin-left: -50px;">
     <button style="width: 50px;" class="show-noisy-btn">
     <svg xmlns="http://www.w3.org/2000/svg" enable-background="new 0 0 24 24" height="24px" viewBox="0 0 24 24" width="24px" fill="#000000"><g><rect fill="none" height="24" width="24"/></g><g><path d="M12,2C6.48,2,2,6.48,2,12s4.48,10,10,10s10-4.48,10-10S17.52,2,12,2z M9.5,16.5v-9l7,4.5L9.5,16.5z"/></g></svg>
@@ -516,7 +515,6 @@ export const template = html`
       <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="#000000"><path d="M0 0h24v24H0z" fill="none"/><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
     </button>
   </div>
-  </template>
   </div>
   </div>
 
