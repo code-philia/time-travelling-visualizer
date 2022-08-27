@@ -33,7 +33,7 @@ class VzProjectorApp extends PolymerElement {
         padding: 0 24px;
         height: 60px;
         color: white;
-        background: #560731;
+        background: #452d8a;
       }
 
       #appbar .logo {
@@ -62,21 +62,6 @@ class VzProjectorApp extends PolymerElement {
       <div id="appbar">
         <div>[[title]]</div>
         <div class="icons">
-          <a
-            title="Documentation"
-            target="_blank"
-            href="[[documentationLink]]"
-            rel="noopener noreferrer"
-          >
-            <paper-icon-button icon="help-outline"></paper-icon-button>
-            <paper-tooltip
-              position="bottom"
-              animation-delay="0"
-              fit-to-visible-bounds=""
-            >
-              Open documentation
-            </paper-tooltip>
-          </a>
           <a
             title="Report bug"
             target="_blank"

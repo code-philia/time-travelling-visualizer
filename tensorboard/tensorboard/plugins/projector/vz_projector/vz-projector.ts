@@ -456,7 +456,7 @@ class Projector
               target: end
             });
           })
-          .attr('stroke', '#4190ea')
+          .attr('stroke', '#452d8a')
           .attr('stroke-width', 1)
           .attr('fill', 'none');
 
@@ -475,11 +475,11 @@ class Projector
         gs.append('circle')
           .attr('r', 8)
           .attr('fill', function (d, i) {
-            return d.data.value == window.iteration ? 'orange' : '#4190ea'
+            return d.data.value == window.iteration ? 'orange' : '#452d8a'
           })
           .attr('stroke-width', 1)
           .attr('stroke', function (d, i) {
-            return d.data.value == window.iteration ? 'orange' : '#4190ea'
+            return d.data.value == window.iteration ? 'orange' : '#452d8a'
           })
 
         gs.append('text')
