@@ -512,5 +512,6 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
     if(index !== -1){
       window.customSelection.splice(index,1)
     }
+    this.projectorEventContext.refreshnoisyBtn()
   }
 }

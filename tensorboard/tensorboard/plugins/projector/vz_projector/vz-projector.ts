@@ -1524,6 +1524,9 @@ class Projector
       this._showNotAvaliable = true
     }
   }
+  refreshnoisyBtn(){
+    this.inspectorPanel.refreshBtnStyle()
+  }
   /**
    * Gets the current view of the embedding and saves it as a State object.
    */

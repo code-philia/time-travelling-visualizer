@@ -352,7 +352,10 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     this.isCollapsed = !this.isCollapsed;
     this.set('collapseIcon', this.isCollapsed ? 'expand-more' : 'expand-less');
   }
-
+  refreshBtnStyle(){
+    this.noisyBtn.style.visibility = Boolean(window.customSelection?.length)?'':'hidden'
+    this.stopBtn.style.visibility = Boolean(window.customSelection?.length)?'':'hidden'
+  }
   restoreUIFromBookmark(bookmark: State) {
     this.enableResetFilterButton(bookmark.filteredPoints != null);
   }

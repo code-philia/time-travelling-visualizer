@@ -50,6 +50,7 @@ export interface ProjectorEventContext {
   setMouseMode(mode:any);
   hiddenOrShowScatter(type:string)
   removecustomInMetaCard();
+  refreshnoisyBtn();
   /** Registers a callback to be invoked when the projection changes. */
   registerProjectionChangedListener(listener: ProjectionChangedListener);
   /** Notify listeners that a reprojection occurred. */
@@ -58,4 +59,5 @@ export interface ProjectorEventContext {
     listener: DistanceMetricChangedListener
   );
   notifyDistanceMetricChanged(distMetric: DistanceFunction);
+  
 }
