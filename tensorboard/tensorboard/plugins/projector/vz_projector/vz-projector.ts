@@ -1073,7 +1073,7 @@ class Projector
       headers.append('Content-Type', 'application/json');
       headers.append('Accept', 'application/json');
 
-      await fetch(`http://${DVIServer}/boundingbox_record`, {
+      await fetch(`http://${this.DVIServer}/boundingbox_record`, {
         method: 'POST',
         mode: 'cors',
         body: JSON.stringify({
