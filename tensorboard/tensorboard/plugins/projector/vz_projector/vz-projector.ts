@@ -1033,7 +1033,7 @@ class Projector
   /**
    * Used by clients to indicate that a selection has occurred.
    */
-  notifySelectionChanged(newSelectedPointIndices: number[], selectMode?: boolean, selectionType?: string) {
+  async notifySelectionChanged(newSelectedPointIndices: number[], selectMode?: boolean, selectionType?: string) {
     if (!this.registered) {
       this.readyregis()
     }
@@ -1069,6 +1069,20 @@ class Projector
       return
     }
     if (selectionType === 'boundingbox') {
+      let headers = new Headers();
+      headers.append('Content-Type', 'application/json');
+      headers.append('Accept', 'application/json');
+
+      await fetch(`http://${DVIServer}/boundingbox_record`, {
+        method: 'POST',
+        mode: 'cors',
+        body: JSON.stringify({
+           "username": window.sessionStorage.username,
+        }),
+        headers: headers,
+      }).then(()=>{
+          console.log('123323')
+      })
       window.alSuggestLabelList = []
       window.alSuggestScoreList = []
       window.queryResPointIndices = newSelectedPointIndices
