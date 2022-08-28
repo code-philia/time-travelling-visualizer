@@ -1480,6 +1480,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       this.showMoreRecommend = false
     }
     this.updateSearchResults([]);
+    window.alSuggestScoreList = []
     console.log('id',id);
   }
 
