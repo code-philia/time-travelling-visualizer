@@ -1152,10 +1152,6 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       inkTabs[i].addEventListener('click', function () {
         let id = this.getAttribute('data-tab');
         self.showTab(id);
-        if(id === 'normal'){
-          this.showMoreRecommend = false
-        }
-        this.updateSearchResults([]);
       });
     }
     if (window)
@@ -1480,7 +1476,11 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         this.style.height = main?.clientHeight + 'px';
       });
     }
-    console.log(id);
+    if(id === 'normal'){
+      this.showMoreRecommend = false
+    }
+    this.updateSearchResults([]);
+    console.log('id',id);
   }
 
 
