@@ -1164,6 +1164,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       else {
         self.showTab('normal');
         this.showMoreRecommend = false
+        this.updateSearchResults([]);
       }
 
 
