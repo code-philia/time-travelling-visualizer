@@ -143,6 +143,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
   @property({ type: Boolean })
   showMoreRecommend: boolean = true
 
+
   @property({ type: Boolean })
   showPlayAndStop: boolean = false
   
@@ -1162,6 +1163,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       }
       else {
         self.showTab('normal');
+        this.showMoreRecommend = false
       }
 
 
