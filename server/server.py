@@ -16,6 +16,7 @@ app = Flask(__name__)
 cors = CORS(app, supports_credentials=True)
 app.config['CORS_HEADERS'] = 'Content-Type'
 
+session = 5
 API_result_path = "./API_result.csv"
 
 @app.route('/updateProjection', methods=["POST", "GET"])
@@ -144,6 +145,11 @@ def al_query():
     # TODO add new sampling rule
     indices, labels, scores = timevis.al_query(iteration, budget, strategy, np.array(acc_idxs).astype(np.int64), np.array(rej_idxs).astype(np.int64))
 
+    sort_i = np.argsort(-scores)
+    indices = indices[sort_i]
+    labels = labels[sort_i]
+    scores = scores[sort_i]
+
     sys.path.remove(CONTENT_PATH)
     if not isRecommend: 
         add_line(API_result_path,['Feedback', user_name]) 
@@ -169,6 +175,11 @@ def anomaly_query():
     timevis.save_acc_and_rej(acc_idxs, rej_idxs, user_name)
     indices, scores, labels = timevis.suggest_abnormal(strategy, np.array(acc_idxs).astype(np.int64), np.array(rej_idxs).astype(np.int64), budget)
     clean_list,_ = timevis.suggest_normal(strategy, np.array(acc_idxs).astype(np.int64), np.array(rej_idxs).astype(np.int64), 1)
+
+    sort_i = np.argsort(-scores)
+    indices = indices[sort_i]
+    labels = labels[sort_i]
+    scores = scores[sort_i]
 
     sys.path.remove(CONTENT_PATH)
     if not isRecommend: 
@@ -268,12 +279,10 @@ def login():
     # active_learning_path = 'D:\\datasets\\data\\al'
     # noisy_detection_path = 'D:\\datasets\\data\\anormaly'
 
-    exp_group = {
-        "tianyuan": "/home/xianglin/projects/data/exp_al_0"
-    }
-    contrl_group = {
-        "raj": "/home/xianglin/projects/data/exp_al_1"
-    }
+    exp_group = ["shuning", "lucy","liuyang", "jiong","ruofan","khurshid","fangzhou","yuyang","jiaxiang","shida"]
+    control_group = ["bob", "yujie","yuhao","nimesha","pang","xinyue","yangming","yufan","tiedong"]
+    with open("./user_list.json", "r") as f:
+        active_learning_path_g = json.load(f)["session_{}".format(session)]
     
     # Verify username and password
     # if pass return normal_content_path and anormaly_content_path
@@ -287,18 +296,26 @@ def login():
         return make_response(jsonify({"normal_content_path": active_learning_path, "unormaly_content_path": noisy_detection_path, "isControl":True}), 200)
     elif username == "tutorial" and password == '123qwe':
         return make_response(jsonify({"normal_content_path": tutorial_path, "unormaly_content_path": tutorial_path}), 200)
-    elif username in exp_group.keys():
-        a_path = exp_group[username]
+    elif username in active_learning_path_g.keys() and username in exp_group:
+        a_path = active_learning_path_g[username]
         con_paths = {"normal_content_path": a_path, "unormaly_content_path": noisy_detection_path}
         clear_cache(con_paths)
         return make_response(jsonify(con_paths), 200)
-    elif username in contrl_group.keys():
-        a_path = contrl_group[username]
+    elif username in active_learning_path_g.keys() and username in control_group:
+        a_path = active_learning_path_g[username]
         con_paths = {"normal_content_path": a_path, "unormaly_content_path": noisy_detection_path}
         clear_cache(con_paths)
         return make_response(jsonify({"normal_content_path": a_path, "unormaly_content_path": noisy_detection_path, "isControl":True}), 200)
     else:
         return make_response(jsonify({"message":"username or password is wrong"}), 200)
+
+@app.route('/boundingbox_record', methods=["POST"])
+@cross_origin()
+def record_bb():
+    data = request.get_json()
+    username = data['username']
+    add_line(API_result_path,['boundingbox', username])  
+    return make_response(jsonify({}), 200)
   
 @app.route('/all_result_list', methods=["POST"])
 @cross_origin()
