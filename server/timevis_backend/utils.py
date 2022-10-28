@@ -11,7 +11,7 @@ from .backend_adapter import TimeVisBackend, ActiveLearningTimeVisBackend, Anorm
 
 timevis_path = "../../DLVisDebugger"
 sys.path.append(timevis_path)
-from singleVis.SingleVisualizationModel import SingleVisualizationModel
+from singleVis.SingleVisualizationModel import VisModel
 from singleVis.losses import SingleVisLoss, UmapLoss, ReconstructionLoss, SmoothnessLoss, HybridLoss
 from singleVis.trainer import SingleVisTrainer, HybridVisTrainer
 from singleVis.data import NormalDataProvider, ActiveLearningDataProvider, DenseActiveLearningDataProvider
@@ -33,7 +33,9 @@ def initialize_backend(CONTENT_PATH, dense_al=False):
     B_N_EPOCHS = config["VISUALIZATION"]["BOUNDARY"]["B_N_EPOCHS"]
     L_BOUND = config["VISUALIZATION"]["BOUNDARY"]["L_BOUND"]
     LAMBDA = config["VISUALIZATION"]["LAMBDA"]
-    HIDDEN_LAYER = config["VISUALIZATION"]["HIDDEN_LAYER"]
+    # HIDDEN_LAYER = config["VISUALIZATION"]["HIDDEN_LAYER"]
+    ENCODER_DIMS = config["VISUALIZATION"]["ENCODER_DIMS"]
+    DECODER_DIMS = config["VISUALIZATION"]["DECODER_DIMS"]  
     N_NEIGHBORS = config["VISUALIZATION"]["N_NEIGHBORS"]
     MAX_EPOCH = config["VISUALIZATION"]["MAX_EPOCH"]
     S_N_EPOCHS = config["VISUALIZATION"]["S_N_EPOCHS"]
@@ -68,7 +70,8 @@ def initialize_backend(CONTENT_PATH, dense_al=False):
     #                                                      TRAINING SETTING                                                  #
     # ########################################################################################################################
 
-    model = SingleVisualizationModel(input_dims=512, output_dims=2, units=256, hidden_layer=HIDDEN_LAYER)
+    # model = SingleVisualizationModel(input_dims=512, output_dims=2, units=256, hidden_layer=HIDDEN_LAYER)
+    model = VisModel(ENCODER_DIMS, DECODER_DIMS)
 
     if SETTING == "normal" or SETTING == "abnormal":
         data_provider = NormalDataProvider(CONTENT_PATH, net, EPOCH_START, EPOCH_END, EPOCH_PERIOD, split=-1, device=DEVICE, classes=CLASSES, verbose=1)
