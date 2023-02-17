@@ -281,9 +281,9 @@ def login():
 
     exp_group = ["shuning", "lucy","liuyang", "jiong","ruofan","khurshid","fangzhou","yuyang","jiaxiang","shida"]
     control_group = ["bob", "yujie","yuhao","nimesha","pang","xinyue","yangming","yufan","tiedong"]
-    with open("./user_list.json", "r") as f:
-        active_learning_path_g = json.load(f)["session_{}".format(session)]
-    
+    # with open("./user_list.json", "r") as f:
+    #     active_learning_path_g = json.load(f)["session_{}".format(session)]
+    active_learning_path_g = '/home/xianglin/projects/DVI_data/exp_al'
     # Verify username and password
     # if pass return normal_content_path and anormaly_content_path
     if username == 'admin-e' and password == '123qwe': 
