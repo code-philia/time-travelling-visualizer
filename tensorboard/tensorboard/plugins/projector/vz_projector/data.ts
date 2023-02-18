@@ -479,9 +479,12 @@ export class DataSet {
       await fetch("http://" + this.DVIServer + "/updateProjection", {
         method: 'POST',
         body: JSON.stringify({
-          "path": this.DVIsubjectModelPath, "iteration": iteration,
+          "path": window.sessionStorage.content_path || this.DVIsubjectModelPath, "iteration": iteration,
           "resolution": this.DVIResolution, "predicates": predicates,
-          "username": window.sessionStorage.username
+          "username": window.sessionStorage.username,
+          "content_path": window.sessionStorage.content_path || this.DVIsubjectModelPath,
+          "vis_method": window.sessionStorage.vis_method,
+          'setting':window.sessionStorage.selectedSetting
           
         }),
         headers: headers,
