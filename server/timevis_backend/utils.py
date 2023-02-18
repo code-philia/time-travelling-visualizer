@@ -18,6 +18,9 @@ from singleVis.data import NormalDataProvider, ActiveLearningDataProvider, Dense
 from singleVis.eval.evaluator import Evaluator
 from singleVis.visualizer import visualizer, DenseALvisualizer
 from singleVis.projector import Projector, ALProjector, DenseALProjector
+from singleVis.segmenter import Segmenter
+
+
 
 def initialize_backend(CONTENT_PATH, dense_al=False):
 
@@ -66,6 +69,7 @@ def initialize_backend(CONTENT_PATH, dense_al=False):
     import Model.model as subject_model
     net = eval("subject_model.{}()".format(NET))
 
+
     # ########################################################################################################################
     #                                                      TRAINING SETTING                                                  #
     # ########################################################################################################################
@@ -74,8 +78,10 @@ def initialize_backend(CONTENT_PATH, dense_al=False):
     model = VisModel(ENCODER_DIMS, DECODER_DIMS)
 
     if SETTING == "normal" or SETTING == "abnormal":
-        data_provider = NormalDataProvider(CONTENT_PATH, net, EPOCH_START, EPOCH_END, EPOCH_PERIOD, split=-1, device=DEVICE, classes=CLASSES, verbose=1)
-        SEGMENTS = config["VISUALIZATION"]["SEGMENTS"]
+        data_provider = NormalDataProvider(CONTENT_PATH, net, EPOCH_START, EPOCH_END, EPOCH_PERIOD, device=DEVICE, classes=CLASSES,epoch_name="Epoch", verbose=1)
+        segmenter = Segmenter(data_provider=data_provider, threshold=78.5, range_s=EPOCH_START, range_e=EPOCH_END, range_p=EPOCH_PERIOD)
+        SEGMENTS = segmenter.segment()
+        # SEGMENTS = config["VISUALIZATION"]["SEGMENTS"]
         projector = Projector(vis_model=model, content_path=CONTENT_PATH, segments=SEGMENTS, device=DEVICE)
     elif SETTING == "active learning":
         DENSE_VIS_MODEL_NAME = config["VISUALIZATION"]["DENSE_VIS_MODEL_NAME"]

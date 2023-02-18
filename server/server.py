@@ -26,7 +26,7 @@ def update_projection():
     CONTENT_PATH = os.path.normpath(res['path'])
     iteration = int(res['iteration'])
     predicates = res["predicates"]
-    username = res['username']
+    # username = res['username']
     
     sys.path.append(CONTENT_PATH)
     timevis = initialize_backend(CONTENT_PATH)
@@ -36,7 +36,7 @@ def update_projection():
     testing_data_index, eval_new, prediction_list, selected_points, properties = update_epoch_projection(timevis, EPOCH, predicates)
 
     sys.path.remove(CONTENT_PATH)
-    add_line(API_result_path,['TT',username])
+    # add_line(API_result_path,['TT',username])
     return make_response(jsonify({'result': embedding_2d, 'grid_index': grid, 'grid_color': 'data:image/png;base64,' + decision_view,
                                   'label_name_dict':label_name_dict,
                                   'label_color_list': label_color_list, 'label_list': label_list,
@@ -382,7 +382,9 @@ def get_res():
 @cross_origin()
 def get_tree():
     CONTENT_PATH = request.args.get("path")
-    res_json_path = os.path.join(CONTENT_PATH, "iteration_structure.json")
+    # res_json_path = os.path.join(CONTENT_PATH, "iteration_structure.json")
+    #mock
+    res_json_path = os.path.join("./iteration_structure.json")
     with open(res_json_path,encoding='utf8')as fp:
         json_data = json.load(fp)
     return make_response(jsonify({"structure":json_data}), 200)
