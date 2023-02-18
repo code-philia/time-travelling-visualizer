@@ -482,10 +482,9 @@ export class DataSet {
           "path": window.sessionStorage.content_path || this.DVIsubjectModelPath, "iteration": iteration,
           "resolution": this.DVIResolution, "predicates": predicates,
           "username": window.sessionStorage.username,
-          "content_path": window.sessionStorage.content_path || this.DVIsubjectModelPath,
           "vis_method": window.sessionStorage.vis_method,
-          'setting':window.sessionStorage.selectedSetting
-          
+          'setting':window.sessionStorage.selectedSetting,
+          "content_path": window.sessionStorage.content_path || this.DVIsubjectModelPath, "iteration": iteration,
         }),
         headers: headers,
         mode: 'cors'
@@ -765,8 +764,8 @@ export class DataSet {
       await fetch(`http://${this.DVIServer}/query`, {
         method: 'POST',
         body: JSON.stringify({
-          "predicates": predicates, "content_path": this.DVIsubjectModelPath,
-          "iteration": iteration,"username": window.sessionStorage.username
+          "predicates": predicates, "content_path": window.sessionStorage.content_path || this.DVIsubjectModelPath,
+          "iteration": iteration,"username": window.sessionStorage.username, "vis_method": window.sessionStorage.vis_method,'setting':window.sessionStorage.selectedSetting
         }),
         headers: headers,
         mode: 'cors'
