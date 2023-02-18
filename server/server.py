@@ -279,11 +279,12 @@ def login():
     # active_learning_path = 'D:\\datasets\\data\\al'
     # noisy_detection_path = 'D:\\datasets\\data\\anormaly'
 
-    exp_group = ["shuning", "lucy","liuyang", "jiong","ruofan","khurshid","fangzhou","yuyang","jiaxiang","shida"]
-    control_group = ["bob", "yujie","yuhao","nimesha","pang","xinyue","yangming","yufan","tiedong"]
+    exp_group = ["shuning", "lucy","liuyang", "jiong","ruofan","khurshid","fangzhou","yuyang","jiaxiang","gilgamesh"]
+    control_group = ["bob", "yujie","yuhao","nimesha","pang","xinyue","yangming","yufan","tiedong","shida"]
     with open("./user_list.json", "r") as f:
         active_learning_path_g = json.load(f)["session_{}".format(session)]
-    
+
+    add_line(API_result_path,['login', username])
     # Verify username and password
     # if pass return normal_content_path and anormaly_content_path
     if username == 'admin-e' and password == '123qwe': 
