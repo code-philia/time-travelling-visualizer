@@ -484,7 +484,7 @@ export class DataSet {
           "username": window.sessionStorage.username,
           "vis_method": window.sessionStorage.vis_method,
           'setting':window.sessionStorage.selectedSetting,
-          "content_path": window.sessionStorage.content_path || this.DVIsubjectModelPath, "iteration": iteration,
+          "content_path": window.sessionStorage.content_path || this.DVIsubjectModelPath,
         }),
         headers: headers,
         mode: 'cors'
