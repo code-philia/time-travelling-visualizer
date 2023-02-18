@@ -765,8 +765,8 @@ export class DataSet {
       await fetch(`http://${this.DVIServer}/query`, {
         method: 'POST',
         body: JSON.stringify({
-          "predicates": predicates, "content_path": window.sessionStorage.content_path || this.DVIsubjectModelPath,
-          "iteration": iteration,"username": window.sessionStorage.username, "vis_method": window.sessionStorage.vis_method,'setting':window.sessionStorage.selectedSetting
+          "predicates": predicates, "content_path": this.DVIsubjectModelPath,
+          "iteration": iteration,"username": window.sessionStorage.username
         }),
         headers: headers,
         mode: 'cors'

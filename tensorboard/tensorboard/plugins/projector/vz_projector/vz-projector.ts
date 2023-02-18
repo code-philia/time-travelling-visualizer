@@ -1702,8 +1702,8 @@ class Projector
     fetch(`http://${this.DVIServer}/query`, {
       method: 'POST',
       body: JSON.stringify({
-        "predicates": predicates, "content_path": window.sessionStorage.content_path || this.dataSet.DVIsubjectModelPath,
-        "iteration": iteration, "username": window.sessionStorage.username,"vis_method": window.sessionStorage.vis_method,'setting':window.sessionStorage.selectedSetting
+        "predicates": predicates, "content_path": this.dataSet.DVIsubjectModelPath,
+        "iteration": iteration, "username": window.sessionStorage.username
       }),
       headers: headers,
       mode: 'cors'
@@ -1745,13 +1745,11 @@ class Projector
         "iteration": iteration,
         "strategy": strategy,
         "budget": budget,
-        "content_path": window.sessionStorage.content_path || this.dataSet.DVIsubjectModelPath,
+        "content_path": this.dataSet.DVIsubjectModelPath,
         "accIndices": accIndicates,
         "rejIndices": rejIndicates,
         "isRecommend":isRecommend,
-        "username": window.sessionStorage.username,
-        "vis_method": window.sessionStorage.vis_method,
-        'setting':window.sessionStorage.selectedSetting
+        "username": window.sessionStorage.username
       }),
       headers: headers,
       mode: 'cors'
@@ -1824,15 +1822,13 @@ class Projector
         "budget": budget,
         "cls": cls,
         "indices": currentIndices,
-        "content_path": window.sessionStorage.content_path || this.dataSet.DVIsubjectModelPath,
+        "content_path": this.dataSet.DVIsubjectModelPath,
         "comfirm_info": comfirm_info,
         "accIndices": accIndicates,
         "rejIndices": rejIndicates,
         "strategy": strategy,
         "username": window.sessionStorage.username,
-        "isRecommend":isRecommend,
-        "vis_method": window.sessionStorage.vis_method,
-        'setting':window.sessionStorage.selectedSetting
+        "isRecommend":isRecommend
       }),
       headers: headers,
       mode: 'cors'
@@ -1863,9 +1859,7 @@ class Projector
         "iteration": iteration,
         "selectIndices": indices,
         "k": k,
-        "content_path": window.sessionStorage.content_path || this.dataSet.DVIsubjectModelPath,
-        "vis_method": window.sessionStorage.vis_method,
-        'setting':window.sessionStorage.selectedSetting
+        "content_path": this.dataSet.DVIsubjectModelPath,
       }),
       headers: headers,
       mode: 'cors'
@@ -1887,11 +1881,8 @@ class Projector
     fetch(`http://${this.DVIServer}/saveDVIselections`, {
       method: 'POST',
       body: JSON.stringify({
-        "newIndices": indices, 
-        "content_path": window.sessionStorage.content_path || this.dataSet.DVIsubjectModelPath,
-        "iteration": this.iteration,
-        "vis_method": window.sessionStorage.vis_method,
-        'setting':window.sessionStorage.selectedSetting
+        "newIndices": indices, "content_path": this.dataSet.DVIsubjectModelPath,
+        "iteration": this.iteration
       }),
       headers: headers,
       mode: 'cors'
