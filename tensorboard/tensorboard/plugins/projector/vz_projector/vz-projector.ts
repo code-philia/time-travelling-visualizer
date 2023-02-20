@@ -1647,8 +1647,9 @@ class Projector
     fetch(`http://${this.DVIServer}/query`, {
       method: 'POST',
       body: JSON.stringify({
-        "predicates": dummyCurrPredicates, "content_path": this.dataSet.DVIsubjectModelPath,
-        "iteration": iteration,"username": window.sessionStorage.username
+        "predicates": dummyCurrPredicates, "content_path": window.sessionStorage.content_path || this.dataSet.DVIsubjectModelPath,
+        "iteration": iteration,"username": window.sessionStorage.username,
+        "vis_method": window.sessionStorage.vis_method,'setting':window.sessionStorage.selectedSetting
       }),
       headers: headers,
       mode: 'cors'
