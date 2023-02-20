@@ -317,17 +317,14 @@ def login():
     data = request.get_json()
     username = data["username"]
     password = data["password"]
-
-    tutorial_path = "/home/xianglin/projects/DVI_data/noisy/symmetric/mnist/10"
-    active_learning_path = '/home/xianglin/projects/DVI_data/exp_al'
-    noisy_detection_path = '/home/xianglin/projects/DVI_data/exp_anormaly'
+    content_path = data["content_path"]
 
     # Verify username and password
     # if pass return normal_content_path and anormaly_content_path
     if username == 'admin-e' and password == '123qwe': 
-        con_paths = {"normal_content_path": active_learning_path,"unormaly_content_path":noisy_detection_path}
-        clear_cache(con_paths)
-        return make_response(jsonify({"normal_content_path": active_learning_path, "unormaly_content_path": noisy_detection_path}), 200)
+        # con_paths = {"normal_content_path": content_path,"unormaly_content_path":content_path}
+        # clear_cache(con_paths)
+        return make_response(jsonify({"normal_content_path": content_path, "unormaly_content_path": content_path}), 200)
     else:
         return make_response(jsonify({"message":"username or password is wrong"}), 200)
 
