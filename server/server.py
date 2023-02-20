@@ -403,9 +403,9 @@ def get_res():
 @cross_origin()
 def get_tree():
     CONTENT_PATH = request.args.get("path")
-    # res_json_path = os.path.join(CONTENT_PATH, "iteration_structure.json")
+    res_json_path = os.path.join(CONTENT_PATH, "iteration_structure.json")
     #mock
-    res_json_path = os.path.join("./iteration_structure.json")
+    # res_json_path = os.path.join("./iteration_structure.json")
     with open(res_json_path,encoding='utf8')as fp:
         json_data = json.load(fp)
     return make_response(jsonify({"structure":json_data}), 200)
