@@ -331,7 +331,7 @@ class Projector
     // document.body.append(svgDom)
 
     let headers = new Headers();
-    await fetch(`http://${window.sessionStorage.ipAddress}/get_itertaion_structure?path=${window.modelMath}`, {
+    await fetch(`http://${window.sessionStorage.ipAddress}/get_itertaion_structure?path=${window.sessionStorage.content_path}`, {
       method: 'POST',
       headers: headers,
       mode: 'cors'
