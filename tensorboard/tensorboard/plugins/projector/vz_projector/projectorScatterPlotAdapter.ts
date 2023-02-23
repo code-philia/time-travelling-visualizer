@@ -721,8 +721,11 @@ export class ProjectorScatterPlotAdapter {
       selectedPoints == null ? 0 : selectedPoints.length;
     if (selectedPointCount > 0) {
       opacities.fill(POLYLINE_DESELECTED_OPACITY);
-      const i = ds.points[selectedPoints[0]].sequenceIndex;
-      opacities[i] = POLYLINE_SELECTED_OPACITY;
+      if(ds.points[selectedPoints[0]] !== undefined){
+        const i = ds.points[selectedPoints[0]].sequenceIndex;
+        opacities[i] = POLYLINE_SELECTED_OPACITY;
+      }
+
     } else {
       opacities.fill(POLYLINE_DEFAULT_OPACITY);
     }
@@ -740,8 +743,12 @@ export class ProjectorScatterPlotAdapter {
     const selectedPointCount =
       selectedPoints == null ? 0 : selectedPoints.length;
     if (selectedPointCount > 0) {
-      const i = ds.points[selectedPoints[0]].sequenceIndex;
-      widths[i] = POLYLINE_SELECTED_LINEWIDTH;
+      if(ds.points[selectedPoints[0]]){
+        const i = ds.points[selectedPoints[0]].sequenceIndex;
+        widths[i] = POLYLINE_SELECTED_LINEWIDTH;
+
+      }
+
     }
     return widths;
   }

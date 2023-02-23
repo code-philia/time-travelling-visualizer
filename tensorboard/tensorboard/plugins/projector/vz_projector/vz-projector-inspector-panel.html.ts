@@ -470,7 +470,7 @@ export const template = html`
     <div style="display:flex;">
     <!--<button style="width: 120px;" class="bounding-selection search-button search">Select</button>-->
     <button style="width: 180px; white-space: nowrap;visibility: hidden;width: 0;" class="show-selection search-button search">Prev & Cur Selection</button>
-    <button style="width: 220px;" class="train-by-selection search-button search" disabled="[[disabledAlExBase]]">re-Train By Selections</button>
+    <button style="width: 220px; visibility:hidden;" class="train-by-selection search-button search" disabled="[[disabledAlExBase]]">re-Train By Selections</button>
     </div>
   </div>
 

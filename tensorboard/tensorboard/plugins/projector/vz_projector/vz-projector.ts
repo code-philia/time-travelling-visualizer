@@ -852,12 +852,13 @@ class Projector
     if (this.dataSetBeforeFilter == null) {
       this.dataSetBeforeFilter = this.dataSet;
     }*/
+    console.log('now',pointIndices.length)
     this.dataSet.setDVIFilteredData(pointIndices);
     // this.setCurrentDataSet(this.dataSet.getSubset(pointIndices));
     this.dataSetFilterIndices = pointIndices;
     this.projectorScatterPlotAdapter.updateScatterPlotPositions();
     this.projectorScatterPlotAdapter.updateScatterPlotAttributes(filter);
-    this.projectorScatterPlotAdapter.updateBackground()
+    // this.projectorScatterPlotAdapter.updateBackground()
     // this.adjustSelectionAndHover(util.range(selectionSize));
 
     if (window.isAdjustingSel) {
@@ -1034,6 +1035,7 @@ class Projector
    * Used by clients to indicate that a selection has occurred.
    */
   async notifySelectionChanged(newSelectedPointIndices: number[], selectMode?: boolean, selectionType?: string) {
+    console.log('ssssssleci', selectionType,newSelectedPointIndices)
     if (!this.registered) {
       this.readyregis()
     }

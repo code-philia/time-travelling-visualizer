@@ -160,14 +160,14 @@ export class ScatterPlot {
     // 2，使用canvas画图作为纹理贴图
     // 先使用canvas画图
     let canvas = document.createElement('canvas');
-    canvas.width = 200;
-    canvas.height = 200;
+    canvas.width = 128;
+    canvas.height = 128;
     var ctx = canvas.getContext("2d");
     var img = new Image();
     img.src = imgUrl;
     img.crossOrigin = "anonymous";
     img.onload = () => {
-      ctx.drawImage(img, 0, 0, 200, 200);
+      ctx.drawImage(img, 0, 0, 128, 128);
       let texture = new THREE.CanvasTexture(canvas);
       // texture.needsUpdate = true; // 不设置needsUpdate为true的话，可能纹理贴图不刷新
       var plane_geometry = new THREE.PlaneGeometry(2, 2);
@@ -587,14 +587,16 @@ export class ScatterPlot {
       length = 100
       alert('You can select up to 100 points at a time, and the first 100 points are selected by default')
       this.isShifting = false
+      return
     }
-    for (let i = 0; i < length; i++) {
-      if (pointIndices[i] < this.realDataNumber) {
-        validIndices.push(pointIndices[i]);
-      }
-    }
-    window.selectedStack = validIndices
-    this.projectorEventContext.notifySelectionChanged(validIndices, true, 'boundingbox');
+    // for (let i = 0; i < length; i++) {
+    //   if (pointIndices[i] < this.realDataNumber) {
+    //     validIndices.push(pointIndices[i]);
+    //   }
+    // }
+    // console.log('validIndices',validIndices,pointIndices)
+    window.selectedStack = pointIndices
+    this.projectorEventContext.notifySelectionChanged(pointIndices, true, 'boundingbox');
   }
   private setNearestPointToMouse(e: MouseEvent) {
     if (this.pickingTexture == null) {

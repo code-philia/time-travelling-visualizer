@@ -932,7 +932,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     if (!window.flagindecatesList) {
       window.flagindecatesList = []
     }
-    const metadata = this.projector.dataSet.points[pointIndex].metadata[
+    const metadata = this.projector.dataSet.points[pointIndex]?.metadata[
       this.selectedMetadataField
     ];
     let prediction = this.projector.dataSet.points[pointIndex]?.current_prediction;
@@ -940,7 +940,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
       prediction = `Unknown`;
     }
 
-    let original_label = this.projector.dataSet.points[pointIndex].original_label;
+    let original_label = this.projector.dataSet.points[pointIndex]?.original_label;
     if (original_label == undefined) {
       original_label = `Unknown`;
     }
