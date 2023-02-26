@@ -265,51 +265,6 @@ def clear_cache(con_paths):
             print("Successfully remove cache data!")
 
 
-# @app.route('/login', methods=["POST"])
-# @cross_origin()
-# def login():
-#     data = request.get_json()
-#     username = data["username"]
-#     password = data["password"]
-
-#     tutorial_path = "/home/xianglin/projects/DVI_data/noisy/symmetric/mnist/10"
-#     active_learning_path = '/home/xianglin/projects/DVI_data/exp_al'
-#     noisy_detection_path = '/home/xianglin/projects/DVI_data/exp_anormaly'
-
-#     # active_learning_path = 'D:\\datasets\\data\\al'
-#     # noisy_detection_path = 'D:\\datasets\\data\\anormaly'
-
-#     exp_group = ["shuning", "lucy","liuyang", "jiong","ruofan","khurshid","fangzhou","yuyang","jiaxiang","gilgamesh"]
-#     control_group = ["bob", "yujie","yuhao","nimesha","pang","xinyue","yangming","yufan","tiedong","shida"]
-#     with open("./user_list.json", "r") as f:
-#         active_learning_path_g = json.load(f)["session_{}".format(session)]
-
-#     add_line(API_result_path,['login', username])
-#     # Verify username and password
-#     # if pass return normal_content_path and anormaly_content_path
-#     if username == 'admin-e' and password == '123qwe': 
-#         con_paths = {"normal_content_path": active_learning_path,"unormaly_content_path":noisy_detection_path}
-#         clear_cache(con_paths)
-#         return make_response(jsonify({"normal_content_path": active_learning_path, "unormaly_content_path": noisy_detection_path}), 200)
-#     elif username == 'admin-c' and password == '123qwe': 
-#         con_paths = {"normal_content_path": active_learning_path, "unormaly_content_path": noisy_detection_path}
-#         clear_cache(con_paths)
-#         return make_response(jsonify({"normal_content_path": active_learning_path, "unormaly_content_path": noisy_detection_path, "isControl":True}), 200)
-#     elif username == "tutorial" and password == '123qwe':
-#         return make_response(jsonify({"normal_content_path": tutorial_path, "unormaly_content_path": tutorial_path}), 200)
-#     elif username in active_learning_path_g.keys() and username in exp_group:
-#         a_path = active_learning_path_g[username]
-#         con_paths = {"normal_content_path": a_path, "unormaly_content_path": noisy_detection_path}
-#         clear_cache(con_paths)
-#         return make_response(jsonify(con_paths), 200)
-#     elif username in active_learning_path_g.keys() and username in control_group:
-#         a_path = active_learning_path_g[username]
-#         con_paths = {"normal_content_path": a_path, "unormaly_content_path": noisy_detection_path}
-#         clear_cache(con_paths)
-#         return make_response(jsonify({"normal_content_path": a_path, "unormaly_content_path": noisy_detection_path, "isControl":True}), 200)
-#     else:
-#         return make_response(jsonify({"message":"username or password is wrong"}), 200)
-
 #mock
 @app.route('/login', methods=["POST"])
 @cross_origin()
