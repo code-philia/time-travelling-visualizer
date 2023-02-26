@@ -369,58 +369,6 @@ export class DataSet {
       dataPoint.projections[label] = vector.dot(dataPoint.vector, dir);
     });
   }
-  /** Projects the dataset along the top 10 principal components. */
-  projectPCA(): Promise<void> {
-    if (this.projections['pca-0'] != null) {
-      return Promise.resolve<void>(null);
-    }
-    return util.runAsyncTask('Computing PCA...', () => {
-      // Approximate pca vectors by sampling the dimensions.
-      let dim = this.points[0].vector.length;
-      let vectors = this.shuffledDataIndices.map((i) => this.points[i].vector);
-      if (dim > PCA_SAMPLE_DIM) {
-        vectors = vector.projectRandom(vectors, PCA_SAMPLE_DIM);
-      }
-      const sampledVectors = vectors.slice(0, PCA_SAMPLE_SIZE);
-      const { dot, transpose, svd: numericSvd } = numeric;
-      // numeric dynamically generates `numeric.div` and Closure compiler has
-      // incorrectly compiles `numeric.div` property accessor. We use below
-      // signature to prevent Closure from mangling and guessing.
-      const div = numeric['div'];
-      const scalar = dot(transpose(sampledVectors), sampledVectors);
-      const sigma = div(scalar, sampledVectors.length);
-      const svd = numericSvd(sigma);
-      const variances: number[] = svd.S;
-      let totalVariance = 0;
-      for (let i = 0; i < variances.length; ++i) {
-        totalVariance += variances[i];
-      }
-      for (let i = 0; i < variances.length; ++i) {
-        variances[i] /= totalVariance;
-      }
-      this.fracVariancesExplained = variances;
-      let U: number[][] = svd.U;
-      let pcaVectors = vectors.map((vector) => {
-        let newV = new Float32Array(NUM_PCA_COMPONENTS);
-        for (let newDim = 0; newDim < NUM_PCA_COMPONENTS; newDim++) {
-          let dot = 0;
-          for (let oldDim = 0; oldDim < vector.length; oldDim++) {
-            dot += vector[oldDim] * U[oldDim][newDim];
-          }
-          newV[newDim] = dot;
-        }
-        return newV;
-      });
-      for (let d = 0; d < NUM_PCA_COMPONENTS; d++) {
-        let label = 'pca-' + d;
-        this.projections[label] = true;
-        for (let i = 0; i < pcaVectors.length; i++) {
-          let pointIndex = this.shuffledDataIndices[i];
-          this.points[pointIndex].projections[label] = pcaVectors[i][d];
-        }
-      }
-    });
-  }
   setDVIFilteredData(pointIndices: number[]) {
     // reset first
     for (let i = 0; i < this.points.length; i++) {
@@ -497,10 +445,27 @@ export class DataSet {
           window.sceneBackgroundImg = []
         }
         window.sceneBackgroundImg[window.iteration] = data.grid_color
-
-
-        const label_color_list = data.label_color_list;
-        const label_list = data.label_list;
+       let temp_label_color_list:any = []
+       let temp_label_list:any = []
+       let k=0
+        for(let i = 0 ;i < result.length-1;i++){
+        
+          if (data.properties[i] === 0) {
+            let color:any = data.label_color_list[k++] || [204,204,204]
+            let label:any = data.label_list[k++] || 'unlabeled'
+            temp_label_color_list.push(color)
+            temp_label_list.push(label)
+          } else{
+            temp_label_color_list.push([204,204,204])
+            temp_label_list.push('unlabeled')
+          }
+        }
+  
+        const label_color_list = temp_label_color_list
+        const label_list = temp_label_list;
+        console.log('label_color_list.length',label_color_list.length)
+        // const label_color_list = data.label_color_list;
+        // const label_list = data.label_list;
         const prediction_list = data.prediction_list;
 
         const background_point_number = grid_index.length;
@@ -547,10 +512,8 @@ export class DataSet {
         }
 
 
-        // const is_uncertainty_diversity_tot_exist = data.uncertainty_diversity_tot?.is_exist;
-        // this.is_uncertainty_diversity_tot_exist[iteration] = is_uncertainty_diversity_tot_exist;
-
         const filterIndices = data.selectedPoints;
+        console.log('real_data_number + background_point_number - current_length',real_data_number + background_point_number - current_length)
 
         for (let i = 0; i < real_data_number + background_point_number - current_length; i++) {
           const newDataPoint: DataPoint = {
@@ -848,9 +811,25 @@ export class DataSet {
       const grid_index = [[data.grid_index[0], data.grid_index[1]], [data.grid_index[2], data.grid_index[3]]];
       const grid_color = [[137, 120, 117], [136, 119, 116], [136, 118, 115], [135, 117, 114]];
       window.sceneBackgroundImg[window.iteration] = data.grid_color
+      let k = 0;
+      let temp_label_color_list:any = []
+      let temp_label_list:any = []
+      for(let i = 0 ;i < result.length-1;i++){
+        
+        if (data.properties[i] === 0) {
+          let color:any = data.label_color_list[k++] || [204,204,204]
+          let label:any = data.label_list[k++] || 'unlabeled'
+          temp_label_color_list.push(color)
+          temp_label_list.push(label)
+        } else{
+          temp_label_color_list.push([204,204,204])
+          temp_label_list.push('unlabeled')
+        }
+      }
 
-      const label_color_list = data.label_color_list;
-      const label_list = data.label_list;
+      const label_color_list = temp_label_color_list
+      const label_list = temp_label_list;
+      console.log('label_color_list.length',label_color_list.length)
       const prediction_list = data.prediction_list;
 
       const background_point_number = grid_index.length;
@@ -901,6 +880,7 @@ export class DataSet {
       // this.is_uncertainty_diversity_tot_exist[iteration] = is_uncertainty_diversity_tot_exist;
 
       const filterIndices = data.selectedPoints;
+
 
       for (let i = 0; i < real_data_number + background_point_number - current_length; i++) {
         const newDataPoint: DataPoint = {

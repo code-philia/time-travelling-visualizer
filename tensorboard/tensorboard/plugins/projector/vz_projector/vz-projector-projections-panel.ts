@@ -1061,12 +1061,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
     if (this.polymerChangesTriggerReprojection === false) {
       return;
     }
-    if (projection === 'pca') {
-      if (this.dataSet != null) {
-        this.dataSet.stopTSNE();
-      }
-      this.showPCA();
-    } else if (projection === 'tsne') {
+    else if (projection === 'tsne') {
       this.showTSNE();
     } else if (projection === 'custom') {
       if (this.dataSet != null) {
@@ -1100,12 +1095,6 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
   }
 
 
-  @observe('pcaX', 'pcaY', 'pcaZ')
-  private showPCAIfEnabled() {
-    if (this.polymerChangesTriggerReprojection) {
-      this.showPCA();
-    }
-  }
   private updateTotalVarianceMessage() {
     let variances = this.dataSet.fracVariancesExplained;
     let totalVariance = variances[this.pcaX] + variances[this.pcaY];
@@ -1116,37 +1105,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
     msg += (totalVariance * 100).toFixed(1) + '%.';
     (this.$$('#total-variance') as HTMLElement).textContent = msg;
   }
-  private showPCA() {
-    if (this.dataSet == null) {
-      return;
-    }
-    this.dataSet.projectPCA().then(() => {
-      // Polymer properties are 1-based.
-      const accessors = getProjectionComponents('pca', [
-        this.pcaX,
-        this.pcaY,
-        this.pcaZ,
-      ]);
-      const dimensionality = this.pcaIs3d ? 3 : 2;
-      const projection = new Projection(
-        'pca',
-        accessors,
-        dimensionality,
-        this.dataSet
-      );
-      this.projector.setProjection(projection);
-      let numComponents = Math.min(NUM_PCA_COMPONENTS, this.dataSet.dim[1]);
-      this.updateTotalVarianceMessage();
-      this.pcaComponents = util.range(numComponents).map((i) => {
-        let fracVariance = this.dataSet.fracVariancesExplained[i];
-        return {
-          id: i,
-          componentNumber: i + 1,
-          percVariance: (fracVariance * 100).toFixed(1),
-        };
-      });
-    });
-  }
+
   private reprojectCustom() {
     if (
       this.centroids == null ||

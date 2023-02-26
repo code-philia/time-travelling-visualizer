@@ -852,13 +852,14 @@ class Projector
     if (this.dataSetBeforeFilter == null) {
       this.dataSetBeforeFilter = this.dataSet;
     }*/
-    console.log('now',pointIndices.length)
+    console.log('now',pointIndices.length,this.dataSet)
     this.dataSet.setDVIFilteredData(pointIndices);
     // this.setCurrentDataSet(this.dataSet.getSubset(pointIndices));
     this.dataSetFilterIndices = pointIndices;
     this.projectorScatterPlotAdapter.updateScatterPlotPositions();
     this.projectorScatterPlotAdapter.updateScatterPlotAttributes(filter);
     // this.projectorScatterPlotAdapter.updateBackground()
+    this.projectorScatterPlotAdapter.render()
     // this.adjustSelectionAndHover(util.range(selectionSize));
 
     if (window.isAdjustingSel) {
