@@ -249,22 +249,7 @@ export const template = html`
       <div class="slider">
         <label>Dimension</label>
         <div class="two-way-toggle">
-          <span>2D</span>
-          <paper-toggle-button id="umap-toggle" checked="{{umapIs3d}}">3D</paper-toggle-button>
         </div>
-      </div>
-      <div class="slider umap-neighbors">
-        <label>
-          Neighbors
-          <paper-icon-button icon="help" class="help-icon"></paper-icon-button>
-          <paper-tooltip position="right" animation-delay="0" fit-to-visible-bounds>
-            The number of nearest neighbors used to compute the fuzzy
-            simplicial set, which is used to approximate the overall shape
-            of the manifold. The default value is 15.
-          </paper-tooltip>
-        </label>
-        <paper-slider id="umap-neighbors-slider" value="{{umapNeighbors}}" pin min="5" max="50"></paper-slider>
-        <span>[[umapNeighbors]]</span>
       </div>
       <p>
         <button id="run-umap" class="ink-button" title="Run UMAP" on-tap="runUmap">
@@ -498,7 +483,6 @@ export const template = html`
             </template>
           </paper-listbox>
         </paper-dropdown-menu>
-        <paper-checkbox id="z-checkbox" checked="{{pcaIs3d}}"></paper-checkbox>
       </div>
     </div>
     <p id="pca-sampling" class="notice">

@@ -85,16 +85,11 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
 
 
   @property({ type: Boolean })
-  pcaIs3d: boolean = true;
-  @property({ type: Boolean })
   tSNEis3d: boolean = false;
   @property({ type: Number })
   superviseFactor: number = 0;
   // UMAP parameters
-  @property({ type: Boolean })
-  umapIs3d: boolean = true;
-  @property({ type: Number })
-  umapNeighbors: number = 15;
+
   // PCA projection.
   @property({ type: Array })
   pcaComponents: Array<{
@@ -650,19 +645,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
     if (bookmark.pcaComponentDimensions.length === 3) {
       this.pcaZ = bookmark.pcaComponentDimensions[2];
     }
-    this.pcaIs3d = bookmark.pcaComponentDimensions.length === 3;
-    // t-SNE
-    /*
-    if (this.perplexitySlider) {
-      this.perplexitySlider.value = bookmark.tSNEPerplexity.toString();
-    }
-    if (this.learningRateInput) {
-      this.learningRateInput.value = bookmark.tSNELearningRate.toString();
-    }*/
-    //this.tSNEis3d = bookmark.tSNEis3d;
-    // UMAP
-    this.umapIs3d = bookmark.umapIs3d;
-    this.umapNeighbors = bookmark.umapNeighbors;
+
     // custom
     this.customSelectedSearchByMetadataOption =
       bookmark.customSelectedSearchByMetadataOption;
@@ -691,7 +674,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
       );
     }
     this.computeAllCentroids();
-    this.setZDropdownEnabled(this.pcaIs3d);
+  
     //this.updateTSNEPerplexityFromSliderChange();
     //this.updateTSNELearningRateFromUIChange();
     if (this.iterationLabelTsne) {
@@ -707,20 +690,9 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
     this.disablePolymerChangesTriggerReprojection();
     // PCA
     bookmark.pcaComponentDimensions = [this.pcaX, this.pcaY];
-    if (this.pcaIs3d) {
-      bookmark.pcaComponentDimensions.push(this.pcaZ);
-    }
-    // t-SNE
-    /*
-    if (this.perplexitySlider != null) {
-      bookmark.tSNEPerplexity = +this.perplexitySlider.value;
-    }
-    if (this.learningRateInput != null) {
-      bookmark.tSNELearningRate = +this.learningRateInput.value;
-    }*/
-    //bookmark.tSNEis3d = this.tSNEis3d;
-    // UMAP
-    bookmark.umapIs3d = this.umapIs3d;
+
+
+
     // custom
     bookmark.customSelectedSearchByMetadataOption = this.customSelectedSearchByMetadataOption;
     if (this.customProjectionXLeftInput != null) {
@@ -745,15 +717,6 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
   // abstracts DOM manipulation so we can stub it in a test.
   // TODO(nsthorat): Move this to its own class as the glue between this class
   // and the DOM.
-  setZDropdownEnabled(enabled: boolean) {
-    if (this.zDropdown) {
-      if (enabled) {
-        this.zDropdown.removeAttribute('disabled');
-      } else {
-        this.zDropdown.setAttribute('disabled', 'true');
-      }
-    }
-  }
   dataSetUpdated(dataSet: DataSet, originalDataSet: DataSet, dim: number) {
     this.dataSet = dataSet;
     this.originalDataSet = originalDataSet;
@@ -809,17 +772,6 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
       };
     }
     this.projector.setSelectedColorOption(colorOption);
-  }
-
-  @observe('pcaIs3d')
-  _pcaDimensionToggleObserver() {
-    this.setZDropdownEnabled(this.pcaIs3d);
-    this.beginProjection(this.currentProjection);
-  }
-
-  @observe('umapIs3d')
-  _umapDimensionToggleObserver() {
-    this.beginProjection(this.currentProjection);
   }
 
   @observe('temporalStatus')
@@ -1095,16 +1047,6 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
   }
 
 
-  private updateTotalVarianceMessage() {
-    let variances = this.dataSet.fracVariancesExplained;
-    let totalVariance = variances[this.pcaX] + variances[this.pcaY];
-    let msg = 'Total variance described: ';
-    if (this.pcaIs3d) {
-      totalVariance += variances[this.pcaZ];
-    }
-    msg += (totalVariance * 100).toFixed(1) + '%.';
-    (this.$$('#total-variance') as HTMLElement).textContent = msg;
-  }
 
   private reprojectCustom() {
     if (

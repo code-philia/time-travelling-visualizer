@@ -463,9 +463,7 @@ export class DataSet {
   
         const label_color_list = temp_label_color_list
         const label_list = temp_label_list;
-        console.log('label_color_list.length',label_color_list.length)
-        // const label_color_list = data.label_color_list;
-        // const label_list = data.label_list;
+
         const prediction_list = data.prediction_list;
 
         const background_point_number = grid_index.length;

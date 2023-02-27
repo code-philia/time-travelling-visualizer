@@ -1,6 +1,0 @@
-# This file will be automatically generated when the API generator is configured
-toc:
-- title: tensorboard
-  section:
-  - title: Overview
-    path: /tensorboard/api_docs/python/
