@@ -451,14 +451,17 @@ export class DataSet {
         for(let i = 0 ;i < result.length-1;i++){
         
           if (data.properties[i] === 0) {
-            let color:any = data.label_color_list[k++] || [204,204,204]
-            let label:any = data.label_list[k++] || 'unlabeled'
+            
+            let color:any = data.label_color_list[k] || [204,204,204]
+            let label:any = data.label_list[k] || 'unlabeled'
             temp_label_color_list.push(color)
             temp_label_list.push(label)
+            k = k+1
           } else{
             temp_label_color_list.push([204,204,204])
             temp_label_list.push('unlabeled')
           }
+          
         }
   
         const label_color_list = temp_label_color_list
@@ -815,14 +818,16 @@ export class DataSet {
       for(let i = 0 ;i < result.length-1;i++){
         
         if (data.properties[i] === 0) {
-          let color:any = data.label_color_list[k++] || [204,204,204]
-          let label:any = data.label_list[k++] || 'unlabeled'
+          let color:any = data.label_color_list[k] || [204,204,204]
+          let label:any = data.label_list[k] || 'unlabeled'
           temp_label_color_list.push(color)
           temp_label_list.push(label)
+          k + k+1
         } else{
           temp_label_color_list.push([204,204,204])
           temp_label_list.push('unlabeled')
-        }
+        }  
+        
       }
 
       const label_color_list = temp_label_color_list
