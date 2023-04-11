@@ -404,14 +404,18 @@ class Projector
         //        node.value - total value current node and descendants;
 
         //create tree
-        let len = res.structure.length
-        let svgWidth = len * 35
+        let len = window.tSNETotalIter
+        let svgWidth = len * 45
         if (window.sessionStorage.taskType === 'active learning') {
           svgWidth = 1000
         }
         // svgWidth = 1000
         console.log('svgWid', len, svgWidth)
         svgDom.style.width = svgWidth + 200
+        if(window.sessionStorage.selectedSetting !== 'active learning' && window.sessionStorage.selectedSetting !== 'dense al'){
+          svgDom.style.height = 90
+        }
+
 
         var tree = d3.tree()
           .size([100, svgWidth])

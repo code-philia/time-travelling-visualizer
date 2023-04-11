@@ -171,7 +171,13 @@ limitations under the License.
     <div class="login-card">
       <h4>User Login</h4>
       <div class="login-item">
-        <span>content path:</span><input class="login-input" id="contentPathInput" />
+        <span>content path:</span>
+        <select id="contentPathInput" class="login-input" style="height: 35px; width: 210px;">
+            <option value="/home/yifan/dataset/mnist_demo/mnist_anomaly" selected>/home/yifan/dataset/mnist_demo/mnist_normal</option>
+            <option value="/home/yifan/dataset/mnist_demo/mnist_anomaly">/home/yifan/dataset/mnist_demo/mnist_anomaly</option>
+            <option value="/home/yifan/dataset/mnist_demo/mnist_al">/home/yifan/dataset/mnist_demo/mnist_al</option>
+        </select>
+        <!-- <input class="login-input" id="contentPathInput" /> -->
       </div>
       <div class="login-item">
         <span>username:</span><input class="login-input" id="loginInput" value="admin-e" />

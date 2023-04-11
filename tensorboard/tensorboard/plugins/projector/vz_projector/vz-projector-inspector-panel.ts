@@ -321,7 +321,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
     // anormaly detcttion classes
     this.classOptionsList = [{ value: 0, label: 'airplane' }, { value: 1, label: 'car' }, { value: 2, label: 'bird' }, { value: 3, label: 'cat' }, { value: 4, label: 'deer' }, { value: 5, label: 'dog' }, { value: 6, label: 'frog' }, { value: 7, label: 'horse' }, { value: 8, label: 'ship' }, { value: 9, label: 'truck' }]
     // TODO read real points length from dataSet
-    for (let i = 0; i < 60000; i++) {
+    for (let i = 0; i < 70000; i++) {
       this.filterIndices.push(i);
     }
     this.noisyBtn.style.visibility = Boolean(window.customSelection?.length)?'':'hidden'

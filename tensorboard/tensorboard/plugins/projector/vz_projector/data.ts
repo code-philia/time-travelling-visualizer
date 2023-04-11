@@ -450,7 +450,7 @@ export class DataSet {
        let k=0
         for(let i = 0 ;i < result.length-1;i++){
         
-          if (data.properties[i] === 0) {
+          if (data.properties[i] === 0 || (window.sessionStorage.selectedSetting !== 'active learning' && window.sessionStorage.selectedSetting !== 'dense al')) {
             
             let color:any = data.label_color_list[k] || [204,204,204]
             let label:any = data.label_list[k] || 'unlabeled'
