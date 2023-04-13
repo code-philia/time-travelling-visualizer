@@ -330,9 +330,9 @@ export const template = html`
         </div>
         <button class="jump-dvi ink-button" title="Jump DVI">Jump</button>
       </div>
-      <div style="display:flex;justify-content: space-between;">
+      <div style="display:flex;justify-content: space-between; flex-direction:column;">
         <p style="font-weight: 600;">Iteration: <span class="run-tsne-iter">0</span></p>
-        <p>Total iteration number: <span class="dvi-total-iter">0</span></p>
+        <p>Total Iteration: <span class="dvi-total-iter">0</span></p>
       </div>
 
       <div style="border-bottom:1px solid #666; height:0; visibility:hidden;">
@@ -374,8 +374,8 @@ export const template = html`
       <!--          <p>PPR: train: <span class="inv_acc_train">NA</span> test: <span class="inv_acc_test">NA</span></p>-->
       <!--          <p>CCR: train: <span class="inv_conf_train">NA</span> test: <span class="inv_conf_test">NA</span></p>-->
       <template is="dom-if" if="[[_showFilter]]">
-        <h2 style="text-align:center">Train Result Statistics</h2>
-        <div class="filter-content">
+       
+        <div class="filter-content" style="visibility:hidden;height:0px">
           <paper-dropdown-menu style="width: 120px" no-animations label="Architecture">
             <paper-listbox attr-for-selected="value" class="dropdown-content" selected="{{selectedArchitecture}}"
               slot="dropdown-content">
@@ -409,7 +409,7 @@ export const template = html`
         </div>
 
       </template>
-      <table>
+      <table style="width:164px">
         <caption style="margin-bottom: 10px; font-weight: 600;">
         <h2>Task Model Accuracy</h2>
         </caption>

@@ -1040,7 +1040,7 @@ class Projector
    * Used by clients to indicate that a selection has occurred.
    */
   async notifySelectionChanged(newSelectedPointIndices: number[], selectMode?: boolean, selectionType?: string) {
-    console.log('ssssssleci', selectionType,newSelectedPointIndices)
+    console.log('notifySelectionChanged', selectionType,newSelectedPointIndices)
     if (!this.registered) {
       this.readyregis()
     }
@@ -1647,6 +1647,7 @@ class Projector
     if (confidenceThresholdFrom || confidenceThresholdTo) {
       dummyCurrPredicates['confidence'] = [Number(confidenceThresholdFrom), Number(confidenceThresholdTo)]
     }
+    console.log("'aaaaaa")
     const msgId = logging.setModalMessage('Querying...');
     let headers = new Headers();
     headers.append('Content-Type', 'application/json');

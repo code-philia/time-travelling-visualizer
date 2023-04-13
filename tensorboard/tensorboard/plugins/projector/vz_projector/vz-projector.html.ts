@@ -70,8 +70,8 @@ export const template = html`
         display: flex;
         flex-direction: column;
         justify-content: space-between;
-        min-width: 312px;
-        width: 312px;
+        min-width: 202px;
+        width: 202px;
         border-right: 1px solid rgba(0, 0, 0, 0.1);
         background: #fafafa;
       }
