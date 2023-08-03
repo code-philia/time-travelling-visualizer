@@ -4,13 +4,15 @@ This is a project to visualizer our XAI techniques for debugging the model train
 
 
 # download frontend and backend repos
+```console
 $ cd git_space
-## timevis
+# timevis
 $ git clone https://github.com/xianglinyang/DLVisDebugger.git
-## active learning related
+# active learning related
 $ git clone https://github.com/xianglinyang/ActiveLearning.git
-## frontend
+# frontend
 $ git clone https://github.com/llmhyy/training-visualizer.git
+```
 
 
 # download bazel （build frontend）
