@@ -317,6 +317,8 @@ class Projector
 
     let svgDom: any = this.$$("#mysvggg")
 
+    
+
     while (svgDom?.firstChild) {
       svgDom.removeChild(svgDom.lastChild);
     }
@@ -414,6 +416,7 @@ class Projector
         svgDom.style.width = svgWidth + 200
         if(window.sessionStorage.selectedSetting !== 'active learning' && window.sessionStorage.selectedSetting !== 'dense al'){
           svgDom.style.height = 90
+          svgDom.style.width = '100%'
         }
 
 
@@ -472,7 +475,8 @@ class Projector
           .enter()
           .append('g')
           .attr('transform', function (d, i) {
-            return 'translate(' + d.y + ',' + d.x + ')';
+            console.log("D",d)
+            return 'translate(' + d.data.pid * 40 + ',' + d.x + ')';
           });
 
         //绘制文字和节点
