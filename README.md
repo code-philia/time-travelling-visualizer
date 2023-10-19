@@ -15,7 +15,7 @@ $ git clone https://github.com/llmhyy/training-visualizer.git
 ```
 
 
-# download bazel （build frontend）
+# download bazel 3.2.0 （build frontend）
 1. install Bazel for mac： [reference](https://docs.bazel.build/versions/main/install-os-x.html). 
 
 2. install Bazel for windows:[reference](https://docs.bazel.build/versions/main/install-windows.html) <br/>
@@ -118,7 +118,7 @@ $(timevis) python server.py
 > no need of specified environment
 ```console
 $(timevis) cd training-visualization-frontend/tensorboard
-$(timevis) bazel run tensorboard/plugins/projector/vz_projector:standalone
+$(timevis) bazel run tensorboard/projector:standalone
 ```
 3. Open `http://localhost:6006/standalone.html`.  
   （windows sometimes may use 6007）
