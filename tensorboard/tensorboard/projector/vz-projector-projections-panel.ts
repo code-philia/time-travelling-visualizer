@@ -20,8 +20,8 @@ import {
   ColorLegendRenderInfo,
 } from './vz-projector-legend';
 import * as d3 from 'd3';
-import { LegacyElementMixin } from '../../../components/polymer/legacy_element_mixin';
-import '../../../components/polymer/irons_and_papers';
+import { LegacyElementMixin } from '../components/polymer/legacy_element_mixin';
+import '../components/polymer/irons_and_papers';
 
 import { template } from './vz-projector-projections-panel.html';
 import './vz-projector-input';

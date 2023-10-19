@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 import * as THREE from 'three';
-import * as tf from '../../../webapp/third_party/tfjs';
+import * as tf from '../webapp/third_party/tfjs';
 import * as searchQuery from 'search-query-parser';
 
 import {DataPoint} from './data';

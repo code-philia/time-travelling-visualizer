@@ -15,8 +15,8 @@ limitations under the License.
 import { PolymerElement } from '@polymer/polymer';
 import { customElement, observe, property } from '@polymer/decorators';
 
-import { LegacyElementMixin } from '../../../components/polymer/legacy_element_mixin';
-import '../../../components/polymer/irons_and_papers';
+import { LegacyElementMixin } from '../components/polymer/legacy_element_mixin';
+import '../components/polymer/irons_and_papers';
 
 import { DistanceFunction, SpriteAndMetadataInfo, State, DataSet } from './data';
 import { template } from './vz-projector-inspector-panel.html';

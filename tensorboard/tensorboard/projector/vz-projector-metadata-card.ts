@@ -16,8 +16,8 @@ import { PolymerElement, html } from '@polymer/polymer';
 import { customElement, observe, property } from '@polymer/decorators';
 import * as logging from './logging';
 
-import { LegacyElementMixin } from '../../../components/polymer/legacy_element_mixin';
-import '../../../components/polymer/irons_and_papers';
+import { LegacyElementMixin } from '../components/polymer/legacy_element_mixin';
+import '../components/polymer/irons_and_papers';
 
 import { PointMetadata } from './data';
 import { ProjectorEventContext } from './projectorEventContext';
