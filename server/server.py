@@ -1,48 +1,59 @@
 from flask import request, Flask, jsonify, make_response
 from flask_cors import CORS, cross_origin
+
 import base64
 import os
 import sys
 import json
+import pickle
 import numpy as np
 import gc
 import shutil
+from utils import update_epoch_projection, initialize_backend, add_line
 
-from timevis_backend.utils import *
-from timevis_backend.res_logging import add_line
 
 # flask for API server
 app = Flask(__name__)
 cors = CORS(app, supports_credentials=True)
 app.config['CORS_HEADERS'] = 'Content-Type'
 
-session = 5
-API_result_path = "./API_result.csv"
+API_result_path = "./admin_API_result.csv"
 
 @app.route('/updateProjection', methods=["POST", "GET"])
 @cross_origin()
 def update_projection():
     res = request.get_json()
     CONTENT_PATH = os.path.normpath(res['path'])
+    VIS_METHOD = res['vis_method']
+    SETTING = res["setting"]
+
     iteration = int(res['iteration'])
     predicates = res["predicates"]
     # username = res['username']
+    username ='admin'
     
-    sys.path.append(CONTENT_PATH)
-    timevis = initialize_backend(CONTENT_PATH)
-    EPOCH = (iteration-1)*timevis.data_provider.p + timevis.data_provider.s
+    # sys.path.append(CONTENT_PATH)
+    context = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
+    # use the true one
+    # EPOCH = (iteration-1)*context.strategy.data_provider.p + context.strategy.data_provider.s
+    EPOCH = int(iteration)
 
     embedding_2d, grid, decision_view, label_name_dict, label_color_list, label_list, max_iter, training_data_index, \
-    testing_data_index, eval_new, prediction_list, selected_points, properties = update_epoch_projection(timevis, EPOCH, predicates)
+    testing_data_index, eval_new, prediction_list, selected_points, properties = update_epoch_projection(context, EPOCH, predicates)
 
-    sys.path.remove(CONTENT_PATH)
+    # sys.path.remove(CONTENT_PATH)
     # add_line(API_result_path,['TT',username])
-    return make_response(jsonify({'result': embedding_2d, 'grid_index': grid, 'grid_color': 'data:image/png;base64,' + decision_view,
+    grid = np.array(grid)
+    return make_response(jsonify({'result': embedding_2d, 
+                                  'grid_index': grid.tolist(), 
+                                  'grid_color': 'data:image/png;base64,' + decision_view,
                                   'label_name_dict':label_name_dict,
-                                  'label_color_list': label_color_list, 'label_list': label_list,
+                                  'label_color_list': label_color_list, 
+                                  'label_list': label_list,
                                   'maximum_iteration': max_iter, 
                                   'training_data': training_data_index,
-                                  'testing_data': testing_data_index, 'evaluation': eval_new,
+                                  'testing_data': testing_data_index, 
+                                  'evaluation': eval_new,
                                   'prediction_list': prediction_list,
                                   "selectedPoints":selected_points.tolist(),
                                   "properties":properties.tolist()}), 200)
@@ -52,28 +63,32 @@ def update_projection():
 def filter():
     res = request.get_json()
     CONTENT_PATH = os.path.normpath(res['content_path'])
+    VIS_METHOD = res['vis_method']
+    SETTING = res["setting"]
+
     iteration = int(res['iteration'])
     predicates = res["predicates"]
     username = res['username']
 
     sys.path.append(CONTENT_PATH)
-    timevis = initialize_backend(CONTENT_PATH)
-    EPOCH = (iteration-1)*timevis.data_provider.p + timevis.data_provider.s
+    context = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
+    # TODO: fix when active learning
+    EPOCH = (iteration-1)*context.strategy.data_provider.p + context.strategy.data_provider.s
 
-    training_data_number = timevis.hyperparameters["TRAINING"]["train_num"]
-    testing_data_number = timevis.hyperparameters["TRAINING"]["test_num"]
+    training_data_number = context.strategy.config["TRAINING"]["train_num"]
+    testing_data_number = context.strategy.config["TRAINING"]["test_num"]
 
-    current_index = timevis.get_epoch_index(EPOCH)
+    current_index = context.get_epoch_index(EPOCH)
     selected_points = np.arange(training_data_number)[current_index]
     selected_points = np.concatenate((selected_points, np.arange(training_data_number, training_data_number + testing_data_number, 1)), axis=0)
     # selected_points = np.arange(training_data_number + testing_data_number)
     for key in predicates.keys():
         if key == "label":
-            tmp = np.array(timevis.filter_label(predicates[key], int(EPOCH)))
+            tmp = np.array(context.filter_label(predicates[key], int(EPOCH)))
         elif key == "type":
-            tmp = np.array(timevis.filter_type(predicates[key], int(EPOCH)))
+            tmp = np.array(context.filter_type(predicates[key], int(EPOCH)))
         elif key == "confidence":
-            tmp = np.array(timevis.filter_conf(predicates[key][0],predicates[key][1],int(EPOCH)))
+            tmp = np.array(context.filter_conf(predicates[key][0],predicates[key][1],int(EPOCH)))
         else:
             tmp = np.arange(training_data_number + testing_data_number)
         selected_points = np.intersect1d(selected_points, tmp)
@@ -109,7 +124,6 @@ def sprite_list_image():
     indices = data["index"]
     path = data["path"]
 
-
     CONTENT_PATH = os.path.normpath(path)
     length = len(indices)
     urlList = {}
@@ -131,6 +145,10 @@ def sprite_list_image():
 def al_query():
     data = request.get_json()
     CONTENT_PATH = os.path.normpath(data['content_path'])
+    VIS_METHOD = data['vis_method']
+    SETTING = data["setting"]
+
+    # TODO fix iteration, align with frontend
     iteration = data["iteration"]
     strategy = data["strategy"]
     budget = int(data["budget"])
@@ -138,12 +156,11 @@ def al_query():
     rej_idxs = data["rejIndices"]
     user_name = data["username"]
     isRecommend = data["isRecommend"]
-    # TODO dense_al parameter from frontend
 
     sys.path.append(CONTENT_PATH)
-    timevis = initialize_backend(CONTENT_PATH, dense_al=True)
+    context = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING, dense=True)
     # TODO add new sampling rule
-    indices, labels, scores = timevis.al_query(iteration, budget, strategy, np.array(acc_idxs).astype(np.int64), np.array(rej_idxs).astype(np.int64))
+    indices, labels, scores = context.al_query(iteration, budget, strategy, np.array(acc_idxs).astype(np.int64), np.array(rej_idxs).astype(np.int64))
 
     sort_i = np.argsort(-scores)
     indices = indices[sort_i]
@@ -162,6 +179,9 @@ def al_query():
 def anomaly_query():
     data = request.get_json()
     CONTENT_PATH = os.path.normpath(data['content_path'])
+    VIS_METHOD = data['vis_method']
+    SETTING = data["setting"]
+
     budget = int(data["budget"])
     strategy = data["strategy"]
     acc_idxs = data["accIndices"]
@@ -170,11 +190,11 @@ def anomaly_query():
     isRecommend = data["isRecommend"]
 
     sys.path.append(CONTENT_PATH)
+    context = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
 
-    timevis = initialize_backend(CONTENT_PATH)
-    timevis.save_acc_and_rej(acc_idxs, rej_idxs, user_name)
-    indices, scores, labels = timevis.suggest_abnormal(strategy, np.array(acc_idxs).astype(np.int64), np.array(rej_idxs).astype(np.int64), budget)
-    clean_list,_ = timevis.suggest_normal(strategy, np.array(acc_idxs).astype(np.int64), np.array(rej_idxs).astype(np.int64), 1)
+    context.save_acc_and_rej(acc_idxs, rej_idxs, user_name)
+    indices, scores, labels = context.suggest_abnormal(strategy, np.array(acc_idxs).astype(np.int64), np.array(rej_idxs).astype(np.int64), budget)
+    clean_list,_ = context.suggest_normal(strategy, np.array(acc_idxs).astype(np.int64), np.array(rej_idxs).astype(np.int64), 1)
 
     sort_i = np.argsort(-scores)
     indices = indices[sort_i]
@@ -193,25 +213,26 @@ def anomaly_query():
 def al_train():
     data = request.get_json()
     CONTENT_PATH = os.path.normpath(data['content_path'])
+    VIS_METHOD = data['vis_method']
+    SETTING = data["setting"]
+
     acc_idxs = data["accIndices"]
     rej_idxs = data["rejIndices"]
     iteration = data["iteration"]
     user_name = data["username"]
-    sys.path.append(CONTENT_PATH)
 
+    sys.path.append(CONTENT_PATH)
     # default setting al_train is light version, we only save the last epoch
     
-    timevis = initialize_backend(CONTENT_PATH, dense_al=False)
-    timevis.save_acc_and_rej(iteration, acc_idxs, rej_idxs, user_name)
-    timevis.al_train(iteration, acc_idxs)
-
-    from config import config
-    NEW_ITERATION =  timevis.get_max_iter()
-    timevis.vis_train(NEW_ITERATION, **config)
+    context = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
+    context.save_acc_and_rej(iteration, acc_idxs, rej_idxs, user_name)
+    context.al_train(iteration, acc_idxs)
+    NEW_ITERATION =  context.get_max_iter()
+    context.vis_train(NEW_ITERATION, iteration)
 
     # update iteration projection
     embedding_2d, grid, decision_view, label_name_dict, label_color_list, label_list, _, training_data_index, \
-    testing_data_index, eval_new, prediction_list, selected_points, properties = update_epoch_projection(timevis, NEW_ITERATION, dict())
+    testing_data_index, eval_new, prediction_list, selected_points, properties = update_epoch_projection(context, NEW_ITERATION, dict())
     
     # rewirte json =========
     res_json_path = os.path.join(CONTENT_PATH, "iteration_structure.json")
@@ -265,23 +286,17 @@ def clear_cache(con_paths):
             print("Successfully remove cache data!")
 
 
-#mock
 @app.route('/login', methods=["POST"])
 @cross_origin()
 def login():
     data = request.get_json()
-    username = data["username"]
-    password = data["password"]
+    # username = data["username"]
+    # password = data["password"]
     content_path = data["content_path"]
+    # clear_cache(con_paths)
 
     # Verify username and password
-    # if pass return normal_content_path and anormaly_content_path
-    if username == 'admin-e' and password == '123qwe': 
-        # con_paths = {"normal_content_path": content_path,"unormaly_content_path":content_path}
-        # clear_cache(con_paths)
-        return make_response(jsonify({"normal_content_path": content_path, "unormaly_content_path": content_path}), 200)
-    else:
-        return make_response(jsonify({"message":"username or password is wrong"}), 200)
+    return make_response(jsonify({"normal_content_path": content_path, "unormaly_content_path": content_path}), 200)
 
 @app.route('/boundingbox_record', methods=["POST"])
 @cross_origin()
@@ -296,8 +311,10 @@ def record_bb():
 def get_res():
     data = request.get_json()
     CONTENT_PATH = os.path.normpath(data['content_path'])
-    # iteration_s = data["iteration_start"]
-    # iteration_e = data["iteration_end"]
+    VIS_METHOD = data['vis_method']
+    SETTING = data["setting"]
+    username = data["username"]
+
     predicates = dict() # placeholder
 
     results = dict()
@@ -305,13 +322,11 @@ def get_res():
     gridlist = dict()
 
     sys.path.append(CONTENT_PATH)
-
-    username = data["username"]
-
-    from config import config
-    EPOCH_START = config["EPOCH_START"]
-    EPOCH_PERIOD = config["EPOCH_PERIOD"]
-    EPOCH_END = config["EPOCH_END"]
+    context = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
+    
+    EPOCH_START = context.strategy.config["EPOCH_START"]
+    EPOCH_PERIOD = context.strategy.config["EPOCH_PERIOD"]
+    EPOCH_END = context.strategy.config["EPOCH_END"]
 
     # TODO Interval to be decided
     epoch_num = (EPOCH_END - EPOCH_START)// EPOCH_PERIOD + 1
@@ -323,9 +338,10 @@ def get_res():
 
         # detect whether we have query before
         fname = "Epoch" if timevis.data_provider.mode == "normal" or timevis.data_provider.mode == "abnormal" else "Iteration"
-        bgimg_path = os.path.join(timevis.data_provider.model_path, "{}_{}".format(fname, EPOCH), "bgimg.png")
-        embedding_path = os.path.join(timevis.data_provider.model_path, "{}_{}".format(fname, EPOCH), "embedding.npy")
-        grid_path = os.path.join(timevis.data_provider.model_path, "{}_{}".format(fname, EPOCH), "grid.pkl")
+        checkpoint_path = context.strategy.data_provider.checkpoint_path(EPOCH)
+        bgimg_path = os.path.join(checkpoint_path, "bgimg.png")
+        embedding_path = os.path.join(checkpoint_path, "embedding.npy")
+        grid_path = os.path.join(checkpoint_path, "grid.pkl")
         if os.path.exists(bgimg_path) and os.path.exists(embedding_path) and os.path.exists(grid_path):
             path = os.path.join(timevis.data_provider.model_path, "{}_{}".format(fname, EPOCH))
             result_path = os.path.join(path,"embedding.npy")
@@ -356,8 +372,6 @@ def get_res():
 def get_tree():
     CONTENT_PATH = request.args.get("path")
     res_json_path = os.path.join(CONTENT_PATH, "iteration_structure.json")
-    #mock
-    # res_json_path = os.path.join("./iteration_structure.json")
     with open(res_json_path,encoding='utf8')as fp:
         json_data = json.load(fp)
     return make_response(jsonify({"structure":json_data}), 200)
@@ -378,10 +392,6 @@ if __name__ == "__main__":
     import socket
     hostname = socket.gethostname()
     ip_address = socket.gethostbyname(hostname)
-    # with open('config.json', 'r') as f:
-    #     config = json.load(f)
-    #     ip_address = config["ServerIP"]
-    #     port = config["ServerPort"]
     port = 5000
     while check_port_inuse(port, ip_address):
         port = port + 1

@@ -63,8 +63,8 @@ limitations under the License.
           window.taskType = 'active learning'
         }
       const content_path = document.getElementById("contentPathInput").value
-      const username = document.getElementById("loginInput").value
-      const password = document.getElementById("passwordInput").value
+      const username = document.getElementById("loginInput")?.value || 'admin-e'
+      const password = document.getElementById("passwordInput")?.value || '123qwe'
       //调用登陆接口获取token
       let headers = new Headers();
       headers.append('Content-Type', 'application/json');
@@ -172,34 +172,37 @@ limitations under the License.
       <h4>User Login</h4>
       <div class="login-item">
         <span>content path:</span>
-        <select id="contentPathInput" class="login-input" style="height: 35px; width: 210px;">
+        <input type="input" class="login-input" id="contentPathInput">
+        <!-- <select id="contentPathInput" class="login-input" style="height: 35px; width: 210px;">
             <option value="/home/yifan/dataset/mnist_demo/mnist_anomaly" selected>/home/yifan/dataset/mnist_demo/mnist_normal</option>
             <option value="/home/yifan/dataset/mnist_demo/mnist_anomaly">/home/yifan/dataset/mnist_demo/mnist_anomaly</option>
             <option value="/home/yifan/dataset/mnist_demo/mnist_al">/home/yifan/dataset/mnist_demo/mnist_al</option>
             <option value="/home/yifan/dataset/backdoor_demo">backdoor</option>
-        </select>
+            <option value="/home/yifan/dataset/yiming_demo">yiming</option>
+
+        </select> -->
         <!-- <input class="login-input" id="contentPathInput" /> -->
       </div>
-      <div class="login-item">
+      <!-- <div class="login-item">
         <span>username:</span><input class="login-input" id="loginInput" value="admin-e" />
       </div>
       <div class="login-item">
         <span>password:</span><input type="password" class="login-input" id="passwordInput" value="123qwe" />
-      </div>
+      </div> -->
       <div class="login-item">
-        <span>ip:host</span><input type="input" class="login-input" id="ipAddressInput" value="172.26.191.173:5000" />
+        <span>backend ip: </span><input type="input" class="login-input" id="ipAddressInput" value="172.26.191.173:5000" />
       </div>
       <div class="choose-task">
         Vis_method:
-        <input type="radio" name="vis_method" value="TimeVis" checked="checked"> TimeVis
-        <input type="radio" name="vis_method" value="DVI">DVI
+        <input type="radio" name="vis_method" value="TimeVis"> TimeVis
+        <input type="radio" name="vis_method" value="DVI" checked="checked">DVI
       </div>
       <div class="choose-task" style="margin-left: -60px;">
         Setting:
         <input type="radio" name="setting" value="normal" checked="checked"> Normal
         <input type="radio" name="setting" value="active learning">Active Learning
         <input type="radio" name="setting" value="abnormal">Abnormal
-        <input type="radio" name="setting" value="dense al">Dense Al
+        <!-- <input type="radio" name="setting" value="dense al">Dense Al -->
 
       </div>
       <div class="footer">
@@ -259,18 +262,18 @@ limitations under the License.
     top: 20%;
     left: 50%;
     width: 370px;
-    margin-left: -90px;
+    margin-left: -100px;
   }
 
   .login-card {
     width: 340px;
-    height: 300px;
+    height: 240px;
     position: fixed;
     top: 30%;
     left: 50%;
     margin-left: -150px;
     text-align: center;
-    padding: 20px 80px 50px 80px;
+    padding: 20px 60px 50px 60px;
     box-shadow: 0 3px 15px rgb(0 0 0 / 20%);
     background: rgba(255, 255, 255, 0.3);
   }

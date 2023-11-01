@@ -296,7 +296,7 @@ class Projector
   d3loader() {
     let that = this
     new Promise((resolve) => {
-      let url = "https://d3js.org/d3.v5.min.js"
+      let url = "http://172.26.191.173:81/d3.v5.min.js"
       // let url = "http://127.0.0.1/d3-min.js"
       let script = document.createElement('script')
       script.setAttribute('src', url)
@@ -480,9 +480,13 @@ class Projector
           });
 
         //绘制文字和节点
+        if(window.iteration == undefined){
+          window.iteration = 1
+        }
         gs.append('circle')
           .attr('r', 8)
           .attr('fill', function (d, i) {
+            console.log("1111",d.data.value, window.iteration, d.data.value == window.iteration )
             return d.data.value == window.iteration ? 'orange' : '#452d8a'
           })
           .attr('stroke-width', 1)
@@ -508,6 +512,7 @@ class Projector
           })
       })
     let that = this
+    
     setTimeout(() => {
       let list = svgDom.querySelectorAll("circle");
       for (let i = 0; i <= list.length; i++) {
@@ -521,6 +526,7 @@ class Projector
                 that.projectionsPanel.jumpTo(Number(value))
                 window.sessionStorage.setItem('acceptIndicates', "")
                 window.sessionStorage.setItem('rejectIndicates', "")
+                this.initialTree()
               }
             })
           }
