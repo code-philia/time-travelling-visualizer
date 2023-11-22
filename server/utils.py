@@ -7,7 +7,7 @@ import sys
 import pickle
 import base64
 
-vis_path = "/home/yifan/projects/Deepdebugger/DeepDebugger"
+vis_path = ".."
 sys.path.append(vis_path)
 from context import VisContext, ActiveLearningContext, AnormalyContext
 from strategy import DeepDebugger, TimeVis, tfDeepVisualInsight, DVIAL, tfDVIDenseAL, TimeVisDenseAL
