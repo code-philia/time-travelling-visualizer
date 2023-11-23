@@ -2,23 +2,25 @@
 you can download by https://huggingface.co/yvonne1123/trustvis_with_dataset
 then you can store the dataset in /training_dynamic (default path)
 
-# Training Dynamic
 
-demo data store in /training_dynamic
-# evaluate subject model
-
+# environment
+```
+cd Vis
+pip install -r requirements.txt
 
 ```
-conda activate myvenv
-cd Trustvis
+
+# evaluate subject model
+```
+cd Vis
 python subject_model_eval.py
 ```
 The trainig dynamic performance will be store in /training_dynamic/Model/subject_model_eval.json
 
 
-# Run trustvis 
+# Run Vis model 
 ```
-cd Trustvis
+cd Vis
 conda activate myvenv
 # proxy only
 python porxy.py --epoch num --content_path "dataset path"(default: /training_dynamic)
@@ -38,11 +40,11 @@ the evaluation resulte wiil be store in /training_dynamic/Model/trustvis_al_eval
 
 ```
 # backend
-cd /Tool/backend/server
+cd /VisTool/Backend/server
 python server.py
 
 # frontend
-cd /Tool/frontend
+cd /VisTool/frontend
 we have the built version: down load url: https://drive.google.com/file/d/1MoGPYC6cO1Kxgsz3dVxf4cvRLfhqbz7X/view?usp=sharing 
 unzip and use browser open /vz-projector/standalone.html
 
