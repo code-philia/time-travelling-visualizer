@@ -10,6 +10,7 @@ demo data store in /training_dynamic
 
 ```
 conda activate myvenv
+cd Trustvis
 python subject_model_eval.py
 ```
 The trainig dynamic performance will be store in /training_dynamic/Model/subject_model_eval.json
