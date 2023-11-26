@@ -3,8 +3,11 @@
 # How to Use it?
 
 ## Pull Our Code
+```
+git clone https://github.com/code-philia/time-travelling-visualizer.git
 
-//TODO for yifan and yiming, prepare a huggingface for a training process
+```
+
 
 The project structure looks as follow:
 XXX fold is for XXX
