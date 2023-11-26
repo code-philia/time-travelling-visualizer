@@ -97,8 +97,9 @@ $ (visualizer)  python active_learning.py  --epoch num --content_path "dataset p
 ![Interactive Visualizer Tool](screenshot.png)
 ## backend
 ```
-cd /VisTool/backend/server
-python server.py
+$ cd /VisTool/backend/server
+$ conda activate visualizer
+$ (visualizer) python server.py
 ```
 
 
