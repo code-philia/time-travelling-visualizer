@@ -116,7 +116,7 @@ or you can build by yourself
 3. run frontend
 ```
 cd /VisTool/Frontend
-bazel run tensorboard/plugins/projector/vz_projector:standalone
+bazel run tensorboard/projector:standalone
 
 ```
 4. open http://localhost:6006/standalone.html
