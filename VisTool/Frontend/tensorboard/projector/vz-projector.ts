@@ -297,7 +297,6 @@ class Projector
     let that = this
     new Promise((resolve) => {
       // let url = "http://172.26.191.173:81/d3.v5.min.js"
-      // let url = "http://127.0.0.1/d3-min.js"
       let url = "https://d3js.org/d3.v5.min.js"
       let script = document.createElement('script')
       script.setAttribute('src', url)
@@ -334,7 +333,7 @@ class Projector
     // document.body.append(svgDom)
 
     let headers = new Headers();
-    await fetch(`http://${window.sessionStorage.ipAddress}/get_itertaion_structure?path=${window.sessionStorage.content_path}`, {
+    await fetch(`http://${window.sessionStorage.ipAddress}/get_itertaion_structure?path=${window.sessionStorage.content_path}?method=${window.sessionStorage.vis_method}?setting${window.sessionStorage.selectedSetting}'`, {
       method: 'POST',
       headers: headers,
       mode: 'cors'

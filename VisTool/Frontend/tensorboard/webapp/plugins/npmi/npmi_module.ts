@@ -28,7 +28,7 @@ import {NPMI_FEATURE_KEY} from './store/npmi_types';
 import {InactiveModule} from './views/inactive/inactive_module';
 import {MainModule} from './views/main/main_module';
 
-import {PluginRegistryModule} from '../../plugins/plugin_registry_module';
+import {PluginRegistryModule} from '../plugin_registry_module';
 
 @NgModule({
   declarations: [NpmiComponent, NpmiContainer],

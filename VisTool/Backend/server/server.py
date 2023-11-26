@@ -371,6 +371,17 @@ def get_res():
 @cross_origin()
 def get_tree():
     CONTENT_PATH = request.args.get("path")
+    VIS_METHOD = request.args.res['vis_method']
+    SETTING = request.args.res["setting"]
+
+    sys.path.append(CONTENT_PATH)
+    context = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
+    
+    EPOCH_START = context.strategy.config["EPOCH_START"]
+    EPOCH_PERIOD = context.strategy.config["EPOCH_PERIOD"]
+    EPOCH_END = context.strategy.config["EPOCH_END"]
+
+
     res_json_path = os.path.join(CONTENT_PATH, "iteration_structure.json")
     with open(res_json_path,encoding='utf8')as fp:
         json_data = json.load(fp)

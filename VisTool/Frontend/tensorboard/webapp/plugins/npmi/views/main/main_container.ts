@@ -22,7 +22,7 @@ import {getCurrentRouteRunSelection} from '../../../../selectors';
 import {
   getSidebarExpanded,
   getSidebarWidth,
-} from './../../store/npmi_selectors';
+} from '../../store/npmi_selectors';
 import * as npmiActions from '../../actions';
 
 /** @typehack */ import * as _typeHackRxjs from 'rxjs';

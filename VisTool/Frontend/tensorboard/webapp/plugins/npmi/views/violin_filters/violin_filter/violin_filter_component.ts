@@ -27,8 +27,8 @@ import {
 
 import * as d3 from '../../../../../third_party/d3';
 
-import {MetricFilter, TfColorScale} from './../../../store/npmi_types';
-import {ViolinChartData, ViolinBin} from './../../../util/violin_data';
+import {MetricFilter, TfColorScale} from '../../../store/npmi_types';
+import {ViolinChartData, ViolinBin} from '../../../util/violin_data';
 
 @Component({
   selector: 'violin-filter-component',

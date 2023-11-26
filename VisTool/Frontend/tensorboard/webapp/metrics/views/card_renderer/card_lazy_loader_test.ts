@@ -23,7 +23,7 @@ import {State} from '../../../app_state';
 import * as actions from '../../actions';
 import {appStateFromMetricsState, buildMetricsState} from '../../testing';
 import {CardId} from '../../types';
-import {CardLazyLoader, CardObserver} from '../card_renderer/card_lazy_loader';
+import {CardLazyLoader, CardObserver} from './card_lazy_loader';
 
 @Component({
   selector: 'card-view',

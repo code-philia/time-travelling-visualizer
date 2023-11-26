@@ -29,7 +29,7 @@ import {appStateFromNpmiState, createNpmiState} from '../../../testing';
 import {
   getMetricArithmetic,
   getMetricFilters,
-} from './../../../store/npmi_selectors';
+} from '../../../store/npmi_selectors';
 import {ArithmeticKind, Operator} from '../../../store/npmi_types';
 
 /** @typehack */ import * as _typeHackStore from '@ngrx/store';

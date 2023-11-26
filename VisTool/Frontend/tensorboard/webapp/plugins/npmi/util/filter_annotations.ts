@@ -18,7 +18,7 @@ import {
   MetricFilterListing,
   ArithmeticKind,
   ValueData,
-} from './../store/npmi_types';
+} from '../store/npmi_types';
 import {stripMetricString} from './metric_type';
 
 export function filterAnnotations(

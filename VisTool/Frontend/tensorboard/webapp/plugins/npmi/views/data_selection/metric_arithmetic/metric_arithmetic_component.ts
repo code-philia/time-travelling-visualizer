@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 import {ChangeDetectionStrategy, Component, Input} from '@angular/core';
-import {ArithmeticElement, ArithmeticKind} from './../../../store/npmi_types';
+import {ArithmeticElement, ArithmeticKind} from '../../../store/npmi_types';
 
 @Component({
   selector: 'metric-arithmetic-component',

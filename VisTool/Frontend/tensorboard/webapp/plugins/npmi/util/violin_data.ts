@@ -12,7 +12,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
-import {AnnotationDataListing} from './../store/npmi_types';
+import {AnnotationDataListing} from '../store/npmi_types';
 import {stripMetricString} from './metric_type';
 
 import * as d3 from '../../../third_party/d3';

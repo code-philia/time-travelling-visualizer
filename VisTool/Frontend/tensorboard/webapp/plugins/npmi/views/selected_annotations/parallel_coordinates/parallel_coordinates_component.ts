@@ -25,7 +25,7 @@ import {
 } from '@angular/core';
 import * as d3 from '../../../../../third_party/d3';
 import {Coordinate} from '../../../util/coordinate_data';
-import {ValueData, TfColorScale} from './../../../store/npmi_types';
+import {ValueData, TfColorScale} from '../../../store/npmi_types';
 
 @Component({
   selector: 'parallel-coordinates-component',
