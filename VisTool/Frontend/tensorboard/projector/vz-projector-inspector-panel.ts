@@ -1349,7 +1349,7 @@ class InspectorPanel extends LegacyElementMixin(PolymerElement) {
         this.searchInRegexMode,
         this.selectedMetadataField,
         this.currentPredicate,
-        this.projector.iteration,
+        window.iteration,
         this.confidenceThresholdFrom,
         this.confidenceThresholdTo,
         (indices: any) => {

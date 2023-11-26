@@ -73,6 +73,7 @@ class VisContext(Context):
         suggest_labels = self.clean_labels[suggest_idxs]
         return suggest_idxs, scores, suggest_labels
     
+    
 
     #################################################################################################################
     #                                                                                                               #
@@ -152,6 +153,7 @@ class VisContext(Context):
         train_data = self.strategy.data_provider.train_representation(epoch_id)
         test_data =self.strategy.data_provider.test_representation(epoch_id)
         data = np.concatenate((train_data, test_data), axis=0)
+        data = data.reshape(data.shape[0],data.shape[1])
         pred = self.strategy.data_provider.get_pred(epoch_id, data)
         scores = np.amax(softmax(pred, axis=1), axis=1)
         res = np.argwhere(np.logical_and(scores<=conf_max, scores>=conf_min)).squeeze().tolist()
