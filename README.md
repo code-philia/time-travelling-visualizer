@@ -5,12 +5,10 @@
 ## Pull Our Code
 ```
 git clone https://github.com/code-philia/time-travelling-visualizer.git
-
 ```
 
-```
 The project structure looks as follow:
-
+```
 time-travelling-visualizer
 │   README.md
 |
@@ -41,13 +39,13 @@ time-travelling-visualizer
 └───
 ```
 
-training_dynamic fold is for storing the dataset
-Vis fold is for training the visualization models
-visTool fold is the interactive visualization tool's backend and frontend
+- training_dynamic fold is for storing the dataset
+- Vis fold is for training the visualization models
+- visTool fold is the interactive visualization tool's backend and frontend
 
 
 
-Note that, the training_dynamic folder stores the training process and the target dataset. 
+⚠️ Note that, the training_dynamic folder stores the training process and the target dataset. 
 We can download them as follows: https://huggingface.co/datasets/yvonne1123/training_dynamic
 
 
