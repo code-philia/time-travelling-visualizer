@@ -60,30 +60,30 @@ then you can store the dataset in /training_dynamic (default path)
 
 $ cd Vis
 $ conda create -n visualizer python=3.7
-$(visualizer) conda activate visualizer
-$(visualizer) pip install -r requirements.txt
+$ (visualizer) conda activate visualizer
+$ (visualizer) pip install -r requirements.txt
 
 ```
 
 # evaluate subject model
 ```
-$(visualizer) pip install -r requirements.txt
-$(visualizer) python subject_model_eval.py
+$ (visualizer) pip install -r requirements.txt
+$ (visualizer) python subject_model_eval.py
 ```
 The trainig dynamic performance(testing accuracy and training accuracy) will be store in /training_dynamic/Model/subject_model_eval.json
 
 # Train Your Time-Travelling Visualizer
 ```
-cd Vis
-conda activate myvenv
+$ cd Vis
+$ conda activate visualizer
 # proxy only
-$(visualizer) python porxy.py --epoch epoch_number(default 3) --content_path "dataset path"(default: /training_dynamic)
+$ (visualizer) python porxy.py --epoch epoch_number(default 3) --content_path "dataset path"(default: /training_dynamic)
 
 # the vis result will be store in /training_dynamic/Proxy/***.png
 # the evaluation resulte wiil be store in /training_dynamic/Model/proxy_eval.json
 
 # trustvis with AL
-$(visualizer)  python active_learning.py  --epoch num --content_path "dataset path"(default: /training_dynamic)
+$ (visualizer)  python active_learning.py  --epoch num --content_path "dataset path"(default: /training_dynamic)
 
 # the vis result will be store in /training_dynamic/Trust_al/***.png
 # the evaluation resulte wiil be store in /training_dynamic/Model/trustvis_al_eval.json
