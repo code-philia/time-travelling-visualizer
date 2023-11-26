@@ -94,6 +94,7 @@ $ (visualizer)  python active_learning.py  --epoch num --content_path "dataset p
 ```
 
 # Run Your interactive Visualizer Tool
+![Interactive Visualizer Tool](screenshot.png)
 ## backend
 ```
 cd /VisTool/backend/server
