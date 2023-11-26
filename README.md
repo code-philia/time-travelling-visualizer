@@ -125,4 +125,6 @@ bazel run tensorboard/projector:standalone
 
 ```
 4. open http://localhost:6006/standalone.html
+5. input content_path(training dynamic dataset path) and backend ip:port(default:localhost:5000)
+6. click login 
 
