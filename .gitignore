@@ -6,3 +6,4 @@ data/
 .DS_Store
 .vscode
 server/timevis_backend/__pycache__/
+
