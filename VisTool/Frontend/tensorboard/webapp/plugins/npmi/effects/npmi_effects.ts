@@ -27,14 +27,14 @@ import {
 } from 'rxjs/operators';
 
 import {NpmiHttpServerDataSource} from '../data_source/npmi_data_source';
-import {State, DataLoadState} from './../store/npmi_types';
-import {getPluginDataLoaded} from './../store/npmi_selectors';
+import {State, DataLoadState} from '../store/npmi_types';
+import {getPluginDataLoaded} from '../store/npmi_selectors';
 import {
   npmiLoaded,
   npmiPluginDataRequested,
   npmiPluginDataLoaded,
   npmiPluginDataRequestFailed,
-} from './../actions';
+} from '../actions';
 
 /** @typehack */ import * as _typeHackRxjs from 'rxjs';
 /** @typehack */ import * as _typeHackNgrxStore from '@ngrx/store/src/models';

@@ -22,7 +22,7 @@ import {Store, Action} from '@ngrx/store';
 import {provideMockStore, MockStore} from '@ngrx/store/testing';
 
 import {State} from '../../../../app_state';
-import {getCurrentRouteRunSelection} from './../../../../selectors';
+import {getCurrentRouteRunSelection} from '../../../../selectors';
 import {getSidebarExpanded} from '../../store';
 import {appStateFromNpmiState, createNpmiState} from '../../testing';
 import {createState, createCoreState} from '../../../../core/testing';

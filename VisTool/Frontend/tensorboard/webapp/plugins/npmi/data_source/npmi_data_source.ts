@@ -27,7 +27,7 @@ import {
   AnnotationDataListing,
   ValueData,
   EmbeddingListing,
-} from './../store/npmi_types';
+} from '../store/npmi_types';
 
 /** @typehack */ import * as _typeHackRxjs from 'rxjs';
 

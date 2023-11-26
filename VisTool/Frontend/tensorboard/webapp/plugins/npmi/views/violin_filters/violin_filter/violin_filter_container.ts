@@ -25,7 +25,7 @@ import {
   getHiddenAnnotations,
   getShowHiddenAnnotations,
   getSidebarWidth,
-} from './../../../store/npmi_selectors';
+} from '../../../store/npmi_selectors';
 import {MetricFilter} from '../../../store/npmi_types';
 import * as npmiActions from '../../../actions';
 import {removeHiddenAnnotations} from '../../../util/filter_annotations';

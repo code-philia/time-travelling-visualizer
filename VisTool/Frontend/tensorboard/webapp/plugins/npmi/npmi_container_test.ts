@@ -21,7 +21,7 @@ import {By} from '@angular/platform-browser';
 
 import {Store} from '@ngrx/store';
 import {State} from '../../app_state';
-import {getCurrentRouteRunSelection} from './../../selectors';
+import {getCurrentRouteRunSelection} from '../../selectors';
 import {provideMockStore, MockStore} from '@ngrx/store/testing';
 
 import {NpmiComponent} from './npmi_component';

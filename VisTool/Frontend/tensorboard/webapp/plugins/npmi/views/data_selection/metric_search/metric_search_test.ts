@@ -34,7 +34,7 @@ import {
   getMetricFilters,
   getMetricsRegex,
   getRunToMetrics,
-} from './../../../store/npmi_selectors';
+} from '../../../store/npmi_selectors';
 import * as npmiActions from '../../../actions';
 import {appStateFromNpmiState, createNpmiState} from '../../../testing';
 import {MetricSearchComponent} from './metric_search_component';

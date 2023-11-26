@@ -17,7 +17,7 @@ import {Store} from '@ngrx/store';
 import {State} from '../../../../../app_state';
 
 import {getSelectedAnnotations, getAnnotationSort} from '../../../store';
-import {AnnotationDataListing} from './../../../store/npmi_types';
+import {AnnotationDataListing} from '../../../store/npmi_types';
 import * as npmiActions from '../../../actions';
 
 /** @typehack */ import * as _typeHackRxjs from 'rxjs';
