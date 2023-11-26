@@ -41,29 +41,31 @@ time-travelling-visualizer
 └───
 ```
 
-training_dynamic fold is for store the dataset
-XXX fold is for XXX
-XXX fold is for XXX
+training_dynamic fold is for storing the dataset
+Vis fold is for training the visualization models
+visTool fold is the interactive visualization tool's backend and frontend
 
 
 
-Note that, the XXX folder and XXX folder stores the training process and the target dataset. 
-We can download them as follows:
+Note that, the training_dynamic folder stores the training process and the target dataset. 
+We can download them as follows: https://huggingface.co/datasets/yvonne1123/training_dynamic
 
-demo data store in /training_dynamic
 
 ## Training Process Dataset (the training process of a model)
 
-//TODO for yifan and yiming, prepare a huggingface for a training process
-
-you can download by https://huggingface.co/yvonne1123/trustvis_with_dataset
+you can download by https://huggingface.co/datasets/yvonne1123/training_dynamic
 then you can store the dataset in /training_dynamic (default path)
 
-## Target Dataset
-
-//TODO for yifan and yiming, prepare a huggingface for a training process
 
 # Environment Configuration
+```
+
+cd Vis
+conda create -n visualizer python=3.7
+conda activate visualizer
+
+
+```
 
 # evaluate subject model
 ```
