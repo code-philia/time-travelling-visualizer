@@ -10,9 +10,42 @@ git clone https://github.com/code-philia/time-travelling-visualizer.git
 
 
 The project structure looks as follow:
+
+time-travelling-visualizer
+│   README.md
+|
+└───training_dynamic
+│   │   README.md
+    
+│   
+└───Vis
+|   │   singleVis | ...
+|   │   trustvis  | ...
+|   │   subject_model_eval.py
+|   │   proxy.py
+|   │   active_learning.py
+|   │   requirements.txt
+|   
+│   
+└───VisTool
+│   │   Backend
+│   |   |    ...
+│   |   |    server
+│   |   |    |   server.py
+│   |   |    ...
+│   │   Frontend
+│   |   |    ...
+│   |   |    tensorboard
+│   |   |    |   projector | ...
+│   |   |    ...
+└───
+
+
+training_dynamic fold is for store the dataset
 XXX fold is for XXX
 XXX fold is for XXX
-XXX fold is for XXX
+
+
 
 Note that, the XXX folder and XXX folder stores the training process and the target dataset. 
 We can download them as follows:
