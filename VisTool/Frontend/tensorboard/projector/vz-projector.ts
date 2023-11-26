@@ -333,7 +333,7 @@ class Projector
     // document.body.append(svgDom)
 
     let headers = new Headers();
-    await fetch(`http://${window.sessionStorage.ipAddress}/get_itertaion_structure?path=${window.sessionStorage.content_path}?method=${window.sessionStorage.vis_method}?setting${window.sessionStorage.selectedSetting}'`, {
+    await fetch(`http://${window.sessionStorage.ipAddress}/get_itertaion_structure?path=${window.sessionStorage.content_path}&method=${window.sessionStorage.vis_method}&setting=${window.sessionStorage.selectedSetting}`, {
       method: 'POST',
       headers: headers,
       mode: 'cors'
@@ -353,7 +353,6 @@ class Projector
 
         function tranListToTreeData(arr) {
           const newArr = []
-          // 1. 构建一个字典：能够快速根据id找到对象。
           const map = {}
           // {
           //   '01': {id:"01", pid:"",   "name":"老王",children: [] },
