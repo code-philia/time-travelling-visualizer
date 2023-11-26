@@ -1,5 +1,5 @@
 # What is Time-Travelling Visualization?
-Time-Travelling Visualization, a technique designed to visualize high-dimensional representations during the deep learning training process. In other words, our method is designed to transform the model training dynamics into an animation of canvas with colorful dots and territories
+Time-Travelling Visualization, a technique designed to visualize high-dimensional representations during the deep learning training process. In other words, our method is designed to transform the model training dynamics into an animation of canvas with colorful dots and territories.
 
 
 ![ The results of our visualization technique for the image classifier training process from epoch10 to epoch200](image.png)
