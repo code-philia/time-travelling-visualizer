@@ -73,7 +73,7 @@ def filter():
     sys.path.append(CONTENT_PATH)
     context = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
     # TODO: fix when active learning
-    EPOCH = (iteration-1)*context.strategy.data_provider.p + context.strategy.data_provider.s
+    EPOCH = iteration
 
     training_data_number = context.strategy.config["TRAINING"]["train_num"]
     testing_data_number = context.strategy.config["TRAINING"]["test_num"]
