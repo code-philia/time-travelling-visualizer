@@ -101,15 +101,16 @@ cd /VisTool/backend/server
 python server.py
 ```
 
-## frontend (download built package)
-we have the built version: down load url: https://drive.google.com/file/d/1MoGPYC6cO1Kxgsz3dVxf4cvRLfhqbz7X/view?usp=sharing 
-unzip and use browser open /vz-projector/standalone.html
 
-input content_path and backend ip
-click login 
+## frontend (Option1: download built package)
+we have the built version: 
+1. download url: https://drive.google.com/file/d/1MoGPYC6cO1Kxgsz3dVxf4cvRLfhqbz7X/view?usp=sharing 
+2. unzip and use browser open /vz-projector/standalone.html
+3. input content_path(training dynamic dataset path) and backend ip:port(default:localhost:5000)
+4. click login 
 
-or you can build by yourself
-## frontend (build by yourself)
+
+## frontend (Option2: build frontend by yourself)
 
 1. download bazel:https://bazel.build/install  (recommend version 3.2.0)
 2. check whether installation successful
