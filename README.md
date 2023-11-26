@@ -63,7 +63,7 @@ then you can store the dataset in /training_dynamic (default path)
 cd Vis
 conda create -n visualizer python=3.7
 conda activate visualizer
-
+pip install -r requirements.txt
 
 ```
 
