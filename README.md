@@ -8,7 +8,7 @@ git clone https://github.com/code-philia/time-travelling-visualizer.git
 
 ```
 
-
+```
 The project structure looks as follow:
 
 time-travelling-visualizer
@@ -39,7 +39,7 @@ time-travelling-visualizer
 │   |   |    |   projector | ...
 │   |   |    ...
 └───
-
+```
 
 training_dynamic fold is for store the dataset
 XXX fold is for XXX
