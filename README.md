@@ -46,18 +46,15 @@ time-travelling-visualizer
 - Vis fold is for training the visualization models
 - visTool fold is the interactive visualization tool's backend and frontend
 
-
-
 ⚠️ Note that, the training_dynamic folder stores the training process and the target dataset. 
-We can download them as follows: https://huggingface.co/datasets/yvonne1123/training_dynamic
 
 
 ## Training Process Dataset (the training process of a model)
 
-The dataset dir and config.json format, you can reference the [dataset readme](./training_dynamic/README.md)
 
-you can download by https://huggingface.co/datasets/yvonne1123/training_dynamic
-then you can store the dataset in /training_dynamic (default path)
+You can train your classification model and save the training dynamics. For information on the structure of the training dynamics directory and the config file format, refer to the the [dataset's readme document](./training_dynamic/README.md).
+
+🍃 Training dynamics are also available on Hugging Face[Hugging Face](https://huggingface.co/datasets/yvonne1123/training_dynamic) for you to download. 
 
 
 # Environment Configuration
