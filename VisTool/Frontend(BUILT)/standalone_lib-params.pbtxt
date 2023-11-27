@@ -1,0 +1,9 @@
+bind: "localhost:0"
+external_asset {
+  path: "."
+  webpath: "/_/runfiles"
+}
+label: "//tensorboard/projector:standalone_lib"
+manifest: "com_google_fonts_roboto/com_google_fonts_roboto.pbtxt"
+manifest: "org_tensorflow_tensorboard/tensorboard/components/tf_imports/roboto-webfiles.pbtxt"
+manifest: "org_tensorflow_tensorboard/tensorboard/projector/standalone_lib-webfiles.pbtxt"
