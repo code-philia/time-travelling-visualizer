@@ -65,12 +65,13 @@ $ cd Vis
 $ conda create -n visualizer python=3.7
 $ (visualizer) conda activate visualizer
 ```
+
 2. install pyTorch and CUDA
 For setting up PyTorch on that conda environment, use the guidelines provided at [PyTorch's official local installation page](https://pytorch.org/get-started/locally/). This guide will help you select the appropriate configuration based on your operating system, package manager, Python version, and CUDA version.
+
 3. install requirements
 ```
 $ (visualizer) pip install -r requirements.txt
-
 ```
 
 # evaluate subject model
