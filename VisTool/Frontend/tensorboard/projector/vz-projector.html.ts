@@ -284,7 +284,9 @@ export const template = html`
     </paper-dialog>
     <div id="container" style="height:calc(100vh - 130px)">
       <div style="width:100%; overflow:auto; position: absolute;background: #f2f2f2;bottom: 0;z-index:99;">
-      <svg style="width="100%" height="130" id="mysvggg"></svg>
+      <div style="overflow-x: auto;">
+      <svg id="mysvggg"></svg>
+      </div>
       </div>
       <div id="left-pane" class="ink-panel">
         <vz-projector-data-panel id="data-panel"></vz-projector-data-panel>

@@ -474,6 +474,7 @@ export class DataSet {
         const real_data_number = label_color_list.length;
         this.tSNETotalIter = data.maximum_iteration;
         window.tSNETotalIter = data.maximum_iteration
+        
 
         this.tSNEIteration = iteration;
         this.DVIValidPointNumber[iteration] = real_data_number + background_point_number;

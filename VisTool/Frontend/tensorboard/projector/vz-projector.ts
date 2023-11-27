@@ -343,10 +343,12 @@ class Projector
         if(only){
           res.structure = [{value:only,name:only,pid:""}]
         }
+        let total = res.structure?.length
         res.structure.length = window.selectedTotalEpoch
         window.treejson = res.structure
 
         let data = res.structure
+        
         if(only){
 
         }
@@ -359,9 +361,7 @@ class Projector
           //   '02': {id:"02", pid:"01", "name":"小张",children: [] },
           // }
           arr.forEach(item => {
-            // 为了计算方便，统一添加children
             item.children = []
-            // 构建一个字典
             const key = item.value
             map[key] = item
           })
@@ -405,8 +405,9 @@ class Projector
         //        node.value - total value current node and descendants;
 
         //create tree
-        let len = window.tSNETotalIter
-        let svgWidth = len * 45
+        let len = total
+        
+        let svgWidth = len * 40
         if (window.sessionStorage.taskType === 'active learning') {
           svgWidth = 1000
         }
@@ -415,7 +416,7 @@ class Projector
         svgDom.style.width = svgWidth + 200
         if(window.sessionStorage.selectedSetting !== 'active learning' && window.sessionStorage.selectedSetting !== 'dense al'){
           svgDom.style.height = 90
-          svgDom.style.width = '100%'
+          // svgDom.style.width = 2000
         }
 
 
@@ -531,7 +532,7 @@ class Projector
           }
         }
       }
-    })
+    },2000)
   }
 
   readyregis() {
