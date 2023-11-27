@@ -54,7 +54,7 @@ time-travelling-visualizer
 
 You can train your classification model and save the training dynamics. For information on the structure of the training dynamics directory and the config file format, refer to the the [dataset's readme document](./training_dynamic/README.md).
 
-🍃 Training dynamics are also available on Hugging Face[Hugging Face](https://huggingface.co/datasets/yvonne1123/training_dynamic) for you to download. 
+🍃 Training dynamics are also available on [Hugging Face](https://huggingface.co/datasets/yvonne1123/training_dynamic) for you to download. 
 
 
 # Environment Configuration
