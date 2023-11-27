@@ -127,11 +127,16 @@ def update_epoch_projection(context, EPOCH, predicates):
         np.save(embedding_path, embedding_2d)
     
     # TODO fix its structure
-    file_name = context.strategy.config["VISUALIZATION"]["EVALUATION_NAME"]
-    evaluation = context.strategy.evaluator.get_eval(file_name=file_name)
     eval_new = dict()
-    eval_new["train_acc"] = evaluation["train_acc"][str(EPOCH)]
-    eval_new["test_acc"] = evaluation["test_acc"][str(EPOCH)]
+    file_name = context.strategy.config["VISUALIZATION"]["EVALUATION_NAME"]
+    save_eval_dir = os.path.join(context.strategy.data_provider.model_path, file_name + ".json")
+    if os.path.exists(save_eval_dir):
+        evaluation = context.strategy.evaluator.get_eval(file_name=file_name)
+        eval_new["train_acc"] = evaluation["train_acc"][str(EPOCH)]
+        eval_new["test_acc"] = evaluation["test_acc"][str(EPOCH)]
+    else:
+        eval_new["train_acc"] = 0
+        eval_new["test_acc"] = 0
 
     color = context.strategy.vis.get_standard_classes_color() * 255
     color = color.astype(int)

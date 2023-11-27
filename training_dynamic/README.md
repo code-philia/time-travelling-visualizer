@@ -29,11 +29,11 @@ data(input path)
 
 └───config.json
 
-# config.json tempate
+# config.json template
 ```
 {
    
-        "DVI": {
+    "DVI": {
             "SETTING": "normal",
             "CLASSES": [
                 "0",
@@ -105,9 +105,9 @@ data(input path)
                 "RESOLUTION": 300,
                 "VIS_MODEL_NAME": "dvi",
                 "FLAG": "_temporal_id_withoutB",
-                "EVALUATION_NAME": "evaluation_tfDVI"
+                "EVALUATION_NAME": "subject_model_eval"
             }
-        }
+    }
     
 }
 ```
