@@ -20,7 +20,6 @@ def initialize_strategy(CONTENT_PATH, VIS_METHOD, SETTING, dense=False):
         conf = json.load(f)
     VIS_METHOD = "DVI" 
     config = conf[VIS_METHOD]
-    print("config",config)
     
     if SETTING == "normal" or SETTING == "abnormal":
         if VIS_METHOD == "DVI":
@@ -157,7 +156,6 @@ def update_epoch_projection(context, EPOCH, predicates):
     EPOCH_PERIOD = context.strategy.config["EPOCH_PERIOD"]
     EPOCH_END = context.strategy.config["EPOCH_END"]
     max_iter = (EPOCH_END - EPOCH_START) // EPOCH_PERIOD + 1
-    print("max_iter",max_iter)
     # max_iter = context.get_max_iter()
     
     # current_index = timevis.get_epoch_index(EPOCH)
@@ -176,6 +174,8 @@ def update_epoch_projection(context, EPOCH, predicates):
     lb = context.get_epoch_index(EPOCH)
     ulb = np.setdiff1d(training_data_index, lb)
     properties[ulb] = 1
+
+    print("eval_new",eval_new)
     
     return embedding_2d.tolist(), grid, b_fig, label_name_dict, label_color_list, label_list, max_iter, training_data_index, testing_data_index, eval_new, prediction_list, selected_points, properties
 
