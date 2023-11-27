@@ -54,6 +54,8 @@ We can download them as follows: https://huggingface.co/datasets/yvonne1123/trai
 
 ## Training Process Dataset (the training process of a model)
 
+The dataset dir and config.json format, you can reference the [dataset readme](./training_dynamic/README.md)
+
 you can download by https://huggingface.co/datasets/yvonne1123/training_dynamic
 then you can store the dataset in /training_dynamic (default path)
 
