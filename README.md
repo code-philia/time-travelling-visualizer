@@ -121,7 +121,7 @@ we have the built version:
 2. unzip and use browser open /vz-projector/standalone.html
 3. input content_path(training dynamic dataset path) and backend ip:port(default:localhost:5000) -->
 1. cd /VisTool/Frontend(BUILT)
-2. use broser open standalone.html
+2. use browser open standalone.html
 3. input content_path(training dynamic dataset path ) and backend ip:port(default:localhost:5000)
 4. click login 
 
