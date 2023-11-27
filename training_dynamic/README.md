@@ -5,17 +5,24 @@ data(input path)
 │   new_labels.json(optional, for nosiy model) 
 │   old_labels.json(optional, for nosiy model)
 |
+└─── sprites
+│    │ 0.png
+│    │ 1.png
+│    │ ...
+│
 └───Model
 │   │   model.py
 │   │
 │   └───Epoch_1
 │       │   index.json
 │       │   subject_model.pth
-|       |   (train_data.npy)
-|       |   (test_data.npy)
-|       |   (border_centers.npy)
-|       |   (encoder)
-|       |   (decoder)
+|       |   (train_data.npy)     [after preprocess]
+|       |   (test_data.npy)      [after preprocess]
+|       |   (border_centers.npy) [after preprocess]
+|       |   (vismodel.pth)       [after trained]
+|       |   (embedding.npy)      [after visulization]
+|       |   (scale.npy)          [after visulization]
+|       |   (bgimg.png)          [after visulization]
 │   └───Epoch_2
 |       |   ...
 │   
