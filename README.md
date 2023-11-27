@@ -100,7 +100,7 @@ $ (visualizer)  python active_learning.py  --epoch num --content_path "dataset p
 
 # Run Your interactive Visualizer Tool
 ![Interactive Visualizer Tool](screenshot.png)
-## backend
+## Backend
 ```
 $ cd /VisTool/Backend/server
 $ conda activate visualizer
@@ -114,32 +114,33 @@ you will see:
 * Running on http://localhost:5000
 ```
 
-## frontend (Option1: download built package)
-we have the built version: 
-<!-- 1. download url: https://drive.google.com/file/d/1MoGPYC6cO1Kxgsz3dVxf4cvRLfhqbz7X/view?usp=sharing 
-2. unzip and use browser open /vz-projector/standalone.html
-3. input content_path(training dynamic dataset path) and backend ip:port(default:localhost:5000) -->
-1. cd /VisTool/Frontend(BUILT)
-2. use browser open standalone.html
-3. input content_path(training dynamic dataset path ) and backend ip:port(default:localhost:5000)
-4. click login 
+## Frontend (Option1:Accessing the Built Frontend)
+The built version of our frontend interface is stored in the directory /VisTool/Frontend(BUILT). To access it, follow these steps:
+1. Navigate to the directory: /VisTool/Frontend(BUILT)
+2. Open the file standalone.html in a web browser.
+3. Enter the content_path (path to the training dynamic dataset, default is time-travelling-visualizer/training_dynamic) and the backend IP address and port (default is XX.XX.XXX:5000).
+4. Click on the 'Login' button to start using the frontend.
 
 
-## frontend (Option2: build frontend by yourself)
+## Frontend (Option2: build frontend yourself)
 
-1. download bazel:https://bazel.build/install  (recommend version 3.2.0)
-2. check whether installation successful
+1. Download Bazel from [Bazel's official website](https://bazel.build/install) (version 3.2.0 recommended).
+2. Verify the successful installation of Bazel by checking its version:
 ```
 > bazel version
 3.2.0
 ```
-3. run frontend
+3. To run the frontend, use the following commands:
 ```
 cd /VisTool/Frontend
 bazel run tensorboard/projector:standalone
-
 ```
-4. open http://localhost:6006/standalone.html
-5. input content_path(training dynamic dataset path ) and backend ip:port(default:localhost:5000)
-6. click login 
+and you can see:
+```
+Closure Rules WebfilesServer
+Listening on: http://XXX.XX.XXX:6006/
+```
+4. Access the frontend by opening http://XXX.XX.XXX:6006/ in your web browser.
+5. Enter the content_path (path to the training dynamic dataset, default is time-travelling-visualizer/training_dynamic) and the backend IP address and port (default is XX.XX.XXX:5000).
+6. Click on the 'Login' button to start using the frontend.
 
