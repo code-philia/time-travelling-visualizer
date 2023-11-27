@@ -51,7 +51,7 @@ new_path = os.path.join(parent_path, 'training_dynamic')
 parser.add_argument('--content_path', type=str,default=new_path)
 # parser.add_argument('--start', type=int,default=1)
 # parser.add_argument('--end', type=int,default=3)
-parser.add_argument('--epoch' ,default=3)
+parser.add_argument('--epoch' , type=int, default=3)
 
 # parser.add_argument('--epoch_end', type=int)
 parser.add_argument('--epoch_period', type=int,default=1)
@@ -105,7 +105,7 @@ N_NEIGHBORS = VISUALIZATION_PARAMETER["N_NEIGHBORS"]
 PATIENT = VISUALIZATION_PARAMETER["PATIENT"]
 MAX_EPOCH = VISUALIZATION_PARAMETER["MAX_EPOCH"]
 
-VIS_MODEL_NAME = 'proxy' ### saved_as 
+VIS_MODEL_NAME = 'proxy' ### saved_as VIS_MODEL_NAME.pth
 
 EVALUATION_NAME = VISUALIZATION_PARAMETER["EVALUATION_NAME"]
 

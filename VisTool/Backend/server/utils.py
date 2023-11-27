@@ -91,7 +91,6 @@ def update_epoch_projection(context, EPOCH, predicates):
     labels = np.concatenate((train_labels, test_labels), axis=0).astype(int)
 
     embedding_path = os.path.join(context.strategy.data_provider.checkpoint_path(EPOCH), "embedding.npy")
-    print("embedding_path",embedding_path)
     if os.path.exists(embedding_path):
         embedding_2d = np.load(embedding_path)
     else:
@@ -154,7 +153,12 @@ def update_epoch_projection(context, EPOCH, predicates):
     for i in range(len(prediction)):
         prediction_list.append(CLASSES[prediction[i]])
     
-    max_iter = context.get_max_iter()
+    EPOCH_START = context.strategy.config["EPOCH_START"]
+    EPOCH_PERIOD = context.strategy.config["EPOCH_PERIOD"]
+    EPOCH_END = context.strategy.config["EPOCH_END"]
+    max_iter = (EPOCH_END - EPOCH_START) // EPOCH_PERIOD + 1
+    print("max_iter",max_iter)
+    # max_iter = context.get_max_iter()
     
     # current_index = timevis.get_epoch_index(EPOCH)
     # selected_points = np.arange(training_data_number + testing_data_number)[current_index]

@@ -38,6 +38,9 @@ def update_projection():
     # EPOCH = (iteration-1)*context.strategy.data_provider.p + context.strategy.data_provider.s
     EPOCH = int(iteration)
 
+    if EPOCH==1:
+        EPOCH = 50
+
     embedding_2d, grid, decision_view, label_name_dict, label_color_list, label_list, max_iter, training_data_index, \
     testing_data_index, eval_new, prediction_list, selected_points, properties = update_epoch_projection(context, EPOCH, predicates)
 
