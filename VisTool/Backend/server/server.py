@@ -30,16 +30,12 @@ def update_projection():
     iteration = int(res['iteration'])
     predicates = res["predicates"]
     # username = res['username']
-    username ='admin'
     
     # sys.path.append(CONTENT_PATH)
     context = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
     # use the true one
     # EPOCH = (iteration-1)*context.strategy.data_provider.p + context.strategy.data_provider.s
     EPOCH = int(iteration)
-
-    if EPOCH==1:
-        EPOCH = 50
 
     embedding_2d, grid, decision_view, label_name_dict, label_color_list, label_list, max_iter, training_data_index, \
     testing_data_index, eval_new, prediction_list, selected_points, properties = update_epoch_projection(context, EPOCH, predicates)
