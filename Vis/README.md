@@ -14,7 +14,7 @@ The trainig dynamic performance will be store in /training_dynamic/Model/subject
 
 conda activate deepdebugger
 # proxy only
-python porxy.py --epoch 1/2/3 (default 3)
+python proxy.py --epoch 1/2/3 (default 3)
 
 the vis result will be store in /training_dynamic/Proxy/***.png
 the evaluation resulte wiil be store in /training_dynamic/Model/proxy_eval.json
