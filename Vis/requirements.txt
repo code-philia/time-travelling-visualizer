@@ -14,10 +14,10 @@ numpy==1.21.6
 nvidia-cublas-cu11==11.10.3.66
 nvidia-cuda-nvrtc-cu11==11.7.99
 nvidia-cuda-runtime-cu11==11.7.99
-nvidia-cudnn-cu11==8.5.0.96
+nvidia-cudnn-cu11
 packaging==23.2
 Pillow==9.2.0
-pynndescent==0.5.11
+pynndescent
 pyparsing==3.1.1
 python-dateutil==2.8.2
 scikit-learn==1.0.2
