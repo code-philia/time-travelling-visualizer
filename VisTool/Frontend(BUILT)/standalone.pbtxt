@@ -1,0 +1,11 @@
+label: "//tensorboard/projector:standalone"
+src {
+  longpath: "org_tensorflow_tensorboard/tensorboard/projector/standalone.html"
+  path: "bazel-out/k8-fastbuild/bin/tensorboard/projector/standalone.html"
+  webpath: "/standalone.html"
+}
+src {
+  longpath: "org_tensorflow_tensorboard/tensorboard/projector/standalone.js"
+  path: "bazel-out/k8-fastbuild/bin/tensorboard/projector/standalone.js"
+  webpath: "/standalone.js"
+}

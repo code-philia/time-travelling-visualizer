@@ -1,0 +1,1 @@
+{"bin": "bazel-out/k8-fastbuild/bin", "modules": {"org_tensorflow_tensorboard": ["execroot", "bazel-out/k8-fastbuild/bin"]}, "root": "npm/node_modules", "workspace": "org_tensorflow_tensorboard"}

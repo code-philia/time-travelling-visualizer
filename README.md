@@ -103,17 +103,26 @@ $ (visualizer)  python active_learning.py  --epoch num --content_path "dataset p
 ![Interactive Visualizer Tool](screenshot.png)
 ## backend
 ```
-$ cd /VisTool/backend/server
+$ cd /VisTool/Backend/server
 $ conda activate visualizer
 $ (visualizer) python server.py
 ```
-
+you will see: 
+```
+* Serving Flask app 'server' (lazy loading)
+* Environment: production
+* Debug mode: off
+* Running on http://localhost:5000
+```
 
 ## frontend (Option1: download built package)
 we have the built version: 
-1. download url: https://drive.google.com/file/d/1MoGPYC6cO1Kxgsz3dVxf4cvRLfhqbz7X/view?usp=sharing 
+<!-- 1. download url: https://drive.google.com/file/d/1MoGPYC6cO1Kxgsz3dVxf4cvRLfhqbz7X/view?usp=sharing 
 2. unzip and use browser open /vz-projector/standalone.html
-3. input content_path(training dynamic dataset path) and backend ip:port(default:localhost:5000)
+3. input content_path(training dynamic dataset path) and backend ip:port(default:localhost:5000) -->
+1. cd /VisTool/Frontend(BUILT)
+2. use broser open standalone.html
+3. input content_path(training dynamic dataset path ) and backend ip:port(default:localhost:5000)
 4. click login 
 
 
@@ -132,6 +141,6 @@ bazel run tensorboard/projector:standalone
 
 ```
 4. open http://localhost:6006/standalone.html
-5. input content_path(training dynamic dataset path) and backend ip:port(default:localhost:5000)
+5. input content_path(training dynamic dataset path ) and backend ip:port(default:localhost:5000)
 6. click login 
 
