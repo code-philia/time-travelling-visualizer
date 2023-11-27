@@ -43,9 +43,9 @@ parser = argparse.ArgumentParser(description='Process hyperparameters...')
 # get workspace dir
 current_path = os.getcwd()
 
-# parent_path = os.path.dirname(current_path)
+parent_path = os.path.dirname(current_path)
 
-new_path = os.path.join(current_path, 'training_dynamic')
+new_path = os.path.join(parent_path, 'training_dynamic')
 
 parser.add_argument('--content_path', type=str,default=new_path)
 parser.add_argument('--start', type=int,default=1)
