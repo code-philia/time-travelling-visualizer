@@ -9,7 +9,7 @@ Time-Travelling Visualization, a technique designed to visualize high-dimensiona
 ```
 git clone https://github.com/code-philia/time-travelling-visualizer.git
 ```
-
+😊 We appreciate [Yang Xianglin's](https://github.com/xianglinyang) significant contributions to the backend development. 
 The project structure looks as follow:
 ```
 time-travelling-visualizer
