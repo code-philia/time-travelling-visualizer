@@ -145,7 +145,11 @@ Listening on: http://XXX.XX.XXX:6006/
 6. Click on the 'Login' button to start using the frontend.
 
 ## Acknowledgement
-😊 Note: We appreciate [Yang Xianglin's](https://github.com/xianglinyang) for the tool's backend part:(https://github.com/xianglinyang/DeepDebugger) which we have integrated into our code.
+😊 Note: We appreciate [Yang Xianglin's](https://github.com/xianglinyang) contribution from [paper 1](#paper1-ref) for the tool's backend part: [DeepDebugger](https://github.com/xianglinyang/DeepDebugger), which we have integrated into our code.
+
+---
+
+<a name="paper1-ref"></a>[1] Xianglin Yang, Yun Lin, Yifan Zhang, Linpeng Huang, Jin Song Dong, Hong Mei. DeepDebugger: An Interactive Time-Travelling Debugging Approach for Deep Classifiers. ESEC/FSE 2023.
 
 # Citation
 Please consider  citing the following paper if you find this work useful for your research:
