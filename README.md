@@ -145,7 +145,7 @@ Listening on: http://XXX.XX.XXX:6006/
 6. Click on the 'Login' button to start using the frontend.
 
 ## Acknowledgement
-😊 Note: We appreciate [Yang Xianglin's](https://github.com/xianglinyang) significant contributions to the tool's backend development:(https://github.com/xianglinyang/DeepDebugger).
+😊 Note: We appreciate [Yang Xianglin's](https://github.com/xianglinyang) for the tool's backend part:(https://github.com/xianglinyang/DeepDebugger) which we have integrated into our code.
 
 # Citation
 Please consider  citing the following paper if you find this work useful for your research:
