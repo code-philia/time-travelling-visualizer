@@ -144,8 +144,10 @@ Listening on: http://XXX.XX.XXX:6006/
 5. Enter the content_path (path to the training dynamic dataset, default is time-travelling-visualizer/training_dynamic) and the backend IP address and port (default is XX.XX.XXX:5000).
 6. Click on the 'Login' button to start using the frontend.
 
-   
+## Acknowledgement
 😊 Note: We appreciate [Yang Xianglin's](https://github.com/xianglinyang) significant contributions to the [tool's backend development](https://github.com/xianglinyang/DeepDebugger).
+
+# Citation
 Please consider  citing the following paper if you find this work useful for your research:
 ```
 @inproceedings{
