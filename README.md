@@ -144,3 +144,28 @@ Listening on: http://XXX.XX.XXX:6006/
 5. Enter the content_path (path to the training dynamic dataset, default is time-travelling-visualizer/training_dynamic) and the backend IP address and port (default is XX.XX.XXX:5000).
 6. Click on the 'Login' button to start using the frontend.
 
+## Acknowledgement
+😊 Note: We appreciate [Yang Xianglin's](https://github.com/xianglinyang) contribution from [paper 1](#paper1-ref) for the tool's backend part: [DeepDebugger](https://github.com/xianglinyang/DeepDebugger), which we have integrated into our code.
+
+---
+
+<a name="paper1-ref"></a>[1] Xianglin Yang, Yun Lin, Yifan Zhang, Linpeng Huang, Jin Song Dong, Hong Mei. DeepDebugger: An Interactive Time-Travelling Debugging Approach for Deep Classifiers. ESEC/FSE 2023.
+
+# Citation
+Please consider  citing the following paper if you find this work useful for your research:
+```
+@inproceedings{
+},
+@inproceedings{yang2022temporality,
+  title={Temporality Spatialization: A Scalable and Faithful Time-Travelling Visualization for Deep Classifier Training},
+  author={Yang, Xianglin and Lin, Yun and Liu, Ruofan and Dong, Jin Song},
+  booktitle = {Proceedings of the Thirty-First International Joint Conference on Artificial Intelligence, {IJCAI-22}},
+  year={2022}
+},
+@inproceedings{yang2022deepvisualinsight,
+  title={DeepVisualInsight: Time-Travelling Visualization for Spatio-Temporal Causality of Deep Classification Training},
+  author={Yang, Xianglin and Lin, Yun and Liu, Ruofan and He, Zhenfeng and Wang, Chao and Dong, Jin Song and Mei, Hong},
+  booktitle = {The Thirty-Sixth AAAI Conference on Artificial Intelligence (AAAI)},
+  year={2022}
+}
+```
