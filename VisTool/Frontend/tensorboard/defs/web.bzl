@@ -398,10 +398,6 @@ tf_web_library = rule(
         "strip_prefix": attr.string(),
         "external_assets": attr.string_dict(default={"/_/runfiles": "."}),
         "clutz_entry_points": attr.string_list(),
-        "_execrooter": attr.label(
-            default=Label("//tensorboard/scripts:execrooter"),
-            executable=True,
-            cfg="host"),
         "_tsc": attr.label(
             default=Label("@com_microsoft_typescript//:tsc"),
             allow_files=True,
