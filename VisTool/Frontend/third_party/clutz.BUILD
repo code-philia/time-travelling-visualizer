@@ -26,8 +26,6 @@ java_binary(
         "@com_google_code_gson",
         "@com_google_guava",
         "@com_google_javascript_closure_compiler",
-        "@org_apache_commons_lang3",
-        "@org_apache_commons_text",
     ],
 )
 
