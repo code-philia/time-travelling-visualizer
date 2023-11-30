@@ -2,7 +2,6 @@
 # TensorBoard, a dashboard for investigating TensorFlow
 
 load("//tensorboard/defs:web.bzl", "tf_web_library")
-load("//tensorboard/defs:zipper.bzl", "tensorboard_zip_file")
 
 package(default_visibility = [":internal"])
 
@@ -23,10 +22,6 @@ package_group(
 # target, and you know what you're doing.
 
 
-tensorboard_zip_file(
-    name = "webfiles",
-    deps = [":assets"],
-)
 
 tf_web_library(
     name = "assets",
