@@ -11,8 +11,13 @@ from torch.utils.data import DataLoader, WeightedRandomSampler
 import copy
 import numpy as np
 from singleVis.custom_weighted_random_sampler import CustomWeightedRandomSampler
-from singleVis.spatial_edge_constructor import ActiveLearningEpochSpatialEdgeConstructor
+from singleVis.spatial_skeleton_edge_constructor import ActiveLearningEpochSpatialEdgeConstructor
+from singleVis.spatial_edge_constructor import PROXYEpochSpatialEdgeConstructor
 from singleVis.edge_dataset import DVIDataHandler
+import sys
+sys.path.append('..')
+from trustVis.grid_generation import GridGenerator
+from singleVis.projector import PROCESSProjector
 
 torch.manual_seed(0)  # 使用固定的种子
 torch.cuda.manual_seed_all(0)
@@ -893,6 +898,199 @@ class OriginDVITrainer(SingleVisTrainer):
         evaluation[operation][iteration] = round(t, 3)
         with open(save_file, 'w') as f:
             json.dump(evaluation, f)
+
+
+class PROXYALMODITrainer(SingleVisTrainer):
+    def __init__(self, model, criterion, optimizer, lr_scheduler, edge_loader, DEVICE, iteration, data_provider, prev_model, S_N_EPOCHS, B_N_EPOCHS, N_NEIGHBORS, threshold, resolution, **kwargs):
+        super().__init__(model, criterion, optimizer, lr_scheduler, edge_loader, DEVICE, **kwargs)
+        self.is_first_active_learning = True  # Add this line
+        # self.high_bom = high_bom
+        # self.high_rad = high_rad
+        self.iteration = iteration
+        self.data_provider = data_provider
+        self.prev_model = prev_model
+        self.S_N_EPOCHS = S_N_EPOCHS
+        self.B_N_EPOCHS = B_N_EPOCHS
+        self.N_NEIGHBORS = N_NEIGHBORS
+        self.threshold = threshold
+        self.resolution = resolution
+        
+
+    def al_loader(self):
+        print("evluating")
+        
+        # This method calculates the loss of each sample in the dataset.
+        # It returns a list of losses and updates the edge loader with the inverse of these losses as weights.
+        losses = []
+        # Ensure the model is in evaluation mode
+        
+        projector = PROCESSProjector(self.model,self.data_provider.content_path, '',self.DEVICE)
+        grid_generator = GridGenerator(self.data_provider,self.iteration,projector, self.threshold, self.resolution)
+        self.grid_high_mask = grid_generator.gen_grids_near_to_training_data()
+        print("all near training data grids shape:", self.grid_high_mask.shape)
+        self.model.eval()
+
+        grid_pred = self.data_provider.get_pred(self.iteration, self.grid_high_mask).argmax(axis=1)
+        self.grid_high_mask = torch.tensor(self.grid_high_mask).to(device=self.DEVICE, dtype=torch.float32)
+        grid_second_high_mask = self.model(self.grid_high_mask,self.grid_high_mask)['recon'][0]
+        grid_second_high_mask = grid_second_high_mask.cpu().detach().numpy()
+        grid_second_pred = self.data_provider.get_pred(self.iteration, grid_second_high_mask).argmax(axis=1)
+
+        error_indices = [i for i in range(len(grid_pred)) if grid_pred[i] != grid_second_pred[i]]
+        error_grids = self.grid_high_mask.cpu().detach().numpy()[error_indices]
+        print("current error grids shape:", error_grids.shape)
+        
+        al_spatial_cons = PROXYEpochSpatialEdgeConstructor(self.data_provider, self.iteration, self.S_N_EPOCHS, self.B_N_EPOCHS, self.N_NEIGHBORS,error_grids)
+
+        # al_spatial_cons = ActiveLearningEpochSpatialEdgeConstructor(self.data_provider, self.iteration, self.S_N_EPOCHS, self.B_N_EPOCHS, self.N_NEIGHBORS, cluster_points, uncluster_points, self.high_bom)
+        al_edge_to, al_edge_from, al_probs, al_feature_vectors, al_attention = al_spatial_cons.construct()
+
+        al_probs = al_probs / (al_probs.max()+1e-3)
+        eliminate_zeros = al_probs>5e-2    #1e-3
+        al_edge_to = al_edge_to[eliminate_zeros]
+        al_edge_from = al_edge_from[eliminate_zeros]
+        al_probs = al_probs[eliminate_zeros]
+        
+        dataset = DVIDataHandler(al_edge_to, al_edge_from, al_feature_vectors, al_attention)
+
+        n_samples = int(np.sum(self.S_N_EPOCHS * al_probs) // 1)
+
+        # chose sampler based on the number of dataset
+        if len(al_edge_to) > pow(2,24):
+            sampler = CustomWeightedRandomSampler(al_probs, n_samples, replacement=True)
+        else:
+            sampler = WeightedRandomSampler(al_probs, n_samples, replacement=True)
+        new_loader = DataLoader(dataset, batch_size=2000, sampler=sampler, num_workers=8, prefetch_factor=10)
+        # new_loader = ActiveLearningEdgeLoader(current_loader.dataset, weights, batch_size=current_loader.batch_size)
+        return losses, new_loader
+    
+    def train_step(self, edge_loader):
+       
+        self.model = self.model.to(device=self.DEVICE)
+        self.model.train()
+        all_loss = []
+        umap_losses = []
+        recon_losses = []
+        temporal_losses = []
+
+
+        t = tqdm(edge_loader, leave=True, total=len(edge_loader))
+        
+        for data in t:
+            edge_to, edge_from, a_to, a_from = data
+
+            edge_to = edge_to.to(device=self.DEVICE, dtype=torch.float32)
+            edge_from = edge_from.to(device=self.DEVICE, dtype=torch.float32)
+            a_to = a_to.to(device=self.DEVICE, dtype=torch.float32)
+            a_from = a_from.to(device=self.DEVICE, dtype=torch.float32)
+
+            outputs = self.model(edge_to, edge_from)
+            umap_l, recon_l, temporal_l, loss = self.criterion(edge_to, edge_from, a_to, a_from, self.model, outputs)
+     
+              
+            all_loss.append(loss.mean().item())
+            umap_losses.append(umap_l.item())
+            recon_losses.append(recon_l.item())
+            temporal_losses.append(temporal_l.mean().item())
+
+            # ===================backward====================
+            self.optimizer.zero_grad()
+            loss.mean().backward()
+            self.optimizer.step()
+        self._loss = sum(all_loss) / len(all_loss)
+        self.model.eval()
+        print('umap:{:.4f}\trecon_l:{:.4f}\ttemporal_l:{:.4f}\tloss:{:.4f}'.format(sum(umap_losses) / len(umap_losses),
+                                                                sum(recon_losses) / len(recon_losses),
+                                                                sum(temporal_losses) / len(temporal_losses),
+                                                                sum(all_loss) / len(all_loss)))
+        return self.loss
+    
+    def run_epoch(self, epoch, current_loader, is_active_learning=False, is_full_data=False):
+        print("====================\nepoch:{}\n===================".format(epoch+1))
+        start_time = time.time()
+
+        if is_active_learning and is_full_data == False:
+            
+            _, current_loader = self.al_loader()
+                ### generate grid for al
+
+
+            # Adjust learning rate for active learning
+            if self.is_first_active_learning:
+                print("change learning rate")
+                for param_group in self.optimizer.param_groups:
+                    param_group['lr'] *= 0.1  # or set to any value you want
+                self.is_first_active_learning = False
+            
+        prev_loss = self.loss
+
+        if is_full_data:
+            print("full data")
+            loss = self.train_step(self.edge_loader)  # use DVITrainer's train_step
+        else:
+            loss = self.train_step(current_loader)  # use DVITrainer's train_step
+        
+        self.lr_scheduler.step()
+
+        elapsed_time = time.time() - start_time
+        print("Epoch completed in: {:.2f} seconds".format(elapsed_time))
+
+        return prev_loss, loss, current_loader
+    
+    def train(self, PATIENT, MAX_EPOCH_NUMS):
+        start_flag = 1
+        if start_flag:
+            current_loader = self.edge_loader
+            start_flag = 0
+        print("ininin in dvi")
+        patient = PATIENT
+        time_start = time.time()
+        # Pretraining
+        # for epoch in range(10):
+        #     print("Pretraining")
+        #     _, _, current_loader= self.run_epoch(epoch, current_loader, is_active_learning=False,is_full_data=True)
+
+
+        for epoch in range(MAX_EPOCH_NUMS):
+            print("In active learning")
+            # is_full_data = (epoch % 3 == 0)  # retrain with full data every RE_TRAINING_INTERVAL epochs
+            prev_loss, loss, current_loader = self.run_epoch(epoch, current_loader, is_active_learning=True, is_full_data=False)
+      
+            # Early stop, check whether converge or not
+            if abs(prev_loss - loss) < 5E-3:
+                if patient == 0:
+                    break
+                else:
+                    patient -= 1
+            else:
+                patient = PATIENT
+
+        time_end = time.time()
+        time_spend = time_end - time_start
+        print("Time spend: {:.2f} for training vis model...".format(time_spend))   
+
+        self.prev_model.load_state_dict(self.model.state_dict())
+        for param in self.prev_model.parameters():
+            param.requires_grad = False
+        w_prev = dict(self.prev_model.named_parameters())
+        
+    
+    def record_time(self, save_dir, file_name, operation, iteration, t):
+        # save result
+        save_file = os.path.join(save_dir, file_name+".json")
+        if not os.path.exists(save_file):
+            evaluation = dict()
+        else:
+            f = open(save_file, "r")
+            evaluation = json.load(f)
+            f.close()
+        if operation not in evaluation.keys():
+            evaluation[operation] = dict()
+        evaluation[operation][iteration] = round(t, 3)
+        with open(save_file, 'w') as f:
+            json.dump(evaluation, f)
+
+
 class DVIALMODITrainer(SingleVisTrainer):
     def __init__(self, model, criterion, optimizer, lr_scheduler, edge_loader, DEVICE, grid_high_mask, high_bom, high_rad, iteration, data_provider, prev_model, S_N_EPOCHS, B_N_EPOCHS, N_NEIGHBORS, **kwargs):
         super().__init__(model, criterion, optimizer, lr_scheduler, edge_loader, DEVICE, **kwargs)
@@ -910,8 +1108,6 @@ class DVIALMODITrainer(SingleVisTrainer):
 
     def al_loader(self):
         print("evluating")
-        # This method calculates the loss of each sample in the dataset.
-        # It returns a list of losses and updates the edge loader with the inverse of these losses as weights.
         losses = []
         
         # Ensure the model is in evaluation mode

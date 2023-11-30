@@ -9,5 +9,6 @@ server/timevis_backend/__pycache__/
 
 
 server/__pycache__/
+trustvis/__pycache__/
 
 VisTool/Backend/server/__pycache__
