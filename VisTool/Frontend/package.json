@@ -121,7 +121,6 @@
     "monaco-editor-core": "^0.20.0",
     "monaco-languages": "^1.10.0",
     "ngx-color-picker": "^9.0.0",
-    "numeric": "^1.2.6",
     "plottable": "^3.9.0",
     "requirejs": "^2.3.6",
     "rxjs": "7.0.0-beta.0",
