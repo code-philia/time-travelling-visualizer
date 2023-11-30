@@ -19,7 +19,7 @@ from singleVis.losses import UmapLoss, ReconstructionLoss, TemporalLoss, DVILoss
 from singleVis.edge_dataset import DVIDataHandler
 from singleVis.trainer import DVIALMODITrainer
 from singleVis.data import NormalDataProvider
-from singleVis.spatial_skeleton_edge_constructor import OriginSingleEpochSpatialEdgeConstructor, PredDistSingleEpochSpatialEdgeConstructor
+from singleVis.spatial_skeleton_edge_constructor import OriginSingleEpochSpatialEdgeConstructor
 from singleVis.projector import DVIProjector
 from singleVis.eval.evaluator import Evaluator
 from singleVis.utils import find_neighbor_preserving_rate
@@ -90,7 +90,7 @@ N_NEIGHBORS = VISUALIZATION_PARAMETER["N_NEIGHBORS"]
 PATIENT = VISUALIZATION_PARAMETER["PATIENT"]
 MAX_EPOCH = VISUALIZATION_PARAMETER["MAX_EPOCH"]
 
-VIS_MODEL_NAME = VISUALIZATION_PARAMETER["VIS_MODEL_NAME"]
+VIS_MODEL_NAME = 'trustvis'
 EVALUATION_NAME = VISUALIZATION_PARAMETER["EVALUATION_NAME"]
 
 # Define hyperparameters
@@ -104,13 +104,8 @@ net = eval("subject_model.{}()".format(NET))
 #                                                    TRAINING SETTING                                                  #
 ########################################################################################################################
 BASE_MODEL_NAME = args.base
-# PREPROCESS = 1
 # Define data_provider
 data_provider = NormalDataProvider(CONTENT_PATH, net, EPOCH_START, EPOCH_END, EPOCH_PERIOD, device=DEVICE, classes=CLASSES, epoch_name='Epoch', verbose=1)
-# if PREPROCESS:
-#     data_provider._meta_data()
-#     if B_N_EPOCHS >0:
-#         data_provider._estimate_boundary(LEN//10, l_bound=L_BOUND)
 
 # Define visualization models
 model = VisModel(ENCODER_DIMS, DECODER_DIMS)
@@ -123,7 +118,7 @@ umap_loss_fn = UmapLoss(negative_sample_rate, DEVICE, _a, _b, repulsion_strength
 recon_loss_fn = ReconstructionLoss(beta=1.0)
 single_loss_fn = SingleVisLoss(umap_loss_fn, recon_loss_fn, lambd=LAMBDA1)
 # Define Projector
-projector = DVIProjector(vis_model=model, content_path=CONTENT_PATH, vis_model_name=BASE_MODEL_NAME, device=DEVICE) # vis_model_name 一个初始的dvi
+projector = DVIProjector(vis_model=model, content_path=CONTENT_PATH, vis_model_name=BASE_MODEL_NAME, device=DEVICE) # vis_model_name init dvi
 
 start_flag = 1
 prev_model = VisModel(ENCODER_DIMS, DECODER_DIMS)
@@ -148,9 +143,7 @@ for iteration in range(EPOCH_START, EPOCH_END+EPOCH_PERIOD, EPOCH_PERIOD):
     from sklearn.neighbors import NearestNeighbors
     import numpy as np
 
-    # 假设 train_data_embedding 和 grid_emd 都是 numpy arrays，每一行都是一个点
     threshold = 5  # hyper-peremeter
-
     # use train_data_embedding initialize NearestNeighbors 
     nbrs = NearestNeighbors(n_neighbors=1, algorithm='ball_tree').fit(train_data_embedding)
     # for each grid_emd，find train_data_embedding nearest sample
@@ -158,7 +151,6 @@ for iteration in range(EPOCH_START, EPOCH_END+EPOCH_PERIOD, EPOCH_PERIOD):
     # filter by distance
     mask = distances.ravel() < threshold
     selected_indices = np.arange(grid_emd.shape[0])[mask]
-
     grid_high_mask = grid_high[selected_indices]
 
     skeleton_generator = CenterSkeletonGenerator(data_provider,iteration,0.5,500)
@@ -217,7 +209,7 @@ for iteration in range(EPOCH_START, EPOCH_END+EPOCH_PERIOD, EPOCH_PERIOD):
         param.requires_grad = False
     w_prev = dict(prev_model.named_parameters())
 
-print('aaacccllll runtime', t3-t0)
+print('al runtime', t3-t0)
 ########################################################################################################################
 #                                                      VISUALIZATION                                                   #
 ########################################################################################################################
@@ -237,9 +229,6 @@ for i in range(EPOCH_START, EPOCH_END+1, EPOCH_PERIOD):
 ########################################################################################################################
 
 evaluator = Evaluator(data_provider, projector)
-
-
-
 
 Evaluation_NAME = 'trustvis_al_eval'
 for i in range(EPOCH_START, EPOCH_END+1, EPOCH_PERIOD):

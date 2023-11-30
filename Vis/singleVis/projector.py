@@ -205,6 +205,18 @@ class DVIProjector(Projector):
         self.vis_model.eval()
         print("Successfully load the DVI visualization model for iteration {}".format(iteration))
 
+class PROCESSProjector(Projector):
+    """
+    for the prcessing model
+    """
+    def __init__(self, vis_model, content_path, vis_model_name,device) -> None:
+        super().__init__(vis_model, content_path, vis_model_name, device)
+
+    def load(self, iteration):
+        self.vis_model.to(self.DEVICE)
+        self.vis_model.eval()
+        print("Successfully load the DVI visualization model for iteration {}".format(iteration))
+
 
 class TimeVisProjector(Projector):
     def __init__(self, vis_model, content_path, vis_model_name, device, verbose=0) -> None:

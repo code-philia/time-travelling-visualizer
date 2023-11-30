@@ -318,7 +318,7 @@ class CenterSkeletonGenerator:
         labels = kmeans.labels_
 
         dunn_index = self.dunns_index(data, labels)
-        # print(dunn_index)
+        print(dunn_index)
         return dunn_index < self.threshold
     
     def dunns_index(self, X, labels):

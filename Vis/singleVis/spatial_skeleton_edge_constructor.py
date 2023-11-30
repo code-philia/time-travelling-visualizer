@@ -342,7 +342,7 @@ class ProxyBasedSpatialEdgeConstructor(SpatialEdgeConstructor):
         self.model = model
         self.proxy = proxy
     def construct(self):
-   
+
         print("Trustvis")
         # load train data and border centers
         train_data = self.data_provider.train_representation(self.iteration)
@@ -356,17 +356,17 @@ class ProxyBasedSpatialEdgeConstructor(SpatialEdgeConstructor):
         edge_to, edge_from, weight = self._construct_proxy_based_edge_dataset(proxy_proxy_complex, sample_complex, proxy_sample_complex)
         #### enhance the connection between the sample and its nearest proxy
         #### find nearest skeleton for each training data
-        nearest_proxy_distances, nearest_proxy_indices = self._find_nearest_proxy(train_data, self.proxy)
+        # nearest_proxy_distances, nearest_proxy_indices = self._find_nearest_proxy(train_data, self.proxy)
         # #### add nearest skeleton to edge
-        train_data_indices = np.arange(len(train_data))
-        added_edge_from = train_data_indices + len(self.proxy)
-        added_edge_to = nearest_proxy_indices.squeeze()
-        # use inverse as weight
-        added_weight = 1.0 / (nearest_proxy_distances.squeeze() + 1e-5)
-        # add new edge
-        edge_to = np.concatenate((edge_to, added_edge_to), axis=0)
-        edge_from = np.concatenate((edge_from, added_edge_from), axis=0)
-        weight = np.concatenate((weight, added_weight), axis=0)
+        # train_data_indices = np.arange(len(train_data))
+        # added_edge_from = train_data_indices + len(self.proxy)
+        # added_edge_to = nearest_proxy_indices.squeeze()
+        # # use inverse as weight
+        # added_weight = 1.0 / (nearest_proxy_distances.squeeze() + 1e-5)
+        # # add new edge
+        # edge_to = np.concatenate((edge_to, added_edge_to), axis=0)
+        # edge_from = np.concatenate((edge_from, added_edge_from), axis=0)
+        # weight = np.concatenate((weight, added_weight), axis=0)
     
         feature_vectors = np.concatenate((self.proxy, train_data ), axis=0)
         pred_model = self.data_provider.prediction_function(self.iteration)
@@ -404,6 +404,7 @@ class OriginSingleEpochSpatialEdgeConstructor(SpatialEdgeConstructor):
     def construct(self):
         # load train data and border centers
         train_data = self.data_provider.train_representation(self.iteration)
+        train_data = train_data.reshape(train_data.shape[0],train_data.shape[1])
         # selected = np.random.choice(len(train_data), int(0.9*len(train_data)), replace=False)
         # train_data = train_data[selected]
 
