@@ -487,6 +487,7 @@ export class DataSet {
         const original_label_list = data.original_label_list;
 
         const evaluation = data.evaluation;
+        console.log("evaluation",evaluation)
         this.DVIEvaluation[iteration] = evaluation;
         const inv_acc = data.inv_acc_list || [];
         if (!window.properties) {

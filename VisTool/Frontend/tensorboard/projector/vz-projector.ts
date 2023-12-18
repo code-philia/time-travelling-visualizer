@@ -486,7 +486,7 @@ class Projector
         gs.append('circle')
           .attr('r', 8)
           .attr('fill', function (d, i) {
-            console.log("1111",d.data.value, window.iteration, d.data.value == window.iteration )
+            // console.log("1111",d.data.value, window.iteration, d.data.value == window.iteration )
             return d.data.value == window.iteration ? 'orange' : '#452d8a'
           })
           .attr('stroke-width', 1)

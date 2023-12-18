@@ -193,6 +193,7 @@ class EvalProjector(DeepDebuggerProjector):
         print("Successfully load the visualization model for range ({},{})...".format(s,e))
         
 
+
 class DVIProjector(Projector):
     def __init__(self, vis_model, content_path, vis_model_name, device) -> None:
         super().__init__(vis_model, content_path, vis_model_name, device)
@@ -259,6 +260,32 @@ class TimeVisDenseALProjector(Projector):
         self.load(iteration, epoch)
         data = self.vis_model.decoder(torch.from_numpy(np.expand_dims(embedding, axis=0)).to(dtype=torch.float32, device=self.DEVICE)).cpu().detach().numpy()
         return data.squeeze(axis=0)
+
+class TrustVisProjector(Projector):
+    def __init__(self, vis_model, content_path, vis_model_name, device, verbose=0) -> None:
+        super().__init__(vis_model, content_path, vis_model_name, device)
+        self.verbose = verbose
+
+    def load(self, iteration):
+        file_path = os.path.join(self.content_path, "Model", "{}.pth".format(self.vis_model_name))
+        save_model = torch.load(file_path, map_location="cpu")
+        self.vis_model.load_state_dict(save_model["state_dict"])
+        self.vis_model.to(self.DEVICE)
+        self.vis_model.eval()
+        if self.verbose>0:
+            print("Successfully load the TimeVis visualization model for iteration {}".format(iteration))
+
+class PROCESSProjector(Projector):
+    """
+    for the prcessing model
+    """
+    def __init__(self, vis_model, content_path, vis_model_name,device) -> None:
+        super().__init__(vis_model, content_path, vis_model_name, device)
+
+    def load(self, iteration):
+        self.vis_model.to(self.DEVICE)
+        self.vis_model.eval()
+        print("Successfully load the DVI visualization model for iteration {}".format(iteration))
 
 
 import tensorflow as tf

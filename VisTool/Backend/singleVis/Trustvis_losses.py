@@ -1,7 +1,13 @@
 from abc import ABC, abstractmethod
 import torch
 from torch import nn
-from singleVis.backend import compute_cross_entropy_tf, convert_distance_to_probability, compute_cross_entropy
+from singleVis.backend import convert_distance_to_probability, compute_cross_entropy
+import torch.nn.functional as F
+import torch
+torch.manual_seed(0)  # fixed seed
+torch.cuda.manual_seed_all(0)
+
+# Set the random seed for numpy
 
 """Losses modules for preserving four propertes"""
 # https://github.com/ynjnpa/VocGAN/blob/5339ee1d46b8337205bec5e921897de30a9211a1/utils/stft_loss.py for losses module
@@ -32,7 +38,7 @@ class UmapLoss(nn.Module):
     def b(self):
         return self._b[0]
 
-    def forward(self, embedding_to, embedding_from):
+    def forward(self, embedding_to, embedding_from,margin=0.0):
         batch_size = embedding_to.shape[0]
         # get negative samples
         embedding_neg_to = torch.repeat_interleave(embedding_to, self._negative_sample_rate, dim=0)
@@ -40,22 +46,20 @@ class UmapLoss(nn.Module):
         randperm = torch.randperm(repeat_neg.shape[0])
         embedding_neg_from = repeat_neg[randperm]
 
-        #  distances between samples (and negative samples)
-        distance_embedding = torch.cat(
-            (
-                torch.norm(embedding_to - embedding_from, dim=1),
-                torch.norm(embedding_neg_to - embedding_neg_from, dim=1),
-            ),
-            dim=0,
-        )
+        positive_distance = torch.norm(embedding_to - embedding_from, dim=1)
+        negative_distance = torch.norm(embedding_neg_to - embedding_neg_from, dim=1)
+        distance_embedding = torch.cat((positive_distance, negative_distance), dim=0)
+
         probabilities_distance = convert_distance_to_probability(
             distance_embedding, self.a, self.b
         )
         probabilities_distance = probabilities_distance.to(self.DEVICE)
 
         # set true probabilities based on negative sampling
+        num_neg_samples = embedding_neg_to.shape[0]  # valied negative samples
+
         probabilities_graph = torch.cat(
-            (torch.ones(batch_size), torch.zeros(batch_size * self._negative_sample_rate)), dim=0,
+            (torch.ones(batch_size), torch.zeros(num_neg_samples)), dim=0,
         )
         probabilities_graph = probabilities_graph.to(device=self.DEVICE)
 
@@ -66,30 +70,27 @@ class UmapLoss(nn.Module):
             repulsion_strength=self._repulsion_strength,
         )
 
-        return torch.mean(ce_loss)
+        margin_loss = F.relu(margin - positive_distance).mean()
+
+        total_loss = torch.mean(ce_loss) + margin_loss
+
+        return total_loss
 
 
-class DummyTemporalLoss(nn.Module):
-    def __init__(self, device) -> None:
-        super(DummyTemporalLoss, self).__init__()
-        self.device = device
-
-    def forward(self, curr_module):
-        loss = torch.tensor(0., requires_grad=True).to(self.device)
-        return loss
-    
 class ReconstructionLoss(nn.Module):
-    def __init__(self, beta=1.0):
+    def __init__(self, beta=1.0,alpha=0.5):
         super(ReconstructionLoss, self).__init__()
         self._beta = beta
+        self._alpha = alpha
 
     def forward(self, edge_to, edge_from, recon_to, recon_from, a_to, a_from):
         loss1 = torch.mean(torch.mean(torch.multiply(torch.pow((1+a_to), self._beta), torch.pow(edge_to - recon_to, 2)), 1))
         loss2 = torch.mean(torch.mean(torch.multiply(torch.pow((1+a_from), self._beta), torch.pow(edge_from - recon_from, 2)), 1))
-        # without attention weights
-        # loss1 = torch.mean(torch.mean(torch.pow(edge_to - recon_to, 2), 1))
-        # loss2 = torch.mean(torch.mean(torch.pow(edge_from - recon_from, 2), 1))
+
         return (loss1 + loss2)/2
+
+
+
 
 
 class SmoothnessLoss(nn.Module):
@@ -173,146 +174,53 @@ class DummyTemporalLoss(nn.Module):
     def forward(self, curr_module):
         loss = torch.tensor(0., requires_grad=True).to(self.device)
         return loss
+    
 
+
+class BoundaryAwareLoss(nn.Module):
+    def __init__(self, umap_loss, device, umap_loss_w=0.1, recon_lsoo_w=0.2):
+        super(BoundaryAwareLoss, self).__init__()
+        self.umap_loss = umap_loss
+        self.device = device
+        self.umap_loss_w = umap_loss_w
+        self.recon_lsoo_w = recon_lsoo_w
+
+    
+    def forward(self, edge_from, edge_to, model):
+        outputs = model( edge_to, edge_from)
+        embedding_to, embedding_from = outputs["umap"]
+
+        recon_to, recon_from = outputs["recon"]
+        reconstruction_loss_to = F.mse_loss(recon_to, edge_to)
+        reconstruction_loss_from = F.mse_loss(recon_from, edge_from)
+        recon_loss = reconstruction_loss_to + reconstruction_loss_from
+
+        umap_l = self.umap_loss(embedding_to, embedding_from, 3).to(self.device)
+
+        return self.umap_loss_w  * umap_l + self.recon_lsoo_w * recon_loss
 
 class DVILoss(nn.Module):
-    def __init__(self, umap_loss, recon_loss, temporal_loss, lambd1, lambd2):
+    def __init__(self, umap_loss, recon_loss, temporal_loss, lambd1, lambd2, device):
         super(DVILoss, self).__init__()
         self.umap_loss = umap_loss
         self.recon_loss = recon_loss
         self.temporal_loss = temporal_loss
         self.lambd1 = lambd1
         self.lambd2 = lambd2
+        self.device = device
 
-    def forward(self, edge_to, edge_from, a_to, a_from, curr_model, outputs):
+    def forward(self, edge_to, edge_from, a_to, a_from, curr_model):
+        outputs = curr_model( edge_to, edge_from)
         embedding_to, embedding_from = outputs["umap"]
         recon_to, recon_from = outputs["recon"]
         # TODO stop gradient edge_to_ng = edge_to.detach().clone()
 
-        recon_l = self.recon_loss(edge_to, edge_from, recon_to, recon_from, a_to, a_from)
-        umap_l = self.umap_loss(embedding_to, embedding_from)
-        temporal_l = self.temporal_loss(curr_model)
+        recon_l = self.recon_loss(edge_to, edge_from, recon_to, recon_from, a_to, a_from).to(self.device)
+        umap_l = self.umap_loss(embedding_to, embedding_from).to(self.device)
+        temporal_l = self.temporal_loss(curr_model).to(self.device)
 
         loss = umap_l + self.lambd1 * recon_l + self.lambd2 * temporal_l
 
         return umap_l, self.lambd1 *recon_l, self.lambd2 *temporal_l, loss
 
 
-import tensorflow as tf
-def umap_loss(
-    batch_size,
-    negative_sample_rate,
-    _a,
-    _b,
-    repulsion_strength=1.0,
-):
-    """
-    Generate a keras-ccompatible loss function for UMAP loss
-
-    Parameters
-    ----------
-    batch_size : int
-        size of mini-batches
-    negative_sample_rate : int
-        number of negative samples per positive samples to train on
-    _a : float
-        distance parameter in embedding space
-    _b : float float
-        distance parameter in embedding space
-    repulsion_strength : float, optional
-        strength of repulsion vs attraction for cross-entropy, by default 1.0
-
-    Returns
-    -------
-    loss : function
-        loss function that takes in a placeholder (0) and the output of the keras network
-    """
-
-    @tf.function
-    def loss(placeholder_y, embed_to_from):
-        # split out to/from
-        embedding_to, embedding_from, weights = tf.split(
-            embed_to_from, num_or_size_splits=[2, 2, 1], axis=1
-        )
-        # embedding_to, embedding_from, weight = embed_to_from
-
-        # get negative samples
-        embedding_neg_to = tf.repeat(embedding_to, negative_sample_rate, axis=0)
-        repeat_neg = tf.repeat(embedding_from, negative_sample_rate, axis=0)
-        embedding_neg_from = tf.gather(
-            repeat_neg, tf.random.shuffle(tf.range(tf.shape(repeat_neg)[0]))
-        )
-
-        #  distances between samples (and negative samples)
-        distance_embedding = tf.concat(
-            (
-                tf.norm(embedding_to - embedding_from, axis=1),
-                tf.norm(embedding_neg_to - embedding_neg_from, axis=1),
-            ),
-            axis=0,
-        )
-
-        # convert probabilities to distances
-        probabilities_distance = 1.0 / (1.0 + _a * tf.math.pow(distance_embedding, 2 * _b))
-
-        # set true probabilities based on negative sampling
-        probabilities_graph = tf.concat(
-            (tf.ones(batch_size), tf.zeros(batch_size * negative_sample_rate)), axis=0,
-        )
-        probabilities = tf.concat(
-            (tf.squeeze(weights), tf.zeros(batch_size * negative_sample_rate)), axis=0,
-        )
-
-        # compute cross entropy
-        (attraction_loss, repellant_loss, ce_loss) = compute_cross_entropy_tf(
-            probabilities_graph,
-            probabilities_distance,
-            repulsion_strength=repulsion_strength,
-        )
-
-        return tf.reduce_mean(ce_loss)
-
-    return loss
-
-# step2
-def regularize_loss():
-    '''
-    Add temporal regularization L2 loss on weights
-    '''
-
-    @tf.function
-    def loss(w_prev, w_current, to_alpha):
-        assert len(w_prev) == len(w_current)
-        # multiple layers of weights, need to add them up
-        for j in range(len(w_prev)):
-            diff = tf.reduce_sum(tf.math.square(w_current[j] - w_prev[j]))
-            diff = tf.math.multiply(to_alpha, diff)
-            if j == 0:
-                alldiff = tf.reduce_mean(diff)
-            else:
-                alldiff += tf.reduce_mean(diff)
-        return alldiff
-
-    return loss
-
-def reconstruction_loss(
-    beta=1
-):
-    """
-    Generate a keras-ccompatible loss function for customize reconstruction loss
-
-    Parameters
-    ----------
-    beta: hyperparameter
-    Returns
-    -------
-    loss : function
-    """
-
-    @tf.function
-    def loss(edge_to, edge_from, recon_to, recon_from, alpha_to, alpha_from):
-        loss1 = tf.reduce_mean(tf.reduce_mean(tf.math.multiply(tf.math.pow((1+alpha_to), beta), tf.math.pow(edge_to - recon_to, 2)), 1))
-        loss2 = tf.reduce_mean(tf.reduce_mean(tf.math.multiply(tf.math.pow((1+alpha_from), beta), tf.math.pow(edge_from - recon_from, 2)), 1))
-        return (loss1 + loss2)/2
-
-    return loss
