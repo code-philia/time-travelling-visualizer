@@ -61,7 +61,7 @@ You can train your classification model and save the training dynamics. For info
 1. create conda environment
 ```
 $ cd Vis
-$ conda create -n visualizer python=3.7
+$ conda create -n visualizer python=3.10
 $ (visualizer) conda activate visualizer
 ```
 

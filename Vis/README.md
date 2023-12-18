@@ -14,16 +14,10 @@ The trainig dynamic performance will be store in /training_dynamic/Model/subject
 
 conda activate deepdebugger
 # proxy only
-python proxy.py --epoch 1/2/3 (default 3)
+python vis.py --content_path "your dataset path" --epoch "the number of the epoch"
 
-the vis result will be store in /training_dynamic/Proxy/***.png
-the evaluation resulte wiil be store in /training_dynamic/Model/proxy_eval.json
+the vis result will be store in /training_dynamic/Vis/***.png
+the evaluation resulte wiil be store in /training_dynamic/Model/vis_eval.json
 
-# trustvis with AL
-python active_learning.py  --epoch 1/2/3 (default 3)
-
-the vis result will be store in /training_dynamic/Trust_al/***.png
-
-the evaluation resulte wiil be store in /training_dynamic/Model/trustvis_al_eval.json
 
 ```

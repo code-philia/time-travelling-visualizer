@@ -84,12 +84,13 @@ class HybridDataHandler(Dataset):
         return len(self.edge_to)
 
 class DVIDataHandler(Dataset):
-    def __init__(self, edge_to, edge_from, feature_vector, attention, transform=None):
+    def __init__(self, edge_to, edge_from, feature_vector, attention, labels, transform=None):
         self.edge_to = edge_to
         self.edge_from = edge_from
         self.data = feature_vector
         self.attention = attention
         self.transform = transform
+        self.labels = labels
 
     def __getitem__(self, item):
         edge_to_idx = self.edge_to[item]
@@ -98,13 +99,15 @@ class DVIDataHandler(Dataset):
         edge_from = self.data[edge_from_idx]
         a_to = self.attention[edge_to_idx]
         a_from = self.attention[edge_from_idx]
+        label = self.labels[item]  # 
+    
         if self.transform is not None:
             # TODO correct or not?
             edge_to = Image.fromarray(edge_to)
             edge_to = self.transform(edge_to)
             edge_from = Image.fromarray(edge_from)
             edge_from = self.transform(edge_from)
-        return edge_to, edge_from, a_to, a_from
+        return edge_to, edge_from, a_to, a_from, label
 
     def __len__(self):
         # return the number of all edges
