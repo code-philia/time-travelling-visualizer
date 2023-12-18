@@ -49,6 +49,8 @@ new_path = os.path.join(parent_path, 'training_dynamic')
 
 parser.add_argument('--content_path', type=str,default=new_path)
 parser.add_argument('--epoch' , type=int)
+parser.add_argument('--start' , type=int,default=0)
+parser.add_argument('--end' , type=int,default=0)
 parser.add_argument('--pred' , type=float, default=0.7)
 parser.add_argument('--preprocess', type=int,default=0)
 args = parser.parse_args()
@@ -74,9 +76,14 @@ GPU_ID = 0
 EPOCH_START = config["EPOCH_START"]
 EPOCH_END = config["EPOCH_END"]
 EPOCH_PERIOD = config["EPOCH_PERIOD"]
+if args.start and args.end:
+    EPOCH_START = args.start
+    EPOCH_END = args.end
+else:
+    EPOCH_START = args.epoch
+    EPOCH_END = args.epoch
 
-EPOCH_START = args.epoch
-EPOCH_END = args.epoch
+
 
 # Training parameter (subject model)
 TRAINING_PARAMETER = config["TRAINING"]
@@ -112,11 +119,13 @@ net = eval("subject_model.{}()".format(NET))
 ########################################################################################################################
 # Define data_provider
 data_provider = NormalDataProvider(CONTENT_PATH, net, EPOCH_START, EPOCH_END, EPOCH_PERIOD, device=DEVICE, epoch_name='Epoch',classes=CLASSES,verbose=1)
-PREPROCESS = args.preprocess
-if PREPROCESS:
-    data_provider._meta_data()
-    if B_N_EPOCHS >0:
-        data_provider._estimate_boundary(LEN // 10, l_bound=L_BOUND)
+
+data_provider._meta_data()
+# PREPROCESS = args.preprocess
+# if PREPROCESS:
+#     data_provider._meta_data()
+#     if B_N_EPOCHS >0:
+#         data_provider._estimate_boundary(LEN // 10, l_bound=L_BOUND)
 
 # Define visualization models
 model = VisModel(ENCODER_DIMS, DECODER_DIMS)

@@ -303,6 +303,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
     this.invNnTest15.innerText = ''+evaluation.inv_nn_test_15;
     this.invNnTest30.innerText = ''+evaluation.inv_nn_test_30;
     */
+    console.log("evaluation",evaluation)
     this.invAccTrain.innerText = '' + evaluation.ppr_train;
     this.invAccTest.innerText = '' + evaluation.ppr_test;
     //  this.invConfTrain.innerText = ''+evaluation.inv_conf_train;
@@ -557,6 +558,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
         if (iteration != null) {
           this.iterationLabelTsne.innerText = '' + iteration;
           this.totalIterationLabelDVI.innerText = '' + totalIter;
+          console.log("uodatetettetet",evaluation)
           this.updateEvaluationInformation(evaluation);
           // this.projector.notifyProjectionPositionsUpdated(newSelection);
           this.projector.notifyProjectionPositionsUpdated();

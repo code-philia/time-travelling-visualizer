@@ -9,24 +9,16 @@ import time
 import numpy as np
 import argparse
 
-from torch.utils.data import DataLoader
-from torch.utils.data import WeightedRandomSampler
 from umap.umap_ import find_ab_params
 
-from singleVis.custom_weighted_random_sampler import CustomWeightedRandomSampler
 from singleVis.SingleVisualizationModel import VisModel
-from singleVis.losses import UmapLoss, ReconstructionLoss, TemporalLoss, DVILoss, SingleVisLoss, DummyTemporalLoss
-from singleVis.edge_dataset import DVIDataHandler
-from singleVis.trainer import DVITrainer,DVIALTrainer
+from singleVis.losses import UmapLoss, ReconstructionLoss, SingleVisLoss
 from singleVis.eval.evaluator import Evaluator
 from singleVis.data import NormalDataProvider
-# from singleVis.spatial_edge_constructor import SingleEpochSpatialEdgeConstructor
-from singleVis.spatial_skeleton_edge_constructor import ProxyBasedSpatialEdgeConstructor
 
 from singleVis.projector import DVIProjector
 from singleVis.utils import find_neighbor_preserving_rate
 
-from trustVis.skeleton_generator import SkeletonGenerator,CenterSkeletonGenerator,HierarchicalClusteringProxyGenerator
 ########################################################################################################################
 #                                                     DVI PARAMETERS                                                   #
 ########################################################################################################################
@@ -48,12 +40,11 @@ parent_path = os.path.dirname(current_path)
 new_path = os.path.join(parent_path, 'training_dynamic')
 
 parser.add_argument('--content_path', type=str,default=new_path)
-parser.add_argument('--start', type=int,default=1)
-parser.add_argument('--end', type=int,default=3)
+parser.add_argument('--start', type=int)
+parser.add_argument('--end', type=int)
 # parser.add_argument('--epoch_end', type=int)
 parser.add_argument('--epoch_period', type=int,default=1)
 parser.add_argument('--preprocess', type=int,default=0)
-parser.add_argument('--base',type=bool,default=False)
 args = parser.parse_args()
 
 CONTENT_PATH = args.content_path
@@ -102,10 +93,8 @@ N_NEIGHBORS = VISUALIZATION_PARAMETER["N_NEIGHBORS"]
 PATIENT = VISUALIZATION_PARAMETER["PATIENT"]
 MAX_EPOCH = VISUALIZATION_PARAMETER["MAX_EPOCH"]
 
-VIS_MODEL_NAME = 'proxy' ### saved_as 
-v_base = args.base
-if v_base:
-    VIS_MODEL_NAME = 'v_base'
+VIS_MODEL_NAME = 'vis' ### saved_as 
+
 EVALUATION_NAME = VISUALIZATION_PARAMETER["EVALUATION_NAME"]
 
 # Define hyperparameters
@@ -119,32 +108,46 @@ net = eval("subject_model.{}()".format(NET))
 ########################################################################################################################
 # Define data_provider
 data_provider = NormalDataProvider(CONTENT_PATH, net, EPOCH_START, EPOCH_END, EPOCH_PERIOD, device=DEVICE, epoch_name='Epoch',classes=CLASSES,verbose=1)
-PREPROCESS = args.preprocess
-if PREPROCESS:
-    data_provider._meta_data()
-    if B_N_EPOCHS >0:
-        data_provider._estimate_boundary(LEN // 10, l_bound=L_BOUND)
-
-# Define visualization models
-model = VisModel(ENCODER_DIMS, DECODER_DIMS)
-
-
-# Define Losses
-negative_sample_rate = 5
-min_dist = .1
-_a, _b = find_ab_params(1.0, min_dist)
-umap_loss_fn = UmapLoss(negative_sample_rate, DEVICE, _a, _b, repulsion_strength=1.0)
-recon_loss_fn = ReconstructionLoss(beta=1.0)
-single_loss_fn = SingleVisLoss(umap_loss_fn, recon_loss_fn, lambd=LAMBDA1)
-# Define Projector
-projector = DVIProjector(vis_model=model, content_path=CONTENT_PATH, vis_model_name=VIS_MODEL_NAME, device=DEVICE)
-
-
-evaluator = Evaluator(data_provider, projector)
-
-
-
 
 Evaluation_NAME = 'subject_model_eval'
+
+def save_epoch_eval_for_subject_model (n_epoch, file_name="evaluation"):
+        # save result
+        save_dir = os.path.join(data_provider.model_path)
+        save_file = os.path.join(save_dir, file_name + ".json")
+        if not os.path.exists(save_file):
+            evaluation = dict()
+        else:
+            f = open(save_file, "r")
+            evaluation = json.load(f)
+            f.close()
+
+        if "train_acc" not in evaluation.keys():
+            evaluation["train_acc"] = dict()
+        if "test_acc" not in evaluation.keys():
+            evaluation["test_acc"] = dict()
+        
+        epoch_key = str(n_epoch)
+        evaluation["train_acc"][epoch_key] = train_acc(n_epoch)
+        evaluation["test_acc"][epoch_key] = test_acc(n_epoch)
+
+        with open(save_file, "w") as f:
+            json.dump(evaluation, f)
+        print("Successfully evaluated the subject model, and the results are saved in {}".format(save_file))
+
+def train_acc(epoch):
+        data = data_provider.train_representation(epoch)
+        data = data.reshape(data.shape[0], data.shape[1])
+        labels = data_provider.train_labels(epoch)
+        pred = data_provider.get_pred(epoch, data).argmax(1)
+        return np.sum(labels==pred)/len(labels)
+    
+def test_acc(epoch):
+        data = data_provider.test_representation(epoch)
+        data = data.reshape(data.shape[0], data.shape[1])
+        labels = data_provider.test_labels(epoch)
+        pred = data_provider.get_pred(epoch, data).argmax(1)
+        return np.sum(labels==pred)/len(labels)
+
 for i in range(EPOCH_START, EPOCH_END+1, EPOCH_PERIOD):
-    evaluator.save_epoch_eval_for_subject_model(i,file_name="{}".format(Evaluation_NAME))
+    save_epoch_eval_for_subject_model(i,file_name="{}".format(Evaluation_NAME))

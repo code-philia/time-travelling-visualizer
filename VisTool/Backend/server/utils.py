@@ -10,7 +10,7 @@ import base64
 vis_path = ".."
 sys.path.append(vis_path)
 from context import VisContext, ActiveLearningContext, AnormalyContext
-from strategy import DeepDebugger, TimeVis, tfDeepVisualInsight, DVIAL, tfDVIDenseAL, TimeVisDenseAL
+from strategy import DeepDebugger, TimeVis, tfDeepVisualInsight, DVIAL, tfDVIDenseAL, TimeVisDenseAL, Trustvis, DeepVisualInsight
 
 """Interface align"""
 
@@ -23,7 +23,7 @@ def initialize_strategy(CONTENT_PATH, VIS_METHOD, SETTING, dense=False):
     
     if SETTING == "normal" or SETTING == "abnormal":
         if VIS_METHOD == "DVI":
-            strategy = tfDeepVisualInsight(CONTENT_PATH, config)
+            strategy = Trustvis(CONTENT_PATH, config)
         elif VIS_METHOD == "TimeVis":
             strategy = TimeVis(CONTENT_PATH, config)
         elif VIS_METHOD == "DeepDebugger":
@@ -126,10 +126,12 @@ def update_epoch_projection(context, EPOCH, predicates):
     
     # TODO fix its structure
     eval_new = dict()
-    file_name = context.strategy.config["VISUALIZATION"]["EVALUATION_NAME"]
-    save_eval_dir = os.path.join(context.strategy.data_provider.model_path, file_name + ".json")
+    # file_name = context.strategy.config["VISUALIZATION"]["EVALUATION_NAME"]
+    save_eval_dir = os.path.join(context.strategy.data_provider.model_path , "subject_model_eval.json")
+    # print("save_eval_dir",save_eval_dir,os.path.exists(save_eval_dir) )
     if os.path.exists(save_eval_dir):
-        evaluation = context.strategy.evaluator.get_eval(file_name=file_name)
+        with open(save_eval_dir, "r") as f:
+            evaluation = json.load(f)
         eval_new["train_acc"] = evaluation["train_acc"][str(EPOCH)]
         eval_new["test_acc"] = evaluation["test_acc"][str(EPOCH)]
     else:
