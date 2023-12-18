@@ -593,11 +593,11 @@ class TrustTrainer(SingleVisTrainer):
     
     
     def train_step(self,data_provider,iteration):
-        
-        projector = PROCESSProjector(self.model, data_provider.content_path, '', self.DEVICE)
-        evaluator = Evaluator(data_provider, projector)
-        evaluator.eval_inv_train(iteration)
-        evaluator.eval_inv_test(iteration)
+        # remove eval to speed up
+        # projector = PROCESSProjector(self.model, data_provider.content_path, '', self.DEVICE)
+        # evaluator = Evaluator(data_provider, projector)
+        # evaluator.eval_inv_train(iteration)
+        # evaluator.eval_inv_test(iteration)
 
         self.model = self.model.to(device=self.DEVICE)
         self.model.train()

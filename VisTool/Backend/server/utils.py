@@ -18,12 +18,14 @@ def initialize_strategy(CONTENT_PATH, VIS_METHOD, SETTING, dense=False):
     # initailize strategy (visualization method)
     with open(os.path.join(CONTENT_PATH, "config.json"), "r") as f:
         conf = json.load(f)
-    VIS_METHOD = "DVI" 
-    config = conf[VIS_METHOD]
+    # VIS_METHOD = "DVI" 
+    config = conf["DVI"]
     
     if SETTING == "normal" or SETTING == "abnormal":
-        if VIS_METHOD == "DVI":
+        if VIS_METHOD == "Trustvis":
             strategy = Trustvis(CONTENT_PATH, config)
+        elif VIS_METHOD == "DVI":
+            strategy = tfDeepVisualInsight(CONTENT_PATH, config)
         elif VIS_METHOD == "TimeVis":
             strategy = TimeVis(CONTENT_PATH, config)
         elif VIS_METHOD == "DeepDebugger":
