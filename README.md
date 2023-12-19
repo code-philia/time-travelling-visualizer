@@ -23,8 +23,9 @@ time-travelling-visualizer
 |   │   singleVis | ...
 |   │   trustvis  | ...
 |   │   subject_model_eval.py
-|   │   proxy.py
-|   │   active_learning.py
+|   │   vis_process.py 
+|   │   vis_snapshot.py 
+|   │   vis_cluster.py
 |   │   requirements.txt
 |   
 │   
@@ -84,16 +85,26 @@ $ (visualizer) Successfully evaluated the subject model, and the results are sav
 The trainig dynamic performance(testing accuracy and training accuracy) will be store in /training_dynamic/Model/subject_model_eval.json
 
 # Train Your Time-Travelling Visualizer
+- visualize the training process
 ```
 $ cd Vis
 $ conda activate visualizer
-$ (visualizer) python vis.py --epoch "epoch_number" --content_path "dataset path"(default: /training_dynamic)
-
-# the vis result will be store in /training_dynamic/Vis/***.png
-# the evaluation resulte wiil be store in "your model path"/vis_eval.json
-
+$ (visualizer) python vis_process.py --start "epoch start number" --end "epoch end number" --content_path "your dataset path"
 ```
-
+the vis result will be store in /training_dynamic/Vis/***.png
+the evaluation resulte wiil be store in "your model path"/vis_eval.json
+- visualize the one training snapshots(more precise with little visulization error)
+```
+$ cd Vis
+$ conda activate visualizer
+$ (visualizer) python vis_snapshot.py --epoch "epoch number" --end "epoch end number" --content_path "your dataset path"
+```
+- visualization without prediction sementics
+```
+$ cd Vis
+$ conda activate visualizer
+$ (visualizer) python vis_snapshot.py--start "epoch start number" --end "epoch end number" --content_path "your dataset path"
+```
 # Run Your interactive Visualizer Tool
 ![Interactive Visualizer Tool](screenshot.png)
 ## Backend
