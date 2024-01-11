@@ -9,7 +9,7 @@ import pickle
 import numpy as np
 import gc
 import shutil
-from utils import update_epoch_projection, initialize_backend, add_line
+from utils import update_epoch_projection, initialize_backend, add_line,getCriticalChangeIndices, getConfChangeIndices, getContraVisChangeIndices
 
 
 # flask for API server
@@ -26,23 +26,24 @@ def update_projection():
     CONTENT_PATH = os.path.normpath(res['path'])
     VIS_METHOD = res['vis_method']
     SETTING = res["setting"]
-
     iteration = int(res['iteration'])
     predicates = res["predicates"]
-    # username = res['username']
+    username = res['username']
+    isContraVis = res['isContraVis']
     
     # sys.path.append(CONTENT_PATH)
     context = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
     # use the true one
     # EPOCH = (iteration-1)*context.strategy.data_provider.p + context.strategy.data_provider.s
     EPOCH = int(iteration)
-
     embedding_2d, grid, decision_view, label_name_dict, label_color_list, label_list, max_iter, training_data_index, \
-    testing_data_index, eval_new, prediction_list, selected_points, properties = update_epoch_projection(context, EPOCH, predicates)
+    testing_data_index, eval_new, prediction_list, selected_points, properties, highlightedPointIndices = update_epoch_projection(context, EPOCH, predicates, isContraVis)
 
+    if (len(highlightedPointIndices) != 0):
+        highlightedPointIndices = highlightedPointIndices.tolist()
+   
     # sys.path.remove(CONTENT_PATH)
     # add_line(API_result_path,['TT',username])
-    grid = np.array(grid)
     return make_response(jsonify({'result': embedding_2d, 
                                   'grid_index': grid.tolist(), 
                                   'grid_color': 'data:image/png;base64,' + decision_view,
@@ -55,7 +56,79 @@ def update_projection():
                                   'evaluation': eval_new,
                                   'prediction_list': prediction_list,
                                   "selectedPoints":selected_points.tolist(),
-                                  "properties":properties.tolist()}), 200)
+                                  "properties":properties.tolist(),
+                                  "highlightedPointIndices": highlightedPointIndices
+                            
+                                  }), 200)
+
+
+@app.route('/highlightCriticalChange', methods=["POST", "GET"])
+@cross_origin()
+def highlight_critical_change():
+    res = request.get_json()
+    CONTENT_PATH = os.path.normpath(res['path'])
+    VIS_METHOD = res['vis_method']
+    SETTING = res["setting"]
+    curr_iteration = int(res['iteration'])
+    last_iteration = int(res['last_iteration'])
+    username = res['username']
+    
+    # sys.path.append(CONTENT_PATH)
+    context = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
+   
+    predChangeIndices = getCriticalChangeIndices(context, curr_iteration, last_iteration)
+    
+    # sys.path.remove(CONTENT_PATH)
+    # add_line(API_result_path,['TT',username])
+    return make_response(jsonify({
+                                  "predChangeIndices": predChangeIndices.tolist()
+                                  }), 200)
+
+
+@app.route('/contraVisHighlight', methods=["POST", "GET"])
+@cross_origin()
+def contravis_highlight():
+    res = request.get_json()
+    CONTENT_PATH = os.path.normpath(res['path'])
+    VIS_METHOD = res['vis_method']
+    SETTING = res["setting"]
+    curr_iteration = int(res['iterationLeft'])
+    last_iteration = int(res['iterationRight'])
+    method = res['method']
+    username = res['username']
+    
+    context = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
+   
+    contraVisChangeIndices = getContraVisChangeIndices(context, curr_iteration, last_iteration, method)
+    print(len(contraVisChangeIndices))
+    return make_response(jsonify({
+                                  "contraVisChangeIndices": contraVisChangeIndices
+                                  }), 200)
+
+
+@app.route('/highlightConfChange', methods=["POST", "GET"])
+@cross_origin()
+def highlight_conf_change():
+    res = request.get_json()
+    CONTENT_PATH = os.path.normpath(res['path'])
+    VIS_METHOD = res['vis_method']
+    SETTING = res["setting"]
+    curr_iteration = int(res['iteration'])
+    last_iteration = int(res['last_iteration'])
+    confChangeInput = float(res['confChangeInput'])
+    print(confChangeInput)
+    username = res['username']
+
+    # sys.path.append(CONTENT_PATH)
+    context = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
+   
+    confChangeIndices = getConfChangeIndices(context, curr_iteration, last_iteration, confChangeInput)
+    print(confChangeIndices)
+    # sys.path.remove(CONTENT_PATH)
+    # add_line(API_result_path,['TT',username])
+    return make_response(jsonify({
+                                  "confChangeIndices": confChangeIndices.tolist()
+                                  }), 200)
 
 @app.route('/query', methods=["POST"])
 @cross_origin()
@@ -72,7 +145,7 @@ def filter():
     sys.path.append(CONTENT_PATH)
     context = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
     # TODO: fix when active learning
-    EPOCH = iteration
+    EPOCH = (iteration-1)*context.strategy.data_provider.p + context.strategy.data_provider.s
 
     training_data_number = context.strategy.config["TRAINING"]["train_num"]
     testing_data_number = context.strategy.config["TRAINING"]["test_num"]
@@ -327,29 +400,28 @@ def get_res():
     EPOCH_PERIOD = context.strategy.config["EPOCH_PERIOD"]
     EPOCH_END = context.strategy.config["EPOCH_END"]
 
-    # TODO Interval to be decided
     epoch_num = (EPOCH_END - EPOCH_START)// EPOCH_PERIOD + 1
 
     for i in range(1, epoch_num+1, 1):
         EPOCH = (i-1)*EPOCH_PERIOD + EPOCH_START
 
-        timevis = initialize_backend(CONTENT_PATH)
+        trustvis = initialize_backend(CONTENT_PATH)
 
         # detect whether we have query before
-        fname = "Epoch" if timevis.data_provider.mode == "normal" or timevis.data_provider.mode == "abnormal" else "Iteration"
+        fname = "Epoch" if trustvis.data_provider.mode == "normal" or trustvis.data_provider.mode == "abnormal" else "Iteration"
         checkpoint_path = context.strategy.data_provider.checkpoint_path(EPOCH)
         bgimg_path = os.path.join(checkpoint_path, "bgimg.png")
         embedding_path = os.path.join(checkpoint_path, "embedding.npy")
         grid_path = os.path.join(checkpoint_path, "grid.pkl")
         if os.path.exists(bgimg_path) and os.path.exists(embedding_path) and os.path.exists(grid_path):
-            path = os.path.join(timevis.data_provider.model_path, "{}_{}".format(fname, EPOCH))
+            path = os.path.join(trustvis.data_provider.model_path, "{}_{}".format(fname, EPOCH))
             result_path = os.path.join(path,"embedding.npy")
             results[str(i)] = np.load(result_path).tolist()
             with open(os.path.join(path, "grid.pkl"), "rb") as f:
                 grid = pickle.load(f)
             gridlist[str(i)] = grid
         else:
-            embedding_2d, grid, _, _, _, _, _, _, _, _, _, _, _ = update_epoch_projection(timevis, EPOCH, predicates)
+            embedding_2d, grid, _, _, _, _, _, _, _, _, _, _, _ = update_epoch_projection(trustvis, EPOCH, predicates)
             results[str(i)] = embedding_2d
             gridlist[str(i)] = grid
         # read background img
@@ -399,18 +471,6 @@ def get_tree():
             previous_epoch = epoch
 
     return make_response(jsonify({"structure":json_data}), 200)
-
-def check_port_inuse(port, host):
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(1)
-        s.connect((host, port))
-        return True
-    except socket.error:
-        return False
-    finally:
-        if s:
-            s.close()
 
 if __name__ == "__main__":
     import socket
