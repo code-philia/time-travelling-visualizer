@@ -14,11 +14,12 @@ limitations under the License.
 ==============================================================================*/
 import * as d3 from 'd3';
 import * as THREE from 'three';
-
+import {} from './globalState';
 import {CameraType, RenderContext} from './renderContext';
 import {BoundingBox, CollisionGrid} from './label';
 import {ScatterPlotVisualizer} from './scatterPlotVisualizer';
 import * as util from './util';
+
 
 const MAX_LABELS_ON_SCREEN = 10000;
 const LABEL_STROKE_WIDTH = 3;
@@ -33,6 +34,7 @@ export class ScatterPlotVisualizerCanvasLabels
   private gc: CanvasRenderingContext2D;
   private canvas: HTMLCanvasElement;
   private labelsActive: boolean = true;
+  private instanceId: number;
   constructor(container: HTMLElement) {
     this.canvas = document.createElement('canvas');
     container.appendChild(this.canvas);
@@ -164,7 +166,8 @@ export class ScatterPlotVisualizerCanvasLabels
     this.worldSpacePointPositions = newPositions;
     this.removeAllLabels();
   }
-  onRender(rc: RenderContext) {
+  onRender(rc: RenderContext, instanceId:number) {
+    this.instanceId = instanceId
     if (!this.labelsActive) {
       return;
     }

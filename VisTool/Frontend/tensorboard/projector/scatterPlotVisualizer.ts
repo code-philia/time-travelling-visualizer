@@ -44,9 +44,10 @@ export interface ScatterPlotVisualizer {
    * Called immediately before the main scatter plot performs a color (visual)
    * render. Set up render state, lights, etc here.
    */
-  onRender(renderContext: RenderContext);
+  onRender(renderContext: RenderContext, instanceId: number);
   /**
    * Called when the canvas size changes.
    */
   onResize(newWidth: number, newHeight: number);
 }
+

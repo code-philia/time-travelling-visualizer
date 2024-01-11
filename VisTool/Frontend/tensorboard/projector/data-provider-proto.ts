@@ -24,7 +24,9 @@ import {analyzeMetadata, DataProvider, ProjectorConfig} from './data-provider';
 
 export class ProtoDataProvider implements DataProvider {
   private dataProto: DataProto;
-  constructor(dataProto: DataProto) {
+  private instanceId: number;
+  constructor(dataProto: DataProto, instanceId: number) {
+    this.instanceId = instanceId;
     this.dataProto = dataProto;
   }
   retrieveRuns(callback: (runs: string[]) => void): void {
@@ -111,6 +113,6 @@ export class ProtoDataProvider implements DataProvider {
         index: i,
       });
     }
-    return new DataSet(points);
+    return new DataSet(points,  this.instanceId);
   }
 }

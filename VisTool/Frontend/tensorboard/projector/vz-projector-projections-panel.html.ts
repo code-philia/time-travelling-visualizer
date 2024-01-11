@@ -17,6 +17,7 @@ import { html } from '@polymer/polymer';
 
 import './styles';
 
+
 export const template = html`
 <style include="vz-projector-styles"></style>
 <style>
@@ -24,20 +25,28 @@ export const template = html`
     transition: height 0.2s;
   }
 
+ 
   .ink-button {
-    border: none;
-    border-radius: 2px;
-    font-size: 13px;
-    padding: 10px;
-    min-width: 100px;
-    flex-shrink: 0;
-    background: #e3e3e3;
-  }
-
-  .ink-panel-buttons {
-    margin-bottom: 10px;
-  }
-
+      border: none;
+      border-radius: 2px;
+      font-size: 13px;
+      padding: 10px;
+      min-width: 100px;
+      flex-shrink: 0;
+      background: #e3e3e3;
+    }
+    .ink-panel-buttons {
+      margin-bottom: 10px;
+    }
+    button {
+      cursor: pointer;
+    }
+    
+    button:hover {
+      background: #550831;
+      color: #fff;
+    }
+    
   .two-way-toggle {
     display: flex;
     flex-direction: row;
@@ -92,10 +101,7 @@ export const template = html`
     margin-top: 10px;
   }
 
-  .jump-dvi {
-    height: 36px;
-    margin-top: 16px;
-  }
+
 
   .dropdown-item {
     justify-content: space-between;
@@ -187,15 +193,6 @@ export const template = html`
     border-collapse: collapse;
   }
 
-  button {
-    cursor: pointer;
-  }
-
-  button:hover {
-    background: #550831;
-    color: #fff;
-  }
-
   .filter-content {
     width: 100%;
     display: flex;
@@ -203,6 +200,46 @@ export const template = html`
     justify-content: space-between;
     margin-top: -20px;
   }
+
+  .train_test_acc_header {
+    font-size: 10px; /* adjust this value as needed */
+  }
+  .train_test_acc_table {
+    width: auto;  /* Adjust the width if needed */
+    z-index: 10;  /* Ensure the table appears above any other overlapping elements. */
+  }
+
+.acc_jump_dataset_container {
+  position: relative;
+  height: 150px;
+}
+
+.jump-dvi {
+  height: 36px;
+  margin-top: 20px;
+}
+
+.login-input {
+  height: 30px;
+  width: 200px;
+}
+
+.login-item {
+  margin: 10px 0;
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  line-height: 36px;
+}
+.footer {
+  display: flex;
+  justify-content: space-between;
+}
+
+.refresh-dvi {
+  height: 36px;
+  margin-top: 0px;  
+}
 </style>
 <div id="main">
   <div class="ink-panel-header" style="height:0">
@@ -323,49 +360,44 @@ export const template = html`
       </div>
       <div class="row"> </div>
 
-      <div class="row" style="height: 0px;visibility: hidden;">
-        <div class="iteration-editor">
-          <paper-input value="{{iterationEditorInput}}" label="Iteration" on-input="iterationEditorInputChange">
-          </paper-input>
-        </div>
-        <button class="jump-dvi ink-button" title="Jump DVI">Jump</button>
-      </div>
       <div style="display:flex;justify-content: space-between; flex-direction:column;">
         <p style="font-weight: 600;">Iteration: <span class="run-tsne-iter">0</span></p>
         <p>Total Iteration: <span class="dvi-total-iter">0</span></p>
       </div>
 
+      <!-- This is the space removed for part1 -->
+    
       <div style="border-bottom:1px solid #666; height:0; visibility:hidden;">
-        <table>
-          <caption style="margin-bottom: 10px;">Visualization Confidence</caption>
-          <tr>
-            <td></td>
-            <td>train</td>
-            <td>test</td>
-          </tr>
-          <tr>
-            <td>nn</td>
-            <td><span class="nn_train_15">NA</span> </td>
-            <td><span class="nn_test_15">NA</span></td>
-          </tr>
-          <tr>
-            <td>boundary</td>
-            <td><span class="bound_train_15">NA</span></td>
-            <td><span class="bound_test_15">NA</span></td>
-          </tr>
-          <tr>
-            <td>PPR</td>
-            <td><span class="inv_acc_train">NA</span> </td>
-            <td> <span class="inv_acc_test">NA</span></td>
-          </tr>
-          <!--<tr>
-              <td>CCR</td>
-              <td><span class="inv_conf_train">NA</span></td>
-              <td><span class="inv_conf_test">NA</span></td>
-            </tr>-->
-        </table>
-        <p>Accuracy:</p>
-        <p>train: <span class="acc_train">NA</span> test: <span class="acc_test">NA</span></p>
+      <table>
+        <caption style="margin-bottom: 10px;">Visualization Confidence</caption>
+        <tr>
+          <td></td>
+          <td>train</td>
+          <td>test</td>
+        </tr>
+        <tr>
+          <td>nn</td>
+          <td><span class="nn_train_15">NA</span> </td>
+          <td><span class="nn_test_15">NA</span></td>
+        </tr>
+        <tr>
+          <td>boundary</td>
+          <td><span class="bound_train_15">NA</span></td>
+          <td><span class="bound_test_15">NA</span></td>
+        </tr>
+        <tr>
+          <td>PPR</td>
+          <td><span class="inv_acc_train">NA</span> </td>
+          <td> <span class="inv_acc_test">NA</span></td>
+        </tr>
+        <!--<tr>
+            <td>CCR</td>
+            <td><span class="inv_conf_train">NA</span></td>
+            <td><span class="inv_conf_test">NA</span></td>
+          </tr>-->
+      </table>
+      <p>Accuracy:</p>
+      <p>train: <span class="acc_train">NA</span> test: <span class="acc_test">NA</span></p>
       </div>
       <p id="tsne-sampling" class="notice">
       </p>
@@ -409,9 +441,13 @@ export const template = html`
         </div>
 
       </template>
-      <table style="width:164px">
-        <caption style="margin-bottom: 10px; font-weight: 600;">
-        <h2>Task Model Accuracy</h2>
+
+      <div class = "acc_jump_dataset_container">
+      
+    
+      <table class = "train_test_acc_table" style="width:164px">
+        <caption style="margin-bottom: 2px; font-weight: 200;">
+        <h2 class = "train_test_acc_header">Task Model Accuracy</h2>
         </caption>
         <tr>
           <td>Train Acc</td>
@@ -421,14 +457,62 @@ export const template = html`
           <td><span class="total_acc_train">NA</span></td>
           <td><span class="total_acc_test">NA</span></td>
         </tr>
-
-
-
       </table>
-      <!--<p style="font-weight: 600;">Task Model Accuracy:</p>
-      <p style="font-size:20px;">train: <span class="total_acc_train">NA</span> test: <span
-          class="total_acc_test">NA</span></p>-->
+      </div>
+
+      <div class="row" style="height: 100px;">
+
+      <div class="iteration-editor">
+      <paper-input value="{{iterationEditorInput}}" label="Iteration" on-input="iterationEditorInputChange">
+      </paper-input>
+      </div>
+      <button class="jump-dvi ink-button" title="Jump DVI">Jump</button>
+      </div>
+
+      </div>
+
+      <div class="login-item">
+      <span>content path:</span>
+      <select id="contentPathInput_projector" class="login-input" style="height: 35px; width: 210px;">
+          <option value="/home/timeTravelling/dataset/mnist_demo/mnist_demo/mnist_normal" selected>/home/timeTravelling/dataset/mnist_demo/mnist_demo/mnist_normal</option>
+          <option value="/home/timeTravelling/guorui/git_space/deepdebugger1">/home/timeTravelling/guorui/git_space/deepdebugger1</option>
+          <option value="/home/timeTravelling/guorui/git_space/TrustVis/data">/home/timeTravelling/guorui/git_space/TrustVis/data</option>
+          <option value="/home/timeTravelling/guorui/git_space/nlpvis/data">/home/timeTravelling/guorui/git_space/nlpvis/data</option>
+      </select>
+      <!-- <input class="login-input" id="contentPathInput" /> -->
     </div>
+
+    <div class="login-item">
+      <span>Vis_method:</span>
+      <select id="vis_method_projector" class="login-input">
+      <option value="TimeVis" selected>TimeVis</option>
+      <option value="DVI">DVI</option>
+      <option value="TrustVisProxy" >TrustVisProxy</option>
+      <option value="TrustVisActiveLearning">TrustVisActiveLearning</option>
+      </select>
+    </div>
+
+    <div class="login-item">
+    <span>Data Setting:</span>
+    <select id="setting_projector" class="login-input">
+    <option value="normal" selected>Normal</option>
+    <option value="active learning">Active Learning</option>
+    <option value="abnormal" >Abnormal</option>
+    </select>
+    </div>
+
+   
+    <div class="login-item">
+      <span>ip:host</span><input type="input" class="login-input" id="ipAddressInput_projector" value="172.26.190.152:5000" />
+    </div>
+    <div class="footer">
+    <button class="refresh-dvi ink-button" title="refresh DVI">Refresh</button>
+    </div>
+
+ 
+
+
+
     <p id="tsne-sampling" class="notice">
     </p>
   </div>

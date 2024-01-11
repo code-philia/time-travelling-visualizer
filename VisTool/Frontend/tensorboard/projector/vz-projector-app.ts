@@ -19,7 +19,9 @@ import {customElement, property} from '@polymer/decorators';
 import '../components/polymer/irons_and_papers';
 
 import './styles';
-import './vz-projector';
+import './vz-projector-container';
+import './vz-comparator-container';
+
 
 @customElement('vz-projector-app')
 class VzProjectorApp extends PolymerElement {
@@ -47,6 +49,10 @@ class VzProjectorApp extends PolymerElement {
 
       .icons a {
         color: white;
+      }
+
+      .icons paper-icon-button {
+        margin-right: 10px; 
       }
 
       vz-projector {
@@ -77,16 +83,42 @@ class VzProjectorApp extends PolymerElement {
               Report a bug
             </paper-tooltip>
           </a>
+          <a
+            title="Change Mode"
+          >
+            <paper-icon-button icon="autorenew" on-click="handleChangeMode"></paper-icon-button>
+            <paper-tooltip
+              position="bottom-left"
+              animation-delay="0"
+              fit-to-visible-bounds=""
+            >
+              Change Mode
+            </paper-tooltip>
+
+          </a>
         </div>
       </div>
-      <vz-projector
-        route-prefix="[[routePrefix]]"
-        serving-mode="[[servingMode]]"
-        projector-config-json-path="[[projectorConfigJsonPath]]"
-        page-view-logging="[[pageViewLogging]]"
-        event-logging="[[eventLogging]]"
-      >
-      </vz-projector>
+      <template is="dom-if" if="[[isProjectorView(currentView)]]">
+      <vz-projector-container
+      route-prefix="[[routePrefix]]"
+      serving-mode="[[servingMode]]"
+      projector-config-json-path="[[projectorConfigJsonPath]]"
+      page-view-logging="[[pageViewLogging]]"
+      event-logging="[[eventLogging]]"
+      ></vz-projector-container>
+      </template>
+
+      <template is="dom-if" if="[[isComparatorView(currentView)]]">
+      <vz-comparator-container 
+      route-prefix="[[routePrefix]]"
+      serving-mode="[[servingMode]]"
+      projector-config-json-path="[[projectorConfigJsonPath]]"
+      page-view-logging="[[pageViewLogging]]"
+      event-logging="[[eventLogging]]"
+      ></vz-comparator-container>
+      </template>
+
+    
     </div>
   `;
   @property({type: Boolean})
@@ -103,8 +135,37 @@ class VzProjectorApp extends PolymerElement {
   documentationLink: string = '';
   @property({type: String})
   bugReportLink: string = '';
+  @property({type: String})
+  currentView: string = 'projector';
 
   @property({type: String})
   title:string = `Deep Debugger | task: ${window.sessionStorage.taskType==='active learning'?'Sample Selection':'Fault Localization'}`
- 
+
+  connectedCallback() {
+    super.connectedCallback();
+    // Check the saved state on page load and set the currentView
+    const savedView = localStorage.getItem('currentView');
+    if (savedView) {
+      this.currentView = savedView;
+    }
+  }
+
+  handleChangeMode() {
+    // Save the desired view state before reloading
+    const nextView = this.currentView === 'projector' ? 'comparator' : 'projector';
+    localStorage.setItem('currentView', nextView);
+
+    // Perform a full page reload
+    window.location.reload();
+  }
+  
+  isProjectorView(view : String) : boolean{
+    return view === 'projector';
+  }
+
+  isComparatorView(view : String) : boolean{
+    return view === 'comparator';
+  }
+
+
 }

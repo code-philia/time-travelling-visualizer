@@ -27,6 +27,7 @@ const XYZ_NUM_ELEMENTS = 3;
 export class ScatterPlotVisualizerPolylines implements ScatterPlotVisualizer {
   private dataSet: DataSet;
   private scene: THREE.Scene;
+  private instanceId: number;
   private polylines: THREE.Line[];
   private polylinePositionBuffer: {
     [polylineIndex: number]: THREE.BufferAttribute;
@@ -123,7 +124,8 @@ export class ScatterPlotVisualizerPolylines implements ScatterPlotVisualizer {
       this.createPolylines(this.scene);
     }
   }
-  onRender(renderContext: RenderContext) {
+  onRender(renderContext: RenderContext, instanceId: number) {
+    this.instanceId = instanceId
     if (this.polylines == null) {
       return;
     }
