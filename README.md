@@ -23,9 +23,7 @@ time-travelling-visualizer
 |   │   singleVis | ...
 |   │   trustvis  | ...
 |   │   subject_model_eval.py
-|   │   vis_process.py 
-|   │   vis_snapshot.py 
-|   │   vis_cluster.py
+|   │   trustvis_tempo.py 
 |   │   requirements.txt
 |   
 │   
