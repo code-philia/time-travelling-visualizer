@@ -7,6 +7,8 @@ import time
 
 from singleVis.utils import *
 from singleVis.eval.evaluate import evaluate_inv_accu
+import random
+from sklearn.neighbors import NearestNeighbors
 
 """
 DataContainder module
@@ -122,7 +124,7 @@ class NormalDataProvider(DataProvider):
             testing_data = testing_data[test_index]
 
             model_location = os.path.join(self.model_path, "{}_{:d}".format(self.epoch_name, n_epoch), "subject_model.pth")
-            self.model.load_state_dict(torch.load(model_location, map_location=torch.device("cpu")))
+            self.model.load_state_dict(torch.load(model_location, map_location=torch.device("cpu")),strict=False)
             self.model = self.model.to(self.DEVICE)
             self.model.eval()
 
@@ -232,9 +234,72 @@ class NormalDataProvider(DataProvider):
         with open(save_dir, 'w') as f:
             json.dump(evaluation, f)
 
+    def _gen_boundary(self, num):
+        '''
+        Preprocessing data. This process includes generating border points for training and testing data
+        save data for later training
+        '''
+        for n_epoch in range(self.s, self.e + 1, self.p):
+            train_data = self.train_representation(n_epoch).squeeze()
+            train_data = train_data.reshape(train_data.shape[0],train_data.shape[1])
+            k_neighbors = 15
+            high_neigh = NearestNeighbors(n_neighbors=k_neighbors, radius=0.4)
+            high_neigh.fit(train_data)
+            knn_dists, knn_indices = high_neigh.kneighbors(train_data, n_neighbors=k_neighbors, return_distance=True)
+
+            gen_border_data = np.array([])
+            pred_origin = self.get_pred(n_epoch, train_data)
+            pred_res = pred_origin.argmax(axis=1)
+
+            for i in range(len(knn_indices)):
+                neighbor_list = list(knn_indices[i])
+                neighbor_data = train_data[neighbor_list]
+
+                neighbor_pred = pred_res[neighbor_list]
+                for j in range(len(neighbor_pred)):
+                    if neighbor_pred[0] != neighbor_pred[j]:
+                        # if n_epoch < ((self.e - self.s)*0.3):
+                        #     random_number = random.randint(1, 7)
+                        # else:
+                        #     random_number = 1
+                        # if random_number == 1:
+                        gen_points = np.array([(neighbor_data[0] + neighbor_data[j]) / 2])
+                        if len(gen_border_data) > 0:
+                            gen_border_data = np.concatenate((gen_border_data, gen_points), axis=0)
+                        else:
+                            gen_border_data = gen_points
+                            
+
+                # if (i % 5000) == 0:
+                #     print(i)
+            # print(gen_border_data.shape)
+            if len(gen_border_data) > num:
+                random_indices = np.random.choice(len(gen_border_data), num, replace=False)
+                # random get subsets
+                fin_gen_border_data = gen_border_data[random_indices, :]
+            else:
+                fin_gen_border_data = gen_border_data
+
+            location = os.path.join(self.model_path, "{}_{:d}".format(self.epoch_name, n_epoch), "border_centers.npy")
+            np.save(location, fin_gen_border_data)
+
+            if len(gen_border_data) > num:
+                random_indices = np.random.choice(len(gen_border_data), num, replace=False)
+                # random get subsets
+                test_fin_gen_border_data = gen_border_data[random_indices, :]
+            else:
+                test_fin_gen_border_data = gen_border_data
+            
+            location = os.path.join(self.model_path, "{}_{:d}".format(self.epoch_name, n_epoch), "test_border_centers.npy")
+            np.save(location, test_fin_gen_border_data)
+
+            if self.verbose > 0:
+                print("Finish generating borders for Epoch {:d}...".format(n_epoch))
+
     def initialize(self, num, l_bound):
         self._meta_data()
         self._estimate_boundary(num, l_bound)
+        self._gen_boundary(num)
 
     def train_representation(self, epoch):
         # load train data
@@ -343,7 +408,7 @@ class NormalDataProvider(DataProvider):
         fea_fn = self.model.feature
         return fea_fn
 
-    def get_pred(self, epoch, data):
+    def get_pred(self, epoch, data, verbose=1):
         '''
         get the prediction score for data in epoch_id
         :param data: numpy.ndarray
@@ -352,9 +417,11 @@ class NormalDataProvider(DataProvider):
         '''
         prediction_func = self.prediction_function(epoch)
 
-        data = torch.from_numpy(data)
+        if isinstance(data, np.ndarray):
+            data = torch.from_numpy(data)  # 如果不是NumPy数组，则转换为NumPy数组
+
         data = data.to(self.DEVICE)
-        pred = batch_run(prediction_func, data)
+        pred = batch_run(prediction_func, data, verbose)
         return pred
 
     def training_accu(self, epoch):

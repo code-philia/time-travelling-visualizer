@@ -11,7 +11,9 @@ from scipy.special import gamma
 import math
 from pynndescent import NNDescent
 from sklearn.cluster import KMeans
-
+from singleVis.utils import find_neighbor_preserving_rate
+import torch
+import torch.nn.functional as F
 
 """
 DataContainder module
@@ -219,6 +221,123 @@ class Sampleing(SampelingAbstractClass):
 
 
 
+class CriticalSampling():
+    def __init__(self, projector, data_provider, epoch, device):
+        self.data_provider = data_provider
+        self.epoch = epoch
+        self.DEVICE = device
+        self.projector = projector
+
+    def norm(self, x):
+        exp_x = np.exp(x - np.max(x, axis=1, keepdims=True))
+        return exp_x / exp_x.sum(axis=1, keepdims=True)
+    
+    def if_border(self, data):
+        """ """
+        norm_preds = self.norm(data)
+
+        sort_preds = np.sort(norm_preds, axis=1)
+        diff = sort_preds[:, -1] - sort_preds[:, -2]
+        border = np.zeros(len(diff), dtype=np.uint8) + 0.05
+        border[diff < 0.15] = 1
+        return border
+        
+    def critical_prediction_flip(self, ref_pred, tar_pred):
+        critical_prediction_flip_list = []
+        for i in range(len(ref_pred)):
+            if ref_pred[i] != tar_pred[i]:
+                critical_prediction_flip_list.append(i)
+        return critical_prediction_flip_list
+    
+    def critical_border_flip(self,ref_data, tar_data):
+        critical_border_flip_list = []
+        ref_border_list = self.if_border(ref_data)
+        tar_border_list = self.if_border(tar_data)
+        for i in range(len(ref_border_list)):
+            if ref_border_list[i] != tar_border_list[i]:
+                critical_border_flip_list.append(i)
+        return critical_border_flip_list
+    
+    def get_basic(self):
+        ref_train_data = self.data_provider.train_representation(self.epoch-1).squeeze()
+        # ref_train_data = ref_train_data.reshape(ref_train_data.shape[0],ref_train_data.shape[1])
+        tar_train_data = self.data_provider.train_representation(self.epoch).squeeze()
+        # tar_train_data = ref_train_data.reshape(tar_train_data.shape[0],tar_train_data.shape[1])
+        
+        pred_origin = self.data_provider.get_pred(self.epoch-1, ref_train_data)
+        pred = pred_origin.argmax(axis=1)
+        embedding_ref = self.projector.batch_project(self.epoch-1, ref_train_data)
+        inv_ref_data = self.projector.batch_inverse(self.epoch-1, embedding_ref)
+        inv_pred_origin = self.data_provider.get_pred(self.epoch-1, inv_ref_data)
+        inv_pred = inv_pred_origin.argmax(axis=1)
+
+        embedding_tar = self.projector.batch_project(self.epoch-1, tar_train_data)
+        inv_tar_data = self.projector.batch_inverse(self.epoch-1, embedding_tar)
+        new_pred_origin = self.data_provider.get_pred(self.epoch, tar_train_data)
+        new_pred = new_pred_origin.argmax(axis=1)
+        inv_new_pred_origin = self.data_provider.get_pred(self.epoch, inv_tar_data)
+        inv_new_pred = inv_new_pred_origin.argmax(axis=1)
+
+        return ref_train_data, tar_train_data, pred_origin, pred, inv_pred_origin, inv_pred,new_pred, new_pred_origin,inv_new_pred
+    
+    def find_low_k_npr(self, ref_train_data, tar_train_data,N_NEIGHBORS=15):
+        npr = find_neighbor_preserving_rate(ref_train_data, tar_train_data, N_NEIGHBORS)
+        k_npr = int(len(npr) * 0.005)
+        npr_low_values, npr_low_indices = torch.topk(torch.from_numpy(npr).to(device=self.DEVICE), k_npr, largest=False)
+        return npr_low_indices
+    
+    def find_low_k_sim(self, pred_origin, inv_pred_origin):
+        inv_similarity = F.cosine_similarity(torch.from_numpy(pred_origin).to(device=self.DEVICE), torch.from_numpy(inv_pred_origin).to(device=self.DEVICE))
+        k_err = int(len(inv_similarity) * 0.005)
+        inv_low_values, inv_low_indices = torch.topk(inv_similarity, k_err, largest=False)
+        return inv_low_indices
+    
+    def find_vis_error(self, pred, inv_pred, tar_train_data ):
+        vis_error_list = []
+        for i in range(len(pred)):
+            if pred[i] != inv_pred[i]:
+                vis_error_list.append(i)
+
+        embedding_tar = self.projector.batch_project(self.epoch-1, tar_train_data)
+        inv_tar_data = self.projector.batch_inverse(self.epoch-1, embedding_tar)
+        new_pred_origin = self.data_provider.get_pred(self.epoch, tar_train_data)
+        new_pred = new_pred_origin.argmax(axis=1)
+        inv_new_pred_origin = self.data_provider.get_pred(self.epoch, inv_tar_data)
+        inv_new_pred = inv_new_pred_origin.argmax(axis=1)
+
+        for i in range(len(pred)):
+            if new_pred[i] != inv_new_pred[i]:
+                vis_error_list.append(i)
+        return vis_error_list
+
+    def get_critical(self, withCritical=True):
+   
+        ref_train_data, tar_train_data, pred_origin, pred, inv_pred_origin, inv_pred,new_pred,new_pred_origin, inv_new_pred = self.get_basic()
+
+        vis_error_list = self.find_vis_error(pred, inv_pred,tar_train_data)
+        
+        high_dim_prediction_flip_list = self.critical_prediction_flip(pred, new_pred)
+        high_dim_border_flip_list = self.critical_border_flip(pred_origin, new_pred_origin)
+
+        if withCritical:
+            critical_set = set(high_dim_prediction_flip_list).union(set(high_dim_border_flip_list))
+            critical_list = list(critical_set.union(set(vis_error_list)))
+        else:
+            critical_list = list(set(vis_error_list))
+        """ neibour change"""
+        npr_low_indices = self.find_low_k_npr(ref_train_data,tar_train_data)
+        """ pred flip"""
+        inv_low_indices = self.find_low_k_sim(pred_origin, inv_pred_origin)
+
+        critical_list = list(set(critical_list).union(set(npr_low_indices.tolist())))
+        critical_list = list(set(critical_list).union(set(inv_low_indices.tolist())))
+        critical_data = tar_train_data[critical_list]
+
+        return critical_list, critical_data
+    
+    
+    
+    
 
 
 

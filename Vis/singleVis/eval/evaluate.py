@@ -157,6 +157,23 @@ def evaluate_inv_conf(labels, ori_pred, new_pred):
     # return diff.mean(), diff.max(), diff.min()
     return diff.mean()
 
+def evaluate_critical_proj_temporal_perseverance_corr(alpha, delta_x):
+    """
+    Evaluate temporal preserving property,
+    calculate the correlation between neighbor preserving rate and moving distance in low dim in a time sequence
+    :param alpha: ndarray, shape(N,) neighbor preserving rate
+    :param delta_x: ndarray, shape(N,), moved distance in low dim for each point
+    :return corr: ndarray, shape(N,), correlation for each point from temporal point of view
+    """
+    data_num = len(alpha)
+    corr = np.zeros(data_num)
+    for i in range(data_num):
+        # correlation, pvalue = spearmanr(alpha[:, i], delta_x[:, i])
+        correlation, pvalue = pearsonr(alpha[i], delta_x[i])
+        if np.isnan(correlation):
+            correlation = 0.0
+        corr[i] = correlation
+    return corr.mean(), corr.std()
 
 def evaluate_proj_temporal_perseverance_entropy(alpha, delta_x):
     """
