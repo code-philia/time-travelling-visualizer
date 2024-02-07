@@ -89,22 +89,17 @@ The trainig dynamic performance(testing accuracy and training accuracy) will be 
 ```
 $ cd Vis
 $ conda activate visualizer
-$ (visualizer) python vis_process.py --start "epoch start number" --end "epoch end number" --content_path "your dataset path"
+$ (visualizer) python trustvis_tempo.py --start "epoch start number" --end "epoch end number" --content_path "your dataset path"
 ```
-the vis result will be store in /training_dynamic/Vis/***.png
-the evaluation resulte wiil be store in "your model path"/vis_eval.json
-- visualize the one training snapshots(more precise with little visulization error)
-```
-$ cd Vis
-$ conda activate visualizer
-$ (visualizer) python vis_snapshot.py --epoch "epoch number" --end "epoch end number" --content_path "your dataset path"
-```
-- visualization without prediction sementics
+the vis result will be store in /training_dynamic/trustvis_tempo/***.png
+the evaluation resulte wiil be store in "your model path"/trustvis_tempo_eval.json
+
+<!-- - visualization without prediction sementics
 ```
 $ cd Vis
 $ conda activate visualizer
 $ (visualizer) python vis_snapshot.py--start "epoch start number" --end "epoch end number" --content_path "your dataset path"
-```
+``` -->
 # Run Your interactive Visualizer Tool
 ![Interactive Visualizer Tool](screenshot.png)
 ## Backend

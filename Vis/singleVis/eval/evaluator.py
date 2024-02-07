@@ -72,11 +72,17 @@ class Evaluator(EvaluatorAbstractClass):
             print("#test# nn preserving : {:.2f}/{:d} in epoch {:d}".format(val, n_neighbors, epoch))
         return val
 
-    def eval_b_train(self, epoch, n_neighbors):
+    def eval_b_train(self, epoch, n_neighbors, border=None):
+        if border is not None:
+            if border.size > 0:
+                border_centers = border
+        else:
+            border_centers = self.data_provider.border_representation(epoch)
+            border_centers = border_centers.reshape(len(border_centers), -1)
+
         train_data = self.data_provider.train_representation(epoch)
         train_data = train_data.reshape(len(train_data), -1)
-        border_centers = self.data_provider.border_representation(epoch)
-        border_centers = border_centers.reshape(len(border_centers), -1)
+       
         low_center = self.projector.batch_project(epoch, border_centers)
         low_train = self.projector.batch_project(epoch, train_data)
 
@@ -119,7 +125,7 @@ class Evaluator(EvaluatorAbstractClass):
         val = evaluate_inv_accu(pred, new_pred)
         val_error = evaluate_vis_error(pred, new_pred)
         if self.verbose:
-            print("#train# PPR: {:.2f} in epoch {:d}, error:{:d}".format(val, epoch, val_error))
+            print("#train# PPR: {:.2f} in epoch {:d}, vis error:{:d}".format(val, epoch, val_error))
         return val,val_error
 
     def eval_inv_test(self, epoch):
@@ -134,7 +140,7 @@ class Evaluator(EvaluatorAbstractClass):
         val = evaluate_inv_accu(pred, new_pred)
         val_error = evaluate_vis_error(pred, new_pred)
         if self.verbose:
-            print("#test# PPR: {:.2f} in epoch {:d},error:{:d}".format(val, epoch, val_error))
+            print("#test# PPR: {:.2f} in epoch {:d}, vis error:{:d}".format(val, epoch, val_error))
         return val,val_error
     
     def eval_inv_dist_train(self, epoch):
@@ -205,6 +211,177 @@ class Evaluator(EvaluatorAbstractClass):
             delta_x[t] = delta_x_
 
         val_corr, corr_std = evaluate_proj_temporal_perseverance_corr(alpha, delta_x)
+        if self.verbose:
+            print("Temporal preserving (test): {:.3f}\t std:{:.3f}".format(val_corr, corr_std))
+        return val_corr, corr_std
+    
+    def norm(self, x):
+        exp_x = np.exp(x - np.max(x, axis=1, keepdims=True))
+        return exp_x / exp_x.sum(axis=1, keepdims=True)
+    
+    def if_border(self, data):
+        norm_preds = self.norm(data)
+
+        sort_preds = np.sort(norm_preds, axis=1)
+        diff = sort_preds[:, -1] - sort_preds[:, -2]
+        border = np.zeros(len(diff), dtype=np.uint8) + 0.05
+        border[diff < 0.15] = 1
+            
+        return border
+    
+    def critical_prediction_flip(self, ref_pred, tar_pred):
+        critical_prediction_flip_list = []
+        for i in range(len(ref_pred)):
+            if ref_pred[i] != tar_pred[i]:
+                critical_prediction_flip_list.append(i)
+        return critical_prediction_flip_list
+                
+    def critical_border_flip(self, ref_data, tar_data):
+        critical_border_flip_list = []
+
+        ref_border_list = self.if_border(ref_data)
+        tar_border_list = self.if_border(tar_data)
+        for i in range(len(ref_border_list)):
+            if ref_border_list[i] != tar_border_list[i]:
+                critical_border_flip_list.append(i)
+        return critical_border_flip_list
+
+    def eval_critical_temporal_train(self, n_neighbors):
+        eval_num = (self.data_provider.e - self.data_provider.s) // self.data_provider.p
+        # l = self.data_provider.train_num
+
+        # alpha = np.zeros((eval_num, l))
+        # delta_x = np.zeros((eval_num, l))
+        alpha = []
+        delta_x = []
+
+
+        for t in range(eval_num):
+            prev_iteration = t * self.data_provider.p + self.data_provider.s
+            cur_iteration = (t+1) * self.data_provider.p + self.data_provider.s
+            prev_data = self.data_provider.train_representation(prev_iteration)
+            prev_data = prev_data.reshape(prev_data.shape[0],prev_data.shape[1])
+            prev_embedding = self.projector.batch_project(prev_iteration, prev_data)
+
+            curr_data = self.data_provider.train_representation(cur_iteration)
+            curr_data = curr_data.reshape(curr_data.shape[0],curr_data.shape[1])
+            curr_embedding = self.projector.batch_project(cur_iteration, curr_data)
+
+            pred_origin = self.data_provider.get_pred(prev_iteration, prev_data)
+            pred = pred_origin.argmax(axis=1)
+
+            embedding_ref = self.projector.batch_project(prev_iteration, prev_data)
+            inv_ref_data = self.projector.batch_inverse(prev_iteration, embedding_ref)
+
+            inv_pred_origin = self.data_provider.get_pred(prev_iteration, inv_ref_data)
+            inv_pred = inv_pred_origin.argmax(axis=1)
+
+            vis_error_list = []
+            for i in range(len(pred)):
+                if pred[i] != inv_pred[i]:
+                    vis_error_list.append(i)
+
+            embedding_tar = self.projector.batch_project(prev_iteration, curr_data)
+            inv_tar_data = self.projector.batch_inverse(prev_iteration, embedding_tar)
+
+            new_pred_origin = self.data_provider.get_pred(cur_iteration, curr_data)
+            new_pred = new_pred_origin.argmax(axis=1)
+
+            inv_new_pred_origin = self.data_provider.get_pred(cur_iteration, inv_tar_data)
+            inv_new_pred = inv_new_pred_origin.argmax(axis=1)
+
+            for i in range(len(pred)):
+                if new_pred[i] != inv_new_pred[i]:
+                    vis_error_list.append(i)
+
+            high_dim_prediction_flip_list = self.critical_prediction_flip(pred, new_pred)
+            high_dim_border_flip_list = self.critical_border_flip(pred_origin, new_pred_origin)
+
+            critical_set = set(high_dim_prediction_flip_list).union(set(high_dim_border_flip_list))
+            critical_list = list(critical_set.union(set(vis_error_list)))
+
+            alpha_ = find_neighbor_preserving_rate(prev_data[critical_list], curr_data[critical_list], n_neighbors=n_neighbors)
+            delta_x_ = np.linalg.norm(prev_embedding[critical_list] - curr_embedding[critical_list], axis=1)
+
+            # alpha[t] = alpha_
+            # delta_x[t] = delta_x_
+            alpha.append(alpha_)
+            delta_x.append(delta_x_)
+
+        val_corr, corr_std = evaluate_critical_proj_temporal_perseverance_corr(alpha, delta_x)
+        if self.verbose:
+            print("Temporal preserving (train): {:.3f}\t std :{:.3f}".format(val_corr, corr_std))
+        return val_corr, corr_std
+
+    def eval_critical_temporal_test(self, n_neighbors):
+        eval_num = (self.data_provider.e - self.data_provider.s) // self.data_provider.p
+        # l = self.data_provider.train_num + self.data_provider.test_num
+
+        # alpha = np.zeros((eval_num, l))
+        # delta_x = np.zeros((eval_num, l))
+        alpha = []
+        delta_x = []
+
+        for t in range(eval_num):
+            prev_iteration = t * self.data_provider.p + self.data_provider.s
+            cur_iteration = (t+1) * self.data_provider.p + self.data_provider.s
+
+            prev_data_test = self.data_provider.test_representation(prev_iteration)
+            prev_data_train = self.data_provider.train_representation(prev_iteration)
+            prev_data_test = prev_data_test.reshape(prev_data_test.shape[0],prev_data_test.shape[1])
+            prev_data_train = prev_data_train.reshape(prev_data_train.shape[0],prev_data_train.shape[1])
+            prev_data = np.concatenate((prev_data_train, prev_data_test), axis=0)
+            prev_embedding = self.projector.batch_project(prev_iteration, prev_data)
+
+            curr_data_test = self.data_provider.test_representation(cur_iteration)
+            curr_data_train = self.data_provider.train_representation(cur_iteration)
+            curr_data_test = curr_data_test.reshape(curr_data_test.shape[0],curr_data_test.shape[1])
+            curr_data_train = curr_data_train.reshape(curr_data_train.shape[0],curr_data_train.shape[1])
+            curr_data = np.concatenate((curr_data_train, curr_data_test), axis=0)
+            curr_embedding = self.projector.batch_project(cur_iteration, curr_data)
+
+            pred_origin = self.data_provider.get_pred(prev_iteration, prev_data)
+            pred = pred_origin.argmax(axis=1)
+
+            embedding_ref = self.projector.batch_project(prev_iteration, prev_data)
+            inv_ref_data = self.projector.batch_inverse(prev_iteration, embedding_ref)
+
+            inv_pred_origin = self.data_provider.get_pred(prev_iteration, inv_ref_data)
+            inv_pred = inv_pred_origin.argmax(axis=1)
+
+            vis_error_list = []
+            for i in range(len(pred)):
+                if pred[i] != inv_pred[i]:
+                    vis_error_list.append(i)
+
+            embedding_tar = self.projector.batch_project(prev_iteration, curr_data)
+            inv_tar_data = self.projector.batch_inverse(prev_iteration, embedding_tar)
+
+            new_pred_origin = self.data_provider.get_pred(cur_iteration, curr_data)
+            new_pred = new_pred_origin.argmax(axis=1)
+
+            inv_new_pred_origin = self.data_provider.get_pred(cur_iteration, inv_tar_data)
+            inv_new_pred = inv_new_pred_origin.argmax(axis=1)
+
+            for i in range(len(pred)):
+                if new_pred[i] != inv_new_pred[i]:
+                    vis_error_list.append(i)
+
+            high_dim_prediction_flip_list = self.critical_prediction_flip(pred, new_pred)
+            high_dim_border_flip_list = self.critical_border_flip(pred_origin, new_pred_origin)
+
+            critical_set = set(high_dim_prediction_flip_list).union(set(high_dim_border_flip_list))
+            critical_list = list(critical_set.union(set(vis_error_list)))
+
+            alpha_ = find_neighbor_preserving_rate(prev_data[critical_list], curr_data[critical_list], n_neighbors=n_neighbors)
+            delta_x_ = np.linalg.norm(prev_embedding[critical_list] - curr_embedding[critical_list], axis=1)
+
+            # alpha[t] = alpha_
+            # delta_x[t] = delta_x_
+            alpha.append(alpha_)
+            delta_x.append(delta_x_)
+
+        val_corr, corr_std = evaluate_critical_proj_temporal_perseverance_corr(alpha, delta_x)
         if self.verbose:
             print("Temporal preserving (test): {:.3f}\t std:{:.3f}".format(val_corr, corr_std))
         return val_corr, corr_std

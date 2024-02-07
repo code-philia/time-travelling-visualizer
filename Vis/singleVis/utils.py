@@ -11,6 +11,29 @@ from sklearn.neighbors import KDTree
 from sklearn.metrics import pairwise_distances
 from scipy import stats as stats
 
+def _construct_fuzzy_complex(train_data, metric="euclidean"):
+    # """
+    # construct a vietoris-rips complex
+    # """
+    # number of trees in random projection forest
+    n_trees = min(64, 5 + int(round((train_data.shape[0]) ** 0.5 / 20.0)))
+    # max number of nearest neighbor iters to perform
+    n_iters = max(5, int(round(np.log2(train_data.shape[0]))))
+    # distance metric
+    # # get nearest neighbors
+    
+    nnd = NNDescent(
+        train_data,
+        n_neighbors=15,
+        metric=metric,
+        n_trees=n_trees,
+        n_iters=n_iters,
+        max_candidates=60,
+        verbose=True
+    )
+    knn_indices, knn_dists = nnd.neighbor_graph
+    return knn_indices
+
 def mixup_bi(model, image1, image2, label, target_cls, device, diff=0.1, max_iter=8, l_bound=0.8):
     '''Get BPs based on mixup method, fast
     :param model: subject model
@@ -162,20 +185,48 @@ def get_border_points(model, input_x, confs, predictions, device, num_adv_eg, l_
     return adv_examples, curr_samples, tot_num
 
 
-def batch_run(model, data, batch_size=200):
+# def batch_run(model, data, batch_size=200):
+#     """batch run, in case memory error"""
+#     data = data.to(dtype=torch.float)
+#     output = None
+#     n_batches = max(math.ceil(len(data) / batch_size), 1)
+#     for b in tqdm.tqdm(range(n_batches)):
+#         r1, r2 = b * batch_size, (b + 1) * batch_size
+#         inputs = data[r1:r2]
+#         with torch.no_grad():
+#             pred = model(inputs).cpu().numpy()
+#             if output is None:
+#                 output = pred
+#             else:
+#                 output = np.concatenate((output, pred), axis=0)
+#     return output
+
+def batch_run(model, data, verbose=1, batch_size=200):
     """batch run, in case memory error"""
     data = data.to(dtype=torch.float)
     output = None
     n_batches = max(math.ceil(len(data) / batch_size), 1)
-    for b in tqdm.tqdm(range(n_batches)):
-        r1, r2 = b * batch_size, (b + 1) * batch_size
-        inputs = data[r1:r2]
-        with torch.no_grad():
-            pred = model(inputs).cpu().numpy()
-            if output is None:
-                output = pred
-            else:
-                output = np.concatenate((output, pred), axis=0)
+    if verbose == 1:
+        for b in tqdm.tqdm(range(n_batches)):
+            r1, r2 = b * batch_size, (b + 1) * batch_size
+            inputs = data[r1:r2]
+            with torch.no_grad():
+                pred = model(inputs).cpu().numpy()
+                if output is None:
+                    output = pred
+                else:
+                    output = np.concatenate((output, pred), axis=0)
+    else:
+        for b in range(n_batches):
+            r1, r2 = b * batch_size, (b + 1) * batch_size
+            inputs = data[r1:r2]
+            with torch.no_grad():
+                pred = model(inputs).cpu().numpy()
+                if output is None:
+                    output = pred
+                else:
+                    output = np.concatenate((output, pred), axis=0)
+
     return output
 
 def load_labelled_data_index(filename):

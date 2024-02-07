@@ -96,6 +96,8 @@ def compute_cross_entropy(
     cross_entropy: torch.float
         cross entropy umap loss
     """
+
+
     attraction_term = - probabilities_graph * torch.log(torch.clamp(probabilities_distance, min=EPS, max=1.0))
     repellent_term = (
             -(1.0 - probabilities_graph)
