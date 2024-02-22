@@ -1,5 +1,5 @@
 # Dataset Dir
-
+```
 data(input path)
 │   index.json(optional, for nosiy model)
 │   new_labels.json(optional, for nosiy model) 
@@ -35,7 +35,7 @@ data(input path)
 │   │   testing_dataset_label.pth
 
 └───config.json
-
+```
 # config.json template
 An example for : model resnet18 and dataset cifar10
 ```
