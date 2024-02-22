@@ -39,7 +39,6 @@ data(input path)
 # config.json template
 An example for : model resnet18 and dataset cifar10
 ```
-```
 {
     "DVI": {
         "SETTING": "normal", // Defines the data setting mode
@@ -93,8 +92,6 @@ An example for : model resnet18 and dataset cifar10
         }
     }
 }
-
-
 ```
 
 ```
