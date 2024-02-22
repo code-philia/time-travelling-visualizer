@@ -1,3 +1,31 @@
+time-travelling-visualizer
+│   README.md
+|
+└───training_dynamic
+│   │   README.md
+    
+│   
+└───Vis
+|   │   singleVis | ...
+|   │   trustvis  | ...
+|   │   subject_model_eval.py
+|   │   trustvis_tempo.py 
+|   │   requirements.txt
+|   
+│   
+└───VisTool
+│   │   Backend
+│   |   |    ...
+│   |   |    server
+│   |   |    |   server.py
+│   |   |    ...
+│   │   Frontend
+│   |   |    ...
+│   |   |    tensorboard
+│   |   |    |   projector | ...
+│   |   |    ...
+└───
+
 # Dataset Dir
 
 data(input path)
