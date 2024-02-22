@@ -39,62 +39,62 @@ data(input path)
 # config.json template
 An example for : model resnet18 and dataset cifar10
 ```
+```
 {
     "DVI": {
-        "SETTING": "normal", // data setting
-        "CLASSES": ["plane", "car", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"], 
-        "DATASET": "cifar10",
-        "GPU": "0",
-        "EPOCH_START": 1,
-        "EPOCH_END": 200,
-        "EPOCH_PERIOD": 1,
-        "EPOCH_NAME":"Epoch",
-        "TRAINING": {
-            "NET": "resnet18",   // subject model architecture
+        "SETTING": "normal", // Defines the data setting mode
+        "CLASSES": ["plane", "car", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"], // List of classes in the dataset
+        "DATASET": "cifar10", // Name of the dataset being used
+        "GPU": "0", // GPU ID for training
+        "EPOCH_START": 1, // Starting epoch for training
+        "EPOCH_END": 200, // Ending epoch for training
+        "EPOCH_PERIOD": 1, // Interval between each epoch to log or save data
+        "EPOCH_NAME":"Epoch", // Label for the epoch in logs or visualizations
+        "TRAINING": { // For subject model
+            "NET": "resnet18",   // Model architecture for training
             "loader_tr_args": {
-                "batch_size": 128,
-                "num_workers": 1
+                "batch_size": 128, // Batch size for training data
+                "num_workers": 1 // Number of worker processes for training data loading
             },
             "loader_te_args": {
-                "batch_size": 1000,
-                "num_workers": 1
+                "batch_size": 1000, // Batch size for test data
+                "num_workers": 1 // Number of worker processes for test data loading
             },
             "optimizer_args": {
-                "lr": 0.1,
-                "momentum": 0.9,
-                "weight_decay": 0.0005
+                "lr": 0.1, // Learning rate for the optimizer
+                "momentum": 0.9, // Momentum for the optimizer
+                "weight_decay": 0.0005 // Weight decay for regularization
             },
-            "num_class": 10,
-            "train_num": 50000,
-            "test_num": 10000,
+            "num_class": 10, // Number of classes in the dataset
+            "train_num": 50000, // Number of training samples
+            "test_num": 10000, // Number of test samples
             "milestone": [
-                10
+                10 // Epochs at which to adjust the learning rate
             ]
         },
-        "VISUALIZATION": {
-            "PREPROCESS": 1,
+        "VISUALIZATION": { // For Visulization model
+            "PREPROCESS": 1, // Indicator for preprocessing data (loading model and obtaining high-dimensional representations)
             "BOUNDARY": {
-                "B_N_EPOCHS": 1,
-                "L_BOUND": 0.4
+                "B_N_EPOCHS": 1, // Number of epochs to fit boundary samples per iteration
+                "L_BOUND": 0.4 // Lower bound for selecting boundary samples
             },
-            "BATCH_SIZE":1000,
-            "LAMBDA1": 1.0,
-            "LAMBDA2": 0.3,
-       
-            "ENCODER_DIMS_O": [512,256,256,256,256,2],
-            "DECODER_DIMS_O": [2,256,256,256,256,512],
-            "ENCODER_DIMS": [512,256,256,256,256,2],
-            "DECODER_DIMS": [2,256,256,256,256,512],
-            "N_NEIGHBORS": 15,
-            "MAX_EPOCH": 20,
-            "S_N_EPOCHS": 10,
-            "PATIENT": 3,
-            "RESOLUTION": 300,
-            "VIS_MODEL_NAME": "dvi",
-            "FLAG": "_temporal_id_withoutB",
-            "EVALUATION_NAME": "evaluation_tfDVI"
+            "BATCH_SIZE":1000, // Batch size for visualization process
+            "LAMBDA1": 1.0, // Weight of reconstruction loss in the visualization model
+            "LAMBDA2": 0.3, // Weight of temporal loss in the visualization model
+            "ENCODER_DIMS": [512,256,256,256,256,2],  // Encoder architecture for the visualization model
+            "DECODER_DIMS": [2,256,256,256,256,512],  // Decoder architecture for the visualization model
+            "N_NEIGHBORS": 15, // Number of local neighbors for constructing the neighborhood graph
+            "MAX_EPOCH": 20,  // Maximum number of epochs for training the visualization model
+            "S_N_EPOCHS": 10, // Number of epochs for edge sampling in the complex construction process
+            "PATIENT": 3, // Patience for early stopping, based on loss not improving
+            "RESOLUTION": 300, // Resolution of the visualization canvas
+            "VIS_MODEL_NAME": "dvi",  // Strategy name for the visualization model
+            "EVALUATION_NAME": "evaluation_DVI" // File name for storing visualization model evaluations
         }
     }
 }
+
+
+```
 
 ```
