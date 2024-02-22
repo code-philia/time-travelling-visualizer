@@ -41,7 +41,7 @@ An example for : model resnet18 and dataset cifar10
 ```
 {
     "DVI": {
-        "SETTING": "normal",
+        "SETTING": "normal", // data setting
         "CLASSES": ["plane", "car", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"], 
         "DATASET": "cifar10",
         "GPU": "0",
@@ -50,7 +50,7 @@ An example for : model resnet18 and dataset cifar10
         "EPOCH_PERIOD": 1,
         "EPOCH_NAME":"Epoch",
         "TRAINING": {
-            "NET": "resnet18",
+            "NET": "resnet18",   // subject model architecture
             "loader_tr_args": {
                 "batch_size": 128,
                 "num_workers": 1
