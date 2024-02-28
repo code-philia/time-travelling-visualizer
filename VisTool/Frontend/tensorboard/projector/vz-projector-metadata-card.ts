@@ -14,6 +14,7 @@ limitations under the License.
 ==============================================================================*/
 import { PolymerElement, html } from '@polymer/polymer';
 import { customElement, observe, property } from '@polymer/decorators';
+import {getRejectInputList, getAcceptInputList, updateStateForInstance, getAcceptIndicates, getRejectIndicates, getModelMath, getPreviousIndecates, getIteration, getProperties, getCustomMetaData, getCustomSelection } from './globalState';
 import * as logging from './logging';
 
 import { LegacyElementMixin } from '../components/polymer/legacy_element_mixin';
@@ -244,6 +245,9 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
   @property({ type: String })
   label: string;
 
+  @property({ type: Number })
+  instanceId: number;
+
   private labelOption: string;
   private pointMetadata: PointMetadata;
   private resultImg: HTMLElement;
@@ -270,8 +274,10 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
     this.showImg = pointMetadata != null
 
     this.hasMetadata = true
-    if (!window.previousIndecates) {
-      window.previousIndecates = []
+
+    if (!getPreviousIndecates(this.instanceId)) {
+      updateStateForInstance(this.instanceId, {previousIndecates:[]})
+      // state.previousIndecates = []
     }
     if (pointMetadata) {
       let metadata = [];
@@ -281,12 +287,12 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
         }
 
         let value = pointMetadata[metadataKey]
-        if (window.properties[window.iteration] && indicate !== undefined) {
-          if (window.properties[window.iteration][indicate] === 1) {
+        if (getProperties(this.instanceId)[getIteration(this.instanceId)] && indicate !== undefined) {
+          if (getProperties(this.instanceId)[getIteration(this.instanceId)][indicate] === 1) {
             value = 'unlabeled'
           }
         }
-        metadata.push({ index:indicate, key: metadataKey, value: value, prediction: point['current_prediction'], possibelWroung: value !== point['current_prediction'], isSelected: window.previousIndecates?.indexOf(indicate) !== -1 });
+        metadata.push({ index:indicate, key: metadataKey, value: value, prediction: point['current_prediction'], possibelWroung: value !== point['current_prediction'], isSelected: getPreviousIndecates(this.instanceId)?.indexOf(indicate) !== -1 });
       }
       this.metadata = metadata;
       this.label = '' + this.pointMetadata[this.labelOption];
@@ -310,22 +316,22 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
     }
 
 
-    if (!window.acceptIndicates || window.acceptIndicates.length === 0) {
+    if (!getAcceptIndicates(this.instanceId) || getAcceptIndicates(this.instanceId).length === 0) {
       this.customMetadata = []
     }
     this.hasMetadata = true;
-    this.selectedNum = window.acceptIndicates?.length + window.rejectIndicates?.length
-    this.interestNum = window.acceptIndicates?.length
-    this.notInterestNum = window.rejectIndicates?.length
+    this.selectedNum = getAcceptIndicates(this.instanceId)?.length + getRejectIndicates(this.instanceId)?.length
+    this.interestNum = getAcceptIndicates(this.instanceId)?.length
+    this.notInterestNum = getRejectIndicates(this.instanceId)?.length
     let metadata = [];
     let DVIServer = window.sessionStorage.ipAddress;
-    let basePath = window.modelMath
+    let basePath = getModelMath(this.instanceId)
     let headers = new Headers();
     headers.append('Content-Type', 'application/json');
     headers.append('Accept', 'application/json');
-    if (window.acceptIndicates) {
+    if (getAcceptIndicates(this.instanceId)) {
       let msgId
-      if (window.acceptIndicates.length > 1000) {
+      if (getAcceptIndicates(this.instanceId).length > 1000) {
         msgId = logging.setModalMessage('Update ing...');
       }
 
@@ -333,21 +339,21 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
         method: 'POST',
         mode: 'cors',
         body: JSON.stringify({
-          "path": basePath, "index": window.acceptIndicates,
+          "path": basePath, "index": getAcceptIndicates(this.instanceId),
         }),
         headers: headers,
       }).then(response => response.json()).then(data => {
-        for (let i = 0; i < window.acceptIndicates.length; i++) {
-          let src = data.urlList[window.acceptIndicates[i]]
-          // let flag = points[window.acceptIndicates[i]]?.metadata.label === points[window.acceptIndicates[i]]?.current_prediction ? '' : '❗️'
+        for (let i = 0; i < getAcceptIndicates(this.instanceId).length; i++) {
+          let src = data.urlList[getAcceptIndicates(this.instanceId)[i]]
+          // let flag = points[getAcceptIndicates(this.instanceId)[i]]?.metadata.label === points[getAcceptIndicates(this.instanceId)[i]]?.current_prediction ? '' : '❗️'
           let flag = ""
-          // if(window.flagindecatesList?.indexOf(window.acceptIndicates[i]) !== -1){
+          // if(state.flagindecatesList?.indexOf(getAcceptIndicates(this.instanceId)[i]) !== -1){
           //   flag = '❗️'
           // }
-          // if (window.sessionStorage.isControlGroup === 'true') {
+          // if (state.sessionStorage.isControlGroup === 'true') {
           //   flag = ''
           // }
-          metadata.push({ key: window.acceptIndicates[i], value: points[window.acceptIndicates[i]].metadata.label, src: src, prediction: points[window.acceptIndicates[i]].current_prediction, flag: flag });
+          metadata.push({ key: getAcceptIndicates(this.instanceId)[i], value: points[getAcceptIndicates(this.instanceId)[i]].metadata.label, src: src, prediction: points[getAcceptIndicates(this.instanceId)[i]].current_prediction, flag: flag });
         }
         if (msgId) {
           logging.setModalMessage(null, msgId);
@@ -357,19 +363,21 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
         if (msgId) {
           logging.setModalMessage(null, msgId);
         }
-        for (let i = 0; i < window.acceptIndicates.length; i++) {
+        for (let i = 0; i < getAcceptIndicates(this.instanceId).length; i++) {
           let src = ''
-          // let flag = points[window.acceptIndicates[i]]?.metadata.label === points[window.acceptIndicates[i]]?.current_prediction ? '' : '❗️'
+          // let flag = points[getAcceptIndicates(this.instanceId)[i]]?.metadata.label === points[getAcceptIndicates(this.instanceId)[i]]?.current_prediction ? '' : '❗️'
           let flag = ""
-          // if(window.flagindecatesList?.indexOf(window.rejectIndicates[i]) !== -1){
+          // if(state.flagindecatesList?.indexOf(getRejectIndicates(this.instanceId)[i]) !== -1){
           //   flag = '❗️'
           // }
-          metadata.push({ key: window.acceptIndicates[i], value: points[window.acceptIndicates[i]].metadata.label, src: src, prediction: points[window.acceptIndicates[i]].current_prediction, flag: flag });
+          metadata.push({ key: getAcceptIndicates(this.instanceId)[i], value: points[getAcceptIndicates(this.instanceId)[i]].metadata.label, src: src, prediction: points[getAcceptIndicates(this.instanceId)[i]].current_prediction, flag: flag });
         }
       });
 
     }
-    window.customMetadata = metadata
+    console.log("currInstance", this.instanceId)
+    updateStateForInstance(this.instanceId, {customMetadata:metadata})
+    // state.customMetadata = metadata
     this.customMetadata = metadata;
 
     setTimeout(() => {
@@ -384,22 +392,22 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
     }
 
 
-    if (!window.rejectIndicates || window.rejectIndicates.length === 0) {
+    if (!getRejectIndicates(this.instanceId) || getRejectIndicates(this.instanceId).length === 0) {
       this.rejectMetadata = []
     }
     this.hasMetadata = true;
-    this.selectedNum = window.acceptIndicates?.length + window.rejectIndicates?.length
-    this.interestNum = window.acceptIndicates?.length
-    this.notInterestNum = window.rejectIndicates?.length
+    this.selectedNum = getAcceptIndicates(this.instanceId)?.length + getRejectIndicates(this.instanceId)?.length
+    this.interestNum = getAcceptIndicates(this.instanceId)?.length
+    this.notInterestNum = getRejectIndicates(this.instanceId)?.length
     let metadata = [];
     let DVIServer = window.sessionStorage.ipAddress;
-    let basePath = window.modelMath
+    let basePath = getModelMath(this.instanceId)
     let headers = new Headers();
     headers.append('Content-Type', 'application/json');
     headers.append('Accept', 'application/json');
-    if (window.rejectIndicates) {
+    if (getRejectIndicates(this.instanceId)) {
       let msgId
-      if (window.rejectIndicates.length > 1000) {
+      if (getRejectIndicates(this.instanceId).length > 1000) {
         msgId = logging.setModalMessage('Update ing...');
       }
 
@@ -407,21 +415,21 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
         method: 'POST',
         mode: 'cors',
         body: JSON.stringify({
-          "path": basePath, "index": window.rejectIndicates,
+          "path": basePath, "index": getRejectIndicates(this.instanceId),
         }),
         headers: headers,
       }).then(response => response.json()).then(data => {
-        for (let i = 0; i < window.rejectIndicates.length; i++) {
-          let src = data.urlList[window.rejectIndicates[i]]
-          // let flag = points[window.rejectIndicates[i]]?.metadata.label === points[window.rejectIndicates[i]]?.current_prediction ? '' : '❗️'
+        for (let i = 0; i < getRejectIndicates(this.instanceId).length; i++) {
+          let src = data.urlList[getRejectIndicates(this.instanceId)[i]]
+          // let flag = points[getRejectIndicates(this.instanceId)[i]]?.metadata.label === points[getRejectIndicates(this.instanceId)[i]]?.current_prediction ? '' : '❗️'
           let flag = ""
-          // if(window.flagindecatesList?.indexOf(window.rejectIndicates[i]) !== -1){
+          // if(state.flagindecatesList?.indexOf(getRejectIndicates(this.instanceId)[i]) !== -1){
           //   flag = '❗️'
           // }
-          // if (window.sessionStorage.isControlGroup === 'true') {
+          // if (state.sessionStorage.isControlGroup === 'true') {
           //   flag = ''
           // }
-          metadata.push({ key: window.rejectIndicates[i], value: points[window.rejectIndicates[i]].metadata.label, src: src, prediction: points[window.rejectIndicates[i]].current_prediction, flag: flag });
+          metadata.push({ key: getRejectIndicates(this.instanceId)[i], value: points[getRejectIndicates(this.instanceId)[i]].metadata.label, src: src, prediction: points[getRejectIndicates(this.instanceId)[i]].current_prediction, flag: flag });
         }
         if (msgId) {
           logging.setModalMessage(null, msgId);
@@ -431,23 +439,23 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
         if (msgId) {
           logging.setModalMessage(null, msgId);
         }
-        for (let i = 0; i < window.rejectIndicates.length; i++) {
+        for (let i = 0; i < getRejectIndicates(this.instanceId).length; i++) {
           let src = ''
 
-          // let flag = points[window.rejectIndicates[i]]?.metadata.label === points[window.rejectIndicates[i]]?.current_prediction ? '' : '❗️'
-          // if(window.sessionStorage.taskType === 'anormaly detection'){
-          //   flag = points[window.rejectIndicates[i]]?.metadata.label === points[window.rejectIndicates[i]]?.current_prediction ? '' : '❗️'
+          // let flag = points[getRejectIndicates(this.instanceId)[i]]?.metadata.label === points[getRejectIndicates(this.instanceId)[i]]?.current_prediction ? '' : '❗️'
+          // if(state.sessionStorage.taskType === 'anormaly detection'){
+          //   flag = points[getRejectIndicates(this.instanceId)[i]]?.metadata.label === points[getRejectIndicates(this.instanceId)[i]]?.current_prediction ? '' : '❗️'
           // }
           let flag = ""
-          // if(window.flagindecatesList?.indexOf(window.rejectIndicates[i]) !== -1){
+          // if(state.flagindecatesList?.indexOf(getRejectIndicates(this.instanceId)[i]) !== -1){
           //   flag = '❗️'
           // }
-          metadata.push({ key: window.rejectIndicates[i], value: points[window.rejectIndicates[i]].metadata.label, src: src, prediction: points[window.rejectIndicates[i]].current_prediction, flag: flag });
+          metadata.push({ key: getRejectIndicates(this.instanceId)[i], value: points[getRejectIndicates(this.instanceId)[i]].metadata.label, src: src, prediction: points[getRejectIndicates(this.instanceId)[i]].current_prediction, flag: flag });
         }
       });
 
     }
-    // window.customMetadata = metadata
+    // state.customMetadata = metadata
     this.rejectMetadata = metadata;
 
     setTimeout(() => {
@@ -461,14 +469,13 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
     for (let i = 0; i < btns?.length; i++) {
       let btn = btns[i];
       btn.addEventListener('mouseenter', () => {
-        // console.log('enter',btn)
         this.projectorEventContext?.notifyHoverOverPoint(Number(btn.id))
       })
     }
   }
   removeCustomListItem(i: number) {
     this.customMetadata.splice(i, 1)
-    window.customSelection.splice(i, 1)
+    getCustomSelection(this.instanceId).splice(i, 1)
 
   }
   setLabelOption(labelOption: string) {
@@ -478,39 +485,43 @@ class MetadataCard extends LegacyElementMixin(PolymerElement) {
     }
   }
   removeacceptSelItem(e: any) {
-    let index = window.acceptIndicates.indexOf(Number(e.target.id))
-    // window.customSelection.indexOf(7893)
+
+    let index = getAcceptIndicates(this.instanceId).indexOf(Number(e.target.id))
+    // state.customSelection.indexOf(7893)
     console.log('index22',index)
     if (index >= 0) {
-      window.acceptIndicates.splice(index, 1)
-      if(window.acceptInputList && window.acceptInputList[e.target.id]){
-        window.acceptInputList[e.target.id].checked = false
+      getAcceptIndicates(this.instanceId).splice(index, 1)
+      if(getAcceptInputList(this.instanceId) && getAcceptInputList(this.instanceId)[e.target.id]){
+        getAcceptInputList(this.instanceId)[e.target.id].checked = false
       }
 
       this.removeFromCustomSelection(Number(e.target.id))
     }
     console.log('index22',index)
-    // window.acceptInputList[e.target.id].checked = false
+    // getAcceptInputList(this.instanceId)[e.target.id].checked = false
     this.projectorEventContext.removecustomInMetaCard()
   }
   removerejectSelItem(e: any) {
-    let index = window.rejectIndicates.indexOf(Number(e.target.id))
-    // window.customSelection.indexOf(7893)
+
+    let index = getRejectIndicates(this.instanceId).indexOf(Number(e.target.id))
+    // state.customSelection.indexOf(7893)
     if (index >= 0) {
-      window.rejectIndicates.splice(index, 1)
-      if(window.acceptInputList && window.rejectInputList[e.target.id]){
-        window.rejectInputList[e.target.id].checked = false
+      getRejectIndicates(this.instanceId).splice(index, 1)
+      if(getAcceptInputList(this.instanceId) && getRejectInputList(this.instanceId)[e.target.id]){
+        getRejectInputList(this.instanceId)[e.target.id].checked = false
       }
       this.removeFromCustomSelection(Number(e.target.id))
     }
-    // window.rejectInputList[e.target.id].checked = false
+    // getRejectInputList(this.instanceId)[e.target.id].checked = false
     this.projectorEventContext.removecustomInMetaCard()
   }
   removeFromCustomSelection(indicate:number){
-    let index = window.customSelection.indexOf(indicate)
+
+    let index = getCustomSelection(this.instanceId).indexOf(indicate)
     if(index !== -1){
-      window.customSelection.splice(index,1)
+      getCustomSelection(this.instanceId).splice(index,1)
     }
     this.projectorEventContext.refreshnoisyBtn()
   }
 }
+

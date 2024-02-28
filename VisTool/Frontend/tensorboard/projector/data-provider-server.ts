@@ -31,11 +31,13 @@ export const LIMIT_NUM_POINTS = 100000;
  */
 export class ServerDataProvider implements DataProvider {
   private routePrefix: string;
+  private instanceId: number;
   private runProjectorConfigCache: {
     [run: string]: ProjectorConfig;
   } = {};
-  constructor(routePrefix: string) {
+  constructor(routePrefix: string, instanceId: number) {
     this.routePrefix = routePrefix;
+    this.instanceId = instanceId
   }
   private getEmbeddingInfo(
     run: string,
@@ -98,6 +100,7 @@ export class ServerDataProvider implements DataProvider {
     this.getEmbeddingInfo(run, tensorName, (embedding) => {
       retrieveTensorAsBytes(
         this,
+        this.instanceId,
         embedding,
         run,
         tensorName,

@@ -17,7 +17,6 @@ import { html } from '@polymer/polymer';
 
 import './styles';
 
-
 export const template = html`
 <style include="vz-projector-styles"></style>
     <style>
@@ -31,8 +30,9 @@ export const template = html`
         background: #fafafa;
         display: flex;
         height: 100%;
-        min-width: 250px;
-        width: 250px;
+        min-width: 0px;
+        width: 0px;
+        visibility: hidden;
       }
         #bookmark-panel {
           bottom: 0;
@@ -68,10 +68,11 @@ export const template = html`
         display: flex;
         flex-direction: column;
         justify-content: space-between;
-        min-width: 350px;
-        width: 350px;
+        min-width: 0px;
+        width: 0px;
         border-right: 1px solid rgba(0, 0, 0, 0.1);
         background: #fafafa;
+        visibility: hidden;
       }
 
 
@@ -284,7 +285,7 @@ export const template = html`
         margin: 10px; /* Add some margin for visual separation */
       }
 
-    
+      
       .stage {
         position: relative; /* Makes sure the sub-stages are positioned relative to this container */
         width: 100%;
@@ -298,6 +299,15 @@ export const template = html`
         width: 50%; /* Take up half of the stage's width */
         height: 100%; /* Take up the full height of the stage */
         background-color: #ddd; /* Just for visualization */
+    }
+    
+    .sub-stage-right {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 50%; /* Take up half of the stage's width */
+        height: 100%; /* Take up the full height of the stage */
+        background-color: #bbb; /* Just for visualization */
     }
     
 
@@ -316,6 +326,20 @@ export const template = html`
       width: 100%;
     }
 
+    #scatter2 {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+    }
+
+    #selector2 {
+      display: none;
+      height: 100%;
+      position: absolute;
+      width: 100%;
+    }
 
 
 
@@ -324,7 +348,8 @@ export const template = html`
       justify-content: space-between;
       align-items: center;
       max-width: 100%; /* ensure it doesn't exceed the width of its parent */
-      overflow: auto; 
+
+   
       flex-wrap: wrap; 
     }
 
@@ -332,8 +357,8 @@ export const template = html`
       display: flex;
       align-items: center;
       border-left: 2px solid;
-      padding-left: 6px;
-      max-width: 80%;
+      padding-left: 3px;
+      max-width: 50%;
       flex-wrap: wrap;
     }
 
@@ -372,19 +397,16 @@ export const template = html`
       </div>
     </paper-dialog>
     <div id="container" style="height:calc(100vh - 130px)">
-      <div style="width:100%; overflow:auto; position: absolute;background: #f2f2f2;bottom: 0;z-index:99;">
-      <div style="overflow-x: auto;">
-      <svg style="width="100%" id="mysvg-[[instanceId]]"></svg>
+
+    <div style="width:100%; overflow:auto; position: absolute;height: 80px; background: #f2f2f2;bottom: 0;z-index:99;">
+    <div style="overflow-x: auto;">
+      <svg style="width:"100%" id="mysvg-[[instanceId]]">
+    
+      </svg>
       </div>
-   
-  
-     
       </div>
       <div id="left-pane" class="ink-panel">
-        <vz-projector-data-panel 
-        id="data-panel"
-        >
-        </vz-projector-data-panel>
+        <vz-projector-data-panel id="data-panel"></vz-projector-data-panel>
         <vz-projector-projections-panel
           id="projections-panel"
           instance-id="[[instanceId]]"
@@ -510,6 +532,7 @@ export const template = html`
           </paper-checkbox>
 
           <template is="dom-if" if="[[!isContraVis]]">
+
           <paper-checkbox class="diff-layer-checkbox" id="vis-error-points-toggle" checked="{{showVisError}}">
             show visualization error
           </paper-checkbox>
@@ -521,19 +544,22 @@ export const template = html`
           <paper-checkbox class="diff-layer-checkbox" id="highlight-change-points-toggle" checked="{{highlightChange}}">
             highlight critical change
           </paper-checkbox>
+
           </template>
           </div>
 
           <template is="dom-if" if="[[!isContraVis]]">
-          <div class="confidence-controls">
+          <div class="confidence-controls" >
+  
             <paper-input value="{{confChangeInput}}" label="ConfidenceChange" on-input="ConfidenceInputChange">
             </paper-input>
             <div>
               <button class="show-button" title="Show">Show</button>
-            </div>          
+            </div>  
+   
           </div>
           </template>
-
+ 
           </div>
 
         </div>
@@ -550,20 +576,17 @@ export const template = html`
 
 
           
-        <!-- Sub Stage 1 -->
-   
         <div id="scatter1">
-            <svg id="selector1"></svg>
+        <svg id="selector1"></svg>
         </div>
-       
         <!-- Include other components specific to scatter1 -->
 
-      
+       
 
           <vz-projector-metadata-card
             id="metadata-card"
-            instance-id="[[instanceId]]"
             style="left: [[metadataStyle.left]]; top:[[metadataStyle.top]];"
+            instance-id="[[instanceId]]"
           ></vz-projector-metadata-card>
           <paper-icon-button
             raised
@@ -656,12 +679,7 @@ export const template = html`
      </div> 
      
 
-
-
-
-
     </div>
     <paper-toast id="toast" always-on-top></paper-toast>
   </template>
 `;
-

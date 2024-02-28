@@ -17,6 +17,7 @@ import * as d3 from 'd3';
 
 import { RenderContext } from './renderContext';
 import { ScatterPlotVisualizer } from './scatterPlotVisualizer';
+import { updateStateForInstance, getLineGeomertryList, getWorldSpacePointPositions, getIteration, getDVIDataList, getIsAnimating } from './globalState';
 import * as util from './util';
 const RGB_NUM_ELEMENTS = 3;
 const XYZ_NUM_ELEMENTS = 3;
@@ -28,14 +29,15 @@ import {
   ProjectionComponents3D,
 } from './data';
 
-declare global {
-  interface Window {
-    selectedList: any,
-    scene: any,
-    worldSpacePointPositions: any,
-    isAnimatating: boolean | false
-  }
-}
+
+// declare global {
+//   interface Window {
+//     selectedList: any,
+//     scene: any,
+//     worldSpacePointPositions: any,
+//     isAnimatating: boolean | false
+//   }
+// }
 const FONT_SIZE = 80;
 const ONE_OVER_FONT_SIZE = 1 / FONT_SIZE;
 const LABEL_SCALE = 2.2; // at 1:1 texel/pixel ratio
@@ -132,6 +134,9 @@ export class scatterPlotVisualizerTraceLine implements ScatterPlotVisualizer {
 
 
   private polylines: THREE.Line[];
+  private instanceId: number;
+  private state: any;
+
   private polylinePositionBuffer: {
     [polylineIndex: number]: THREE.BufferAttribute;
   } = {};
@@ -207,7 +212,8 @@ export class scatterPlotVisualizerTraceLine implements ScatterPlotVisualizer {
     }
   }
   getPosition(points, epoch) {
-    const ds = new DataSet(points)
+    console.log("traceline", this.instanceId)
+    const ds = new DataSet(points, this.instanceId)
     // projection == null ? null : this.projection.projectionComponents;
     const newPositions = this.generatePointPositionArray(
       ds, epoch
@@ -273,16 +279,20 @@ export class scatterPlotVisualizerTraceLine implements ScatterPlotVisualizer {
     }
   }
   private createTriangles() {
+
     this.polylinegemo = []
-    window.selectedList = this.selectedIndexList
-    window.scene = this.scene
+    updateStateForInstance(this.instanceId, {selectedList:this.selectedIndexList})
+    updateStateForInstance(this.instanceId, {scene:this.scene})
+    // this.state.selectedList = this.selectedIndexList
+    // this.state.scene = this.scene
 
     if (this.worldSpacePointPositions == null) {
       return;
     }
     let len = this.epoches[1] - this.epoches[0]
-    if (!window.worldSpacePointPositions) {
-      window.worldSpacePointPositions = []
+    if (!getWorldSpacePointPositions(this.instanceId)) {
+      updateStateForInstance(this.instanceId, {worldSpacePointPositions:[]})
+      // getWorldSpacePointPositions(this.instanceId) = []
     }
     // let flag = true
 
@@ -295,7 +305,16 @@ export class scatterPlotVisualizerTraceLine implements ScatterPlotVisualizer {
     //   }
     // }
     // if (!flag) {
-    window.worldSpacePointPositions[window.iteration] = this.worldSpacePointPositions
+    // Make a copy of the worldSpacePointPositions array
+    let updatedPositions = getWorldSpacePointPositions(this.instanceId)
+
+// Modify the copied array at the specific index
+    updatedPositions[getIteration(this.instanceId)] = this.worldSpacePointPositions;
+
+// Update the state with the modified array
+    updateStateForInstance(this.instanceId, { worldSpacePointPositions: updatedPositions });  
+
+    // getWorldSpacePointPositions(this.instanceId)[this.state.iteration] = this.worldSpacePointPositions
     // }
     const pointCount =
       this.worldSpacePointPositions?.length / XYZ_ELEMENTS_PER_ENTRY;
@@ -401,11 +420,11 @@ export class scatterPlotVisualizerTraceLine implements ScatterPlotVisualizer {
     let start = this.epoches[0]
     let end = this.epoches[1]
    
-    let getPos = this.getPosition(window.DVIDataList[end], start)
-    let getPos2 = this.getPosition(window.DVIDataList[end], end)
+    let getPos = this.getPosition(getDVIDataList(this.instanceId)[end], start)
+    let getPos2 = this.getPosition(getDVIDataList(this.instanceId)[end], end)
     let posArr = []
     for (let i = start; i <= end; i++) {
-      let getPos = this.getPosition(window.DVIDataList[end], i)
+      let getPos = this.getPosition(getDVIDataList(this.instanceId)[end], i)
       posArr.push(getPos)
     }
     let drawed = []
@@ -417,16 +436,16 @@ export class scatterPlotVisualizerTraceLine implements ScatterPlotVisualizer {
     for (let i = 0; i < pointCount; i++) {
 
       if (this.selectedIndexList?.length && this.selectedIndexList.indexOf(i) !== -1) {
-        let color = window.DVIDataList[2][i].color
+        let color = getDVIDataList(this.instanceId)[2][i].color
         var material = new THREE.LineBasicMaterial({ color: color, linewidth: 3 });
         // material.resolution.set(window.innerWidth, window.innerHeight);
         const linegeometry = new THREE.Geometry()
         let pointll = []
       
-        if (window.worldSpacePointPositions && window.worldSpacePointPositions.length > 1 && window.worldSpacePointPositions[this.epoches[1]] && window.isAnimatating) {
+        if (getWorldSpacePointPositions(this.instanceId) && getWorldSpacePointPositions(this.instanceId).length > 1 && getWorldSpacePointPositions(this.instanceId)[this.epoches[1]] && getIsAnimating(this.instanceId)) {
           for (let wlen = this.epoches[0]; wlen <= posArr.length; wlen++) {
-            const x = window.worldSpacePointPositions[wlen][i * 3]
-            const y = window.worldSpacePointPositions[wlen][i * 3 + 1]
+            const x = getWorldSpacePointPositions(this.instanceId)[wlen][i * 3]
+            const y = getWorldSpacePointPositions(this.instanceId)[wlen][i * 3 + 1]
             pointll.push(new THREE.Vector3(x, y, 0))
             drawed.push(i)
           }
@@ -437,11 +456,13 @@ export class scatterPlotVisualizerTraceLine implements ScatterPlotVisualizer {
           // let points = line.getPoints(100)
           linegeometry.setFromPoints(points)
           var linen = new THREE.Line(linegeometry, material);
-          if (!window.lineGeomertryList) {
-            window.lineGeomertryList = []
+          if (!getLineGeomertryList(this.instanceId)) {
+            updateStateForInstance(this.instanceId, {lineGeomertryList:[]})
           }
           this.polylines.push(linen);
-          window.lineGeomertryList.push(linen)
+ 
+          updateStateForInstance(this.instanceId, {lineGeomertryList:getLineGeomertryList(this.instanceId).push(linen)})
+          // getLineGeomertryList(this.instanceId).push(linen)
           this.scene.add(linen);
         }
 
@@ -610,7 +631,10 @@ export class scatterPlotVisualizerTraceLine implements ScatterPlotVisualizer {
     (colors as any).setArray(this.pickingColors);
     colors.needsUpdate = true;
   }
-  onRender(rc: RenderContext) {
+  onRender(rc: RenderContext, instanceId: number) {
+    this.instanceId = instanceId
+  
+  
     if (this.geometry == null) {
       this.createTriangles()
     }

@@ -15,6 +15,7 @@ limitations under the License.
 import {PolymerElement} from '@polymer/polymer';
 import {customElement, property, observe} from '@polymer/decorators';
 import * as d3 from 'd3';
+import{ getCurrentSessionState, updateSessionStateForInstance, getIsAnimating, getTSNETotalIter,  getLastIteration, getScene, getHiddenBackground, getHighlightedPointIndices, getConfChangeIndices, getNowShowIndicates, getProperties, getPreviousHover, getAlQueryResPointIndices, getAllResPositions, getCurrentFocus, getPredChangeIndices, getSelectedTotalEpoch, getIteration, getIsAdjustingSel, updateStateForInstance, getAlSuggestLabelList, getFlagindecatesList,getQueryResAnormalCleanIndecates, getLineGeomertryList, getAcceptInputList, getAlSuggestScoreList, getRejectInputList, getTaskType, getAcceptIndicates, getQueryResAnormalIndecates, getCustomSelection, getModelMath, getCheckBoxDom, getQueryResPointIndices, getRejectIndicates, getPreviousIndecates } from './globalState';
 
 import {LegacyElementMixin} from '../components/polymer/legacy_element_mixin';
 import '../components/polymer/irons_and_papers';
@@ -99,15 +100,17 @@ class DataPanel extends LegacyElementMixin(PolymerElement) {
   private spriteAndMetadata: SpriteAndMetadataInfo;
   private metadataFile: string;
   private metadataFields: string[];
+  private instanceId: number;
 
   ready() {
     super.ready();
     this.normalizeData = true;
     this.superviseInputSelected = '';
   }
-  initialize(projector: any, dp: DataProvider) {
+  initialize(projector: any, dp: DataProvider, instanceId:number) {
     this.projector = projector;
     this.dataProvider = dp;
+    this.instanceId = instanceId
     this.setupUploadButtons();
     // Tell the projector whenever the data normalization changes.
     // Unknown why, but the polymer checkbox button stops working as soon as
@@ -453,6 +456,7 @@ class DataPanel extends LegacyElementMixin(PolymerElement) {
       this.selectedRun,
       this.selectedTensor,
       (ds) => {
+        console.log("retrieveTensor")
         let metadataFile = this.getEmbeddingInfoByName(this.selectedTensor)
           .metadataPath;
         this.dataProvider.retrieveSpriteAndMetadata(
@@ -460,14 +464,17 @@ class DataPanel extends LegacyElementMixin(PolymerElement) {
           this.selectedTensor,
           (metadata) => {
             this.projector.updateDataSet(ds, metadata, metadataFile);
+  
           }
         );
       }
     );
+    console.log("afterretrieve", window.comparatorState)
     this.projector.setSelectedTensor(
       this.selectedRun,
       this.getEmbeddingInfoByName(this.selectedTensor)
     );
+    console.log(window.comparatorState)
   }
   @observe('selectedRun')
   _generateUiForNewCheckpointForRun(selectedRun) {
@@ -557,7 +564,7 @@ class DataPanel extends LegacyElementMixin(PolymerElement) {
     // this.projector.setSelectedColorOption(colorOption);
   }
   private tensorWasReadFromFile(rawContents: ArrayBuffer, fileName: string) {
-    parseRawTensors(rawContents, (ds) => {
+    parseRawTensors(rawContents, this.instanceId, (ds) => {
       const checkpointFile = this.$$('#checkpoint-file') as HTMLSpanElement;
       checkpointFile.innerText = fileName;
       checkpointFile.title = fileName;

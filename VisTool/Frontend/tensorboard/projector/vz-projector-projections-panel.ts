@@ -12,7 +12,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
-
+import {  updateStateForInstance } from './globalState';
 import { PolymerElement } from '@polymer/polymer';
 import { customElement, observe, property } from '@polymer/decorators';
 import {
@@ -120,6 +120,9 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
   keepSearchPredicate: boolean = true;
   // Decide wether to keep indices or search predicates, true represents search predicates
 
+  @property({ type: Number })
+  instanceId: number;
+
   temporalStatus: boolean = true; //true for keepSearchPredicate
 
   private projector: any; // Projector; type omitted b/c LegacyElement
@@ -149,6 +152,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
   private previousDVIButton: HTMLButtonElement;
   private nextDVIButton: HTMLButtonElement;
   private jumpDVIButton: HTMLButtonElement;
+  private refreshDVIButton: HTMLButtonElement;
   //private perplexitySlider: HTMLInputElement;
   //private learningRateInput: HTMLInputElement;
   //private superviseFactorInput: HTMLInputElement;
@@ -195,9 +199,13 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
   private baseTrainAcc: any;
   private baseTestAcc: any;
 
+  
   private timer: any;
+  
 
   initialize(projector: any) {
+   
+
     this.polymerChangesTriggerReprojection = true;
     this.projector = projector;
     // Set up TSNE projections.
@@ -211,6 +219,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
 
   ready() {
     super.ready();
+    console.log('[projeciton] method called');
     this.learningRateList = ['0.1', '0.01', '0.001']
     this.architectureList = ['ResNet-18', 'ResNet-34', 'VGG-18']
     this.totalEpochList = [190, 200]
@@ -222,11 +231,18 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
     //this.pauseTsneButton.disabled = true;
     //this.perturbTsneButton = this.$$('.perturb-tsne') as HTMLButtonElement;
     this.previousDVIButton = this.$$('.previous-dvi') as HTMLButtonElement;
+
+    
     this.previousDVIButton.disabled = true;
     this.nextDVIButton = this.$$('.next-dvi') as HTMLButtonElement;
     this.jumpDVIButton = this.$$('.jump-dvi') as HTMLButtonElement;
+    this.refreshDVIButton = this.$$('.refresh-dvi') as HTMLButtonElement;
     this.jumpDVIButton.disabled = true;
+    // this.vis_method = this.$$('[name="vis_method_projector"]');
 
+    // this.vis_method_projector = this.$$('.')
+    // let vis_method = document.getElementsByName("vis_method");
+    // let setting = document.getElementsByName("setting");
     this.timer = null
 
     //this.nextDVIButton.disabled = true;
@@ -262,7 +278,8 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
     } else {
       this.subjectModelPathEditorInput = window.sessionStorage.normal_content_path
     }
-    window.modelMath = this.subjectModelPathEditorInput
+    updateStateForInstance(this.instanceId, {modelMath:this.subjectModelPathEditorInput})
+    // this.state.modelMath = this.subjectModelPathEditorInput
     if (this.dataSet) {
       this.dataSet.DVIsubjectModelPath = this.subjectModelPathEditorInput;
     }
@@ -275,7 +292,8 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
   }
 
   private subjectModelPathEditorInputChange() {
-    window.modelMath = this.subjectModelPathEditorInput
+    updateStateForInstance(this.instanceId, {modelMath:this.subjectModelPathEditorInput})
+    // this.state.modelMath = this.subjectModelPathEditorInput
     if (window.sessionStorage.taskType == 'anormaly detection') {
       window.sessionStorage.setItem('unormaly_content_path', this.subjectModelPathEditorInput)
     } else {
@@ -295,19 +313,10 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
     this.nnTest15.innerText = '' + evaluation.nn_test_15;
     this.boundTrain15.innerText = '' + evaluation.bound_train_15;
     this.boundTest15.innerText = '' + evaluation.bound_test_15;
-    /*
-    this.invNnTrain10.innerText = ''+evaluation.inv_nn_train_10;
-    this.invNnTrain15.innerText = ''+evaluation.inv_nn_train_15;
-    this.invNnTrain30.innerText = ''+evaluation.inv_nn_train_30;
-    this.invNnTest10.innerText = ''+evaluation.inv_nn_test_10;
-    this.invNnTest15.innerText = ''+evaluation.inv_nn_test_15;
-    this.invNnTest30.innerText = ''+evaluation.inv_nn_test_30;
-    */
-    console.log("evaluation",evaluation)
+
     this.invAccTrain.innerText = '' + evaluation.ppr_train;
     this.invAccTest.innerText = '' + evaluation.ppr_test;
-    //  this.invConfTrain.innerText = ''+evaluation.inv_conf_train;
-    //  this.invConfTest.innerText = ''+evaluation.inv_conf_test;
+
     this.accTrain.innerText = '' + evaluation.acc_train;
     this.accTest.innerText = '' + evaluation.acc_test;
     this.totalAccTest.innerText = '' + Number(evaluation.test_acc * 100).toFixed(2) + '%';
@@ -315,6 +324,39 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
     this.baseTrainAcc = evaluation.train_acc
     this.baseTestAcc = evaluation.test_acc
   }
+
+  private reRenderVzProjectorApp(): void {
+    const parentContainer: HTMLElement | null = document.getElementById('bodyContent')?.parentNode as HTMLElement;
+
+    if (!parentContainer) {
+        console.error("Parent container not found");
+        return;
+    }
+
+    // Remove the existing vz-projector-app component
+    const oldElement: HTMLElement | null = document.getElementById('bodyContent');
+    if (oldElement) {
+        parentContainer.removeChild(oldElement);
+    }
+
+    // Create a new vz-projector-app component
+    const newElement: HTMLElement = document.createElement('vz-projector-app');
+    newElement.id = 'bodyContent';
+    newElement.setAttribute('documentation-link', 'https://www.tensorflow.org/get_started/embedding_viz');
+    newElement.setAttribute('bug-report-link', 'https://github.com/tensorflow/tensorboard/issues');
+    newElement.setAttribute('serving-mode', 'demo');
+    newElement.setAttribute('projector-config-json-path', 'standalone_projector_config.json');
+
+
+    // Append the new vz-projector-app to the parent container
+    parentContainer.appendChild(newElement);
+
+    setTimeout(() => {
+        newElement.style.visibility = 'visible';
+    }, 5000); // example: 5 seconds timeout, adjust as needed
+}
+
+
   private setupUIControls() {
     {
       const self = this;
@@ -326,49 +368,80 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
         });
       }
     }
+    
+    this.refreshDVIButton.addEventListener('click', async () => {
+     
+      try {
 
-    /*
-    this.runTsneButton.addEventListener('click', () => {
-      if (this.dataSet.hasTSNERun) {
-        this.dataSet.stopTSNE();
-      } else {
-        const delay = ms => new Promise(res => setTimeout(res, ms));
+          const vis_method_element = this.shadowRoot.getElementById("vis_method_projector") as HTMLSelectElement
+          const vis_method =  vis_method_element.value
+          window.sessionStorage.setItem('vis_method', vis_method)
+          const setting_element = this.shadowRoot.getElementById("setting_projector") as HTMLSelectElement
+          const setting = setting_element.value
 
-        //console.log(this.dataSet.hasTSNERun);
-        this.dataSet.tSNEShouldKill = true;
-        //console.log('here1');
-        let act = async () => {
-           await delay(500);
-           this.runTSNE();
-        };
-        act();
-      }
-    });*/
-    /*
-    this.pauseTsneButton.addEventListener('click', () => {
-      if (this.dataSet.tSNEShouldPause) {
-        this.dataSet.tSNEShouldPause = false;
-        this.pauseTsneButton.innerText = 'Pause';
-        this.previousDVIButton.disabled = true;
-        this.nextDVIButton.disabled = true;
-        this.dataSet.tSNEShouldPauseAndCheck = false;
-      } else {
-        this.dataSet.tSNEShouldPause = true;
-        this.pauseTsneButton.innerText = 'Resume';
-        this.dataSet.tSNEJustPause = true;
-        if (this.dataSet.tSNEIteration != 1) {
-           this.previousDVIButton.disabled = false;
+          window.sessionStorage.setItem('selectedSetting', setting)
+          window.sessionStorage.selectedSetting = setting
+        
+          if (window.sessionStorage.selectedSetting == 'normal') {
+            window.sessionStorage.setItem('taskType', 'anomaly detection');
+            console.log("normal")
+
+        } else {
+            window.sessionStorage.setItem('taskType', 'active learning');
+            console.log("activate learning")
         }
-        if (this.dataSet.tSNEIteration != this.dataSet.tSNETotalIter) {
-          this.nextDVIButton.disabled = false;
-        }
+
+          const content_path_element = this.shadowRoot.getElementById("contentPathInput_projector") as HTMLSelectElement;
+
+
+          const content_path = content_path_element.value;
+  
+          const DVIServer_element = this.shadowRoot.getElementById("ipAddressInput_projector") as HTMLSelectElement;
+      
+          const DVIServer = DVIServer_element.value;
+  
+          window.sessionStorage.setItem('content_path', content_path);
+          window.sessionStorage.setItem('ipAddress', DVIServer);
+  
+          let headers = new Headers();
+          headers.append('Content-Type', 'application/json');
+          headers.append('Accept', 'application/json');
+  
+          const response = await fetch(`http://${DVIServer}/login`, {
+              method: 'POST',
+              body: JSON.stringify({ "content_path": content_path }),
+              headers: headers,
+              mode: 'cors'
+          });
+  
+          const data = await response.json();
+          console.log('data', data);
+  
+          if (data.normal_content_path && data.unormaly_content_path) {
+              this.reRenderVzProjectorApp();
+              window.sessionStorage.setItem('normal_content_path', data.normal_content_path);
+              window.sessionStorage.setItem('unormaly_content_path', data.unormaly_content_path);
+              window.sessionStorage.setItem('isControlGroup', data.isControl ? data.isControl : false);
+              setTimeout(() => {
+                  location.reload();
+              }, 1);
+          } else {
+              alert(data.message);
+          }
+  
+      } catch (error) {
+          console.error(error);
+          //stepCallback(null, null, null, null, null);
       }
-    });*/
+  });
+  
+
     this.previousDVIButton.addEventListener('click', () => {
       const msgId = logging.setModalMessage('loading...');
       this.nextDVIButton.disabled = true;
       this.previousDVIButton.disabled = true;
       this.jumpDVIButton.disabled = true;
+      this.refreshDVIButton.disabled = true;
       if (this.dataSet.tSNEIteration <= 2) {
         this.previousDVIButton.disabled = true;
       }
@@ -387,15 +460,15 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
           }
           //indices
           filterIndices = this.projector.inspectorPanel.filterIndices;
-          // TODO initilize dataset, set inspector filter indices to be all
+       
           this.projector.dataSet.setDVIFilteredData(filterIndices);
           if (iteration != null) {
             this.iterationLabelTsne.innerText = '' + iteration;
             this.totalIterationLabelDVI.innerText = '' + totalIter;
             this.updateEvaluationInformation(evaluation);
-            // this.projector.notifyProjectionPositionsUpdated(new_selection);
             this.projector.notifyProjectionPositionsUpdated();
             this.projector.onProjectionChanged();
+            console.log("checkClickPrev")
             this.projector.onIterationChange(iteration);
           } else {
             this.projector.onProjectionChanged();
@@ -406,6 +479,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
           logging.setModalMessage(null, msgId);
           this.nextDVIButton.disabled = false;
           this.jumpDVIButton.disabled = false;
+          this.refreshDVIButton.disabled = false;
         });
     });
     this.nextDVIButton.addEventListener('click', () => {
@@ -413,6 +487,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
       this.nextDVIButton.disabled = true;
       this.previousDVIButton.disabled = true;
       this.jumpDVIButton.disabled = true;
+      this.refreshDVIButton.disabled = true;
       this.dataSet.projectDVI(this.dataSet.tSNEIteration + 1, this.projector.inspectorPanel.currentPredicate,
         (iteration: number | null, evaluation: any, newSelection: any[], indices: number[], totalIter?: number) => {
           /**
@@ -438,9 +513,10 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
             this.iterationLabelTsne.innerText = '' + iteration;
             this.totalIterationLabelDVI.innerText = '' + totalIter;
             this.updateEvaluationInformation(evaluation);
-            // this.projector.notifyProjectionPositionsUpdated(newSelection);
+
             this.projector.notifyProjectionPositionsUpdated();
             this.projector.onProjectionChanged();
+            console.log("checkClickNExt")
             this.projector.onIterationChange(iteration);
             if (this.dataSet.tSNEIteration > 1) {
               this.previousDVIButton.disabled = false;
@@ -454,6 +530,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
           }
           logging.setModalMessage(null, msgId);
           this.jumpDVIButton.disabled = false;
+          this.refreshDVIButton.disabled = false;
         });
     });
     this.jumpDVIButton.addEventListener('click', () => {
@@ -470,58 +547,6 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
       this.jumpTo(this.iterationInput)
     });
 
-
-
-    /*
-    this.nextDVIButton.addEventListener('click', () => {
-      if (this.dataSet.tSNEJustPause) {
-        this.dataSet.tSNEJustPause = false;
-      } else {
-        this.dataSet.tSNEIteration ++;
-      }
-      this.dataSet.tSNEShouldPauseAndCheck = true;
-      if(this.dataSet.tSNEIteration == this.dataSet.tSNETotalIter) {
-        this.nextDVIButton.disabled = true;
-      }
-      if(!this.dataSet.hasTSNERun) {
-        this.runTsneButton.innerText = 'Stop';
-        this.runTsneButton.disabled = false;
-        this.pauseTsneButton.innerText = 'Resume';
-        this.pauseTsneButton.disabled = false;
-        this.dataSet.tSNEShouldStop = false;
-        this.dataSet.tSNEShouldPause = true;
-        this.dataSet.hasTSNERun = true;
-      }
-      this.previousDVIButton.disabled = false;
-    });*/
-    /*
-    this.perturbTsneButton.addEventListener('mousedown', () => {
-      if (this.dataSet && this.projector) {
-        this.dataSet.perturbTsne();
-        this.projector.notifyProjectionPositionsUpdated();
-        this.perturbInterval = window.setInterval(() => {
-          this.dataSet.perturbTsne();
-          this.projector.notifyProjectionPositionsUpdated();
-        }, 100);
-      }
-    });
-    this.perturbTsneButton.addEventListener('mouseup', () => {
-      clearInterval(this.perturbInterval);
-    });*/
-    /*
-    this.perplexitySlider.value = this.perplexity.toString();
-    this.perplexitySlider.addEventListener('change', () =>
-      this.updateTSNEPerplexityFromSliderChange()
-    );
-    this.updateTSNEPerplexityFromSliderChange();
-    this.learningRateInput.addEventListener('change', () =>
-      this.updateTSNELearningRateFromUIChange()
-    );
-    this.updateTSNELearningRateFromUIChange();
-    this.superviseFactorInput.addEventListener('change', () =>
-      this.updateTSNESuperviseFactorFromUIChange()
-    );
-    this.updateTSNESuperviseFactorFromUIChange();*/
     this.setupCustomProjectionInputFields();
     // TODO: figure out why `--paper-input-container-input` css mixin didn't
     // work.
@@ -533,6 +558,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
     }
   }
 
+  
   jumpTo(iterationInput) {
     const msgId = logging.setModalMessage('loading...');
     this.jumpDVIButton.disabled = true;
@@ -558,11 +584,12 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
         if (iteration != null) {
           this.iterationLabelTsne.innerText = '' + iteration;
           this.totalIterationLabelDVI.innerText = '' + totalIter;
-          console.log("uodatetettetet",evaluation)
           this.updateEvaluationInformation(evaluation);
-          // this.projector.notifyProjectionPositionsUpdated(newSelection);
+  
           this.projector.notifyProjectionPositionsUpdated();
           this.projector.onProjectionChanged();
+          console.log("it",iteration)
+          console.log("checkClickJump")
           this.projector.onIterationChange(iteration);
           if (this.dataSet.tSNEIteration > 1) {
             this.previousDVIButton.disabled = false;
@@ -624,6 +651,7 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
           // this.projector.notifyProjectionPositionsUpdated(new_selection);
           this.projector.notifyProjectionPositionsUpdated();
           this.projector.onProjectionChanged();
+          console.log("checkClickREtrain")
           this.projector.onIterationChange(iteration);
           this.projector.initialTree()
         } else {
@@ -787,7 +815,8 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
   }
   @observe('selectedTotalEpoch')
   _selectedTotalEpochChanged() {
-    window.selectedTotalEpoch = this.selectedTotalEpoch
+    updateStateForInstance(this.instanceId, {selectedTotalEpoch:this.selectedTotalEpoch})
+    // this.state.selectedTotalEpoch = this.selectedTotalEpoch
     this.updateTrainTestRessult()
   }
   @observe('selectedLr')
@@ -1158,5 +1187,4 @@ class ProjectionsPanel extends LegacyElementMixin(PolymerElement) {
   getUmapSampleSizeText() {
     return UMAP_SAMPLE_SIZE.toLocaleString();
   }
-
 }

@@ -8,26 +8,36 @@ import os
 import time
 import numpy as np
 
-from torch.utils.data import DataLoader,ConcatDataset
+from torch.utils.data import DataLoader
 from torch.utils.data import WeightedRandomSampler
 from umap.umap_ import find_ab_params
 
 from singleVis.custom_weighted_random_sampler import CustomWeightedRandomSampler
 from singleVis.SingleVisualizationModel import VisModel, tfModel
-from singleVis.losses import HybridLoss, SmoothnessLoss, UmapLoss, ReconstructionLoss, TemporalLoss, DVILoss, SingleVisLoss, umap_loss, reconstruction_loss, regularize_loss,DummyTemporalLoss
+from singleVis.losses import HybridLoss, SmoothnessLoss, UmapLoss, ReconstructionLoss, DummyTemporalLoss, DVILoss, SingleVisLoss, umap_loss, reconstruction_loss, regularize_loss
 from singleVis.edge_dataset import HybridDataHandler, DVIDataHandler, DataHandler, construct_edge_dataset
 from singleVis.trainer import HybridVisTrainer, DVITrainer, SingleVisTrainer
 from singleVis.data import DataProviderAbstractClass, NormalDataProvider, ActiveLearningDataProvider, DenseActiveLearningDataProvider
 from singleVis.spatial_edge_constructor import kcHybridSpatialEdgeConstructor, SingleEpochSpatialEdgeConstructor, kcSpatialEdgeConstructor, tfEdgeConstructor
-from singleVis.Trustvis_spatial_edge_constructor import TrustvisSpatialEdgeConstructor
-from singleVis.Trustvis_losses import BoundaryAwareLoss
-from singleVis.Trustvis_trainer import TrustTrainer
+from singleVis.spatial_skeleton_edge_constructor import ProxyBasedSpatialEdgeConstructor
 from singleVis.temporal_edge_constructor import GlobalTemporalEdgeConstructor
-from singleVis.projector import DeepDebuggerProjector, DVIProjector, ProjectorAbstractClass, TimeVisProjector, ALProjector, tfDVIProjector, tfDVIDenseALProjector, TimeVisDenseALProjector, TrustVisProjector
+from singleVis.projector import DeepDebuggerProjector, DVIProjector, ProjectorAbstractClass, TimeVisProjector, ALProjector, tfDVIProjector, tfDVIDenseALProjector, TimeVisDenseALProjector
 from singleVis.segmenter import Segmenter
 from singleVis.eval.evaluator import Evaluator, ALEvaluator, EvaluatorAbstractClass, DenseALEvaluator
 from singleVis.visualizer import VisualizerAbstractClass, visualizer, DenseALvisualizer
 from singleVis.utils import find_neighbor_preserving_rate
+
+from singleVis.losses import UmapLoss, ReconstructionLoss, TemporalLoss, DVILoss, SingleVisLoss, DummyTemporalLoss
+from singleVis.edge_dataset import DVIDataHandler
+from singleVis.trainer import DVIALMODITrainer
+from singleVis.data import NormalDataProvider
+from singleVis.spatial_skeleton_edge_constructor import OriginSingleEpochSpatialEdgeConstructor, PredDistSingleEpochSpatialEdgeConstructor
+from singleVis.projector import DVIProjector
+from singleVis.eval.evaluator import Evaluator
+
+from singleVis.visualizer import visualizer
+from trustVis.skeleton_generator import CenterSkeletonGenerator, SkeletonGenerator
+
 
 class StrategyAbstractClass(ABC):
     def __init__(self, CONTENT_PATH, config):
@@ -126,7 +136,7 @@ class DeepVisualInsight(StrategyAbstractClass):
         ENCODER_DIMS = VISUALIZATION_PARAMETER["ENCODER_DIMS"]
         DECODER_DIMS = VISUALIZATION_PARAMETER["DECODER_DIMS"]
 
-        VIS_MODEL_NAME = 'dvi'
+        VIS_MODEL_NAME = VISUALIZATION_PARAMETER["VIS_MODEL_NAME"]
 
         # define hyperparameters
         self.DEVICE = torch.device("cuda:{}".format(GPU_ID) if torch.cuda.is_available() else "cpu")
@@ -141,13 +151,13 @@ class DeepVisualInsight(StrategyAbstractClass):
         _a, _b = find_ab_params(1.0, min_dist)
         umap_loss_fn = UmapLoss(negative_sample_rate, self.DEVICE, _a, _b, repulsion_strength=1.0)
         recon_loss_fn = ReconstructionLoss(beta=1.0)
-        temporal_loss_fn = TemporalLoss()
+        temporal_loss_fn = DummyTemporalLoss(self.DEVICE)
         self.umap_fn = umap_loss_fn
         self.recon_fn = recon_loss_fn
         self.temporal_fn = temporal_loss_fn
-        self.projector(DVIProjector(vis_model=self.model, content_path=self.CONTENT_PATH, vis_model_name=VIS_MODEL_NAME, device=self.DEVICE))
-        self.vis(visualizer(self.data_provider, self.projector, 200, "tab10"))
-        self.evaluator(Evaluator(self.data_provider, self.projector))
+        self.projector = DVIProjector(vis_model=self.model, content_path=self.CONTENT_PATH, vis_model_name=VIS_MODEL_NAME, device=self.DEVICE)
+        self.vis = visualizer(self.data_provider, self.projector, 200, "tab10")
+        self.evaluator = Evaluator(self.data_provider, self.projector)
 
     def _preprocess(self):
         PREPROCESS = self.config["VISUALIZATION"]["PREPROCESS"]
@@ -443,222 +453,6 @@ class tfDeepVisualInsight(StrategyAbstractClass):
         eval_epochs = list(range(EPOCH_START, EPOCH_END+1, EPOCH_PERIOD))
         for eval_epoch in eval_epochs:
             self.evaluator.save_epoch_eval(eval_epoch, N_NEIGHBORS, temporal_k=5, file_name="{}".format(EVALUATION_NAME))
-
-    def visualize_embedding(self):
-        self._preprocess()
-        self._train()
-        self._visualize()
-        self._evaluate()
-
-class Trustvis(StrategyAbstractClass):
-    def __init__(self, CONTENT_PATH, config):
-        super().__init__(CONTENT_PATH, config)
-        self._init()
-        self.VIS_METHOD = "DVI"
-    
-    def _init(self):
-        sys.path.append(self.CONTENT_PATH)
-        # # record output information
-        # now = time.strftime("%Y-%m-%d-%H_%M_%S", time.localtime(time.time())) 
-        # sys.stdout = open(os.path.join(self.CONTENT_PATH, now+".txt"), "w")
-
-        CLASSES = self.config["CLASSES"]
-        GPU_ID = self.config["GPU"]
-        EPOCH_START = self.config["EPOCH_START"]
-        EPOCH_END = self.config["EPOCH_END"]
-        EPOCH_PERIOD = self.config["EPOCH_PERIOD"]
-        EPOCH_NAME = self.config["EPOCH_NAME"]
-
-        # Training parameter (subject model)
-        TRAINING_PARAMETER = self.config["TRAINING"]
-        NET = TRAINING_PARAMETER["NET"]
-
-        # Training parameter (visualization model)
-        VISUALIZATION_PARAMETER = self.config["VISUALIZATION"]
-        
-        ENCODER_DIMS = VISUALIZATION_PARAMETER["ENCODER_DIMS"]
-        DECODER_DIMS = VISUALIZATION_PARAMETER["DECODER_DIMS"]
-
-        VIS_MODEL_NAME = 'vis'
-
-        # define hyperparameters
-        self.DEVICE = torch.device("cuda:{}".format(GPU_ID) if torch.cuda.is_available() else "cpu")
-
-        import Model.model as subject_model
-        net = eval("subject_model.{}()".format(NET))
-
-        self._data_provider = NormalDataProvider(self.CONTENT_PATH, net, EPOCH_START, EPOCH_END, EPOCH_PERIOD, device=self.DEVICE, classes=CLASSES, epoch_name=EPOCH_NAME, verbose=1)
-        self.model = VisModel(ENCODER_DIMS, DECODER_DIMS)
-        negative_sample_rate = 5
-        min_dist = .1
-        _a, _b = find_ab_params(1.0, min_dist)
-        umap_loss_fn = UmapLoss(negative_sample_rate, self.DEVICE, _a, _b, repulsion_strength=1.0)
-        recon_loss_fn = ReconstructionLoss(beta=1.0)
-
-        self.umap_fn = umap_loss_fn
-        self.recon_fn = recon_loss_fn
-        
-        self.projector = DVIProjector(vis_model=self.model, content_path=self.CONTENT_PATH, vis_model_name=VIS_MODEL_NAME, device=self.DEVICE)
-        self.vis = visualizer(self.data_provider, self.projector, 200, "tab10")
-        self.evaluator = Evaluator(self.data_provider, self.projector)
-        self.boundary_loss = BoundaryAwareLoss(umap_loss=self.umap_fn,device=self.DEVICE)
-
-    def _preprocess(self):
-        PREPROCESS = self.config["VISUALIZATION"]["PREPROCESS"]
-        # Training parameter (subject model)
-        TRAINING_PARAMETER = self.config["TRAINING"]
-        LEN = TRAINING_PARAMETER["train_num"]
-        # Training parameter (visualization model)
-        VISUALIZATION_PARAMETER = self.config["VISUALIZATION"]
-        B_N_EPOCHS = VISUALIZATION_PARAMETER["BOUNDARY"]["B_N_EPOCHS"]
-        L_BOUND = VISUALIZATION_PARAMETER["BOUNDARY"]["L_BOUND"]
-        if PREPROCESS:
-            self.data_provider._meta_data()
-            if B_N_EPOCHS >0:
-                self.data_provider._estimate_boundary(LEN//10, l_bound=L_BOUND)
-    
-    def _train(self):
-        EPOCH_START = self.config["EPOCH_START"]
-        EPOCH_END = self.config["EPOCH_END"]
-        EPOCH_PERIOD = self.config["EPOCH_PERIOD"]
-        VISUALIZATION_PARAMETER = self.config["VISUALIZATION"]
-        LAMBDA1 = VISUALIZATION_PARAMETER["LAMBDA1"]
-        LAMBDA2 = VISUALIZATION_PARAMETER["LAMBDA2"]
-        ENCODER_DIMS = VISUALIZATION_PARAMETER["ENCODER_DIMS"]
-        DECODER_DIMS = VISUALIZATION_PARAMETER["DECODER_DIMS"]
-        B_N_EPOCHS = VISUALIZATION_PARAMETER["BOUNDARY"]["B_N_EPOCHS"]
-        S_N_EPOCHS = VISUALIZATION_PARAMETER["S_N_EPOCHS"]
-        N_NEIGHBORS = VISUALIZATION_PARAMETER["N_NEIGHBORS"]
-        PATIENT = VISUALIZATION_PARAMETER["PATIENT"]
-        MAX_EPOCH = VISUALIZATION_PARAMETER["MAX_EPOCH"]
-        VIS_MODEL_NAME = VISUALIZATION_PARAMETER["VIS_MODEL_NAME"]
-        
-        start_flag = 1
-        prev_model = VisModel(ENCODER_DIMS, DECODER_DIMS)
-        prev_model.load_state_dict(self.model.state_dict())
-        for param in prev_model.parameters():
-            param.requires_grad = False
-        w_prev = dict(self.model.named_parameters())
-
-        for iteration in range(EPOCH_START, EPOCH_END+EPOCH_PERIOD, EPOCH_PERIOD):
-            # Define DVI Loss
-            if start_flag:
-                
-                temporal_loss_fn = DummyTemporalLoss(self.DEVICE)
-                criterion = DVILoss(self.umap_fn, self.recon_fn, temporal_loss_fn, lambd1=LAMBDA1, lambd2=0.0)
-                start_flag = 0
-            else:
-                # TODO AL mode, redefine train_representation
-                prev_data = self.data_provider.train_representation(iteration-EPOCH_PERIOD)
-                curr_data = self.data_provider.train_representation(iteration)
-                npr = find_neighbor_preserving_rate(prev_data, curr_data, N_NEIGHBORS)
-                self.temporal_fn = TemporalLoss(w_prev, self.DEVICE)
-                criterion = DVILoss(self.umap_fn, self.recon_fn, self.temporal_fn, lambd1=LAMBDA1, lambd2=LAMBDA2*npr)
-            # Define training parameters
-            optimizer = torch.optim.Adam(self.model.parameters(), lr=.01, weight_decay=1e-5)
-            lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=4, gamma=.1)
-            # Define Edge dataset
-            t0 = time.time()
-            spatial_cons = TrustvisSpatialEdgeConstructor(self.data_provider, iteration, S_N_EPOCHS, B_N_EPOCHS, N_NEIGHBORS, 0.7)
-            edge_to, edge_from, probs, feature_vectors, attention, b_edge_to, b_edge_from, b_probs = spatial_cons.construct()
-            # non-bon be 0
-            labels_non_boundary = np.zeros(len(edge_to))
-            # bon be 1
-            labels_boundary = np.ones(len(b_edge_to))
-
-            t1 = time.time()
-            print("length of boundary and pred_Same:",len(b_edge_to), len(edge_to))
-
-            print('complex-construct:', t1-t0)
-
-            probs = probs / (probs.max()+1e-3)
-            eliminate_zeros = probs > 1e-3    #1e-3
-            edge_to = edge_to[eliminate_zeros]
-            edge_from = edge_from[eliminate_zeros]
-            probs = probs[eliminate_zeros]
-            dataset = DVIDataHandler(edge_to, edge_from, feature_vectors, attention, labels_non_boundary)
-
-            n_samples = int(np.sum(S_N_EPOCHS * probs) // 1)
-            # chose sampler based on the number of dataset
-            if len(edge_to) > pow(2,24):
-                sampler = CustomWeightedRandomSampler(probs, n_samples, replacement=True)
-            else:
-                sampler = WeightedRandomSampler(probs, n_samples, replacement=True)
-
-            edge_loader = DataLoader(dataset, batch_size=2000, sampler=sampler, num_workers=8, prefetch_factor=10)
-
-            #################################################### for border start ############################################################
-            b_probs = b_probs / (b_probs.max()+1e-3)
-            b_eliminate_zeros = b_probs > 1e-3    #1e-3
-            b_edge_to = b_edge_to[b_eliminate_zeros]
-            b_edge_from = b_edge_from[b_eliminate_zeros]
-            b_probs = b_probs[b_eliminate_zeros]
-
-            b_dataset = DVIDataHandler(b_edge_to, b_edge_from, feature_vectors, attention,labels_boundary)
-            b_n_samples = int(np.sum(S_N_EPOCHS * b_probs) // 1)
-            print("b_n_samples",b_n_samples, n_samples)
-            if len(b_edge_to) > pow(2,24):
-                b_sampler = CustomWeightedRandomSampler(b_probs, b_n_samples, replacement=True)
-            else:
-                b_sampler = WeightedRandomSampler(b_probs, b_n_samples, replacement=True)
-
-            b_edge_loader = DataLoader(b_dataset, batch_size=2000, sampler=b_sampler, num_workers=8, prefetch_factor=10)
-
-            
-
-            #################################################### for border end  ############################################################
-
-
-            # combined_sampler = ShuffleConcatSampler(dataset, b_dataset, probs, b_probs, n_samples, b_n_samples)
-            combined_dataset = ConcatDataset([dataset, b_dataset])
-
-            combine_sampler = WeightedRandomSampler(np.concatenate((probs,b_probs),axis=0), n_samples+b_n_samples, replacement=True)
-            combined_loader = DataLoader(combined_dataset, batch_size=2000, sampler=combine_sampler, num_workers=8)
-
-            ########################################################################################################################
-            #                                                       TRAIN                                                          #
-            ########################################################################################################################
-            trainer = TrustTrainer(self.model,criterion, optimizer, lr_scheduler, edge_loader=edge_loader, combined_loader=combined_loader, boundary_loss=self.boundary_loss, DEVICE=DEVICE)
-            # trainer = DVITrainer(self.model, criterion, optimizer, lr_scheduler,edge_loader=edge_loader, DEVICE=self.DEVICE)
-
-            t2=time.time()
-            trainer.train(PATIENT, MAX_EPOCH)
-            t3 = time.time()
-
-            # save result
-            save_dir = self.data_provider.model_path
-            trainer.record_time(save_dir, "time_{}.json".format(VIS_MODEL_NAME), "complex_construction", str(iteration), t1-t0)
-            trainer.record_time(save_dir, "time_{}.json".format(VIS_MODEL_NAME), "training", str(iteration), t3-t2)
-            save_dir = os.path.join(self.data_provider.model_path, "Epoch_{}".format(iteration))
-            trainer.save(save_dir=save_dir, file_name="{}".format(VIS_MODEL_NAME))
-
-            prev_model.load_state_dict(self.model.state_dict())
-            for param in prev_model.parameters():
-                param.requires_grad = False
-            w_prev = dict(prev_model.named_parameters())
-    
-    def _visualize(self):
-        EPOCH_START = self.config["EPOCH_START"]
-        EPOCH_END = self.config["EPOCH_END"]
-        EPOCH_PERIOD = self.config["EPOCH_PERIOD"]
-
-        save_dir = os.path.join(self.data_provider.content_path, "img")
-        if not os.path.exists(save_dir):
-            os.mkdir(save_dir)
-        for i in range(EPOCH_START, EPOCH_END+1, EPOCH_PERIOD):
-            self.vis.savefig(i, path=os.path.join(save_dir, "{}_{}.png".format(self.VIS_METHOD, i)))
-
-    def _evaluate(self):
-        EPOCH_START = self.config["EPOCH_START"]
-        EPOCH_END = self.config["EPOCH_END"]
-        EPOCH_PERIOD = self.config["EPOCH_PERIOD"]
-        VISUALIZATION_PARAMETER = self.config["VISUALIZATION"]
-        EVALUATION_NAME = VISUALIZATION_PARAMETER["EVALUATION_NAME"]
-        N_NEIGHBORS = VISUALIZATION_PARAMETER["N_NEIGHBORS"]
-        eval_epochs = list(range(EPOCH_START, EPOCH_END+1, EPOCH_PERIOD))
-        for eval_epoch in eval_epochs:
-            self.evaluator.save_epoch_eval(eval_epoch, N_NEIGHBORS, temporal_k=5, file_name="{}".format(EVALUATION_NAME))
-
 
     def visualize_embedding(self):
         self._preprocess()
@@ -1281,6 +1075,446 @@ class TimeVisDenseAL(DenseAL):
         self._visualize(iteration)
 
 
+
+class TrustActiveLearningDVI(StrategyAbstractClass):
+    def __init__(self, CONTENT_PATH, config):
+        super().__init__(CONTENT_PATH, config)
+        self._init()
+        self.VIS_METHOD = "DVI"
+    
+    def _init(self):
+        sys.path.append(self.CONTENT_PATH)
+        # # record output information
+        # now = time.strftime("%Y-%m-%d-%H_%M_%S", time.localtime(time.time())) 
+        # sys.stdout = open(os.path.join(self.CONTENT_PATH, now+".txt"), "w")
+
+        CLASSES = self.config["CLASSES"]
+        GPU_ID = self.config["GPU"]
+        EPOCH_START = self.config["EPOCH_START"]
+        EPOCH_END = self.config["EPOCH_END"]
+        EPOCH_PERIOD = self.config["EPOCH_PERIOD"]
+        EPOCH_NAME = self.config["EPOCH_NAME"]
+
+        # Training parameter (subject model)
+        TRAINING_PARAMETER = self.config["TRAINING"]
+        NET = TRAINING_PARAMETER["NET"]
+
+        # Training parameter (visualization model)
+        VISUALIZATION_PARAMETER = self.config["VISUALIZATION"]
+        
+        ENCODER_DIMS = VISUALIZATION_PARAMETER["ENCODER_DIMS"]
+        DECODER_DIMS = VISUALIZATION_PARAMETER["DECODER_DIMS"]
+
+        VIS_MODEL_NAME = VISUALIZATION_PARAMETER["VIS_MODEL_NAME"]
+        LAMBDA1 = VISUALIZATION_PARAMETER["LAMBDA1"]
+
+        # define hyperparameters
+        self.DEVICE = torch.device("cuda:{}".format(GPU_ID) if torch.cuda.is_available() else "cpu")
+
+        import Model.model as subject_model
+        net = eval("subject_model.{}()".format(NET))
+
+        self._data_provider = NormalDataProvider(self.CONTENT_PATH, net, EPOCH_START, EPOCH_END, EPOCH_PERIOD, device=self.DEVICE, classes=CLASSES, epoch_name=EPOCH_NAME, verbose=1)
+        self.model = VisModel(ENCODER_DIMS, DECODER_DIMS)
+        negative_sample_rate = 5
+        min_dist = .1
+        _a, _b = find_ab_params(1.0, min_dist)
+        umap_loss_fn = UmapLoss(negative_sample_rate, self.DEVICE, _a, _b, repulsion_strength=1.0)
+        recon_loss_fn = ReconstructionLoss(beta=1.0)
+        temporal_loss_fn = DummyTemporalLoss(self.DEVICE)
+        
+        self.umap_fn = umap_loss_fn
+        self.recon_fn = recon_loss_fn
+        self.temporal_fn = temporal_loss_fn
+        self.single_loss_fn = SingleVisLoss(umap_loss_fn, recon_loss_fn, lambd=LAMBDA1)
+        self.projector = DVIProjector(vis_model=self.model, content_path=self.CONTENT_PATH, vis_model_name=VIS_MODEL_NAME, device=self.DEVICE)
+        self.vis = visualizer(self.data_provider, self.projector, 200, "tab10")
+        self.evaluator = Evaluator(self.data_provider, self.projector)
+
+
+
+    def _preprocess(self):
+        PREPROCESS = self.config["VISUALIZATION"]["PREPROCESS"]
+        # Training parameter (subject model)
+        TRAINING_PARAMETER = self.config["TRAINING"]
+        LEN = TRAINING_PARAMETER["train_num"]
+        # Training parameter (visualization model)
+        VISUALIZATION_PARAMETER = self.config["VISUALIZATION"]
+        B_N_EPOCHS = VISUALIZATION_PARAMETER["BOUNDARY"]["B_N_EPOCHS"]
+        L_BOUND = VISUALIZATION_PARAMETER["BOUNDARY"]["L_BOUND"]
+        if PREPROCESS:
+            self.data_provider._meta_data()
+            if B_N_EPOCHS >0:
+                self.data_provider._estimate_boundary(LEN//10, l_bound=L_BOUND)
+    
+    def _train(self):
+        EPOCH_START = self.config["EPOCH_START"]
+        EPOCH_END = self.config["EPOCH_END"]
+        EPOCH_PERIOD = self.config["EPOCH_PERIOD"]
+        VISUALIZATION_PARAMETER = self.config["VISUALIZATION"]
+        LAMBDA1 = VISUALIZATION_PARAMETER["LAMBDA1"]
+        LAMBDA2 = VISUALIZATION_PARAMETER["LAMBDA2"]
+        ENCODER_DIMS = VISUALIZATION_PARAMETER["ENCODER_DIMS"]
+        DECODER_DIMS = VISUALIZATION_PARAMETER["DECODER_DIMS"]
+        B_N_EPOCHS = VISUALIZATION_PARAMETER["BOUNDARY"]["B_N_EPOCHS"]
+        S_N_EPOCHS = VISUALIZATION_PARAMETER["S_N_EPOCHS"]
+        N_NEIGHBORS = VISUALIZATION_PARAMETER["N_NEIGHBORS"]
+        PATIENT = VISUALIZATION_PARAMETER["PATIENT"]
+        MAX_EPOCH = VISUALIZATION_PARAMETER["MAX_EPOCH"]
+        VIS_MODEL_NAME = VISUALIZATION_PARAMETER["VIS_MODEL_NAME"]
+    
+        
+        start_flag = 1
+        prev_model = VisModel(ENCODER_DIMS, DECODER_DIMS)
+        prev_model.load_state_dict(self.model.state_dict())
+        for param in prev_model.parameters():
+            param.requires_grad = False
+        w_prev = dict(self.model.named_parameters())
+
+        for iteration in range(EPOCH_START, EPOCH_END+EPOCH_PERIOD, EPOCH_PERIOD):
+            # Define DVI Loss
+            if start_flag:
+                criterion = DVILoss(self.umap_fn, self.recon_fn, self.temporal_fn, lambd1=LAMBDA1, lambd2=0.0, device=self.DEVICE)
+                start_flag = 0
+            else:
+                # TODO AL mode, redefine train_representation
+                prev_data = self.data_provider.train_representation(iteration-EPOCH_PERIOD)
+                curr_data = self.data_provider.train_representation(iteration)
+                npr = find_neighbor_preserving_rate(prev_data, curr_data, N_NEIGHBORS)
+               
+                self.temporal_fn = TemporalLoss(w_prev, self.DEVICE)
+                lambd2_tensor = torch.from_numpy(LAMBDA2 * npr).to(self.DEVICE)
+                criterion = DVILoss(self.umap_fn, self.recon_fn, self.temporal_fn, lambd1=LAMBDA1, lambd2=lambd2_tensor, device=self.DEVICE)
+
+            vis = visualizer(self.data_provider, self.projector, 200, "tab10")
+            grid_high, grid_emd ,border = vis.get_epoch_decision_view(iteration,400,None, True)
+            train_data_embedding = self.projector.batch_project(iteration, self.data_provider.train_representation(iteration))
+            from sklearn.neighbors import NearestNeighbors
+            import numpy as np
+
+    # 假设 train_data_embedding 和 grid_emd 都是 numpy arrays，每一行都是一个点
+            threshold = 5  # hyper-peremeter
+
+    # use train_data_embedding initialize NearestNeighbors 
+            nbrs = NearestNeighbors(n_neighbors=1, algorithm='ball_tree').fit(train_data_embedding)
+    # for each grid_emd，find train_data_embedding nearest sample
+            distances, indices = nbrs.kneighbors(grid_emd)
+    # filter by distance
+            mask = distances.ravel() < threshold
+            selected_indices = np.arange(grid_emd.shape[0])[mask]
+
+            grid_high_mask = grid_high[selected_indices]
+
+            skeleton_generator = CenterSkeletonGenerator(self.data_provider,iteration,0.5,500)
+            high_bom, high_rad = skeleton_generator.center_skeleton_genertaion()
+
+ 
+       
+    # Define training parameters
+            optimizer = torch.optim.Adam(self.model.parameters(), lr=.01, weight_decay=1e-5)
+            lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=4, gamma=.1)
+    # Define Edge dataset
+            t0 = time.time()
+            spatial_cons = OriginSingleEpochSpatialEdgeConstructor(self.data_provider, iteration, S_N_EPOCHS, B_N_EPOCHS, N_NEIGHBORS)
+            edge_to, edge_from, probs, feature_vectors, attention = spatial_cons.construct()
+            t1 = time.time()
+    
+            probs = probs / (probs.max()+1e-3)
+            eliminate_zeros = probs>1e-3
+            edge_to = edge_to[eliminate_zeros]
+            edge_from = edge_from[eliminate_zeros]
+            probs = probs[eliminate_zeros]
+            
+            dataset = DVIDataHandler(edge_to, edge_from, feature_vectors, attention, w_prev)
+
+            n_samples = int(np.sum(S_N_EPOCHS * probs) // 1)
+            # chose sampler based on the number of dataset
+            if len(edge_to) > pow(2,24):
+                sampler = CustomWeightedRandomSampler(probs, n_samples, replacement=True)
+            else:
+                sampler = WeightedRandomSampler(probs, n_samples, replacement=True)
+            edge_loader = DataLoader(dataset, batch_size=2000, sampler=sampler, num_workers=8, prefetch_factor=10)
+
+
+            ########################################################################################################################
+            #                                                       TRAIN                                                          #
+            ########################################################################################################################
+
+
+            file_path = os.path.join(self.data_provider.content_path, "Model", "Epoch_{}".format(iteration), "{}.pth".format(VIS_MODEL_NAME))
+            save_model = torch.load(file_path, map_location="cpu")
+            self.model.load_state_dict(save_model["state_dict"])
+
+            
+            trainer = DVIALMODITrainer(self.model, criterion, optimizer, 
+                               lr_scheduler, edge_loader=edge_loader, DEVICE=self.DEVICE, 
+                               grid_high_mask=grid_high_mask, high_bom=high_bom, high_rad=high_rad,
+                                 iteration=iteration, data_provider=self.data_provider, prev_model=prev_model, 
+                                 S_N_EPOCHS=S_N_EPOCHS, B_N_EPOCHS=B_N_EPOCHS, N_NEIGHBORS=N_NEIGHBORS)
+
+            t2=time.time()
+            trainer.train(PATIENT, MAX_EPOCH)
+            t3 = time.time()
+
+            # save result
+            save_dir = self.data_provider.model_path
+            trainer.record_time(save_dir, "time_{}.json".format(VIS_MODEL_NAME), "complex_construction", str(iteration), t1-t0)
+            trainer.record_time(save_dir, "time_{}.json".format(VIS_MODEL_NAME), "training", str(iteration), t3-t2)
+            save_dir = os.path.join(self.data_provider.model_path, "Epoch_{}".format(iteration))
+            trainer.save(save_dir=save_dir, file_name="{}".format(VIS_MODEL_NAME))
+
+            prev_model.load_state_dict(self.model.state_dict())
+            for param in prev_model.parameters():
+                param.requires_grad = False
+            w_prev = dict(prev_model.named_parameters())
+
+   
+    def _visualize(self):
+        EPOCH_START = self.config["EPOCH_START"]
+        EPOCH_END = self.config["EPOCH_END"]
+        EPOCH_PERIOD = self.config["EPOCH_PERIOD"]
+        VISUALIZATION_PARAMETER = self.config["VISUALIZATION"]
+        VIS_MODEL_NAME = VISUALIZATION_PARAMETER["VIS_MODEL_NAME"]
+
+        save_dir = os.path.join(self.data_provider.content_path, "img")
+        if not os.path.exists(save_dir):
+            os.mkdir(save_dir)
+        for i in range(EPOCH_START, EPOCH_END+1, EPOCH_PERIOD):
+            self.vis.savefig(i, path=os.path.join(save_dir, "{}_{}_{}.png".format(VIS_MODEL_NAME, i, VIS_METHOD)))
+
+    def _evaluate(self):
+        EPOCH_START = self.config["EPOCH_START"]
+        EPOCH_END = self.config["EPOCH_END"]
+        EPOCH_PERIOD = self.config["EPOCH_PERIOD"]
+        VISUALIZATION_PARAMETER = self.config["VISUALIZATION"]
+        EVALUATION_NAME = VISUALIZATION_PARAMETER["EVALUATION_NAME"]
+        N_NEIGHBORS = VISUALIZATION_PARAMETER["N_NEIGHBORS"]
+        eval_epochs = list(range(EPOCH_START, EPOCH_END+1, EPOCH_PERIOD))
+        for eval_epoch in eval_epochs:
+            self.evaluator.save_epoch_eval(eval_epoch, N_NEIGHBORS, temporal_k=5, file_name="{}".format(EVALUATION_NAME))
+
+
+    def visualize_embedding(self):
+        self._preprocess()
+        self._train()
+        self._visualize()
+        self._evaluate()
+
+class TrustProxyDVI(StrategyAbstractClass):
+    def __init__(self, CONTENT_PATH, config):
+        super().__init__(CONTENT_PATH, config)
+        self._init()
+        self.VIS_METHOD = "DVI"
+    
+    def _init(self):
+        sys.path.append(self.CONTENT_PATH)
+        # # record output information
+        # now = time.strftime("%Y-%m-%d-%H_%M_%S", time.localtime(time.time())) 
+        # sys.stdout = open(os.path.join(self.CONTENT_PATH, now+".txt"), "w")
+
+        CLASSES = self.config["CLASSES"]
+        GPU_ID = self.config["GPU"]
+        EPOCH_START = self.config["EPOCH_START"]
+        EPOCH_END = self.config["EPOCH_END"]
+        EPOCH_PERIOD = self.config["EPOCH_PERIOD"]
+        EPOCH_NAME = self.config["EPOCH_NAME"]
+
+        # Training parameter (subject model)
+        TRAINING_PARAMETER = self.config["TRAINING"]
+        NET = TRAINING_PARAMETER["NET"]
+
+        # Training parameter (visualization model)
+        VISUALIZATION_PARAMETER = self.config["VISUALIZATION"]
+        
+        ENCODER_DIMS = VISUALIZATION_PARAMETER["ENCODER_DIMS"]
+        DECODER_DIMS = VISUALIZATION_PARAMETER["DECODER_DIMS"]
+
+        VIS_MODEL_NAME = "proxy"
+        LAMBDA1 = VISUALIZATION_PARAMETER["LAMBDA1"]
+
+        # define hyperparameters
+        self.DEVICE = torch.device("cuda:{}".format(GPU_ID) if torch.cuda.is_available() else "cpu")
+
+        import Model.model as subject_model
+        self.net = eval("subject_model.{}()".format(NET))
+
+        self._data_provider = NormalDataProvider(self.CONTENT_PATH, self.net, EPOCH_START, EPOCH_END, EPOCH_PERIOD, device=self.DEVICE, classes=CLASSES, epoch_name=EPOCH_NAME, verbose=1)
+        self.model = VisModel(ENCODER_DIMS, DECODER_DIMS)
+        negative_sample_rate = 5
+        min_dist = .1
+        _a, _b = find_ab_params(1.0, min_dist)
+        umap_loss_fn = UmapLoss(negative_sample_rate, self.DEVICE, _a, _b, repulsion_strength=1.0)
+        recon_loss_fn = ReconstructionLoss(beta=1.0)
+        temporal_loss_fn = DummyTemporalLoss(self.DEVICE)
+        
+        self.umap_fn = umap_loss_fn
+        self.recon_fn = recon_loss_fn
+        self.temporal_fn = temporal_loss_fn
+        self.single_loss_fn = SingleVisLoss(umap_loss_fn, recon_loss_fn, lambd=LAMBDA1)
+        self.projector = DVIProjector(vis_model=self.model, content_path=self.CONTENT_PATH, vis_model_name=VIS_MODEL_NAME, device=self.DEVICE)
+        self.vis = visualizer(self.data_provider, self.projector, 200, "tab10")
+        self.evaluator = Evaluator(self.data_provider, self.projector)
+
+
+
+    def _preprocess(self):
+        PREPROCESS = self.config["VISUALIZATION"]["PREPROCESS"]
+        # Training parameter (subject model)
+        TRAINING_PARAMETER = self.config["TRAINING"]
+        LEN = TRAINING_PARAMETER["train_num"]
+        # Training parameter (visualization model)
+        VISUALIZATION_PARAMETER = self.config["VISUALIZATION"]
+        B_N_EPOCHS = VISUALIZATION_PARAMETER["BOUNDARY"]["B_N_EPOCHS"]
+        L_BOUND = VISUALIZATION_PARAMETER["BOUNDARY"]["L_BOUND"]
+        if PREPROCESS:
+            self.data_provider._meta_data()
+            if B_N_EPOCHS >0:
+                self.data_provider._estimate_boundary(LEN//10, l_bound=L_BOUND)
+    
+    def _train(self):
+        EPOCH_START = self.config["EPOCH_START"]
+        EPOCH_END = self.config["EPOCH_END"]
+        EPOCH_PERIOD = self.config["EPOCH_PERIOD"]
+        VISUALIZATION_PARAMETER = self.config["VISUALIZATION"]
+        LAMBDA1 = VISUALIZATION_PARAMETER["LAMBDA1"]
+        LAMBDA2 = VISUALIZATION_PARAMETER["LAMBDA2"]
+        ENCODER_DIMS = VISUALIZATION_PARAMETER["ENCODER_DIMS"]
+        DECODER_DIMS = VISUALIZATION_PARAMETER["DECODER_DIMS"]
+        B_N_EPOCHS = VISUALIZATION_PARAMETER["BOUNDARY"]["B_N_EPOCHS"]
+        S_N_EPOCHS = VISUALIZATION_PARAMETER["S_N_EPOCHS"]
+        N_NEIGHBORS = VISUALIZATION_PARAMETER["N_NEIGHBORS"]
+        PATIENT = VISUALIZATION_PARAMETER["PATIENT"]
+        MAX_EPOCH = VISUALIZATION_PARAMETER["MAX_EPOCH"]
+        VIS_MODEL_NAME = "proxy"
+    
+        
+        start_flag = 1
+        prev_model = VisModel(ENCODER_DIMS, DECODER_DIMS)
+        prev_model.load_state_dict(self.model.state_dict())
+        for param in prev_model.parameters():
+            param.requires_grad = False
+        w_prev = dict(self.model.named_parameters())
+
+        for iteration in range(EPOCH_START, EPOCH_END+EPOCH_PERIOD, EPOCH_PERIOD):
+            # Define DVI Loss
+            if start_flag:
+                criterion = DVILoss(self.umap_fn, self.recon_fn, self.temporal_fn, lambd1=LAMBDA1, lambd2=0.0, device=self.DEVICE)
+                start_flag = 0
+            else:
+                # TODO AL mode, redefine train_representation
+                prev_data = self.data_provider.train_representation(iteration-EPOCH_PERIOD)
+                curr_data = self.data_provider.train_representation(iteration)
+                npr = find_neighbor_preserving_rate(prev_data, curr_data, N_NEIGHBORS)
+               
+                self.temporal_fn = TemporalLoss(w_prev, self.DEVICE)
+                lambd2_tensor = torch.from_numpy(LAMBDA2 * npr).to(self.DEVICE)
+                criterion = DVILoss(self.umap_fn, self.recon_fn, self.temporal_fn, lambd1=LAMBDA1, lambd2=lambd2_tensor, device=self.DEVICE)
+
+
+ 
+       
+    # Define training parameters
+            optimizer = torch.optim.Adam(self.model.parameters(), lr=.01, weight_decay=1e-5)
+            lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=4, gamma=.1)
+    # Define Edge dataset
+            t0 = time.time()
+    ###### generate the skeleton
+            skeleton_generator = SkeletonGenerator(self.data_provider,EPOCH_START,base_num_samples=250)
+    #TODO different strategy
+    # high_bom2 = skeleton_generator.skeleton_gen()
+    # high_bom = skeleton_generator.skeleton_gen_use_perturb()
+    # high_bom = skeleton_generator.skeleton_gen_use_perturb(_epsilon=1e-5, _per=0.7)
+            skeleton_generator = CenterSkeletonGenerator(self.data_provider,EPOCH_START,1)
+    
+    ## gennerate skeleton
+            high_bom,_ = skeleton_generator.center_skeleton_genertaion()
+    
+          
+    
+
+            spatial_cons = ProxyBasedSpatialEdgeConstructor(self.data_provider, iteration, S_N_EPOCHS, B_N_EPOCHS, N_NEIGHBORS, self.net,high_bom)
+            edge_to, edge_from, probs, feature_vectors, attention = spatial_cons.construct()
+            t1 = time.time()
+    
+            probs = probs / (probs.max()+1e-3)
+            eliminate_zeros = probs>1e-3
+            edge_to = edge_to[eliminate_zeros]
+            edge_from = edge_from[eliminate_zeros]
+            probs = probs[eliminate_zeros]
+            
+            dataset = DVIDataHandler(edge_to, edge_from, feature_vectors, attention, w_prev)
+
+            n_samples = int(np.sum(S_N_EPOCHS * probs) // 1)
+            # chose sampler based on the number of dataset
+            if len(edge_to) > pow(2,24):
+                sampler = CustomWeightedRandomSampler(probs, n_samples, replacement=True)
+            else:
+                sampler = WeightedRandomSampler(probs, n_samples, replacement=True)
+            edge_loader = DataLoader(dataset, batch_size=2000, sampler=sampler, num_workers=8, prefetch_factor=10)
+
+
+            ########################################################################################################################
+            #                                                       TRAIN                                                          #
+            ########################################################################################################################
+
+            
+            trainer = DVITrainer(self.model, criterion, optimizer, lr_scheduler, edge_loader=edge_loader, DEVICE=self.DEVICE)
+
+            t2=time.time()
+            trainer.train(PATIENT, MAX_EPOCH)
+            t3 = time.time()
+
+            # save result
+            save_dir = self.data_provider.model_path
+            trainer.record_time(save_dir, "time_{}.json".format(VIS_MODEL_NAME), "complex_construction", str(iteration), t1-t0)
+            trainer.record_time(save_dir, "time_{}.json".format(VIS_MODEL_NAME), "training", str(iteration), t3-t2)
+            save_dir = os.path.join(self.data_provider.model_path, "Epoch_{}".format(iteration))
+            trainer.save(save_dir=save_dir, file_name="{}".format(VIS_MODEL_NAME))
+
+            prev_model.load_state_dict(self.model.state_dict())
+            for param in prev_model.parameters():
+                param.requires_grad = False
+            w_prev = dict(prev_model.named_parameters())
+
+   
+    def _visualize(self):
+        EPOCH_START = self.config["EPOCH_START"]
+        EPOCH_END = self.config["EPOCH_END"]
+        EPOCH_PERIOD = self.config["EPOCH_PERIOD"]
+        VISUALIZATION_PARAMETER = self.config["VISUALIZATION"]
+        VIS_MODEL_NAME = VISUALIZATION_PARAMETER["VIS_MODEL_NAME"]
+
+
+        now = time.strftime("%Y-%m-%d-%H_%M_%S", time.localtime(time.time())) 
+        vis = visualizer(self.data_provider, self.projector, 200, "tab10")
+        save_dir = os.path.join(self.data_provider.content_path, "img")
+        if not os.path.exists(save_dir):
+            os.mkdir(save_dir)
+        for i in range(EPOCH_START, EPOCH_END+1, EPOCH_PERIOD):
+            vis.savefig(i, path=os.path.join(save_dir, "{}_{}_{}_{}.png".format(VIS_MODEL_NAME, i, VIS_METHOD,now)))
+
+        
+
+    def _evaluate(self):
+        EPOCH_START = self.config["EPOCH_START"]
+        EPOCH_END = self.config["EPOCH_END"]
+        EPOCH_PERIOD = self.config["EPOCH_PERIOD"]
+        VISUALIZATION_PARAMETER = self.config["VISUALIZATION"]
+        EVALUATION_NAME = VISUALIZATION_PARAMETER["EVALUATION_NAME"]
+        N_NEIGHBORS = VISUALIZATION_PARAMETER["N_NEIGHBORS"]
+        eval_epochs = list(range(EPOCH_START, EPOCH_END+1, EPOCH_PERIOD))
+        for eval_epoch in eval_epochs:
+            self.evaluator.save_epoch_eval(eval_epoch, N_NEIGHBORS, temporal_k=5, file_name="{}".format(EVALUATION_NAME))
+
+
+    def visualize_embedding(self):
+        self._preprocess()
+        self._train()
+        self._visualize()
+        self._evaluate()
+
+
+
 if __name__ == "__main__":
     import json
     CONTENT_PATH = "/home/xiangling/data/speech_comment"
@@ -1314,3 +1548,4 @@ if __name__ == "__main__":
     for iteration in range(1,5,1):
         resume_iter = iteration-1 if iteration > start_i else -1
         dvi_al.visualize_embedding(iteration, resume_iter)
+

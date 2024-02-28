@@ -9,62 +9,10 @@ You may obtain a copy of the License at
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
+See the License for the specific language governin g permissions and
 limitations under the License.
 ==============================================================================*/
-declare global {
-  interface Window {
-    hiddenBackground: boolean | false,
-    DVIDataList: any,
-    lineGeomertryList: any,
-    iteration: number,
-    properties: any,
-    isFilter: boolean | false,
-    customSelection: any,
-    checkboxDom: any,
-    isAdjustingSel: boolean | false,
-    scene: any,
-    renderer: any,
-    suggestionIndicates: any,
-
-    unLabelData: any,
-    testingData: any,
-    labeledData: any,
-
-    nowShowIndicates: any,
-    sceneBackgroundImg: any,
-    customMetadata: any,
-
-    queryResPointIndices: any,
-    alQueryResPointIndices: any,
-    previousIndecates: any,
-    previousAnormalIndecates: any,
-    queryResAnormalIndecates: any,
-    queryResAnormalCleanIndecates: any,
-    alSuggestionIndicates: any,
-    alSuggestLabelList: any,
-    alSuggestScoreList: any,
-    previousHover: number,
-
-    allResPositions: any,
-    modelMath: string,
-    tSNETotalIter: number,
-    taskType: string,
-    selectedStack: any,
-    ipAddress: string,
-    d3: any,
-    treejson: any,
-
-    rejectIndicates: any,
-    acceptIndicates: any,
-
-    acceptInputList: any,
-    rejectInputList: any,
-    flagindecatesList: any,
-    selectedTotalEpoch: number
-  }
-}
-
+import './globalState';
 import { PolymerElement } from '@polymer/polymer';
 import { customElement, observe, property } from '@polymer/decorators';
 import * as THREE from 'three';
@@ -114,6 +62,8 @@ import * as knn from './knn';
 import * as logging from './logging';
 import * as util from './util';
 import { MouseMode } from './scatterPlot';
+import{ getCurrentSessionState, updateSessionStateForInstance, getIsAnimating, getTSNETotalIter, getLastIteration, getScene, getHiddenBackground, getHighlightedPointIndices, getConfChangeIndices, getNowShowIndicates, getProperties, getPreviousHover, getAlQueryResPointIndices, getAllResPositions, getCurrentFocus, getPredChangeIndices, getSelectedTotalEpoch, getIteration, getIsAdjustingSel, updateStateForInstance, getAlSuggestLabelList, getFlagindecatesList,getQueryResAnormalCleanIndecates, getLineGeomertryList, getAcceptInputList, getAlSuggestScoreList, getRejectInputList, getTaskType, getAcceptIndicates, getQueryResAnormalIndecates, getCustomSelection, getModelMath, getCheckBoxDom, getQueryResPointIndices, getRejectIndicates, getPreviousIndecates } from './globalState';
+
 
 /**
  * The minimum number of dimensions the data should have to automatically
@@ -129,7 +79,7 @@ const INDEX_METADATA_FIELD = '__index__';
 const initialURLQueryString = window.location.search;
 
 @customElement('vz-projector')
-class Projector
+export class Projector
   extends LegacyElementMixin(PolymerElement)
   implements ProjectorEventContext {
   static readonly template = template;
@@ -166,19 +116,41 @@ class Projector
   showlabeled: boolean = true;
 
   @property({ type: Boolean })
-  showUnlabeled: boolean = true;
+  showUnlabeled: boolean = false;
 
   @property({ type: Boolean })
   showTesting: boolean = false;
+
+  @property({ type: Boolean })
+  showVisError: boolean = false;
+
+  @property({ type: Boolean })
+  fixVisError: boolean = false;
+
+  @property({ type: Boolean })
+  highlightChange: boolean = false;
+
+  @property({ type: Boolean })
+  highlightConfChange: boolean = false;
+
   @property({ type: Boolean })
   _showNotAvaliable: boolean = false
 
-  @property({type: Boolean})
-  showUnlabeledCheckbox: boolean = true
+  @property({ type: Boolean })
+  showUnlabeledCheckbox: boolean = false
 
+  @property({ type: Number })
+  confEditorInput: number;
+
+  @property({ type: Number })
+  instanceId: number;
+
+  @property({type:Boolean})
+  isContraVis: boolean
   // The working subset of the data source's original data set.
   dataSet: DataSet;
   iteration: number;
+  last_iteration: number;
   private selectionChangedListeners: SelectionChangedListener[];
   private hoverListeners: HoverListener[];
   private projectionChangedListeners: ProjectionChangedListener[];
@@ -221,14 +193,19 @@ class Projector
   private intervalFlag: boolean
 
   private registered: boolean
+  private showConfChangeButton: HTMLButtonElement;
+  private confChangeInput: number;
 
 
-
-
-
+  constructor() {
+    super();
+    console.log('projector Constructor called');
+    // other constructor code
+}
 
   async ready() {
     super.ready();
+    console.log('projecotr Ready method called');
     logging.setDomContainer(this as HTMLElement);
     this.analyticsLogger = new AnalyticsLogger(
       this.pageViewLogging,
@@ -262,15 +239,25 @@ class Projector
     this.inspectorPanel.initialize(this, this as ProjectorEventContext);
     this.projectionsPanel.initialize(this);
     this.bookmarkPanel.initialize(this, this as ProjectorEventContext);
+    if (!this.isContraVis) {
+    this.showConfChangeButton = this.$$('.show-button') as HTMLButtonElement;
+    this.showConfChangeButton.disabled = false;
+    }
     this.setupUIControls();
     this.initializeDataProvider();
+   
     this.d3loader()
     this.iteration = 0;
+    this.last_iteration = 1;
     this.currentIteration = 0
 
     this.showlabeled = true
-    this.showUnlabeled = true
+    this.showUnlabeled = false
     this.showTesting = false
+    this.showVisError = false
+    this.fixVisError = false
+    this.highlightChange = false
+    this.highlightConfChange = false;
 
     this.registered = false
 
@@ -296,72 +283,76 @@ class Projector
   d3loader() {
     let that = this
     new Promise((resolve) => {
-      // let url = "http://172.26.191.173:81/d3.v5.min.js"
       let url = "https://d3js.org/d3.v5.min.js"
+
       let script = document.createElement('script')
       script.setAttribute('src', url)
 
       script.onload = () => {
         resolve(true)
+        console.log("d3loader")
         that.initialTree()
       }
       document.body.append(script)
     })
   }
+// d3loader function
 
 
-  async initialTree(only?:number,needRemove?:boolean) {
-    // this.d3loader()
 
-    const d3 = window.d3;
+  async initialTree(only?: number, needRemove?: boolean) {
+     const d3 = window.d3
+    //  // Assume you have a container element for each instance's SVG
+    let curr_id = this.instanceId
+      // Create an SVG element for this instance
+    let svgDom: any = this.$$("#mysvg-"+curr_id);
 
-    let svgDom: any = this.$$("#mysvggg")
-
-    
+ 
 
     while (svgDom?.firstChild) {
       svgDom.removeChild(svgDom.lastChild);
     }
-    if(needRemove){
+    if (needRemove) {
       return
     }
 
-    console.log('isOnly?',only)
-
-    
-
-    // document.body.append(svgDom)
+  
 
     let headers = new Headers();
-    await fetch(`http://${window.sessionStorage.ipAddress}/get_itertaion_structure?path=${window.sessionStorage.content_path}&method=${window.sessionStorage.vis_method}&setting=${window.sessionStorage.selectedSetting}`, {
+    await fetch(`http://${window.sessionStorage.ipAddress}/get_itertaion_structure?path=${window.sessionStorage.content_path}`, {
       method: 'POST',
       headers: headers,
       mode: 'cors'
     })
       .then(response => response.json())
       .then(res => {
-        if(only){
-          res.structure = [{value:only,name:only,pid:""}]
+
+        if (only) {
+          res.structure = [{ value: only, name: only, pid: "" }]
         }
         let total = res.structure?.length
-        res.structure.length = window.selectedTotalEpoch
-        window.treejson = res.structure
+        res.structure.length = getSelectedTotalEpoch(this.instanceId)
+        updateStateForInstance(this.instanceId, { treejson: res.structure })
+        // this.state.treejson = res.structure
 
         let data = res.structure
-        
-        if(only){
+        if (only) {
 
         }
 
         function tranListToTreeData(arr) {
+
           const newArr = []
+          // 1. 构建一个字典：能够快速根据id找到对象。
           const map = {}
           // {
           //   '01': {id:"01", pid:"",   "name":"老王",children: [] },
           //   '02': {id:"02", pid:"01", "name":"小张",children: [] },
           // }
           arr.forEach(item => {
+            // 为了计算方便，统一添加children
             item.children = []
+            // 构建一个字典
             const key = item.value
             map[key] = item
           })
@@ -380,43 +371,38 @@ class Projector
 
           return newArr
         }
+    
         data = tranListToTreeData(data)[0]
+        console.log("next1")
         var margin = 50;
         var svg = d3.select(svgDom);
         var width = svg.attr("width");
         var height = svg.attr("height");
-
+        console.log("next2")
         //create group
         var g = svg.append("g")
           .attr("transform", "translate(" + margin + "," + 20 + ")");
 
-
+          console.log("next3")
         //create layer layout
         var hierarchyData = d3.hierarchy(data)
           .sum(function (d, i) {
             return d.value;
           });
-        //    nodes attributes:
-        //        node.data - data.
-        //        node.depth - root is 0.
-        //        node.height -  leaf node is 0.
-        //        node.parent - parent id, root is null.
-        //        node.children.
-        //        node.value - total value current node and descendants;
-
+          console.log("next4")
+     
+    
         //create tree
         let len = total
-        
-        let svgWidth = len * 40
+        let svgWidth = len * 45
         if (window.sessionStorage.taskType === 'active learning') {
           svgWidth = 1000
         }
         // svgWidth = 1000
         console.log('svgWid', len, svgWidth)
         svgDom.style.width = svgWidth + 200
-        if(window.sessionStorage.selectedSetting !== 'active learning' && window.sessionStorage.selectedSetting !== 'dense al'){
+        if (window.sessionStorage.selectedSetting !== 'active learning' && window.sessionStorage.selectedSetting !== 'dense al') {
           svgDom.style.height = 90
-          // svgDom.style.width = 2000
         }
 
 
@@ -475,23 +461,21 @@ class Projector
           .enter()
           .append('g')
           .attr('transform', function (d, i) {
-            console.log("D",d)
-            return 'translate(' + d.data.pid * 40 + ',' + d.x + ')';
+            return 'translate(' + d.y + ',' + d.x + ')';
           });
 
         //绘制文字和节点
-        if(window.iteration == undefined){
-          window.iteration = 1
+        if(getIteration(this.instanceId) == undefined){
+          updateStateForInstance(this.instanceId, {iteration:1})
         }
         gs.append('circle')
           .attr('r', 8)
           .attr('fill', function (d, i) {
-            // console.log("1111",d.data.value, window.iteration, d.data.value == window.iteration )
-            return d.data.value == window.iteration ? 'orange' : '#452d8a'
+            return d.data.value == getIteration(this.instanceId) ? 'orange' : '#452d8a'
           })
           .attr('stroke-width', 1)
           .attr('stroke', function (d, i) {
-            return d.data.value == window.iteration ? 'orange' : '#452d8a'
+            return d.data.value == getIteration(this.instanceId) ? 'orange' : '#452d8a'
           })
 
         gs.append('text')
@@ -511,28 +495,35 @@ class Projector
 
           })
       })
+
     let that = this
-    
     setTimeout(() => {
       let list = svgDom.querySelectorAll("circle");
       for (let i = 0; i <= list.length; i++) {
         let c = list[i]
         if (c) {
           c.style.cursor = "pointer"
-          if(!only){
+          if (!only) {
             c.addEventListener('click', (e: any) => {
-              if (e.target.nextSibling.innerHTML != window.iteration) {
+              if (e.target.nextSibling.innerHTML != getIteration(this.instanceId)) {
                 let value = e.target.nextSibling.innerHTML.split("|")[0]
                 that.projectionsPanel.jumpTo(Number(value))
-                window.sessionStorage.setItem('acceptIndicates', "")
-                window.sessionStorage.setItem('rejectIndicates', "")
+                updateSessionStateForInstance(this.instanceId, {acceptIndicates:""})
+                updateSessionStateForInstance(this.instanceId, {rejectIndicates:""})
+            
+                // updateStateForInstance(this.instanceId, { acceptIndicates: "" })
+                // updateStateForInstance(this.instanceId, { rejectIndicates: "" })
+                // getAcceptIndicates(this.instanceId) = ""
+                // getRejectIndicates(this.instanceId) = ""
+                // window.sessionStorage.setItem('acceptIndicates', "")
+                // window.sessionStorage.setItem('rejectIndicates', "")
                 this.initialTree()
               }
             })
           }
         }
       }
-    },2000)
+    }, 2000)
   }
 
   readyregis() {
@@ -616,103 +607,423 @@ class Projector
       return false;
     }
   }
+  //Observe changes for all relevant properties.
+  @observe('showUnlabeled', 'showlabeled', 'showTesting', 'showVisError')
+  _combinedShowCheckboxChanged() {
+    // Check if 'showVisError' is checked without any other box checked
+    if (this.showVisError && !(this.showUnlabeled || this.showTesting || this.showlabeled)) {
+      this.showVisError = false;  // Uncheck 'showVisError'
+      // Display your dialog warning
+      this.highlightConfChange = false;
+      (this.$.showVisWarning as any).open();
+      return;
+    }
 
-  @observe('showlabeled')
+  }
+
+  @observe('showUnlabeled', 'showlabeled', 'showTesting', 'fixVisError')
+  _combinedFixCheckboxChanged() {
+    // Check if 'showVisError' is checked without any other box checked
+    if (this.fixVisError && !(this.showUnlabeled || this.showTesting || this.showlabeled)) {
+      this.fixVisError = false;  // Uncheck 'showVisError'
+      // Display your dialog warning
+      (this.$.showFixVisWarning as any).open();
+      return;
+    }
+
+  }
+
+  @observe('showUnlabeled', 'showlabeled', 'showTesting', 'highlightChange')
+  _combinedHighlightChangeCheckboxChanged() {
+    // Check if 'showVisError' is checked without any other box checked
+    if (this.highlightChange && !(this.showUnlabeled || this.showTesting || this.showlabeled)) {
+      this.highlightChange = false;  // Uncheck 'showVisError'
+      // Display your dialog warning
+      this.highlightConfChange = false;
+      (this.$.showHighlightChangeWarning as any).open();
+      return;
+    }
+
+  }
+
+
+  @observe('highlightChange')
+  _combinedshowVisHighlightChangeCheckboxChanged() {
+    // Check if 'showVisError' is checked without any other box checked
+    if (this.showVisError) {
+      this.highlightChange = false;  // Uncheck 'showVisError'
+      // Display your dialog warning
+      this.highlightConfChange = false;
+      (this.$.showHighlightChangeWarning as any).open();
+      return;
+    }
+
+  }
+  @observe('showVisError')
+  _combinedHighlightChangeShowVisCheckboxChanged() {
+    // Check if 'showVisError' is checked without any other box checked
+    if (this.highlightChange) {
+      this.showVisError = false;  // Uncheck 'showVisError'
+      // Display your dialog warning
+      this.highlightConfChange = false;
+      (this.$.showVisWarning as any).open();
+      return;
+    }
+  }
+  // @observe('highlightVisError')
+  // _combinedHighlightConfChangeShowVisCheckboxChanged() {
+  //   // Check if 'showVisError' is checked without any other box checked
+  //   if (this.highlightConfChange) {
+  //       this.showVisError = false;  // Uncheck 'showVisError'
+  //       // Display your dialog warning
+  //       (this.$.showVisWarning as any).open();
+  //       return;  
+  //   }
+  // }_
+  // @observe('fixVisError')
+  // _fixVisChanged() {
+  //   var left = this.state.currentFocus[0]
+  //   var right = this.state.currentFocus[1]
+  //   var bottom = this.state.currentFocus[2]
+  //   var top = this.state.currentFocus[3]
+  //   var allPointsPositions = this.state.worldSpacePointPositions[getIteration(this.instanceId)]
+  //   let currVisErrorIndices = getHighlightedPointIndices(this.instanceId)
+  //   let lens = currVisErrorIndices.length
+  //   let focusPointsIndices = Array.from({ length: 2000 });
+  //   let currIndex = 0
+  //   // only count the number of vis error points, if exceeds 2000, throws a warning
+  //   for (let j = 0; j < lens; j++) {
+  //     if (currIndex >= 2000) {
+  //       this.fixVisError = false;
+  //       (this.$.showExceedMaxWarning as any).open();
+  //       return;
+  //     }
+  //     let start = currVisErrorIndices[j] * 3
+  //     let posX = allPointsPositions[start]
+  //     let posY = allPointsPositions[start + 1]
+
+  //     if (posX >= left && posX <= right && posY >= bottom && posY <= top) {
+  //       focusPointsIndices[currIndex] = currVisErrorIndices[j]
+  //       currIndex += 1
+  //     } 
+  //   }
+
+  //   this.projectionsPanel.projectDVI()
+  //   // this allows data points positions to be updated on canvas
+  //   queryCurrentFocus(focusPointsIndices) 
+  // }
+
+  @observe('showlabeled', 'showVisError')
   _labeledChanged() {
+    this.highlightConfChange = false;
     let indicates = []
-    if (window.nowShowIndicates) {
+    if (getNowShowIndicates(this.instanceId)) {
       if (this.showlabeled) {
-        for (let i = 0; i < window.properties[window.iteration].length; i++) {
-          let indicate = window.properties[window.iteration][i]
-          if (indicate === 0 || window.nowShowIndicates.indexOf(i) !== -1) {
+        for (let i = 0; i < getProperties(this.instanceId)[getIteration(this.instanceId)].length; i++) {
+          let indicate = getProperties(this.instanceId)[getIteration(this.instanceId)][i]
+          if (indicate === 0 || getNowShowIndicates(this.instanceId).indexOf(i) !== -1) {
             indicates.push(i)
           }
         }
-        window.nowShowIndicates = indicates
-        // this.projector.filterDataset(window.nowShowIndicates)
+        updateStateForInstance(this.instanceId, { nowShowIndicates: indicates })
+        // getNowShowIndicates(this.instanceId) = indicates
+        // this.projector.filterDataset(getNowShowIndicates(this.instanceId))
       } else {
         ///隐藏labeled
-        for (let i = 0; i < window.properties[window.iteration].length; i++) {
-          if (window.properties[window.iteration][i] !== 0 && window.nowShowIndicates.indexOf(i) !== -1) {
+        for (let i = 0; i < getProperties(this.instanceId)[getIteration(this.instanceId)].length; i++) {
+          if (getProperties(this.instanceId)[getIteration(this.instanceId)][i] !== 0 && getNowShowIndicates(this.instanceId).indexOf(i) !== -1) {
             indicates.push(i)
           }
         }
-        window.nowShowIndicates = indicates
+        updateStateForInstance(this.instanceId, { nowShowIndicates: indicates })
+        // getNowShowIndicates(this.instanceId) = indicates
       }
-      this.filterDataset(window.nowShowIndicates)
+      let highlightedPointIndices;
+
+      if (this.showVisError) {
+        highlightedPointIndices = getHighlightedPointIndices(this.instanceId)[this.iteration]
+        highlightedPointIndices = highlightedPointIndices.filter(value => getNowShowIndicates(this.instanceId).includes(value))
+        this.filterDataset(getNowShowIndicates(this.instanceId), false, highlightedPointIndices = highlightedPointIndices, undefined)
+      } else {
+        this.filterDataset(getNowShowIndicates(this.instanceId))
+      }
     }
   }
 
-  @observe('showUnlabeled')
+
+  @observe('showUnlabeled', 'showVisError')
   _unLabelChanged() {
+    this.highlightConfChange = false;
     let indicates = []
-    if (window.nowShowIndicates) {
+    if (getNowShowIndicates(this.instanceId)) {
       if (this.showUnlabeled) {
-        for (let i = 0; i < window.properties[window.iteration].length; i++) {
-          let indicate = window.properties[window.iteration][i]
-          if (indicate === 1 || window.nowShowIndicates.indexOf(i) !== -1) {
+        for (let i = 0; i < getProperties(this.instanceId)[getIteration(this.instanceId)].length; i++) {
+          let indicate = getProperties(this.instanceId)[getIteration(this.instanceId)][i]
+          if (indicate === 1 || getNowShowIndicates(this.instanceId).indexOf(i) !== -1) {
             indicates.push(i)
           }
         }
-        window.nowShowIndicates = indicates
-        // this.projector.filterDataset(window.nowShowIndicates)
+        updateStateForInstance(this.instanceId, { nowShowIndicates: indicates })
+        // getNowShowIndicates(this.instanceId) = indicates
+        // this.projector.filterDataset(getNowShowIndicates(this.instanceId))
       } else {
-        for (let i = 0; i < window.properties[window.iteration].length; i++) {
-          if (window.properties[window.iteration][i] !== 1 && window.nowShowIndicates.indexOf(i) !== -1) {
+        for (let i = 0; i < getProperties(this.instanceId)[getIteration(this.instanceId)].length; i++) {
+          if (getProperties(this.instanceId)[getIteration(this.instanceId)][i] !== 1 && getNowShowIndicates(this.instanceId).indexOf(i) !== -1) {
             indicates.push(i)
           }
         }
-        window.nowShowIndicates = indicates
+        updateStateForInstance(this.instanceId, { nowShowIndicates: indicates })
+        // getNowShowIndicates(this.instanceId) = indicates
       }
-      this.filterDataset(window.nowShowIndicates)
+      let highlightedPointIndices;
+      if (this.showVisError) {
+        highlightedPointIndices = getHighlightedPointIndices(this.instanceId)[this.iteration]
+        highlightedPointIndices = highlightedPointIndices.filter(value => getNowShowIndicates(this.instanceId).includes(value))
+        this.filterDataset(getNowShowIndicates(this.instanceId), false, highlightedPointIndices = highlightedPointIndices, undefined)
+      } else {
+        this.filterDataset(getNowShowIndicates(this.instanceId))
+      }
     }
   }
 
-  @observe('showTesting')
+  @observe('showTesting', 'showVisError')
   _testingChanged() {
+    this.highlightConfChange = false;
     let indicates = []
-    if (window.nowShowIndicates) {
+    if (getNowShowIndicates(this.instanceId)) {
       if (this.showTesting) {
-        for (let i = 0; i < window.properties[window.iteration].length; i++) {
-          let indicate = window.properties[window.iteration][i]
-          if (indicate === 2 || window.nowShowIndicates.indexOf(i) !== -1) {
+        for (let i = 0; i < getProperties(this.instanceId)[getIteration(this.instanceId)].length; i++) {
+          let indicate = getProperties(this.instanceId)[getIteration(this.instanceId)][i]
+          if (indicate === 2 || getNowShowIndicates(this.instanceId).indexOf(i) !== -1) {
             indicates.push(i)
           }
         }
-        window.nowShowIndicates = indicates
-        // this.projector.filterDataset(window.nowShowIndicates)
+        updateStateForInstance(this.instanceId, { nowShowIndicates: indicates })
+        // getNowShowIndicates(this.instanceId) = indicates
+        // this.projector.filterDataset(getNowShowIndicates(this.instanceId))
       } else {
 
-        for (let i = 0; i < window.properties[window.iteration].length; i++) {
-          if (window.properties[window.iteration][i] !== 2 && window.nowShowIndicates.indexOf(i) !== -1) {
+        for (let i = 0; i < getProperties(this.instanceId)[getIteration(this.instanceId)].length; i++) {
+          if (getProperties(this.instanceId)[getIteration(this.instanceId)][i] !== 2 && getNowShowIndicates(this.instanceId).indexOf(i) !== -1) {
             indicates.push(i)
           }
         }
-        window.nowShowIndicates = indicates
+        updateStateForInstance(this.instanceId, { nowShowIndicates: indicates })
+        // getNowShowIndicates(this.instanceId) = indicates
       }
-      this.filterDataset(window.nowShowIndicates)
+      let highlightedPointIndices;
+      if (this.showVisError) {
+        highlightedPointIndices = getHighlightedPointIndices(this.instanceId)[this.iteration]
+
+        highlightedPointIndices = highlightedPointIndices.filter(value => getNowShowIndicates(this.instanceId).includes(value))
+
+        this.filterDataset(getNowShowIndicates(this.instanceId), false, highlightedPointIndices = highlightedPointIndices, undefined)
+      } else {
+        this.filterDataset(getNowShowIndicates(this.instanceId))
+      }
     }
   }
+
+
+  // @observe('showVisError')
+  // _visErrorChanged() {
+  //   let indicates = []
+  //   if (getNowShowIndicates(this.instanceId)) {
+  //     if (this.showVisError) {
+  //       for (let i = 0; i < getProperties(this.instanceId)[getIteration(this.instanceId)].length; i++) {
+  //         let indicate = getProperties(this.instanceId)[getIteration(this.instanceId)][i]
+  //         if (indicate === 3 || getNowShowIndicates(this.instanceId).indexOf(i) !== -1) {
+  //           indicates.push(i)
+  //         }
+  //       }
+  //       getNowShowIndicates(this.instanceId) = indicates
+  //       //this.projector.filterDataset(getNowShowIndicates(this.instanceId))
+  //     } else {
+
+  //       for (let i = 0; i < getProperties(this.instanceId)[getIteration(this.instanceId)].length; i++) {
+  //         if (getProperties(this.instanceId)[getIteration(this.instanceId)][i] !== 3 && getNowShowIndicates(this.instanceId).indexOf(i) !== -1) {
+  //           indicates.push(i)
+  //         }
+  //       }
+  //       getNowShowIndicates(this.instanceId) = indicates
+  //     }
+  //     this.filterDataset(getNowShowIndicates(this.instanceId))
+  //   }
+  // }
+
+
+  @observe('showlabeled', 'highlightChange')
+  _predLabeledChanged() {
+    this.highlightConfChange = false;
+    let indicates = []
+    if (getNowShowIndicates(this.instanceId)) {
+      if (this.showlabeled) {
+        for (let i = 0; i < getProperties(this.instanceId)[getIteration(this.instanceId)].length; i++) {
+          let indicate = getProperties(this.instanceId)[getIteration(this.instanceId)][i]
+          if (indicate === 0 || getNowShowIndicates(this.instanceId).indexOf(i) !== -1) {
+            indicates.push(i)
+          }
+        }
+        updateStateForInstance(this.instanceId, { nowShowIndicates: indicates })
+        // getNowShowIndicates(this.instanceId) = indicates
+        // this.projector.filterDataset(getNowShowIndicates(this.instanceId))
+      } else {
+        ///隐藏labeled
+        for (let i = 0; i < getProperties(this.instanceId)[getIteration(this.instanceId)].length; i++) {
+          if (getProperties(this.instanceId)[getIteration(this.instanceId)][i] !== 0 && getNowShowIndicates(this.instanceId).indexOf(i) !== -1) {
+            indicates.push(i)
+          }
+        }
+        updateStateForInstance(this.instanceId, { nowShowIndicates: indicates })
+        // getNowShowIndicates(this.instanceId) = indicates
+      }
+      let predChangeIndices;
+
+      if (this.highlightChange) {
+        this.highlightCriticalChange()
+        predChangeIndices = getPredChangeIndices(this.instanceId)
+        predChangeIndices = predChangeIndices.filter(value => getNowShowIndicates(this.instanceId).includes(value))
+        this.filterDataset(getNowShowIndicates(this.instanceId), false, undefined, predChangeIndices = predChangeIndices)
+      } else {
+        this.filterDataset(getNowShowIndicates(this.instanceId))
+      }
+    }
+  }
+
+  @observe('showUnlabeled', 'highlightChange')
+  _predUnLabelChanged() {
+    this.highlightConfChange = false;
+    let indicates = []
+    if (getNowShowIndicates(this.instanceId)) {
+      if (this.showUnlabeled) {
+        for (let i = 0; i < getProperties(this.instanceId)[getIteration(this.instanceId)].length; i++) {
+          let indicate = getProperties(this.instanceId)[getIteration(this.instanceId)][i]
+          if (indicate === 1 || getNowShowIndicates(this.instanceId).indexOf(i) !== -1) {
+            indicates.push(i)
+          }
+        }
+        updateStateForInstance(this.instanceId, { nowShowIndicates: indicates })
+        // getNowShowIndicates(this.instanceId) = indicates
+        // this.projector.filterDataset(getNowShowIndicates(this.instanceId))
+      } else {
+        for (let i = 0; i < getProperties(this.instanceId)[getIteration(this.instanceId)].length; i++) {
+          if (getProperties(this.instanceId)[getIteration(this.instanceId)][i] !== 1 && getNowShowIndicates(this.instanceId).indexOf(i) !== -1) {
+            indicates.push(i)
+          }
+        }
+        updateStateForInstance(this.instanceId, { nowShowIndicates: indicates })
+        // getNowShowIndicates(this.instanceId) = indicates
+      }
+      let predChangeIndices;
+      if (this.highlightChange) {
+        this.highlightCriticalChange()
+        predChangeIndices = getPredChangeIndices(this.instanceId)
+        predChangeIndices = predChangeIndices.filter(value => getNowShowIndicates(this.instanceId).includes(value))
+        this.filterDataset(getNowShowIndicates(this.instanceId), false, undefined, predChangeIndices = predChangeIndices)
+      } else {
+        this.filterDataset(getNowShowIndicates(this.instanceId))
+      }
+    }
+  }
+
+  @observe('showTesting', 'highlightChange')
+  _predTestingChanged() {
+    this.highlightConfChange = false;
+    let indicates = []
+    if (getNowShowIndicates(this.instanceId)) {
+      if (this.showTesting) {
+        for (let i = 0; i < getProperties(this.instanceId)[getIteration(this.instanceId)].length; i++) {
+          let indicate = getProperties(this.instanceId)[getIteration(this.instanceId)][i]
+          if (indicate === 2 || getNowShowIndicates(this.instanceId).indexOf(i) !== -1) {
+            indicates.push(i)
+          }
+        }
+        updateStateForInstance(this.instanceId, { nowShowIndicates: indicates })
+        // getNowShowIndicates(this.instanceId) = indicates
+        // this.projector.filterDataset(getNowShowIndicates(this.instanceId))
+      } else {
+
+        for (let i = 0; i < getProperties(this.instanceId)[getIteration(this.instanceId)].length; i++) {
+          if (getProperties(this.instanceId)[getIteration(this.instanceId)][i] !== 2 && getNowShowIndicates(this.instanceId).indexOf(i) !== -1) {
+            indicates.push(i)
+          }
+        }
+        updateStateForInstance(this.instanceId, { nowShowIndicates: indicates })
+        // getNowShowIndicates(this.instanceId) = indicates
+      }
+      let predChangeIndices;
+      if (this.highlightChange) {
+        this.highlightCriticalChange()
+        predChangeIndices = getPredChangeIndices(this.instanceId)
+
+        predChangeIndices = predChangeIndices.filter(value => getNowShowIndicates(this.instanceId).includes(value))
+
+        this.filterDataset(getNowShowIndicates(this.instanceId), false, undefined, predChangeIndices = predChangeIndices)
+      } else {
+        this.filterDataset(getNowShowIndicates(this.instanceId))
+      }
+    }
+  }
+
+
+  // @observe('highlightChange')
+  // _predChanged() {
+  //   let indicates = []
+  //   if (getNowShowIndicates(this.instanceId)) {
+  //     if (this.showVisError) {
+  //       for (let i = 0; i < getProperties(this.instanceId)[getIteration(this.instanceId)].length; i++) {
+  //         let indicate = getProperties(this.instanceId)[getIteration(this.instanceId)][i]
+  //         if (indicate === 3 || getNowShowIndicates(this.instanceId).indexOf(i) !== -1) {
+  //           indicates.push(i)
+  //         }
+  //       }
+  //       getNowShowIndicates(this.instanceId) = indicates
+  //       //this.projector.filterDataset(getNowShowIndicates(this.instanceId))
+  //     } else {
+
+  //       for (let i = 0; i < getProperties(this.instanceId)[getIteration(this.instanceId)].length; i++) {
+  //         if (getProperties(this.instanceId)[getIteration(this.instanceId)][i] !== 3 && getNowShowIndicates(this.instanceId).indexOf(i) !== -1) {
+  //           indicates.push(i)
+  //         }
+  //       }
+  //       getNowShowIndicates(this.instanceId) = indicates
+  //     }
+  //     this.filterDataset(getNowShowIndicates(this.instanceId))
+  //   }
+  // }
 
   onIterationChange(num: number) {
-    window.sessionStorage.setItem('iteration', String(num))
+    console.log("num",num)
+    console.log("instanceID", this.instanceId)
+    console.log("whole", window.comparatorState[this.instanceId])
+    updateSessionStateForInstance(this.instanceId, {iteration:String(num)})
+    // updateStateForInstance(this.instanceId, {iteration:num})
+    // getIteration(this.instanceId) = String(num)
+    
+    // window.sessionStorage.setItem('iteration', String(num))
     // window.iteration = num;
     let indicates = []
     this.iteration = num;
-    if (!window.isAnimatating) {
+    console.log("getNow",getNowShowIndicates(this.instanceId))
+    console.log("getPro",getProperties(this.instanceId))
+    console.log("getIter",getIteration(this.instanceId))
+    console.log("getISAn",getIsAnimating(this.instanceId))
+
+    if (!getIsAnimating(this.instanceId)) {
       if (this.showTesting === false) {
-        for (let i = 0; i < window.properties[window.iteration].length; i++) {
-          if (window.properties[window.iteration][i] !== 2 && window.nowShowIndicates.indexOf(i) !== -1) {
+        for (let i = 0; i < getProperties(this.instanceId)[getIteration(this.instanceId)].length; i++) {
+          if (getProperties(this.instanceId)[getIteration(this.instanceId)][i] !== 2 && getNowShowIndicates(this.instanceId).indexOf(i) !== -1) {
             indicates.push(i)
           }
         }
-        window.nowShowIndicates = indicates
+        updateStateForInstance(this.instanceId, { nowShowIndicates: indicates })
+        // getNowShowIndicates(this.instanceId) = indicates
       }
-      this.filterDataset(window.nowShowIndicates)
+      this.filterDataset(getNowShowIndicates(this.instanceId))
 
     }
     if (this.inspectorPanel) {
-      if (window.sessionStorage.taskType === 'active learning' && window.iteration !== 1) {
+      if (window.sessionStorage.taskType === 'active learning' && getIteration(this.instanceId) !== 1) {
         this.inspectorPanel.updateDisabledStatues(true)
       } else {
         this.inspectorPanel.updateDisabledStatues(false)
@@ -720,6 +1031,11 @@ class Projector
 
     }
     this.initialTree()
+  }
+
+  private confEditorInputChange() {
+    this.confChangeInput = Number(this.confEditorInput);
+    console.log(this.confChangeInput);
   }
 
   setSelectedLabelOption(labelOption: string) {
@@ -784,20 +1100,27 @@ class Projector
       this.projectionsPanel.metadataChanged(spriteAndMetadata);
       this.dataPanel.metadataChanged(spriteAndMetadata, metadataFile);
       //reset
-      if (window.sessionStorage.iteration) {
-        this.projectionsPanel.jumpTo(Number(window.sessionStorage.iteration))
+      if (getCurrentSessionState(this.instanceId).iteration) {
+        this.projectionsPanel.jumpTo(Number(getCurrentSessionState(this.instanceId).iteration))
       } else {
         this.projectionsPanel.jumpTo(Number(1))
       }
+      //RECALL
       //reset
-      if (window.sessionStorage.acceptIndicates) {
-        window.acceptIndicates = window.sessionStorage.acceptIndicates.split(",").map(parseFloat)
+      if (getCurrentSessionState(this.instanceId).acceptIndicates) {
+        // console.log("go fuck you")
+        // console.log("yourmom",getAcceptIndicates(this.instanceId))
+        updateStateForInstance(this.instanceId, { acceptIndicates: getCurrentSessionState(this.instanceId).acceptIndicates.split(",").map(parseFloat) })
+     
+        // getAcceptIndicates(this.instanceId) = getAcceptIndicates(this.instanceId).split(",").map(parseFloat)
       }
-      if (window.sessionStorage.rejectIndicates) {
-        window.rejectIndicates = window.sessionStorage.rejectIndicates.split(",").map(parseFloat)
+      if (getCurrentSessionState(this.instanceId).rejectIndicates) {
+        updateStateForInstance(this.instanceId, { rejectIndicates: getCurrentSessionState(this.instanceId).rejectIndicates.split(",").map(parseFloat) })
+        // getRejectIndicates(this.instanceId) = getRejectIndicates(this.instanceId).split(",").map(parseFloat)
       }
-      if (window.sessionStorage.customSelection) {
-        window.customSelection = window.sessionStorage.customSelection.split(",").map(parseFloat)
+      if (getCurrentSessionState(this.instanceId).customSelection) {
+        updateStateForInstance(this.instanceId, { customSelection: getCurrentSessionState(this.instanceId).customSelection.split(",").map(parseFloat) })
+        // getCustomSelection(this.instanceId) = getCustomSelection(this.instanceId).split(",").map(parseFloat)
       }
     } else {
       this.setCurrentDataSet(null);
@@ -860,23 +1183,27 @@ class Projector
   registerSelectionChangedListener(listener: SelectionChangedListener) {
     this.selectionChangedListeners.push(listener);
   }
-  filterDataset(pointIndices: number[], filter?: boolean) {
+  filterDataset(pointIndices: number[], filter?: boolean, highlightedPointIndices?: number[], predChangeIndices?: number[], confChangeIndices?: number[]) {
     const selectionSize = this.selectedPointIndices.length;
     /*
     if (this.dataSetBeforeFilter == null) {
       this.dataSetBeforeFilter = this.dataSet;
     }*/
-    console.log('now',pointIndices.length,this.dataSet)
+    //console.log('now',pointIndices.length,this.dataSet)
+
     this.dataSet.setDVIFilteredData(pointIndices);
     // this.setCurrentDataSet(this.dataSet.getSubset(pointIndices));
     this.dataSetFilterIndices = pointIndices;
     this.projectorScatterPlotAdapter.updateScatterPlotPositions();
-    this.projectorScatterPlotAdapter.updateScatterPlotAttributes(filter);
+    // console.log( predChangeIndices);
+    // console.log(highlightedPointIndices)
+    this.projectorScatterPlotAdapter.updateScatterPlotAttributes(filter, highlightedPointIndices, predChangeIndices, confChangeIndices);
     // this.projectorScatterPlotAdapter.updateBackground()
+
     this.projectorScatterPlotAdapter.render()
     // this.adjustSelectionAndHover(util.range(selectionSize));
 
-    if (window.isAdjustingSel) {
+    if (getIsAdjustingSel(this.instanceId)) {
       // this.boundingSelectionBtn.classList.add('actived')
       this.setMouseMode(MouseMode.AREA_SELECT)
     }
@@ -885,6 +1212,7 @@ class Projector
     const originalPointIndices = this.selectedPointIndices.map(
       (filteredIndex) => this.dataSet.points[filteredIndex].index
     );
+
     /*
     this.setCurrentDataSet(this.dataSetBeforeFilter);
     if (this.projection != null) {
@@ -912,26 +1240,29 @@ class Projector
   ///
   setDynamicNoisy() {
     // this.setDynamicStop()
-    if (!window.customSelection) {
-      window.customSelection = []
+    if (!getCustomSelection(this.instanceId)) {
+      updateStateForInstance(this.instanceId, { customSelection: [] })
+      // getCustomSelection(this.instanceId) = []
     }
-    if (!window.queryResAnormalCleanIndecates) {
-      window.queryResAnormalCleanIndecates = []
+    if (!getQueryResAnormalCleanIndecates(this.instanceId)) {
+      updateStateForInstance(this.instanceId, { queryResAnormalCleanIndecates: [] })
+      // getQueryResAnormalCleanIndecates(this.instanceId) = []
     }
-    let indecates = window.queryResAnormalCleanIndecates.concat(window.customSelection)
+    let indecates = getQueryResAnormalCleanIndecates(this.instanceId).concat(getCustomSelection(this.instanceId))
     if (indecates && indecates.length) {
       this.filterDataset(indecates)
     }
     // this.filterDataset(this.selectedPointIndices)
-    this.currentIteration = window.iteration
+    this.currentIteration = getIteration(this.instanceId)
 
     let current = 1
-    let positions = window.allResPositions?.results
+    let positions = getAllResPositions(this.instanceId)?.results
     let interationList = []
-    if (window.allResPositions && window.allResPositions.bgimgList) {
-      window.sceneBackgroundImg = window.allResPositions?.bgimgList
+    if (getAllResPositions(this.instanceId) && getAllResPositions(this.instanceId).bgimgList) {
+      updateStateForInstance(this.instanceId, { sceneBackgroundImg: getAllResPositions(this.instanceId)?.bgimgList })
+      // getSceneBackgroundImg(this.instanceId) = getAllResPositions(this.instanceId)?.bgimgList
     }
-    for (let key of Object.keys(window.allResPositions?.results)) {
+    for (let key of Object.keys(getAllResPositions(this.instanceId)?.results)) {
       interationList.push(Number(key))
     }
     current = Number(interationList[0])
@@ -941,21 +1272,22 @@ class Projector
       this.timer = window.setInterval(() => {
 
         this.inspectorPanel.updateCurrentPlayEpoch(current)
-        window.iteration = current;
+        updateStateForInstance(this.instanceId, { iteration: current })
+        // getIteration(this.instanceId) = current;
         let length = this.dataSet.points.length
         if (length === 60002) {
           let point1 = this.dataSet.points[length - 2];
           let point2 = this.dataSet.points[length - 1];
-          point1.projections['tsne-0'] = window.allResPositions.grid[current][0]
-          point1.projections['tsne-1'] = window.allResPositions.grid[current][1]
-          point2.projections['tsne-0'] = window.allResPositions.grid[current][2]
-          point2.projections['tsne-1'] = window.allResPositions.grid[current][3]
+          point1.projections['tsne-0'] = getAllResPositions(this.instanceId).grid[current][0]
+          point1.projections['tsne-1'] = getAllResPositions(this.instanceId).grid[current][1]
+          point2.projections['tsne-0'] = getAllResPositions(this.instanceId).grid[current][2]
+          point2.projections['tsne-1'] = getAllResPositions(this.instanceId).grid[current][3]
           // point.projections['tsne-0'] = 
         }
 
         for (let i = 0; i < this.dataSet.points.length; i++) {
           const point = this.dataSet.points[i];
-          if (!window.customSelection || !window.customSelection.length || window.customSelection.indexOf(i) !== -1 || window.queryResAnormalCleanIndecates?.indexOf(i) !== -1) {
+          if (!getCustomSelection(this.instanceId) || !getCustomSelection(this.instanceId).length || getCustomSelection(this.instanceId).indexOf(i) !== -1 || getQueryResAnormalCleanIndecates(this.instanceId)?.indexOf(i) !== -1) {
             point.projections['tsne-0'] = positions[current][i][0];
             point.projections['tsne-1'] = positions[current][i][1];
             point.projections['tsne-2'] = 0;
@@ -965,6 +1297,7 @@ class Projector
         this.projectorScatterPlotAdapter.updateScatterPlotPositions();
         this.projectorScatterPlotAdapter.updateScatterPlotAttributes();
         this.updateBackgroundImg();
+        console.log("checkpointdynacmi")
         this.onIterationChange(current);
         // this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
         this.projectorScatterPlotAdapter.render()
@@ -983,7 +1316,7 @@ class Projector
   }
 
   updatePosByIndicates(current: number) {
-    let positions = window.allResPositions?.results
+    let positions = getAllResPositions(this.instanceId)?.results
     for (let i = 0; i < this.dataSet.points.length; i++) {
       const point = this.dataSet.points[i];
       if (!this.selectedPointIndices.length || this.selectedPointIndices.indexOf(i) !== -1) {
@@ -996,10 +1329,12 @@ class Projector
     this.projectorScatterPlotAdapter.updateScatterPlotPositions();
     this.projectorScatterPlotAdapter.updateScatterPlotAttributes();
     this.updateBackgroundImg();
+    console.log("posbyIndi")
     this.onIterationChange(current);
   }
   setDynamicStop() {
-    window.isAnimatating = false
+    updateStateForInstance(this.instanceId, { isAnimatating: false })
+    // getIsAnimating(this.instanceId) = false
     if (this.timer && !this.intervalFlag) {
       window.clearInterval(this.timer)
       this.intervalFlag = true
@@ -1015,14 +1350,15 @@ class Projector
     if (length === 60002) {
       let point1 = this.dataSet.points[length - 2];
       let point2 = this.dataSet.points[length - 1];
-      point1.projections['tsne-0'] = window.allResPositions.grid[this.iteration][0]
-      point1.projections['tsne-1'] = window.allResPositions.grid[this.iteration][1]
-      point2.projections['tsne-0'] = window.allResPositions.grid[this.iteration][2]
-      point2.projections['tsne-1'] = window.allResPositions.grid[this.iteration][3]
+      point1.projections['tsne-0'] = getAllResPositions(this.instanceId).grid[this.iteration][0]
+      point1.projections['tsne-1'] = getAllResPositions(this.instanceId).grid[this.iteration][1]
+      point2.projections['tsne-0'] = getAllResPositions(this.instanceId).grid[this.iteration][2]
+      point2.projections['tsne-1'] = getAllResPositions(this.instanceId).grid[this.iteration][3]
       // point.projections['tsne-0'] = 
     }
-    window.iteration = this.currentIteration
-    this.updatePosByIndicates(window.iteration)
+    updateStateForInstance(this.instanceId, { iteration: this.currentIteration })
+    // getIteration(this.instanceId) = this.currentIteration
+    this.updatePosByIndicates(getIteration(this.instanceId))
   }
 
   renderInTraceLine(inTrace: boolean) {
@@ -1030,7 +1366,6 @@ class Projector
   }
 
   refresh() {
-    console.log('rreefff')
     // this.projectorScatterPlotAdapter.scatterPlot.render()
     this.metadataCard.updateCustomList(this.dataSet.points, this as ProjectorEventContext)
     this.metadataCard.updateRejectList(this.dataSet.points, this as ProjectorEventContext)
@@ -1050,32 +1385,51 @@ class Projector
    * Used by clients to indicate that a selection has occurred.
    */
   async notifySelectionChanged(newSelectedPointIndices: number[], selectMode?: boolean, selectionType?: string) {
-    console.log('notifySelectionChanged', selectionType,newSelectedPointIndices)
+    console.log('notifySelectionChanged', selectionType, newSelectedPointIndices)
     if (!this.registered) {
       this.readyregis()
     }
-    if (!window.acceptIndicates) {
-      window.acceptIndicates = []
+    if (!getAcceptIndicates(this.instanceId)) {
+      updateStateForInstance(this.instanceId, { acceptIndicates: [] })
+      // getAcceptIndicates(this.instanceId) = []
     }
-    if (!window.rejectIndicates) {
-      window.rejectIndicates = []
+    if (!getRejectIndicates(this.instanceId)) {
+      updateStateForInstance(this.instanceId, { rejectIndicates: [] })
+      // getRejectIndicates(this.instanceId) = []
     }
-    window.customSelection = window.acceptIndicates.concat(window.rejectIndicates)
+    updateStateForInstance(this.instanceId, { customSelection: getAcceptIndicates(this.instanceId).concat(getRejectIndicates(this.instanceId)) })
+    // getCustomSelection(this.instanceId) = getAcceptIndicates(this.instanceId).concat(getRejectIndicates(this.instanceId))
     if (selectionType === 'isALQuery' || selectionType === 'normal' || selectionType === 'isAnormalyQuery' || selectionType === 'boundingbox') {
-      // window.customSelection = []
-      window.queryResPointIndices = newSelectedPointIndices
+      // getCustomSelection(this.instanceId) = []
+      updateStateForInstance(this.instanceId, { queryResPointIndices: newSelectedPointIndices })
+      // getQueryResPointIndices(this.instanceId) = newSelectedPointIndices
       if (selectionType === 'isALQuery') {
-        window.alQueryResPointIndices = newSelectedPointIndices
+        updateStateForInstance(this.instanceId, { alQueryResPointIndices: newSelectedPointIndices })
+        // this.state.alQueryResPointIndices = newSelectedPointIndices
       } else {
-        window.alQueryResPointIndices = []
+        updateStateForInstance(this.instanceId, { alQueryResPointIndices: [] })
+        // this.state.alQueryResPointIndices = []
       }
     }
     if (selectionType === 'isShowSelected') {
-      for (let i = 0; i < window.previousIndecates?.length; i++) {
-        // if(window.customSelection.indexOf(window.previousIndecates[i]) === -1){
-        let index = window.previousIndecates[i]
-        if (window.checkboxDom[index]) {
-          window.checkboxDom[index].checked = true
+      for (let i = 0; i < getPreviousIndecates(this.instanceId)?.length; i++) {
+        // if(getCustomSelection(this.instanceId).indexOf(this.state.previousIndecates[i]) === -1){
+        let index = getPreviousIndecates(this.instanceId)[i]
+        if (getCheckBoxDom(this.instanceId)[index]) {
+          console.log("333333")
+          // Update the customSelection array in the state
+          // Clone the checkboxDom array to avoid direct mutation
+          const newCheckboxDom = getCheckBoxDom(this.instanceId);
+
+          // Modify the specific checkbox's checked property
+          if (newCheckboxDom[index]) {
+            console.log("exist")
+            newCheckboxDom[index].checked = true;
+          }
+
+          // Update the state with the modified checkboxDom
+          updateStateForInstance(this.instanceId, { checkboxDom: newCheckboxDom });
+          // getCheckBoxDom(this.instanceId)[index].checked = true
         }
         // }
       }
@@ -1094,17 +1448,20 @@ class Projector
         method: 'POST',
         mode: 'cors',
         body: JSON.stringify({
-           "username": window.sessionStorage.username,
+          "username": window.sessionStorage.username,
         }),
         headers: headers,
-      }).then(()=>{
-          console.log('123323')
+      }).then(() => {
+        console.log('123323')
       })
-      window.alSuggestLabelList = []
-      window.alSuggestScoreList = []
-      window.queryResPointIndices = newSelectedPointIndices
+      updateStateForInstance(this.instanceId, { alSuggestLabelList: [] })
+      updateStateForInstance(this.instanceId, { alSuggestScoreList: [] })
+      // this.state.alSuggestLabelList = []
+      // this.state.alSuggestScoreList = []
+     updateStateForInstance(this.instanceId, {queryResPointIndices:newSelectedPointIndices})
       this.selectedPointIndices = newSelectedPointIndices
-      window.alQueryResPointIndices = []
+      updateStateForInstance(this.instanceId, { alQueryResPointIndices: [] })
+      // this.state.alQueryResPointIndices = []
       this.inspectorPanel.refreshSearchResByList(newSelectedPointIndices)
       this.projectorScatterPlotAdapter.updateScatterPlotAttributes()
       this.projectorScatterPlotAdapter.render()
@@ -1230,7 +1587,6 @@ class Projector
       this.metadataCard.updateMetadata(null);
       return
     }
-    console.log('bububububuuu here')
     this.metadataCard.updateMetadata(
       this.dataSet.points[indices].metadata, src, this.dataSet.points[indices]
     );
@@ -1259,13 +1615,32 @@ class Projector
    */
   private timer = null
   notifyHoverOverPoint(pointIndex: number) {
-    this.hoverListeners.forEach((l) => l(pointIndex));
+    let highlightedPointIndices;
+    let predChangeIndices;
+    let confChangeIndices;
+    if (getHighlightedPointIndices(this.instanceId) && getHighlightedPointIndices(this.instanceId)[this.iteration] && this.showVisError) {
+      highlightedPointIndices = getHighlightedPointIndices(this.instanceId)[this.iteration].filter(value => getNowShowIndicates(this.instanceId).includes(value))
+
+    }
+
+    else if (getPredChangeIndices(this.instanceId) && this.highlightChange) {
+      predChangeIndices = getPredChangeIndices(this.instanceId).filter(value => getNowShowIndicates(this.instanceId).includes(value))
+    }
+
+    else if (getConfChangeIndices(this.instanceId) && this.highlightConfChange) {
+      confChangeIndices = getConfChangeIndices(this.instanceId).filter(value => getNowShowIndicates(this.instanceId).includes(value))
+    }
+    // console.log(highlightedPointIndices)
+    // console.log(predChangeIndices)
+    this.hoverListeners.forEach((l) => l(pointIndex, highlightedPointIndices, predChangeIndices, confChangeIndices));
+
     let timeNow = new Date().getTime()
     if (this.timer === null || timeNow - this.timer > 10) {
-      if (window.iteration && pointIndex !== undefined && pointIndex !== null && window.previousHover !== pointIndex) {
+      if (getIteration(this.instanceId) && pointIndex !== undefined && pointIndex !== null && getPreviousHover(this.instanceId) !== pointIndex) {
         this.timer = timeNow
         this.updateMetaByIndices(pointIndex)
-        window.previousHover = pointIndex
+        updateStateForInstance(this.instanceId, { previousHover: pointIndex })
+        // getPreviousHover(this.instanceId) = pointIndex
       }
     }
   }
@@ -1310,6 +1685,7 @@ class Projector
     return [pointsInfo, stats];
   }
   private initializeDataProvider(dataProto?: DataProto) {
+    console.log("initializeDataProvider")
     if (this.servingMode === 'demo') {
       let projectorConfigUrl: string;
       // Only in demo mode do we allow the config being passed via URL.
@@ -1319,19 +1695,23 @@ class Projector
       } else {
         projectorConfigUrl = this.projectorConfigJsonPath;
       }
-      this.dataProvider = new DemoDataProvider(projectorConfigUrl);
+      console.log("demo")
+      this.dataProvider = new DemoDataProvider(projectorConfigUrl, this.instanceId);
+      
     } else if (this.servingMode === 'server') {
       if (!this.routePrefix) {
         throw 'route-prefix is a required parameter';
       }
-      this.dataProvider = new ServerDataProvider(this.routePrefix);
+      this.dataProvider = new ServerDataProvider(this.routePrefix, this.instanceId);
     } else if (this.servingMode === 'proto' && dataProto != null) {
-      this.dataProvider = new ProtoDataProvider(dataProto);
+      console.log("proto")
+      this.dataProvider = new ProtoDataProvider(dataProto, this.instanceId);
     } else {
       // The component is not ready yet - waiting for the dataProto field.
       return;
     }
-    this.dataPanel.initialize(this, this.dataProvider);
+    this.dataPanel.initialize(this, this.dataProvider, this.instanceId);
+    console.log("wholeafterdatats", window.comparatorState)
   }
   private getLegendPointColorer(
     colorOption: ColorOption
@@ -1392,6 +1772,19 @@ class Projector
     );
   }
   private setupUIControls() {
+
+    {
+      this.projectorScatterPlotAdapter = new ProjectorScatterPlotAdapter(
+        this.getScatterContainer("left"),
+        this as ProjectorEventContext,
+        this.instanceId
+      );
+
+      this.projectorScatterPlotAdapter.setLabelPointAccessor(
+        this.selectedLabelOption
+      );
+    }
+
     // View controls
     this.helpBtn.addEventListener('click', () => {
       (this.$.help3dDialog as any).open();
@@ -1416,29 +1809,39 @@ class Projector
     });
     let hiddenBackground = this.$$('#hiddenBackground');
     hiddenBackground.addEventListener('click', () => {
-      window.hiddenBackground = (hiddenBackground as any).active
+      updateStateForInstance(this.instanceId, { hiddenBackground: (hiddenBackground as any).active })
+      // getHiddenBackground(this.instanceId) = (hiddenBackground as any).active
       for (let i = 0; i < this.dataSet.points.length; i++) {
         const point = this.dataSet.points[i];
         if (point.metadata[this.selectedLabelOption]) {
           let hoverText = point.metadata[this.selectedLabelOption].toString();
           if (hoverText == 'background') {
             if ((hiddenBackground as any).active) {
-              // window.scene.remove(window.backgroundMesh)
+              // getScene(this.instanceId).remove(this.state.backgroundMesh)
               point.color = '#ffffff'
             } else {
               point.color = point.DVI_color[1]
-              // window.scene.add(window.backgroundMesh)
+              // getScene(this.instanceId).add(this.state.backgroundMesh)
             }
           }
         }
       }
-      // if(window.scene.children)
-      if (window.scene.children[2] && window.scene.children[2].type === 'Mesh') {
-        for (let i = 2; i < window.scene.children.length; i++) {
-          window.scene.children[i].visible = !window.hiddenBackground
+
+      
+      // if(getScene(this.instanceId).children)
+      if (getScene(this.instanceId).children[2] && getScene(this.instanceId).children[2].type === 'Mesh') {
+        for (let i = 2; i < getScene(this.instanceId).children.length; i++) {
+          
+          const newScene = getScene(this.instanceId) ;
+          newScene.children[i].visible = !getHiddenBackground(this.instanceId)
+        
+          updateStateForInstance(this.instanceId, { scene: newScene });
         }
 
       }
+
+
+
       this.projectorScatterPlotAdapter.scatterPlot.render()
       // this.projectorScatterPlotAdapter.scatterPlot.hiddenBackground(
       //   (hiddenBackground as any).active,
@@ -1462,15 +1865,7 @@ class Projector
     window.addEventListener('resize', () => {
       this.projectorScatterPlotAdapter.resize();
     });
-    {
-      this.projectorScatterPlotAdapter = new ProjectorScatterPlotAdapter(
-        this.getScatterContainer(),
-        this as ProjectorEventContext
-      );
-      this.projectorScatterPlotAdapter.setLabelPointAccessor(
-        this.selectedLabelOption
-      );
-    }
+
     this.projectorScatterPlotAdapter.scatterPlot.onCameraMove(
       (cameraPosition: THREE.Vector3, cameraTarget: THREE.Vector3) =>
         this.bookmarkPanel.clearStateSelection()
@@ -1489,6 +1884,27 @@ class Projector
         neighborsOfFirstPoint: knn.NearestEntry[]
       ) => this.onSelectionChanged(selectedPointIndices, neighborsOfFirstPoint)
     );
+
+    if (!this.isContraVis) {
+      this.showConfChangeButton.addEventListener('click', () => {
+
+        if (this.confChangeInput < 0 || this.confChangeInput > 1) {
+          logging.setErrorMessage("Invaild Input!", null);
+          this.showConfChangeButton.disabled = false;
+          return;
+        }
+        else if (!(this.showUnlabeled || this.showTesting || this.showlabeled) || this.showVisError || this.highlightChange) {
+          this.showConfChangeButton.disabled = false; // Uncheck 'showVisError'
+          // Display your dialog warning
+          (this.$.showConfChangeWarning as any).open();
+          return;
+        }
+  
+        this.showConfChange(this.confChangeInput)
+      });
+    }
+  
+
   }
   private onHover(hoverIndex: number) {
     this.hoverPointIndex = hoverIndex;
@@ -1505,8 +1921,14 @@ class Projector
       this.statusBar.innerText = hoverText;
     }
   }
-  private getScatterContainer(): HTMLDivElement {
-    return this.$$('#scatter') as HTMLDivElement;
+  private getScatterContainer(pos: string): HTMLDivElement {
+    if (pos == "left") {
+      return this.$$('#scatter1') as HTMLDivElement;
+    } else if (pos == "right") {
+      return this.$$('#scatter2') as HTMLDivElement;
+    } else {
+      logging.setErrorMessage('wrong pos!');
+    }
   }
   private onSelectionChanged(
     selectedPointIndices: number[],
@@ -1547,15 +1969,15 @@ class Projector
   }
 
   hiddenOrShowScatter(type: string) {
-    let dom = this.$$('#scatter') as HTMLElement
-    dom.style.visibility = type
+    let dom1 = this.$$('#scatter1') as HTMLElement
+    let dom2 = this.$$('#scatter2') as HTMLElement
     if (type === '') {
       this._showNotAvaliable = false
     } else {
       this._showNotAvaliable = true
     }
   }
-  refreshnoisyBtn(){
+  refreshnoisyBtn() {
     this.inspectorPanel.refreshBtnStyle()
   }
   /**
@@ -1657,7 +2079,6 @@ class Projector
     if (confidenceThresholdFrom || confidenceThresholdTo) {
       dummyCurrPredicates['confidence'] = [Number(confidenceThresholdFrom), Number(confidenceThresholdTo)]
     }
-    console.log("'aaaaaa")
     const msgId = logging.setModalMessage('Querying...');
     let headers = new Headers();
     headers.append('Content-Type', 'application/json');
@@ -1666,14 +2087,15 @@ class Projector
       method: 'POST',
       body: JSON.stringify({
         "predicates": dummyCurrPredicates, "content_path": window.sessionStorage.content_path || this.dataSet.DVIsubjectModelPath,
-        "iteration": iteration,"username": window.sessionStorage.username,
-        "vis_method": window.sessionStorage.vis_method,'setting':window.sessionStorage.selectedSetting
+        "iteration": iteration, "username": window.sessionStorage.username,
+        "vis_method": window.sessionStorage.vis_method, 'setting': window.sessionStorage.selectedSetting
       }),
       headers: headers,
       mode: 'cors'
     }).then(response => response.json()).then(data => {
       const indices = data.selectedPoints;
-      window.alSuggestLabelList = []
+      updateStateForInstance(this.instanceId, { alSuggestLabelList: [] })
+      // this.state.alSuggestLabelList = []
       logging.setModalMessage(null, msgId);
       callback(indices);
     }).catch(error => {
@@ -1682,9 +2104,10 @@ class Projector
     });
   }
 
+
   getAllResPosList(callback: (data: any) => void) {
-    if (window.allResPositions && window.allResPositions.results && window.allResPositions.bgimgList) {
-      callback(window.allResPositions)
+    if (getAllResPositions(this.instanceId) && getAllResPositions(this.instanceId).results && getAllResPositions(this.instanceId).bgimgList) {
+      callback(getAllResPositions(this.instanceId))
       return
     }
     const msgId = logging.setModalMessage('Querying...');
@@ -1722,39 +2145,40 @@ class Projector
       method: 'POST',
       body: JSON.stringify({
         "predicates": predicates, "content_path": window.sessionStorage.content_path || this.dataSet.DVIsubjectModelPath,
-        "iteration": iteration, "username": window.sessionStorage.username,"vis_method": window.sessionStorage.vis_method,'setting':window.sessionStorage.selectedSetting
+        "iteration": iteration, "username": window.sessionStorage.username, "vis_method": window.sessionStorage.vis_method, 'setting': window.sessionStorage.selectedSetting
       }),
       headers: headers,
       mode: 'cors'
     }).then(response => response.json()).then(data => {
       const indices = data.selectedPoints;
       this.inspectorPanel.filteredPoints = indices;
-      window.alSuggestLabelList = []
+      updateStateForInstance(this.instanceId, { alSuggestLabelList: [] })
+      // this.state.alSuggestLabelList = []
     }).catch(error => {
       logging.setErrorMessage('querying for indices');
     });
   }
   // active learning
-  queryByAL(iteration: number, strategy: string, budget: number, acceptIndicates: number[], rejectIndicates: number[],isRecommend:boolean,
+  queryByAL(iteration: number, strategy: string, budget: number, acceptIndicates: number[], rejectIndicates: number[], isRecommend: boolean,
     callback: (indices: any, scores: any, labels: any) => void) {
     const msgId = logging.setModalMessage('Querying...');
     let headers = new Headers();
     headers.append('Content-Type', 'application/json');
     headers.append('Accept', 'application/json');
-   
-   
+
+
     let accIndicates = []
-    if(window.acceptIndicates){
-      accIndicates = window.acceptIndicates.filter((item, i, arr) => {
+    if (getAcceptIndicates(this.instanceId)) {
+      accIndicates = getAcceptIndicates(this.instanceId).filter((item, i, arr) => {
         //函数自身返回的是一个布尔值，只当返回值为true时，当前元素才会存入新的数组中。            
-        return window.properties[window.iteration][item] === 1
+        return getProperties(this.instanceId)[getIteration(this.instanceId)][item] === 1
       })
     }
     let rejIndicates = []
-    if(window.rejectIndicates){
-      rejIndicates = window.rejectIndicates.filter((item, i, arr) => {
+    if (getRejectIndicates(this.instanceId)) {
+      rejIndicates = getRejectIndicates(this.instanceId).filter((item, i, arr) => {
         //函数自身返回的是一个布尔值，只当返回值为true时，当前元素才会存入新的数组中。            
-        return window.properties[window.iteration][item] === 1
+        return getProperties(this.instanceId)[getIteration(this.instanceId)][item] === 1
       })
     }
 
@@ -1767,10 +2191,10 @@ class Projector
         "content_path": window.sessionStorage.content_path || this.dataSet.DVIsubjectModelPath,
         "accIndices": accIndicates,
         "rejIndices": rejIndicates,
-        "isRecommend":isRecommend,
+        "isRecommend": isRecommend,
         "username": window.sessionStorage.username,
         "vis_method": window.sessionStorage.vis_method,
-        'setting':window.sessionStorage.selectedSetting
+        'setting': window.sessionStorage.selectedSetting
       }),
       headers: headers,
       mode: 'cors'
@@ -1780,29 +2204,6 @@ class Projector
       const scores = data.scores
       logging.setModalMessage(null, msgId);
 
-      // if (currentIndices && currentIndices.length) {
-      //   for (let i = 0; i < currentIndices.length; i++) {
-      //     if (window.previousIndecates.indexOf(currentIndices[i]) === -1) {
-      //       window.previousIndecates.push(currentIndices[i])
-      //     }
-      //   }
-      //   function func(a, b) {
-      //     return a - b;
-      //   }
-      //   window.previousIndecates.sort(func)
-      // } else {
-      //   for (let i = 0; i < window.customSelection.length; i++) {
-      //     if (window.previousIndecates.indexOf(window.customSelection[i]) === -1) {
-      //       window.previousIndecates.push(window.customSelection[i])
-      //     }
-      //   }
-      //   function func(a, b) {
-      //     return a - b;
-      //   }
-      //   window.previousIndecates.sort(func)
-      // }
-
-
 
       callback(indices, scores, labels);
     }).catch(error => {
@@ -1811,7 +2212,7 @@ class Projector
     });
   }
   // anormaly detection
-  queryAnormalyStrategy(budget: number, cls: number, currentIndices: number[], comfirm_info: any[], accIndicates: number[], rejIndicates: number[], strategy: string,isRecommend:boolean,
+  queryAnormalyStrategy(budget: number, cls: number, currentIndices: number[], comfirm_info: any[], accIndicates: number[], rejIndicates: number[], strategy: string, isRecommend: boolean,
     callback: (indices: any, cleanIndices?: any) => void) {
     const msgId = logging.setModalMessage('Querying...');
     let headers = new Headers();
@@ -1822,19 +2223,7 @@ class Projector
       rejIndicates = []
     }
     let accIn = []
-    // if(window.acceptIndicates){
-    //   accIndicates = window.acceptIndicates.filter((item, i, arr) => {
-    //     //函数自身返回的是一个布尔值，只当返回值为true时，当前元素才会存入新的数组中。            
-    //     return window.properties[window.iteration][item] === 1
-    //   })
-    // }
-    // let rejIn = []
-    // if(window.rejectIndicates){
-    //   rejIndicates = window.rejectIndicates.filter((item, i, arr) => {
-    //     //函数自身返回的是一个布尔值，只当返回值为true时，当前元素才会存入新的数组中。            
-    //     return window.properties[window.iteration][item] === 1
-    //   })
-    // }
+
     headers.append('Content-Type', 'application/json');
     headers.append('Accept', 'application/json');
     fetch(`http://${this.DVIServer}/anomaly_query`, {
@@ -1849,9 +2238,9 @@ class Projector
         "rejIndices": rejIndicates,
         "strategy": strategy,
         "username": window.sessionStorage.username,
-        "isRecommend":isRecommend,
+        "isRecommend": isRecommend,
         "vis_method": window.sessionStorage.vis_method,
-        'setting':window.sessionStorage.selectedSetting
+        'setting': window.sessionStorage.selectedSetting
       }),
       headers: headers,
       mode: 'cors'
@@ -1860,8 +2249,10 @@ class Projector
       const labels = data.suggestLabels;
       const scores = data.scores
       const cleanIndices = data.cleanList
-      window.alSuggestScoreList = data.scores
-      window.alSuggestLabelList = data.suggestLabels;
+      updateStateForInstance(this.instanceId, { alSuggestScoreList: data.scores })
+      updateStateForInstance(this.instanceId, { alSuggestLabelList: data.suggestLabels })
+      // this.state.alSuggestScoreList = data.scores
+      // this.state.alSuggestLabelList = data.suggestLabels;
       logging.setModalMessage(null, msgId);
       callback(indices, cleanIndices);
     }).catch(error => {
@@ -1884,7 +2275,7 @@ class Projector
         "k": k,
         "content_path": window.sessionStorage.content_path || this.dataSet.DVIsubjectModelPath,
         "vis_method": window.sessionStorage.vis_method,
-        'setting':window.sessionStorage.selectedSetting
+        'setting': window.sessionStorage.selectedSetting
       }),
       headers: headers,
       mode: 'cors'
@@ -1906,11 +2297,11 @@ class Projector
     fetch(`http://${this.DVIServer}/saveDVIselections`, {
       method: 'POST',
       body: JSON.stringify({
-        "newIndices": indices, 
+        "newIndices": indices,
         "content_path": window.sessionStorage.content_path || this.dataSet.DVIsubjectModelPath,
         "iteration": this.iteration,
         "vis_method": window.sessionStorage.vis_method,
-        'setting':window.sessionStorage.selectedSetting
+        'setting': window.sessionStorage.selectedSetting
       }),
       headers: headers,
       mode: 'cors'
@@ -1922,4 +2313,122 @@ class Projector
     });
   }
 
-}
+
+
+  // queryCurrentFocus(iteration: number, focusIndices: number[],
+  //   callback: (indices: any) => void) {
+  //   const msgId = logging.setModalMessage('Querying...');
+  //   let headers = new Headers();
+  //   headers.append('Content-Type', 'application/json');
+  //   headers.append('Accept', 'application/json');
+  //   await fetch(`http://${this.DVIServer}/get_focus`, {
+  //     method: 'POST',
+  //     body: JSON.stringify({
+  //       "iteration": iteration,
+  //       "content_path": window.sessionStorage.content_path,
+  //       "vis_method": window.sessionStorage.vis_method,
+  //       'setting':window.sessionStorage.selectedSetting
+  //     }),
+  //     headers: headers,
+  //     mode: 'cors'
+  //   }).then(response => response.json()).then(data => {
+
+  //     // update projection to use new embeddings
+  //     this.data.projectDVI()
+  //     logging.setModalMessage(null, msgId);
+  //     callback(indices);
+  //   }).catch(error => {
+  //     // logging.setErrorMessage('querying for indices');
+  //     callback(null);
+  //   });
+  // }
+  highlightCriticalChange() {
+    if (!getPredChangeIndices(this.instanceId)) {
+      updateStateForInstance(this.instanceId, { predChangeIndices: [] })
+      // getPredChangeIndices(this.instanceId) = [];
+    }
+    const requestOptions = {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        "path": window.sessionStorage.content_path,
+        "iteration": this.iteration,
+        "last_iteration": getLastIteration(this.instanceId),
+        "username": window.sessionStorage.username,
+        "vis_method": window.sessionStorage.vis_method,
+        'setting': window.sessionStorage.selectedSetting,
+        "content_path": window.sessionStorage.content_path
+      }),
+    };
+
+    fetch(`http://${this.DVIServer}/highlightCriticalChange`, requestOptions)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Server responded with status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        updateStateForInstance(this.instanceId, { predChangeIndices: data.predChangeIndices })
+        // getPredChangeIndices(this.instanceId) = data.predChangeIndices;
+      })
+      .catch(error => {
+        console.error('Error during highlightCriticalChange fetch:', error);
+        logging.setErrorMessage('An error occurred while highlighting critical changes.');
+      });
+  }
+
+
+
+
+
+  showConfChange(confChangeInput: number) {
+    // const msgId = logging.setModalMessage('loading...');
+    this.showConfChangeButton.disabled = true;
+
+    if (!getConfChangeIndices(this.instanceId)) {
+      updateStateForInstance(this.instanceId, { confChangeIndices: [] })
+      // getConfChangeIndices(this.instanceId) = [];
+    }
+    const requestOptions = {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        "path": window.sessionStorage.content_path,
+        "iteration": this.iteration,
+        "last_iteration": getLastIteration(this.instanceId),
+        "username": window.sessionStorage.username,
+        "vis_method": window.sessionStorage.vis_method,
+        'setting': window.sessionStorage.selectedSetting,
+        "content_path": window.sessionStorage.content_path,
+        "confChangeInput": confChangeInput
+      }),
+    };
+
+    fetch(`http://${this.DVIServer}/highlightConfChange`, requestOptions)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Server responded with status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        updateStateForInstance(this.instanceId, { confChangeIndices: data.confChangeIndices })
+        // getConfChangeIndices(this.instanceId) = data.confChangeIndices;
+        this.highlightConfChange = true;
+        console.log(getConfChangeIndices(this.instanceId))
+      })
+      .catch(error => {
+        console.error('Error during highlightCriticalChange fetch:', error);
+        logging.setErrorMessage('An error occurred while highlighting conf changes.');
+      });
+
+    let confChangeIndices;
+
+    confChangeIndices = getConfChangeIndices(this.instanceId)
+    confChangeIndices = confChangeIndices.filter(value => getNowShowIndicates(this.instanceId).includes(value))
+    this.filterDataset(getNowShowIndicates(this.instanceId), false, undefined, undefined, confChangeIndices = confChangeIndices)
+    this.showConfChangeButton.disabled = false;
+  }
+
+  }

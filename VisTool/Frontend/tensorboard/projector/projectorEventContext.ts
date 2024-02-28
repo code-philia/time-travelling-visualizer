@@ -15,7 +15,7 @@ limitations under the License.
 import {DistanceFunction, Projection} from './data';
 import * as knn from './knn';
 
-export type HoverListener = (index: number) => void;
+export type HoverListener = (index: number, highlightedPointIndices?: number[], predChangeIndices?: number[], confChangeIndices?: number[], contraVisHighlightIndices?:number[]) => void;
 
 export type SelectionChangedListener = (
   selectedPointIndices: number[],

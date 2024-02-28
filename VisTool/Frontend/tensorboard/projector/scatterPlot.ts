@@ -15,7 +15,7 @@ limitations under the License.
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
-
+import './globalState';
 import * as vector from './vector';
 import * as util from './util';
 import { ProjectorEventContext } from './projectorEventContext';
@@ -25,13 +25,14 @@ import {
   ScatterBoundingBox,
   ScatterPlotRectangleSelector,
 } from './scatterPlotRectangleSelector';
+import {updateStateForInstance, getCustomSelection, getSceneBackgroundImg, getSelectedStack, getIteration, getBackGroundMesh } from './globalState';
 const BACKGROUND_COLOR = 0xffffff;
 
-declare global {
-  interface Window {
-    backgroundMesh: any
-  }
-}
+// declare global {
+//   interface Window {
+//     backgroundMesh: any
+//   }
+// }
 
 /**
  * The length of the cube (diameter of the circumscribing sphere) where all the
@@ -73,6 +74,7 @@ export class CameraDef {
  * array of visualizers and dispatches application events to them.
  */
 export class ScatterPlot {
+
   private readonly START_CAMERA_POS_3D = new THREE.Vector3(0.45, 0.9, 1.6);
   private readonly START_CAMERA_TARGET_3D = new THREE.Vector3(0, 0, 0);
   private readonly START_CAMERA_POS_2D = new THREE.Vector3(0, 0, 4);
@@ -111,18 +113,23 @@ export class ScatterPlot {
   private isDragSequence = false;
   private rectangleSelector: ScatterPlotRectangleSelector;
   private realDataNumber = 0;
+  private instanceId: number;
+
   constructor(
     private container: HTMLElement,
-    private projectorEventContext: ProjectorEventContext
+    private projectorEventContext: ProjectorEventContext,
+    instanceId: number
   ) {
-
+    this.instanceId = instanceId
+   
     // 1,创建场景对象
     this.scene = new THREE.Scene();
-    if (!window.sceneBackgroundImg) {
-      window.sceneBackgroundImg = []
+    if (!getSceneBackgroundImg(this.instanceId)) {
+      updateStateForInstance(this.instanceId, {sceneBackgroundImg:[]})
+      // getSceneBackgroundImg(this.instanceId) = []
     }
-    if (window.sceneBackgroundImg[window.iteration]) {
-      this.addbackgroundImg(window.sceneBackgroundImg[window.iteration])
+    if (getSceneBackgroundImg(this.instanceId)[getIteration(this.instanceId)]) {
+      this.addbackgroundImg(getSceneBackgroundImg(this.instanceId)[getIteration(this.instanceId)])
     }
     this.getLayoutValues();
     // this.scene = new THREE.Scene();
@@ -144,16 +151,18 @@ export class ScatterPlot {
       (boundingBox: ScatterBoundingBox) => this.selectBoundingBox(boundingBox)
     );
     this.addInteractionListeners();
-    window.scene = this.scene;
-    window.renderer = this.renderer
+    updateStateForInstance(this.instanceId, {scene:this.scene})
+    updateStateForInstance(this.instanceId, {renderer:this.renderer})
+    // this.state.scene = this.scene;
+    // this.state.renderer = this.renderer
   }
 
   addbackgroundImg(imgUrl: string) {
     //移除上一个画布
-    // if (window.backgroundMesh) {
-    //   this.scene.remove(window.backgroundMesh)
+    // if (this.state.backgroundMesh) {
+    //   this.scene.remove(this.state.backgroundMesh)
     // }
-    let temp = window.backgroundMesh
+    let temp = getBackGroundMesh(this.instanceId)
     if (!imgUrl) {
       return
     }
@@ -181,8 +190,10 @@ export class ScatterPlot {
       if (temp) {
         this.scene.remove(temp)
       }
-      window.backgroundMesh = newMesh
-      window.scene = this.scene
+      updateStateForInstance(this.instanceId, {backgroundMesh:newMesh})
+      updateStateForInstance(this.instanceId, {scene:this.scene})
+      // this.state.backgroundMesh = newMesh
+      // this.state.scene = this.scene
       this.render();
     }
   }
@@ -213,7 +224,46 @@ export class ScatterPlot {
     // End is called when the user stops interacting with the
     // controls (e.g. on mouse up, after dragging).
     cameraControls.addEventListener('end', () => { });
+
+    // Change is called every time the user interacts with the controls.
+    cameraControls.addEventListener('change', () => {
+    this.logCurrentPositionAndViewSize();
+    this.render();
+  });
   }
+
+  private logCurrentPositionAndViewSize() {
+    const x = this.camera.position.x;
+    const y = this.camera.position.y;
+    const orthoCamera = this.camera as THREE.OrthographicCamera;
+    // Adjust for zoom
+    const left = orthoCamera.left / orthoCamera.zoom;
+    const right = orthoCamera.right / orthoCamera.zoom;
+    const top = orthoCamera.top / orthoCamera.zoom;
+    const bottom = orthoCamera.bottom / orthoCamera.zoom;
+    updateStateForInstance(this.instanceId, {currentFocus:[left, right, bottom, top]})
+    // this.state.currentFocus = [left, right, bottom, top]
+    // Getting the corner coordinates
+    const topLeft = new THREE.Vector3(left, top, 0);
+    const topRight = new THREE.Vector3(right, top, 0);
+    const bottomLeft = new THREE.Vector3(left, bottom, 0);
+    const bottomRight = new THREE.Vector3(right, bottom, 0);
+
+    // img center never change
+    // const oriBackgroundTopLeft = new THREE.Vector3(x - 1, y + 1, 0);
+    // const oriBackgroundTopRight = new THREE.Vector3(x + 1, y + 1, 0);
+    // const oriBackgroundBottomLeft = new THREE.Vector3(x - 1, y - 1, 0);
+    // const oriBackgroundBottomRight = new THREE.Vector3(x + 1, y - 1, 0);
+
+    console.log(`Position: (${x}, ${y})`);
+        // Logging them to console in a readable format
+        console.log(`Top Left: (${topLeft.x+x}, ${topLeft.y+y})`);
+        console.log(`Top Right: (${topRight.x+x}, ${topRight.y+y})`);
+        console.log(`Bottom Left: (${bottomLeft.x+x}, ${bottomLeft.y+y})`);
+        console.log(`Bottom Right: (${bottomRight.x+x}, ${bottomRight.y+y})`);
+  }
+
+  
   private makeOrbitControls(
     camera: THREE.Camera,
     cameraDef: CameraDef,
@@ -372,7 +422,8 @@ export class ScatterPlot {
       if (this.nearestPoint >= this.realDataNumber) {
         selection = [];
       }
-      window.selectedStack = selection
+      updateStateForInstance(this.instanceId, {selectedStack:selection})
+      // getSelectedStack(this.instanceId) = selection
       this.projectorEventContext.notifySelectionChanged(selection);
     }
     this.isDragSequence = false;
@@ -480,12 +531,12 @@ export class ScatterPlot {
       } else {
         this.container.style.cursor = 'crosshair';
       }
-      if (window.selectedStack && window.selectedStack.length) {
-        if (window.customSelection) {
-          this.projectorEventContext.notifySelectionChanged(window.selectedStack, true, 'boundingbox');
+      if (getSelectedStack(this.instanceId) && getSelectedStack(this.instanceId).length) {
+        if (getCustomSelection(this.instanceId)) {
+          this.projectorEventContext.notifySelectionChanged(getSelectedStack(this.instanceId), true, 'boundingbox');
           this.isctrling = false
-        
-          window.selectedStack = []
+          updateStateForInstance(this.instanceId, {selectedStack:[]})
+          // getSelectedStack(this.instanceId) = []
         }
       }else{
         alert('You can only go back one step');
@@ -595,7 +646,8 @@ export class ScatterPlot {
     //   }
     // }
     // console.log('validIndices',validIndices,pointIndices)
-    window.selectedStack = pointIndices
+    updateStateForInstance(this.instanceId, {selectedStack:pointIndices})
+    // getSelectedStack(this.instanceId) = pointIndices
     this.projectorEventContext.notifySelectionChanged(pointIndices, true, 'boundingbox');
   }
   private setNearestPointToMouse(e: MouseEvent) {
@@ -793,7 +845,7 @@ export class ScatterPlot {
       }
     }
     // Render second pass to color buffer, to be displayed on the canvas.
-    this.visualizers.forEach((v) => v.onRender(rc));
+    this.visualizers.forEach((v) => v.onRender(rc, this.instanceId));
     this.renderer.render(this.scene, this.camera);
   }
   setMouseMode(mouseMode: MouseMode) {

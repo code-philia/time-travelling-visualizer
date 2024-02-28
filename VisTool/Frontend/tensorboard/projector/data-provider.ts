@@ -94,6 +94,7 @@ export interface DataProvider {
 }
 export function retrieveTensorAsBytes(
   dp: DataProvider,
+  instanceId: number,
   embedding: EmbeddingInfo,
   run: string,
   tensorName: string,
@@ -139,17 +140,20 @@ export function retrieveTensorAsBytes(
       );
     }
     parseTensorsFromFloat32Array(data, dim).then((dataPoints) => {
-      callback(new DataSet(dataPoints));
+      console.log("dataprovider", instanceId)
+      callback(new DataSet(dataPoints, instanceId));
     });
   };
   xhr.send();
 }
 export function parseRawTensors(
   content: ArrayBuffer,
+  instanceId: number,
   callback: (ds: DataSet) => void
 ) {
   parseTensors(content).then((data) => {
-    callback(new DataSet(data));
+    console.log("dataproviderparse", instanceId)
+    callback(new DataSet(data, instanceId));
   });
 }
 export function parseRawMetadata(

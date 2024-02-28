@@ -15,6 +15,7 @@ limitations under the License.
 import { UMAP } from 'umap-js';
 
 import { TSNE } from './bh_tsne';
+
 import {
   DataProvider,
   EmbeddingInfo,
@@ -27,6 +28,8 @@ import * as knn from './knn';
 import * as vector from './vector';
 import * as logging from './logging';
 import * as util from './util';
+import { getAcceptIndicates, getHighlightedPointIndices, getIteration, getLabeledData, getModelMath, getNowShowIndicates, getProperties, getRejectIndicates, getSceneBackgroundImg, getTestingData, getUnLabelData, updateSessionStateForInstance, updateStateForInstance } from './globalState';
+
 
 export type DistanceFunction = (a: vector.Vector, b: vector.Vector) => number;
 export type ProjectionComponents3D = [string, string, string];
@@ -242,11 +245,19 @@ export class DataSet {
   private tsne: TSNE;
   hasUmapRun = false;
   private umap: UMAP;
+  private instanceId: number;
+  private state: any;
   /** Creates a new Dataset */
   constructor(
     points: DataPoint[],
-    spriteAndMetadataInfo?: SpriteAndMetadataInfo
+    instanceId: number,
+    spriteAndMetadataInfo?: SpriteAndMetadataInfo,
+
   ) {
+    
+    this.instanceId = instanceId;
+  
+    console.log("data.ts", this.instanceId)
     this.points = points;
     this.shuffledDataIndices = util.shuffle(util.range(this.points.length));
     this.sequences = this.computeSequences(points);
@@ -338,7 +349,7 @@ export class DataSet {
       };
       dp_list.push(dp);
     }
-    return new DataSet(dp_list, this.spriteAndMetadataInfo);
+    return new DataSet(dp_list,this.instanceId,  this.spriteAndMetadataInfo);
   }
   /**
    * Computes the centroid, shifts all points to that centroid,
@@ -385,11 +396,23 @@ export class DataSet {
     this.DVIfilterIndices = pointIndices;
   }
 
+
+
+
   /** Runs DVI on the data. */
   async projectDVI(
     iteration: number, predicates: { [key: string]: any },
     stepCallback: (iter: number | null, evaluation: any, newSelection: any[], filterIndices: number[], totalIter?: number) => void
   ) {
+    // min-x, max-x, min-y, max-y
+
+    // Assuming instanceId is a string that uniquely identifies your Comparator instance
+
+// Update the isAdjustingSel property for this specific instance
+    // updateStateForInstance(this.instanceId, { currentFocus: [-1, 1, -1, 1] });
+
+    // window.currentFocus = [-1, 1, -1, 1]
+    
     this.projections['tsne'] = true;
     function componentToHex(c: number) {
       const hex = c.toString(16);
@@ -404,8 +427,11 @@ export class DataSet {
     this.iterationChangeReset()
     // window.sessionStorage.setItem('acceptIndicates',"")
     // window.sessionStorage.setItem('rejectIndicates',"")
-    window.acceptIndicates = []
-    window.rejectIndicates = []
+    // updateSessionStateForInstance(this.instanceId, {acceptIndicates:""})
+    // updateSessionStateForInstance(this.instanceId, {rejectIndicates:""})
+    updateStateForInstance(this.instanceId, {acceptIndicates:[]})
+    updateStateForInstance(this.instanceId, {rejectIndicates:[]})
+
 
     if (this.DVIAvailableIteration.indexOf(iteration) == -1) {
 
@@ -418,11 +444,19 @@ export class DataSet {
       //     const ip_address = data.DVIServerIP + ":" + data.DVIServerPort;
       //     this.DVIServer = ip_address;
 
-      if (window.modelMath) {
-        this.DVIsubjectModelPath = window.modelMath
+      if (getModelMath(this.instanceId)) {
+        this.DVIsubjectModelPath = getModelMath(this.instanceId)
       }
+      if (getIteration(this.instanceId)) {
+        updateStateForInstance(this.instanceId, {last_iteration: getIteration(this.instanceId)})
+        //state.last_iteration = state.iteration
+      } else {
+        updateStateForInstance(this.instanceId, {last_iteration: 1})
+        //state.last_iteration = 1
+      }
+      updateStateForInstance(this.instanceId, {iteration: iteration})
+      //getIteration(this.instanceId) = iteration
 
-      window.iteration = iteration
       await fetch("http://" + this.DVIServer + "/updateProjection", {
         method: 'POST',
         body: JSON.stringify({
@@ -432,6 +466,7 @@ export class DataSet {
           "vis_method": window.sessionStorage.vis_method,
           'setting':window.sessionStorage.selectedSetting,
           "content_path": window.sessionStorage.content_path || this.DVIsubjectModelPath,
+          "isContraVis": window.sessionStorage.isContraVis,
         }),
         headers: headers,
         mode: 'cors'
@@ -440,10 +475,21 @@ export class DataSet {
 
         const grid_index = [[data.grid_index[0], data.grid_index[1]], [data.grid_index[2], data.grid_index[3]]];
         const grid_color = [[137, 120, 117], [136, 119, 116], [136, 118, 115], [135, 117, 114]];
-        if (!window.sceneBackgroundImg) {
-          window.sceneBackgroundImg = []
+
+        if (!getSceneBackgroundImg(this.instanceId)) {
+          updateStateForInstance(this.instanceId, {sceneBackgroundImg:[]})
+          // getSceneBackgroundImg(this.instanceId) = []
         }
-        window.sceneBackgroundImg[window.iteration] = data.grid_color
+        
+
+        const newCustomSelection = getSceneBackgroundImg(this.instanceId);
+
+        // Perform the splice operation on the new array
+        newCustomSelection[getIteration(this.instanceId)] = data.grid_color
+  
+        // Update the state with the modified array
+        updateStateForInstance(this.instanceId, { sceneBackgroundImg: newCustomSelection });
+        // getSceneBackgroundImg(this.instanceId)[getIteration(this.instanceId)] = data.grid_color
        let temp_label_color_list:any = []
        let temp_label_list:any = []
        let k=0
@@ -472,8 +518,8 @@ export class DataSet {
 
         const real_data_number = label_color_list.length;
         this.tSNETotalIter = data.maximum_iteration;
-        window.tSNETotalIter = data.maximum_iteration
-        
+        updateStateForInstance(this.instanceId, {tSNETotalIter:data.maximum_iteration})
+        // this.state.tSNETotalIter = data.maximum_iteration
 
         this.tSNEIteration = iteration;
         this.DVIValidPointNumber[iteration] = real_data_number + background_point_number;
@@ -487,29 +533,85 @@ export class DataSet {
         const original_label_list = data.original_label_list;
 
         const evaluation = data.evaluation;
-        console.log("evaluation",evaluation)
         this.DVIEvaluation[iteration] = evaluation;
         const inv_acc = data.inv_acc_list || [];
-        if (!window.properties) {
-          window.properties = []
+        if (!getProperties(this.instanceId)) {
+          console.log("update")
+          updateStateForInstance(this.instanceId, {properties:[]})
+          // getProperties(this.instanceId) = []
         }
-        window.properties[iteration] = data.properties;
+        const newProperties = getProperties(this.instanceId);
 
-        window.unLabelData = []
-        window.testingData = []
-        window.labeledData = []
+        // Perform the splice operation on the new array
+        newProperties[iteration] = data.properties
+  
+        // Update the state with the modified array
+        updateStateForInstance(this.instanceId, { properties: newProperties });
 
-        if (!window.nowShowIndicates) {
-          window.nowShowIndicates = []
+        // getProperties(this.instanceId)[iteration] = data.properties;
+
+        if (!getHighlightedPointIndices(this.instanceId)) {
+          updateStateForInstance(this.instanceId, {highlightedPointIndices:[]})
+          // getHighlightedPointIndices(this.instanceId) = []
+        }
+        const newHighlight = getHighlightedPointIndices(this.instanceId);
+
+        // Perform the splice operation on the new array
+        newHighlight[iteration] = data.highlightedPointIndices
+  
+        // Update the state with the modified array
+        updateStateForInstance(this.instanceId, { highlightedPointIndices: newHighlight });
+
+        // getHighlightedPointIndices(this.instanceId)[iteration] = data.highlightedPointIndices
+
+
+        updateStateForInstance(this.instanceId, {unLabelData:[]})
+        updateStateForInstance(this.instanceId, {testingData:[]})
+        updateStateForInstance(this.instanceId, {labeledData:[]})
+
+
+        if (!getNowShowIndicates(this.instanceId)) {
+          updateStateForInstance(this.instanceId, {nowShowIndicates:[]})
+          // getNowShowIndicates(this.instanceId) = []
           for (let i = 0; i < data.properties.length; i++) {
             if (data.properties[i] === 1) {
-              window.unLabelData.push(i)
+              const newUn = getUnLabelData(this.instanceId);
+
+              // Perform the splice operation on the new array
+              newUn.push(i)
+        
+              // Update the state with the modified array
+              updateStateForInstance(this.instanceId, { unLabelData: newUn });
+
+              // getUnLabelData(this.instanceId).push(i)
             } else if (data.properties[i] === 2) {
-              window.testingData.push(i)
+              const newUn = getTestingData(this.instanceId);
+
+              // Perform the splice operation on the new array
+              newUn.push(i)
+        
+              // Update the state with the modified array
+              updateStateForInstance(this.instanceId, { testingData: newUn });
+              // getTestingData(this.instanceId).push(i)
             } else {
-              window.labeledData.push(i)
+              const newUn = getLabeledData(this.instanceId);
+
+              // Perform the splice operation on the new array
+              newUn.push(i)
+        
+              // Update the state with the modified array
+              updateStateForInstance(this.instanceId, { labeledData: newUn });
+              // this.state.labeledData.push(i)
             }
-            window.nowShowIndicates.push(i)
+            const newNow = getNowShowIndicates(this.instanceId);
+
+            // Perform the splice operation on the new array
+            newNow.push(i)
+      
+            // Update the state with the modified array
+            updateStateForInstance(this.instanceId, { nowShowIndicates: newNow });
+
+            // getNowShowIndicates(this.instanceId).push(i)
           }
         }
 
@@ -573,7 +675,7 @@ export class DataSet {
           dataPoint.projections['tsne-0'] = result[i][0];
           dataPoint.projections['tsne-1'] = result[i][1];
           dataPoint.projections['tsne-2'] = 0;
-          if (window.unLabelData?.length && window.unLabelData.indexOf(i) !== -1) {
+          if (getUnLabelData(this.instanceId)?.length && getUnLabelData(this.instanceId).indexOf(i) !== -1) {
             // label_color_list[i] = [204, 204, 204]
             dataPoint.color = rgbToHex(204, 204, 204);
           } else {
@@ -655,7 +757,8 @@ export class DataSet {
           this.DVIfilterIndices.push(i);
         }
         this.DVIDataList[iteration] = this.points
-        window.DVIDataList = this.DVIDataList
+        updateStateForInstance(this.instanceId, {DVIDataList:this.DVIDataList})
+        // this.state.DVIDataList = this.DVIDataList
 
         stepCallback(this.tSNEIteration, evaluation, new_selection, filterIndices, this.tSNETotalIter);
       }).catch(error => {
@@ -670,7 +773,10 @@ export class DataSet {
       const evaluation = this.DVIEvaluation[iteration];
       this.tSNEIteration = iteration;
 
-      window.iteration = iteration
+      updateStateForInstance(this.instanceId, {last_iteration:getIteration(this.instanceId)})
+      updateStateForInstance(this.instanceId, {iteration:iteration})
+      // this.state.last_iteration = getIteration(this.instanceId)
+      // getIteration(this.instanceId) = iteration
 
       const newSelection = [];
       for (let i = 0; i < validDataNumber; i++) {
@@ -770,21 +876,21 @@ export class DataSet {
     //   .then(data => {
     //     const ip_address = data.DVIServerIP + ":" + data.DVIServerPort;
     //     this.DVIServer = ip_address;
-    if (window.modelMath) {
-      this.DVIsubjectModelPath = window.modelMath
+    if (getModelMath(this.instanceId)) {
+      this.DVIsubjectModelPath = getModelMath(this.instanceId)
     }
     let indices = []
-    if(window.acceptIndicates){
-      indices = window.acceptIndicates.filter((item, i, arr) => {
+    if(getAcceptIndicates(this.instanceId)){
+      indices = getAcceptIndicates(this.instanceId).filter((item, i, arr) => {
         //函数自身返回的是一个布尔值，只当返回值为true时，当前元素才会存入新的数组中。            
-        return window.properties[window.iteration][item] === 1
+        return getProperties(this.instanceId)[getIteration(this.instanceId)][item] === 1
       })
     }
     let rejIndices = []
-    if(window.rejectIndicates){
-      rejIndices = window.rejectIndicates.filter((item, i, arr) => {
+    if(getRejectIndicates(this.instanceId)){
+      rejIndices = getRejectIndicates(this.instanceId).filter((item, i, arr) => {
         //函数自身返回的是一个布尔值，只当返回值为true时，当前元素才会存入新的数组中。            
-        return window.properties[window.iteration][item] === 1
+        return getProperties(this.instanceId)[getIteration(this.instanceId)][item] === 1
       })
     }
 
@@ -803,16 +909,32 @@ export class DataSet {
       mode: 'cors'
     }).then(response => response.json()).then(data => {
       iteration = data.maximum_iteration
-      window.acceptIndicates = []
-      window.rejectIndicates = []
-      window.sessionStorage.setItem('acceptIndicates', "")
-      window.sessionStorage.setItem('rejectIndicates', "")
-
-      window.iteration = iteration
+      updateStateForInstance(this.instanceId, {acceptIndicates:[]})
+      updateStateForInstance(this.instanceId, {rejectIndicates:[]})
+      updateSessionStateForInstance(this.instanceId, {acceptIndicates:""})
+     
+      updateSessionStateForInstance(this.instanceId, {rejectIndicates:""})
+   
+      // this.state.acceptIndicates = []
+      // this.state.rejectIndicates = []
+      // window.sessionStorage.setItem('acceptIndicates', "")
+      // window.sessionStorage.setItem('rejectIndicates', "")
+  
+      updateStateForInstance(this.instanceId, {last_iteration:iteration})
+      updateStateForInstance(this.instanceId, {iteration:iteration})
+      // this.state.last_iteration = getIteration(this.instanceId)
+      // getIteration(this.instanceId) = iteration
       const result = data.result;
       const grid_index = [[data.grid_index[0], data.grid_index[1]], [data.grid_index[2], data.grid_index[3]]];
       const grid_color = [[137, 120, 117], [136, 119, 116], [136, 118, 115], [135, 117, 114]];
-      window.sceneBackgroundImg[window.iteration] = data.grid_color
+      const newUn = getSceneBackgroundImg(this.instanceId);
+
+      // Perform the splice operation on the new array
+      newUn[getIteration(this.instanceId)] = data.grid_color
+
+      // Update the state with the modified array
+      updateStateForInstance(this.instanceId, { sceneBackgroundImg: newUn });
+      // getSceneBackgroundImg(this.instanceId)[getIteration(this.instanceId)] = data.grid_color
       let k = 0;
       let temp_label_color_list:any = []
       let temp_label_list:any = []
@@ -840,7 +962,8 @@ export class DataSet {
 
       const real_data_number = label_color_list.length;
       this.tSNETotalIter = data.maximum_iteration;
-      window.tSNETotalIter = data.maximum_iteration;
+      updateStateForInstance(this.instanceId, {tSNETotalIter:data.maximum_iteration})
+      // this.state.tSNETotalIter = data.maximum_iteration;
 
       this.tSNEIteration = iteration;
       this.DVIValidPointNumber[iteration] = real_data_number + background_point_number;
@@ -857,26 +980,66 @@ export class DataSet {
       this.DVIEvaluation[iteration] = evaluation;
       const inv_acc = data.inv_acc_list || [];
 
-      if (!window.properties) {
-        window.properties = []
+      if (!getProperties(this.instanceId)) {
+        updateStateForInstance(this.instanceId, {properties:[]})
+        // getProperties(this.instanceId) = []
       }
-      window.properties[iteration] = data.properties;
+      const newPro = getProperties(this.instanceId);
 
-      window.unLabelData = []
-      window.testingData = []
-      window.labeledData = []
-      if (!window.nowShowIndicates) {
-        window.nowShowIndicates = []
+      // Perform the splice operation on the new array
+      newPro[iteration] = data.properties
+
+      // Update the state with the modified array
+      updateStateForInstance(this.instanceId, { properties: newPro });
+
+      // getProperties(this.instanceId)[iteration] = data.properties;
+      updateStateForInstance(this.instanceId, {unLabelData:[]})
+      updateStateForInstance(this.instanceId, {testingData:[]})
+      updateStateForInstance(this.instanceId, {labeledData:[]})
+      // getUnLabelData(this.instanceId) = []
+      // getTestingData(this.instanceId) = []
+      // this.state.labeledData = []
+      if (!getNowShowIndicates(this.instanceId)) {
+        updateStateForInstance(this.instanceId, {nowShowIndicates:[]})
+        // getNowShowIndicates(this.instanceId) = []
 
         for (let i = 0; i < data.properties.length; i++) {
           if (data.properties[i] === 1) {
-            window.unLabelData.push(i)
+            const newUn = getUnLabelData(this.instanceId);
+
+            // Perform the splice operation on the new array
+            newUn.push(i)
+      
+            // Update the state with the modified array
+            updateStateForInstance(this.instanceId, { unLabelData: newUn });
+            // getUnLabelData(this.instanceId).push(i)
           } else if (data.properties[i] === 2) {
-            window.testingData.push(i)
+            const newUn = getTestingData(this.instanceId);
+
+            // Perform the splice operation on the new array
+            newUn.push(i)
+      
+            // Update the state with the modified array
+            updateStateForInstance(this.instanceId, { testingData: newUn });
+            // getTestingData(this.instanceId).push(i)
           } else {
-            window.labeledData.push(i)
+            const newUn = getLabeledData(this.instanceId);
+
+            // Perform the splice operation on the new array
+            newUn.push(i)
+      
+            // Update the state with the modified array
+            updateStateForInstance(this.instanceId, { labeledData: newUn });
+            // this.state.labeledData.push(i)
           }
-          window.nowShowIndicates.push(i)
+          const newNow = getNowShowIndicates(this.instanceId);
+
+          // Perform the splice operation on the new array
+          newNow.push(i)
+    
+          // Update the state with the modified array
+          updateStateForInstance(this.instanceId, { nowShowIndicates: newNow });
+          // getNowShowIndicates(this.instanceId).push(i)
         }
       }
 
@@ -1071,7 +1234,8 @@ export class DataSet {
           this.DVIDataList[i] = this.DVIDataList[i - 1]
         }
       }
-      window.DVIDataList = this.DVIDataList
+      updateStateForInstance(this.instanceId, {DVIDataList:this.DVIDataList})
+      // this.state.DVIDataList = this.DVIDataList
       stepCallback(this.tSNEIteration, evaluation, new_selection, filterIndices, this.tSNETotalIter);
     }).catch(error => {
       logging.setErrorMessage('Error');
@@ -1087,8 +1251,8 @@ export class DataSet {
     let headers = new Headers();
     headers.append('Content-Type', 'application/json');
     headers.append('Accept', 'application/json');
-    if (window.modelMath) {
-      this.DVIsubjectModelPath = window.modelMath
+    if (getModelMath(this.instanceId)) {
+      this.DVIsubjectModelPath = getModelMath(this.instanceId)
     }
     // const msgId = logging.setModalMessage('Fetching sprite image...');
     // await fetch("standalone_projector_config.json", { method: 'GET' })
@@ -1110,16 +1274,24 @@ export class DataSet {
 
 
   iterationChangeReset() {
-    window.alQueryResPointIndices = []
-    window.queryResPointIndices = []
-    window.queryResPointIndices = []
-    window.previousIndecates = []
+    updateStateForInstance(this.instanceId,{alQueryResPointIndices:[]})
+    updateStateForInstance(this.instanceId,{queryResPointIndices:[]})
 
-    window.alSuggestionIndicates = []
-    window.alSuggestLabelList = []
-    window.alSuggestScoreList = []
-    window.customSelection = []
-    window.flagindecatesList = []
+    updateStateForInstance(this.instanceId,{previousIndecates:[]})
+    updateStateForInstance(this.instanceId,{alSuggestionIndicates:[]})
+    updateStateForInstance(this.instanceId,{alSuggestLabelList:[]})
+    updateStateForInstance(this.instanceId,{alSuggestScoreList:[]})
+    updateStateForInstance(this.instanceId,{customSelection:[]})
+    updateStateForInstance(this.instanceId,{flagindecatesList:[]})
+    // this.state.alQueryResPointIndices = []
+    // this.state.queryResPointIndices = []
+    // this.state.previousIndecates = []
+
+    // this.state.alSuggestionIndicates = []
+    // this.state.alSuggestLabelList = []
+    // this.state.alSuggestScoreList = []
+    // this.state.customSelection = []
+    // this.state.flagindecatesList = []
   }
 
 

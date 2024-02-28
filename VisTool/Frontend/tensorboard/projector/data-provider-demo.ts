@@ -30,8 +30,11 @@ const BYTES_EXTENSION = '.bytes';
 export class DemoDataProvider implements DataProvider {
   private projectorConfigPath: string;
   private projectorConfig: ProjectorConfig;
-  constructor(projectorConfigPath: string) {
+  private instanceId: number;
+  constructor(projectorConfigPath: string, instanceId:number){
+    this.instanceId = instanceId;
     this.projectorConfigPath = projectorConfigPath;
+    
   }
   private getEmbeddingInfo(tensorName: string): EmbeddingInfo {
     let embeddings = this.projectorConfig.embeddings;
@@ -108,8 +111,10 @@ export class DemoDataProvider implements DataProvider {
       embedding.tensorPath.substr(-1 * BYTES_EXTENSION.length) ===
       BYTES_EXTENSION
     ) {
+
       retrieveTensorAsBytes(
         this,
+        this.instanceId,
         this.getEmbeddingInfo(tensorName),
         run,
         tensorName,
@@ -126,7 +131,8 @@ export class DemoDataProvider implements DataProvider {
       };
       request.onload = () => {
         parseTensors(request.response).then((points) => {
-          callback(new DataSet(points));
+          console.log("callbackdemo", this.instanceId)
+          callback(new DataSet(points, this.instanceId));
         });
       };
       request.send();

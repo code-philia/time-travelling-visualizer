@@ -17,7 +17,7 @@ import * as THREE from 'three';
 import {RenderContext} from './renderContext';
 import {ScatterPlotVisualizer} from './scatterPlotVisualizer';
 import * as util from './util';
-
+import {updateStateForInstance, getUnLabelData} from './globalState';
 const FONT_SIZE = 80;
 const ONE_OVER_FONT_SIZE = 1 / FONT_SIZE;
 const LABEL_SCALE = 2.2; // at 1:1 texel/pixel ratio
@@ -107,6 +107,7 @@ export class ScatterPlotVisualizer3DLabels implements ScatterPlotVisualizer {
   private totalVertexCount: number;
   private labelVertexMap: number[][];
   private glyphTexture: GlyphTexture;
+  private instanceId: number;
   private createGlyphTexture(): GlyphTexture {
     let canvas = document.createElement('canvas');
     canvas.width = MAX_CANVAS_DIMENSION;
@@ -170,6 +171,7 @@ export class ScatterPlotVisualizer3DLabels implements ScatterPlotVisualizer {
     }
   }
   private createLabels() {
+
     if (this.labelStrings == null || this.worldSpacePointPositions == null) {
       return;
     }
@@ -233,7 +235,7 @@ export class ScatterPlotVisualizer3DLabels implements ScatterPlotVisualizer {
         let left = leftOffset / scale;
         let top = FONT_SIZE / scale;
         // First triangle
-        if(window.unLabelData.indexOf(i) !== -1){
+        if(getUnLabelData(this.instanceId).indexOf(i) !== -1){
           positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 0, left, 0);
           positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 1, right, 0);
           positionObject.setXY(lettersSoFar * VERTICES_PER_GLYPH + 2, left, top);
@@ -329,7 +331,8 @@ export class ScatterPlotVisualizer3DLabels implements ScatterPlotVisualizer {
     (colors as any).setArray(this.pickingColors);
     colors.needsUpdate = true;
   }
-  onRender(rc: RenderContext) {
+  onRender(rc: RenderContext, instanceId: number) {
+    this.instanceId = instanceId
     if (this.geometry == null) {
       this.createLabels();
     }
@@ -353,3 +356,4 @@ export class ScatterPlotVisualizer3DLabels implements ScatterPlotVisualizer {
   }
   onResize(newWidth: number, newHeight: number) {}
 }
+

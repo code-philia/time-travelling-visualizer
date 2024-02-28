@@ -18,6 +18,7 @@ import {CameraType, RenderContext} from './renderContext';
 import {ScatterPlotVisualizer} from './scatterPlotVisualizer';
 import * as util from './util';
 
+
 const NUM_POINTS_FOG_THRESHOLD = 5000;
 const MIN_POINT_SIZE = 5;
 const IMAGE_SIZE = 30;
@@ -174,6 +175,7 @@ export class ScatterPlotVisualizerSprites implements ScatterPlotVisualizer {
   private worldSpacePointPositions: Float32Array;
   private pickingColors: Float32Array;
   private renderColors: Float32Array;
+  private instanceId: number;
   constructor() {
     this.standinTextureForPoints = util.createTexture(
       document.createElement('canvas')
@@ -411,7 +413,8 @@ export class ScatterPlotVisualizerSprites implements ScatterPlotVisualizer {
     (scaleFactors as any).setArray(rc.pointScaleFactors);
     scaleFactors.needsUpdate = true;
   }
-  onRender(rc: RenderContext) {
+  onRender(rc: RenderContext, instanceId: number) {
+    this.instanceId = instanceId
     if (!this.points) {
       return;
     }
