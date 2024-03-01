@@ -1,4 +1,4 @@
-from flask import request, Flask, jsonify, make_response
+from flask import request, Flask, jsonify, make_response,render_template,send_from_directory
 from flask_cors import CORS, cross_origin
 
 import base64
@@ -13,7 +13,7 @@ from utils import update_epoch_projection, initialize_backend, add_line
 
 
 # flask for API server
-app = Flask(__name__)
+app = Flask(__name__,static_folder='Frontend')
 cors = CORS(app, supports_credentials=True)
 app.config['CORS_HEADERS'] = 'Content-Type'
 
@@ -26,6 +26,7 @@ def update_projection():
     CONTENT_PATH = os.path.normpath(res['path'])
     VIS_METHOD = res['vis_method']
     SETTING = res["setting"]
+    print(CONTENT_PATH,VIS_METHOD,SETTING)
 
     iteration = int(res['iteration'])
     predicates = res["predicates"]
@@ -365,6 +366,12 @@ def get_res():
 
     add_line(API_result_path,['animation', username])  
     return make_response(jsonify({"results":results,"bgimgList":imglist, "grid": gridlist}), 200)
+
+@app.route("/", methods=["GET", "POST"])
+def GUI():
+    # return render_template("SilasIndex.html")
+    return send_from_directory(app.static_folder, 'index.html')
+
 
 @app.route('/get_itertaion_structure', methods=["POST", "GET"])
 @cross_origin()
