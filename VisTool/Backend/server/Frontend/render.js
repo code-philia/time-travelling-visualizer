@@ -5,41 +5,93 @@ const PERSP_CAMERA_FOV_VERTICAL = 70;
 const PERSP_CAMERA_NEAR_CLIP_PLANE = 0.01;
 const PERSP_CAMERA_FAR_CLIP_PLANE = 100;
 const ORTHO_CAMERA_FRUSTUM_HALF_EXTENT = 1.2;
-const MIN_ZOOM_SCALE = 1
+const MIN_ZOOM_SCALE = 0.8
 const MAX_ZOOM_SCALE = 30
 const NORMAL_SIZE = 5
 const HOVER_SIZE = 10
 
+var isDragging = false;
+var previousMousePosition = {
+    x: 0,
+    y: 0
+};
+
 function drawCanvas(res) {
+    if(window.vueApp.scene){
+        window.vueApp.scene.traverse(function(object) {
+            if (object.isMesh) {
+                if (object.geometry) {
+                    object.geometry.dispose();
+                }
+                if (object.material) {
+                    if (object.material.isMaterial) {
+                        cleanMaterial(object.material);
+                    } else {
+                        // 对于多材质的情况（材质数组）
+                        for (const material of object.material) {
+                            cleanMaterial(material);
+                        }
+                    }
+                }
+            }
+        });
+
+        while(window.vueApp.scene.children.length > 0){ 
+            window.vueApp.scene.remove(window.vueApp.scene.children[0]); 
+        }
+    }
+    if(window.vueApp.renderer){
+        window.vueApp.renderer.renderLists.dispose();
+        window.vueApp.renderer.dispose();
+    }
     container = document.getElementById("container")
     if (container.firstChild) {
-        container.removeChild(container.firstChild)
+        while (container.firstChild) {
+            container.removeChild(container.lastChild);
+          }
+    
     }
 
-    var scene = new THREE.Scene();
+
+    window.vueApp.scene = new THREE.Scene();
     // var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     var x_min = res.grid_index[0]
     var y_min = res.grid_index[0]
     var x_max = res.grid_index[2]
     var y_max = res.grid_index[2]
+
+    const cameraBounds = {
+        minX: x_min,
+        maxX: x_max,
+        minY: y_min,
+        maxY: y_max
+    };
     var aspect = 1
-    var camera = new THREE.OrthographicCamera(x_min * aspect, x_max * aspect, y_max, y_min, 1, 1000);
-    camera.position.set((x_max + x_min) / 2, (y_max + y_min) / 2, 100);
-    camera.lookAt(0, 0, 0);
-    var renderer = new THREE.WebGLRenderer();
-    renderer.setSize(600, 600);
-    renderer.setClearColor(BACKGROUND_COLOR, 1);
+    const rect = container.getBoundingClientRect();
+
+    // console.log('Width:', rect.width);
+    // console.log('Height:', rect.height);
+    window.vueApp.camera = new THREE.OrthographicCamera(x_min * aspect, x_max * aspect, y_max, y_min, 1, 1000);
+    window.vueApp.camera.position.set((x_max + x_min) / 2, (y_max + y_min) / 2, 100);
+    window.vueApp.camera.lookAt(0, 0, 0);
+    window.vueApp.renderer = new THREE.WebGLRenderer();
+    window.vueApp.renderer.setSize(rect.width, rect.width);
+    window.vueApp.renderer.setClearColor(BACKGROUND_COLOR, 1);
     var zoomSpeed = 0.1;
     function onDocumentMouseWheel(event) {
         // 通过滚轮输入调整缩放级别
-        camera.zoom += event.deltaY * -zoomSpeed;
-        camera.zoom = Math.max(MIN_ZOOM_SCALE, Math.min(camera.zoom, MAX_ZOOM_SCALE)); // 限制缩放级别在0.1到10之间
+        window.vueApp.camera.zoom += event.deltaY * -zoomSpeed;
+        window.vueApp.camera.zoom = Math.max(MIN_ZOOM_SCALE, Math.min(window.vueApp.camera.zoom, MAX_ZOOM_SCALE)); // 限制缩放级别在0.1到10之间
 
-        camera.updateProjectionMatrix(); // 更新相机的投影矩阵
+        window.vueApp.camera.updateProjectionMatrix(); // 更新相机的投影矩阵
     }
-    document.addEventListener('wheel', onDocumentMouseWheel, false)
+    
+    container.addEventListener('wheel', onDocumentMouseWheel, false)
 
-    container.appendChild(renderer.domElement);
+    container.addEventListener('wheel', function(event) {
+        event.preventDefault();})
+    
+    container.appendChild(window.vueApp.renderer.domElement);
     // 计算尺寸和中心位置
     var width = x_max - x_min;
     var height = y_max - y_min;
@@ -64,7 +116,7 @@ function drawCanvas(res) {
         });
         const newMesh = new THREE.Mesh(plane_geometry, material);
         newMesh.position.set(centerX, centerY, 0);
-        scene.add(newMesh);
+        window.vueApp.scene.add(newMesh);
     }
     // 创建数据点
     var dataPoints = res.result
@@ -124,7 +176,7 @@ function drawCanvas(res) {
     });
 
     var points = new THREE.Points(geometry, shaderMaterial);
-    scene.add(points);
+    window.vueApp.scene.add(points);
 
     // 创建 Raycaster 和 mouse 变量
     var raycaster = new THREE.Raycaster();
@@ -136,13 +188,13 @@ function drawCanvas(res) {
 
     //  =========================  鼠标hover功能  开始 =========================================== //
     function onMouseMove(event) {
-        raycaster.params.Points.threshold = 0.2 / camera.zoom; // 根据点的屏幕大小调整
+        raycaster.params.Points.threshold = 0.2 / window.vueApp.camera.zoom; // 根据点的屏幕大小调整
         // 转换鼠标位置到归一化设备坐标 (NDC)
-        var rect = renderer.domElement.getBoundingClientRect();
+        var rect = window.vueApp.renderer.domElement.getBoundingClientRect();
         mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
         // 通过鼠标位置更新射线
-        raycaster.setFromCamera(mouse, camera);
+        raycaster.setFromCamera(mouse, window.vueApp.camera);
         // 检测射线与点云的相交
         var intersects = raycaster.intersectObject(points);
 
@@ -156,9 +208,7 @@ function drawCanvas(res) {
             // 在这里处理悬停事件
             if (window.vueApp.lastHoveredIndex != index) {
                 window.vueApp.lastHoveredIndex = index
-                console.log("Hovered over point index:", index);
                 // 重置上一个悬停的点的大小
-                console.log(points.geometry.attributes)
                 if (window.vueApp.lastHoveredIndex !== null) {
                     points.geometry.attributes.size.array[window.vueApp.lastHoveredIndex] = 5; // 假设5是原始大小
                 }
@@ -190,34 +240,54 @@ function drawCanvas(res) {
 
 
 
-    window.addEventListener('mousemove', onMouseMove, false);
+    container.addEventListener('mousemove', onMouseMove, false);
 
 
-    var isDragging = false;
-    var previousMousePosition = {
-        x: 0,
-        y: 0
-    };
     //  =========================  鼠标拖拽功能  开始 =========================================== //
     // 鼠标按下事件
-    document.addEventListener('mousedown', function (e) {
+    container.addEventListener('mousedown', function (e) {
         isDragging = true;
+        console.log(isDragging)
         container.style.cursor = 'move';
         previousMousePosition.x = e.clientX;
         previousMousePosition.y = e.clientY;
     });
 
     // 鼠标移动事件
-    document.addEventListener('mousemove', function (e) {
+    container.addEventListener('mousemove', function (e) {
         if (isDragging) {
+            // var deltaX = e.clientX - previousMousePosition.x;
+            // var deltaY = e.clientY - previousMousePosition.y;
+
+            // var dragSpeed = calculateDragSpeed();
+
+            // camera.position.x -= deltaX * dragSpeed; // 缩放因子可以调整
+            // camera.position.y += deltaY * dragSpeed; // 缩放因子可以调整
+
+            // previousMousePosition = {
+            //     x: e.clientX,
+            //     y: e.clientY
+            // };
+
             var deltaX = e.clientX - previousMousePosition.x;
             var deltaY = e.clientY - previousMousePosition.y;
+            console.log(deltaX,deltaY)
 
             var dragSpeed = calculateDragSpeed();
 
-            camera.position.x -= deltaX * dragSpeed; // 缩放因子可以调整
-            camera.position.y += deltaY * dragSpeed; // 缩放因子可以调整
+            // 预计算新的相机位置
+            var newPosX = window.vueApp.camera.position.x - deltaX * dragSpeed;
+            var newPosY = window.vueApp.camera.position.y + deltaY * dragSpeed;
 
+            // 检查新的相机位置是否在允许的范围内，并进行调整
+            newPosX = Math.max(cameraBounds.minX, Math.min(newPosX, cameraBounds.maxX));
+            newPosY = Math.max(cameraBounds.minY, Math.min(newPosY, cameraBounds.maxY));
+
+            // 更新相机位置
+            window.vueApp.camera.position.x = newPosX;
+            window.vueApp.camera.position.y = newPosY;
+
+            // 更新上一个鼠标位置
             previousMousePosition = {
                 x: e.clientX,
                 y: e.clientY
@@ -227,13 +297,13 @@ function drawCanvas(res) {
 
     function calculateDragSpeed() {
         // 根据相机的缩放级别调整拖拽速度
-        var zoomLevel = camera.zoom;
+        var zoomLevel = window.vueApp.camera.zoom;
         var baseSpeed = 0.1; // 基础速度，可以根据需要调整
         return baseSpeed / zoomLevel; // 随着放大，速度降低
     }
 
     // 鼠标松开事件
-    document.addEventListener('mouseup', function (e) {
+    container.addEventListener('mouseup', function (e) {
         isDragging = false;
         container.style.cursor = 'default';
     });
@@ -243,15 +313,17 @@ function drawCanvas(res) {
     // 添加光源
     var light = new THREE.PointLight(0xffffff, 1, 500);
     light.position.set(50, 50, 50);
-    scene.add(light);
+    var ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // 第二个参数是光照强度
+    window.vueApp.scene.add(ambientLight);
+    window.vueApp.scene.add(light);
 
     // 设置相机位置
-    camera.position.z = 30;
+    window.vueApp.camera.position.z = 30;
 
     // 渲染循环
     function animate() {
         requestAnimationFrame(animate);
-        renderer.render(scene, camera);
+        window.vueApp.renderer.render(window.vueApp.scene, window.vueApp.camera);
 
     }
     animate();
@@ -308,14 +380,14 @@ function drawTimeline(res) {
         return newArr
     }
     data = tranListToTreeData(data)[0]
-    var margin = 50;
+    var margin = 20;
     var svg = d3.select(svgDom);
     var width = svg.attr("width");
     var height = svg.attr("height");
 
     //create group
     var g = svg.append("g")
-        .attr("transform", "translate(" + margin + "," + 20 + ")");
+        .attr("transform", "translate(" + margin + "," + 0 + ")");
 
 
     //create layer layout
@@ -442,12 +514,14 @@ function drawTimeline(res) {
                 c.style.cursor = "pointer"
                 c.addEventListener('click', (e) => {
                     if (e.target.nextSibling.innerHTML != window.iteration) {
-                       
+
                         let value = e.target.nextSibling.innerHTML.split("|")[0]
+                        window.vueApp.isCanvasLoading = true
                         updateProjection(window.vueApp.contentPath, value)
                         window.sessionStorage.setItem('acceptIndicates', "")
                         window.sessionStorage.setItem('rejectIndicates', "")
                         window.vueApp.curEpoch = value
+                        drawTimeline(res)
                     }
                 })
 

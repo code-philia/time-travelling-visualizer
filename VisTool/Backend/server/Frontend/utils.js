@@ -149,3 +149,16 @@ const FRAGMENT_SHADER_PICKING = `
       gl_FragColor = vec4(vColor, 1);
     }
   }`;
+
+  function cleanMaterial(material) {
+    material.dispose();
+    
+    // 释放纹理
+    if (material.map) material.map.dispose();
+    if (material.lightMap) material.lightMap.dispose();
+    if (material.bumpMap) material.bumpMap.dispose();
+    if (material.normalMap) material.normalMap.dispose();
+    if (material.specularMap) material.specularMap.dispose();
+    if (material.envMap) material.envMap.dispose();
+    // ...处理其他类型的纹理
+}

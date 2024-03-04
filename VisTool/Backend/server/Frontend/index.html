@@ -3,7 +3,7 @@
 
 <head>
     <title>TIME-TRAVELLING</title>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
     <!-- <script src="https://unpkg.com/element-ui/lib/index.js"></script>   -->
     <script src="https://cdn.bootcss.com/vue/2.5.16/vue.min.js"></script>
@@ -40,6 +40,7 @@
 
         #advanced_panel {
             width: 300px;
+            padding: 20px;
             background-color: rgb(244, 244, 244);
         }
         .mid_container{
@@ -49,6 +50,7 @@
         #container {
             width: 100%;
             height: 100%;
+            margin: 10px;
         }
 
         .header {
@@ -61,11 +63,18 @@
         }
 
         #footer {
-            height: 130px;
+            height: 90px;
             width: 100%;
             position: fixed;
             bottom: 0;
             background-color: #fff;
+        }
+        .el-checkbox__input.is-checked+.el-checkbox__label{
+            color: #571792;
+        }
+        .el-checkbox__input.is-checked .el-checkbox__inner, .el-checkbox__input.is-indeterminate .el-checkbox__inner{
+            background-color: #571792;
+            border-color: #571792;
         }
     </style>
 </head>
@@ -104,12 +113,14 @@
 
             </div>
             <div class="mid_container">
-                <div id="opration_bar"></div>
-                  <div id="container" v-loading="isCanvasLoading"></div>
+                <div id="container" v-loading="isCanvasLoading"></div>
             </div>
           
             <div id="advanced_panel">
-
+                <el-checkbox v-model="showTraining">Training</el-checkbox>
+                <el-checkbox v-model="showTesting">Testing</el-checkbox>
+                <el-checkbox v-model="SelectionMode">Selection Mode</el-checkbox>
+                <el-divider></el-divider>
             </div>
         </div>
         <div id="footer">
@@ -132,7 +143,13 @@
                 label_list:[],
                 label_name_dict:{},
                 evaluation:{test_acc:0,train_acc:0},
-                curEpoch:1
+                curEpoch:1,
+                showTraining: true,
+                showTesting: true,
+                SelectionMode:false,
+                scene: null,
+                renderer: null,
+                camera:null
             }
         },
         methods: {
