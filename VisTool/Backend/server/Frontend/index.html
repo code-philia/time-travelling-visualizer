@@ -3,31 +3,23 @@
 
 <head>
     <title>TIME-TRAVELLING</title>
-
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <!-- <script src="https://unpkg.com/element-ui/lib/index.js"></script>   -->
     <script src="https://cdn.bootcss.com/vue/2.5.16/vue.min.js"></script>
     <script src="https://d3js.org/d3.v5.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.126.1/build/three.min.js"></script>
     <script src="Frontend/request.js"></script>
     <script src="Frontend/render.js"></script>
+    <script src="Frontend/utils.js"></script>
     <style>
         body {
             margin: 0;
             overflow: hidden;
             height: 100%;
         }
-
-        .tooltip {
-            position: absolute;
-            text-align: center;
-            width: auto;
-            height: auto;
-            padding: 2px;
-            font: 12px sans-serif;
-            background: lightsteelblue;
-            border: 0px;
-            border-radius: 8px;
-            pointer-events: none;
-            opacity: 0;
+        #app {
+            font-family: -apple-system, SF UI Text, Arial, PingFang SC, Hiragino Sans GB, Microsoft YaHei, WenQuanYi Micro Hei, sans-serif;
         }
 
         .content_container {
@@ -35,15 +27,28 @@
         }
 
         #subject_model_info_panel {
-            width: 300px;
+            width: 260px;
+            padding: 20px;
+            background-color: rgb(244, 244, 244);
+            height: calc(100vh);
+        }
+        #opration_bar{
+            background-color: rgb(244, 244, 244);
+            width: 100%;
+            height: 50px;
         }
 
         #advanced_panel {
             width: 300px;
+            background-color: rgb(244, 244, 244);
+        }
+        .mid_container{
+            flex: 1
         }
 
         #container {
-            flex: 1
+            width: 100%;
+            height: 100%;
         }
 
         .header {
@@ -54,96 +59,102 @@
             background-color: #571792;
             color: #fff;
         }
-        #footer{
-            height: 200px;
+
+        #footer {
+            height: 130px;
+            width: 100%;
+            position: fixed;
+            bottom: 0;
+            background-color: #fff;
         }
     </style>
 </head>
 
 <body>
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
     <div id="app">
-
-
         <div class="header">
             Time Travelling Visualiation
         </div>
         <div class="content_container">
             <div id="subject_model_info_panel">
+                Content Path:
+                <el-input v-model="contentPath"></el-input>
+                <el-button style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;" @click="update">Load Visualization Result</el-button>
+                <el-divider></el-divider>
                 <table>
-                    <caption style="margin-bottom: 10px;">Evaluation</caption>
+                    <caption style="margin-bottom: 10px 0;">Model Evaluation</caption>
                     <tr>
-                      <td></td>
-                      <td>training acc</td>
-                      <td>Testing acc</td>
+                        <td></td>
+                        <td>training acc</td>
+                        <td>Testing acc</td>
                     </tr>
                     <tr>
                         <td></td>
-                        <td>NA</td>
-                        <td>NA</td>
-                      </tr>
-                    <!-- <tr>
-                      <td>nn</td>
-                      <td><span class="nn_train_15">NA</span> </td>
-                      <td><span class="nn_test_15">NA</span></td>
-                    </tr> -->
-                    <!-- <tr>
-                      <td>boundary</td>
-                      <td><span class="bound_train_15">NA</span></td>
-                      <td><span class="bound_test_15">NA</span></td>
+                        <td>{{evaluation.train_acc}}</td>
+                        <td>{{evaluation.test_acc}}</td>
                     </tr>
-                    <tr>
-                      <td>PPR</td>
-                      <td><span class="inv_acc_train">NA</span> </td>
-                      <td> <span class="inv_acc_test">NA</span></td>
-                    </tr>
-                    <tr>
-                        <td>CCR</td>
-                        <td><span class="inv_conf_train">NA</span></td>
-                        <td><span class="inv_conf_test">NA</span></td>
-                      </tr>--> 
-                  </table>
-                <el-table></el-table>
+                </table>
+                <el-divider></el-divider>
                 <div>
-                    CurHoverIndex {{lastHoveredIndex}}
+                    CurHoverIndex: {{lastHoveredIndex}}<br/>
+                    prediction: {{curr_pred}}<br/>
+                    label: {{curr_label}}
                 </div>
-                
+
             </div>
-            <div id="container"></div>
-            <div id="advanced_panel"></div>
+            <div class="mid_container">
+                <div id="opration_bar"></div>
+                  <div id="container" v-loading="isCanvasLoading"></div>
+            </div>
+          
+            <div id="advanced_panel">
+
+            </div>
         </div>
-        <div id="footer"></div>
+        <div id="footer">
+            <svg id="timeLinesvg"></svg>
+        </div>
     </div>
 </body>
 
 <script>
-    // import { updateProjection } from './request.js'; // 从api.js导入fetchData函数
     window.vueApp = new Vue({
-
         el: '#app',
         data() {
             return {
-                lastHoveredIndex: null
+                lastHoveredIndex: null,
+                contentPath: '/home/yifan/0ExpMinist/Dropout/0.5/01',
+                isCanvasLoading:false,
+                prediction_list:[],
+                curr_pred: '',
+                curr_label:'',
+                label_list:[],
+                label_name_dict:{},
+                evaluation:{test_acc:0,train_acc:0},
+                curEpoch:1
+            }
+        },
+        methods: {
+            update(){
+                this.isCanvasLoading = true
+                updateProjection(this.contentPath,this.curEpoch)
+                fetchTimelineData(this.contentPath)
+            }
+        },
+        watch: {
+        lastHoveredIndex: {
+            immediate: true,
+            handler(newVal, oldVal) {
+                this.curr_pred = this.prediction_list[newVal];
+                this.curr_label = this.label_name_dict[this.label_list[newVal]]
             }
         }
+        },
+        mounted(){
+           
+        }
     })
-    const BACKGROUND_COLOR = 0xffffff;
-    // Constants relating to the camera parameters.
-    const PERSP_CAMERA_FOV_VERTICAL = 70;
-    const PERSP_CAMERA_NEAR_CLIP_PLANE = 0.01;
-    const PERSP_CAMERA_FAR_CLIP_PLANE = 100;
-    const ORTHO_CAMERA_FRUSTUM_HALF_EXTENT = 1.2;
-    const MIN_ZOOM_SCALE = 0.5
-    const MAX_ZOOM_SCALE = 30
-    var CurHoverIndex = 0;
-    var lastHoveredIndex = null
-
-
-
-    document.addEventListener('DOMContentLoaded', updateProjection);
-
-</script>
-<script>
-
 </script>
 
 </html>

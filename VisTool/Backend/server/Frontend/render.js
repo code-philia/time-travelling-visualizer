@@ -1,5 +1,21 @@
+/** render the canvas and timeline */
+const BACKGROUND_COLOR = 0xffffff;
+// Constants relating to the camera parameters.
+const PERSP_CAMERA_FOV_VERTICAL = 70;
+const PERSP_CAMERA_NEAR_CLIP_PLANE = 0.01;
+const PERSP_CAMERA_FAR_CLIP_PLANE = 100;
+const ORTHO_CAMERA_FRUSTUM_HALF_EXTENT = 1.2;
+const MIN_ZOOM_SCALE = 1
+const MAX_ZOOM_SCALE = 30
+const NORMAL_SIZE = 5
+const HOVER_SIZE = 10
 
 function drawCanvas(res) {
+    container = document.getElementById("container")
+    if (container.firstChild) {
+        container.removeChild(container.firstChild)
+    }
+
     var scene = new THREE.Scene();
     // var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     var x_min = res.grid_index[0]
@@ -22,7 +38,7 @@ function drawCanvas(res) {
         camera.updateProjectionMatrix(); // 更新相机的投影矩阵
     }
     document.addEventListener('wheel', onDocumentMouseWheel, false)
-    container = document.getElementById("container")
+
     container.appendChild(renderer.domElement);
     // 计算尺寸和中心位置
     var width = x_max - x_min;
@@ -56,30 +72,35 @@ function drawCanvas(res) {
     var color = res.label_color_list
 
     var geometry = new THREE.BufferGeometry();
-
-    var positions = [];
+    var position = [];
     var colors = [];
     var sizes = []
     dataPoints.forEach(function (point, i) {
-        positions.push(point[0], point[1], 0); // 添加位置
+        position.push(point[0], point[1], 0); // 添加位置
         colors.push(color[i][0] / 255, color[i][1] / 255, color[i][2] / 255); // 添加颜色
-        sizes.push(5)
+        sizes.push(NORMAL_SIZE)
     });
 
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors,3));
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(position, 3));
+    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
     geometry.setAttribute('size', new THREE.Float32BufferAttribute(sizes, 1));
 
-    // var material = new THREE.PointsMaterial({
-    //     size: 10,
-    //     transparent: true,
-    //     vertexColors: true
-    // });
-
+    FRAGMENT_SHADER = createFragmentShader();
+    VERTEX_SHADER = createVertexShader()
     var shaderMaterial = new THREE.ShaderMaterial({
         uniforms: {
-            color: { type: "c", value: new THREE.Color(0xffffff) }
+            texture: { type: 't' },
+            spritesPerRow: { type: 'f' },
+            spritesPerColumn: { type: 'f' },
+            color: { type: 'c' },
+            fogNear: { type: 'f' },
+            fogFar: { type: 'f' },
+            isImage: { type: 'bool' },
+            sizeAttenuation: { type: 'bool' },
+            PointSize: { type: 'f' },
         },
+        // vertexShader: VERTEX_SHADER,
+        // fragmentShader: FRAGMENT_SHADER,
         vertexShader: `attribute float size; varying vec3 vColor; 
         void main() { 
             vColor = color; 
@@ -95,8 +116,13 @@ function drawCanvas(res) {
         gl_FragColor = vec4(vColor, 0.6);
     }`,
         transparent: true,
-        vertexColors: true
+        vertexColors: true,
+        depthTest: false,
+        depthWrite: false,
+        fog: true,
+        blending: THREE.MultiplyBlending,
     });
+
     var points = new THREE.Points(geometry, shaderMaterial);
     scene.add(points);
 
@@ -107,13 +133,11 @@ function drawCanvas(res) {
     // var threshold = distance * 0.1; // 根据距离动态调整阈值，这里的0.01是系数，可能需要调整
     // raycaster.params.Points.threshold = threshold;
 
-   
+
     //  =========================  鼠标hover功能  开始 =========================================== //
     function onMouseMove(event) {
-       
-        raycaster.params.Points.threshold = 0.2 / camera.zoom ; // 根据点的屏幕大小调整
+        raycaster.params.Points.threshold = 0.2 / camera.zoom; // 根据点的屏幕大小调整
         // 转换鼠标位置到归一化设备坐标 (NDC)
-        console.log(camera.zoom,raycaster.params.Points.threshold)
         var rect = renderer.domElement.getBoundingClientRect();
         mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -130,8 +154,8 @@ function drawCanvas(res) {
             var index = intersect.index;
 
             // 在这里处理悬停事件
-            if (CurHoverIndex != index) {
-                CurHoverIndex = index
+            if (window.vueApp.lastHoveredIndex != index) {
+                window.vueApp.lastHoveredIndex = index
                 console.log("Hovered over point index:", index);
                 // 重置上一个悬停的点的大小
                 console.log(points.geometry.attributes)
@@ -141,8 +165,8 @@ function drawCanvas(res) {
                 container.style.cursor = 'pointer';
 
                 // 更新当前悬停的点的大小
-                sizes.fill(5); // 将所有点的大小重置为5
-                sizes[index] = 10; // 将悬停的点的大小设置为10
+                sizes.fill(NORMAL_SIZE); // 将所有点的大小重置为5
+                sizes[index] = HOVER_SIZE; // 将悬停的点的大小设置为10
 
                 // 更新size属性并标记为需要更新
                 geometry.attributes.size.array = new Float32Array(sizes);
@@ -154,7 +178,7 @@ function drawCanvas(res) {
             container.style.cursor = 'default';
             // 如果没有悬停在任何点上，也重置上一个点的大小
             if (window.vueApp.lastHoveredIndex !== null) {
-                sizes.fill(5); // 将所有点的大小重置为5
+                sizes.fill(NORMAL_SIZE); // 将所有点的大小重置为5
                 // 更新size属性并标记为需要更新
                 geometry.attributes.size.array = new Float32Array(sizes);
                 geometry.attributes.size.needsUpdate = true;
@@ -228,6 +252,206 @@ function drawCanvas(res) {
     function animate() {
         requestAnimationFrame(animate);
         renderer.render(scene, camera);
+
     }
     animate();
+    window.vueApp.isCanvasLoading = false
+}
+
+
+function drawTimeline(res) {
+    console.log('res', res)
+    // this.d3loader()
+
+    const d3 = window.d3;
+
+    let svgDom = document.getElementById('timeLinesvg')
+
+
+    while (svgDom?.firstChild) {
+        svgDom.removeChild(svgDom.lastChild);
+    }
+
+
+
+    let total = res.structure.length
+    window.treejson = res.structure
+
+    let data = res.structure
+
+
+    function tranListToTreeData(arr) {
+        const newArr = []
+        const map = {}
+        // {
+        //   '01': {id:"01", pid:"",   "name":"老王",children: [] },
+        //   '02': {id:"02", pid:"01", "name":"小张",children: [] },
+        // }
+        arr.forEach(item => {
+            item.children = []
+            const key = item.value
+            map[key] = item
+        })
+
+        // 2. 对于arr中的每一项
+        arr.forEach(item => {
+            const parent = map[item.pid]
+            if (parent) {
+                //    如果它有父级，把当前对象添加父级元素的children中
+                parent.children.push(item)
+            } else {
+                //    如果它没有父级（pid:''）,直接添加到newArr
+                newArr.push(item)
+            }
+        })
+
+        return newArr
+    }
+    data = tranListToTreeData(data)[0]
+    var margin = 50;
+    var svg = d3.select(svgDom);
+    var width = svg.attr("width");
+    var height = svg.attr("height");
+
+    //create group
+    var g = svg.append("g")
+        .attr("transform", "translate(" + margin + "," + 20 + ")");
+
+
+    //create layer layout
+    var hierarchyData = d3.hierarchy(data)
+        .sum(function (d, i) {
+            return d.value;
+        });
+    //    nodes attributes:
+    //        node.data - data.
+    //        node.depth - root is 0.
+    //        node.height -  leaf node is 0.
+    //        node.parent - parent id, root is null.
+    //        node.children.
+    //        node.value - total value current node and descendants;
+
+    //create tree
+    let len = total
+
+    let svgWidth = len * 40
+    if (window.sessionStorage.taskType === 'active learning') {
+        svgWidth = 1000
+    }
+    // svgWidth = 1000
+    console.log('svgWid', len, svgWidth)
+    svgDom.style.width = svgWidth + 200
+    if (window.sessionStorage.selectedSetting !== 'active learning' && window.sessionStorage.selectedSetting !== 'dense al') {
+        svgDom.style.height = 90
+        // svgDom.style.width = 2000
+    }
+
+
+    var tree = d3.tree()
+        .size([100, svgWidth])
+        .separation(function (a, b) {
+            return (a.parent == b.parent ? 1 : 2) / a.depth;
+        });
+
+    //init
+    var treeData = tree(hierarchyData)
+
+    //line node
+    var nodes = treeData.descendants();
+    var links = treeData.links();
+
+    //line
+    var link = d3.linkHorizontal()
+        .x(function (d) {
+            return d.y;
+        }) //linkHorizontal
+        .y(function (d) {
+            return d.x;
+        });
+
+
+    //path
+    g.append('g')
+        .selectAll('path')
+        .data(links)
+        .enter()
+        .append('path')
+        .attr('d', function (d, i) {
+            var start = {
+                x: d.source.x,
+                y: d.source.y
+            };
+            var end = {
+                x: d.target.x,
+                y: d.target.y
+            };
+            return link({
+                source: start,
+                target: end
+            });
+        })
+        .attr('stroke', '#452d8a')
+        .attr('stroke-width', 1)
+        .attr('fill', 'none');
+
+
+    //创建节点与文字分组
+    var gs = g.append('g')
+        .selectAll('.g')
+        .data(nodes)
+        .enter()
+        .append('g')
+        .attr('transform', function (d, i) {
+            console.log("D", d)
+            return 'translate(' + d.data.pid * 40 + ',' + d.x + ')';
+        });
+
+    //绘制文字和节点
+    gs.append('circle')
+        .attr('r', 8)
+        .attr('fill', function (d, i) {
+            // console.log("1111",d.data.value, window.iteration, d.data.value == window.iteration )
+            return d.data.value == window.vueApp.curEpoch ? 'orange' : '#452d8a'
+        })
+        .attr('stroke-width', 1)
+        .attr('stroke', function (d, i) {
+            return d.data.value == window.vueApp.curEpoch ? 'orange' : '#452d8a'
+        })
+
+    gs.append('text')
+        .attr('x', function (d, i) {
+            return d.children ? 5 : 10;
+        })
+        .attr('y', function (d, i) {
+            return d.children ? -20 : -5;
+        })
+        .attr('dy', 10)
+        .text(function (d, i) {
+            if (window.sessionStorage.taskType === 'active learning') {
+                return `${d.data.value}|${d.data.name}`;
+            } else {
+                return `${d.data.value}`;
+            }
+
+        })
+    setTimeout(() => {
+        let list = svgDom.querySelectorAll("circle");
+        for (let i = 0; i <= list.length; i++) {
+            let c = list[i]
+            if (c) {
+                c.style.cursor = "pointer"
+                c.addEventListener('click', (e) => {
+                    if (e.target.nextSibling.innerHTML != window.iteration) {
+                       
+                        let value = e.target.nextSibling.innerHTML.split("|")[0]
+                        updateProjection(window.vueApp.contentPath, value)
+                        window.sessionStorage.setItem('acceptIndicates', "")
+                        window.sessionStorage.setItem('rejectIndicates', "")
+                        window.vueApp.curEpoch = value
+                    }
+                })
+
+            }
+        }
+    }, 50)
 }
