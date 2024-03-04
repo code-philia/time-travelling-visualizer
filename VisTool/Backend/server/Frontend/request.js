@@ -1,3 +1,7 @@
+/*
+this file define the apis
+*/
+
 // defined headers
 let headers = new Headers();
 headers.append('Content-Type', 'application/json');
@@ -21,10 +25,11 @@ function updateProjection() {
     })
     .then(response => response.json())
     .then(res => {
-        drawChart(res);
+        drawCanvas(res);
     })
     .catch(error => {
         console.error('Error fetching data:', error);
     });
 }
+
 
