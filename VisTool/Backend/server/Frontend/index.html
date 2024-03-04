@@ -7,7 +7,7 @@
     <script src="https://cdn.bootcss.com/vue/2.5.16/vue.min.js"></script>
     <script src="https://d3js.org/d3.v5.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.126.1/build/three.min.js"></script>
-
+    <script src="Frontend/request.js"></script>
     <style>
         body {
             margin: 0;
@@ -115,6 +115,7 @@
 </body>
 
 <script>
+    // import { updateProjection } from './request.js'; // 从api.js导入fetchData函数
     window.vueApp = new Vue({
 
         el: '#app',
@@ -369,34 +370,8 @@
         animate();
     }
 
+    document.addEventListener('DOMContentLoaded', updateProjection);
 
-    // 网页加载完成时执行
-    let headers = new Headers();
-    headers.append('Content-Type', 'application/json');
-    headers.append('Accept', 'application/json');
-    document.addEventListener('DOMContentLoaded', function () {
-        // 使用fetch发起请求
-        fetch(`${window.location.href}/updateProjection`, {
-            method: 'POST',
-            body: JSON.stringify({
-                "path": '/home/yifan/0ExpMinist/Dropout/0.5/01', "iteration": 1,
-                "resolution": 200,
-                "vis_method": 'Trustvis',
-                'setting': 'normal',
-                "content_path": '/home/yifan/0ExpMinist/Dropout/0.5/01',
-                "predicates": {}
-            }),
-            headers: headers,
-            mode: 'cors'
-        })
-            .then(response => response.json())
-            .then(res => {
-                drawChart(res);
-            })
-            .catch(error => {
-                console.error('Error fetching data:', error);
-            });
-    });
 </script>
 <script>
 
