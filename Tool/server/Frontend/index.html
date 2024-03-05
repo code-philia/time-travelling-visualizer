@@ -5,6 +5,7 @@
     <title>TIME-TRAVELLING</title>
     <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <link rel="stylesheet" href="Frontend/index.css">
     <!-- <script src="https://unpkg.com/element-ui/lib/index.js"></script>   -->
     <script src="https://cdn.bootcss.com/vue/2.5.16/vue.min.js"></script>
     <script src="https://d3js.org/d3.v5.min.js"></script>
@@ -12,71 +13,6 @@
     <script src="Frontend/request.js"></script>
     <script src="Frontend/render.js"></script>
     <script src="Frontend/utils.js"></script>
-    <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            height: 100%;
-        }
-        #app {
-            font-family: -apple-system, SF UI Text, Arial, PingFang SC, Hiragino Sans GB, Microsoft YaHei, WenQuanYi Micro Hei, sans-serif;
-        }
-
-        .content_container {
-            display: flex;
-        }
-
-        #subject_model_info_panel {
-            width: 260px;
-            padding: 20px;
-            background-color: rgb(244, 244, 244);
-            height: calc(100vh);
-        }
-        #opration_bar{
-            background-color: rgb(244, 244, 244);
-            width: 100%;
-            height: 50px;
-        }
-
-        #advanced_panel {
-            width: 300px;
-            padding: 20px;
-            background-color: rgb(244, 244, 244);
-        }
-        .mid_container{
-            flex: 1
-        }
-
-        #container {
-            width: 100%;
-            height: 100%;
-            margin: 10px;
-        }
-
-        .header {
-            width: 100%;
-            height: 50px;
-            line-height: 50px;
-            padding: 0 20px;
-            background-color: #571792;
-            color: #fff;
-        }
-
-        #footer {
-            height: 90px;
-            width: 100%;
-            position: fixed;
-            bottom: 0;
-            background-color: #fff;
-        }
-        .el-checkbox__input.is-checked+.el-checkbox__label{
-            color: #571792;
-        }
-        .el-checkbox__input.is-checked .el-checkbox__inner, .el-checkbox__input.is-indeterminate .el-checkbox__inner{
-            background-color: #571792;
-            border-color: #571792;
-        }
-    </style>
 </head>
 
 <body>

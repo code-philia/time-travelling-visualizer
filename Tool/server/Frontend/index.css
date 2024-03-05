@@ -1,0 +1,63 @@
+body {
+    margin: 0;
+    overflow: hidden;
+    height: 100%;
+}
+#app {
+    font-family: -apple-system, SF UI Text, Arial, PingFang SC, Hiragino Sans GB, Microsoft YaHei, WenQuanYi Micro Hei, sans-serif;
+}
+
+.content_container {
+    display: flex;
+}
+
+#subject_model_info_panel {
+    width: 260px;
+    padding: 20px;
+    background-color: rgb(244, 244, 244);
+    height: calc(100vh);
+}
+#opration_bar{
+    background-color: rgb(244, 244, 244);
+    width: 100%;
+    height: 50px;
+}
+
+#advanced_panel {
+    width: 300px;
+    padding: 20px;
+    background-color: rgb(244, 244, 244);
+}
+.mid_container{
+    flex: 1
+}
+
+#container {
+    width: 100%;
+    height: 100%;
+    margin: 10px;
+}
+
+.header {
+    width: 100%;
+    height: 50px;
+    line-height: 50px;
+    padding: 0 20px;
+    background-color: #571792;
+    color: #fff;
+}
+
+#footer {
+    height: 90px;
+    width: 100%;
+    position: fixed;
+    bottom: 0;
+    background-color: rgb(244, 244, 244);
+}
+.el-checkbox__input.is-checked+.el-checkbox__label{
+    color: #571792;
+}
+.el-checkbox__input.is-checked .el-checkbox__inner, .el-checkbox__input.is-indeterminate .el-checkbox__inner{
+    background-color: #571792;
+    border-color: #571792;
+}
