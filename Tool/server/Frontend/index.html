@@ -24,14 +24,32 @@
         <div class="header">
             Time Travelling Visualiation
         </div>
-        <el-button class="tutorial_btn" type="warning" size="mini" icon="el-icon-guide" @click.prevent.stop="guide">Guide</el-button>
+        <el-button class="tutorial_btn" type="success" icon="el-icon-question" size="mini"
+            @click.prevent.stop="guide"></el-button>
+        <el-popover placement="left" width="200" trigger="click">
+            <div>
+                Canvas Intereaction Setting<br/>
+                zoom in speed?<br/>
+                or light?<br/>
+                <el-button>Save</el-button>
+            </div>
+            <el-button style="position: fixed; top: 130px; right:340px; font-size: 20px;" size="mini" type="warning" slot="reference" icon="el-icon-setting"></el-button>
+        </el-popover>
         <div class="content_container">
             <div id="subject_model_info_panel">
+                <div id="contentSetting">
+                    <span style="display: inline-block; margin-right: 20px;">Task:</span>
+                    <el-radio v-model="task" label="Image">Image</el-radio>
+                    <el-radio v-model="task" label="Text">Text</el-radio>
+                </div>
+                <el-divider></el-divider>
                 <div id="contentPathInput">
-                Content Path:
-                <el-input v-model="contentPath"></el-input></div>
-                <el-button id="showVisResBtn" style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;"
-                    @click="update">Load Visualization Result</el-button>
+                    Content Path:
+                    <el-input v-model="contentPath"></el-input>
+                </div>
+                <el-button id="showVisResBtn"
+                    style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;" @click="update">Load
+                    Visualization Result</el-button>
                 <el-divider></el-divider>
                 <table id="subjectModeEvalRes">
                     <caption style="margin-bottom: 10px 0;">Model Evaluation</caption>
@@ -50,7 +68,9 @@
                 <div id="curHover">
                     CurHoverIndex: {{lastHoveredIndex}}<br />
                     prediction: {{curr_pred}}<br />
-                    label: {{curr_label}}
+                    label: {{curr_label}}<br />
+
+                    <img id="metaImg" height="100px" />
                 </div>
 
             </div>
@@ -92,70 +112,73 @@
                 SelectionMode: false,
                 scene: null,
                 renderer: null,
-                camera: null
+                camera: null,
+                curImg: null,
+                task: "Image",
+                zoomInSpeed: 0.01,
             }
         },
         methods: {
             guide() {
-                const steps =[{
+                const steps = [{
                     element: '#contentPathInput',
                     popover: {
                         title: 'Content Path',
                         description: 'Please input the absolute path of the training dynamics',
                         position: 'right'
-                        },
                     },
-                    {
+                },
+                {
                     element: '#showVisResBtn',
                     popover: {
                         title: 'Start Render',
                         description: 'After input the content path, you can click button to load the visulization results(default start from epoch 1)',
                         position: 'right'
-                        },
                     },
-                    // {
-                    // element: '#footer',
-                    // popover: {
-                    //     title: 'Time Line',
-                    //     description: '**************',
-                    //     position: 'right',
-                    //     className: 'custom-popover-position'
-                    //     },
-                    // },
-                    {
+                },
+                // {
+                // element: '#footer',
+                // popover: {
+                //     title: 'Time Line',
+                //     description: '**************',
+                //     position: 'right',
+                //     className: 'custom-popover-position'
+                //     },
+                // },
+                {
                     element: '#subjectModeEvalRes',
                     popover: {
                         title: 'Subject Model Eval Res',
                         description: 'After load the visualization result, the corresbounding result wiil be show here',
                         position: 'right'
-                        },
                     },
-                    {
+                },
+                {
                     element: '#curHover',
                     popover: {
                         title: 'Hover Information',
                         description: 'The detail of the current hover sample will be shown here',
                         position: 'right'
-                        },
                     },
-                    {
+                },
+                {
                     element: '#container',
                     popover: {
                         title: 'Visualization Canvas',
                         description: '**************',
                         position: 'right'
-                        },
                     },
-                    {
+                },
+                {
                     element: '#advanced_panel',
                     popover: {
                         title: 'Advanced panel',
                         description: '**************',
                         position: 'right'
-                        },
-                    }
-                    
-                ] 
+                    },
+                }
+
+                ]
                 this.driver.defineSteps(steps)
                 this.driver.start()
             },
@@ -171,6 +194,11 @@
                 handler(newVal, oldVal) {
                     this.curr_pred = this.prediction_list[newVal];
                     this.curr_label = this.label_name_dict[this.label_list[newVal]]
+                    if (newVal != null) {
+                        getOriginalData(this.contentPath, newVal)
+
+                    }
+
                 }
             }
         },
