@@ -9,6 +9,8 @@ import pickle
 import numpy as np
 import gc
 import shutil
+sys.path.append('..')
+sys.path.append('.')
 from utils import update_epoch_projection, initialize_backend, add_line
 
 
@@ -57,6 +59,8 @@ def update_projection():
                                   'prediction_list': prediction_list,
                                   "selectedPoints":selected_points.tolist(),
                                   "properties":properties.tolist()}), 200)
+
+app.route('/contrast/updateProjection', methods=["POST", "GET"])(update_projection)
 
 @app.route('/query', methods=["POST"])
 @cross_origin()
@@ -423,7 +427,7 @@ def check_port_inuse(port, host):
     finally:
         if s:
             s.close()
-
+# for contrast
 if __name__ == "__main__":
     import socket
     hostname = socket.gethostname()
