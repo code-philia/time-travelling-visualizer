@@ -7,7 +7,7 @@
         content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
     <link rel="stylesheet" href="Frontend/driver.min.css">
-    <link rel="stylesheet" href="Frontend/index.css">
+    <link rel="stylesheet" href="Frontend/contrast_index.css">
     <!-- <script src="https://unpkg.com/element-ui/lib/index.js"></script>   -->
     <script src="https://cdn.bootcss.com/vue/2.5.16/vue.min.js"></script>
     <script src="https://d3js.org/d3.v5.min.js"></script>
@@ -22,8 +22,8 @@
     <script src="https://cdn.jsdelivr.net/npm/driver.js/dist/driver.min.js"></script>
     <div id="app" v-loading="isCanvasLoading">
         <div class="header">
-            Time Travelling Visualizer
-        <a href="/contrast" style="color: #fff; position:fixed; right: 20px;top:4px;"><i class="el-icon-open" style="font-size: 24px;" ></i></a>
+            Time Travelling Visualizer (Contrast)
+            <a href="/" style="color: #fff; position:fixed; right: 20px;top:4px;"><i class="el-icon-back" style="font-size: 24px;" ></i></a>
         </div>
         <el-button class="tutorial_btn" type="success" icon="el-icon-question" size="mini"
             @click.prevent.stop="guide"></el-button>
@@ -35,7 +35,7 @@
                 or light?<br/>
                 <el-button>Save</el-button>
             </div>
-            <el-button style="position: fixed; top: 130px; right:340px; font-size: 20px;" size="mini" type="warning" slot="reference" icon="el-icon-setting"></el-button>
+            <el-button style="position: fixed; top: 130px; right:0px; font-size: 20px;" size="mini" type="warning" slot="reference" icon="el-icon-setting"></el-button>
         </el-popover>
         <div class="content_container">
             <div id="subject_model_info_panel">
@@ -77,14 +77,8 @@
 
             </div>
             <div class="mid_container">
-                <div id="container"></div>
-            </div>
-
-            <div id="advanced_panel">
-                <el-checkbox v-model="showTraining">Training</el-checkbox>
-                <el-checkbox v-model="showTesting">Testing</el-checkbox>
-                <el-checkbox v-model="SelectionMode">Selection Mode</el-checkbox>
-                <el-divider></el-divider>
+                <div id="container_ref"></div>
+                <div id="container_tar"></div>
             </div>
         </div>
         <div id="footer">
@@ -206,6 +200,10 @@
         },
         mounted() {
             this.driver = new Driver()
+            
+        },
+        unmounted(){
+            this.isCanvasLoading = true
         }
     })
 </script>

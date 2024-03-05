@@ -250,6 +250,9 @@ function drawCanvas(res) {
                 geometry.attributes.size.array = new Float32Array(sizes);
                 geometry.attributes.size.needsUpdate = true;
                 window.vueApp.lastHoveredIndex = null;
+                resultImg = document.getElementById("metaImg")
+                resultImg.setAttribute("style", "display:none;")
+                
             }
         }
     }
