@@ -372,6 +372,11 @@ def GUI():
     # return render_template("SilasIndex.html")
     return send_from_directory(app.static_folder, 'index.html')
 
+@app.route("/contrast", methods=["GET", "POST"])
+def ContrastGUI():
+    # return render_template("SilasIndex.html")
+    return send_from_directory(app.static_folder, 'contrast_index.html')
+
 
 @app.route('/get_itertaion_structure', methods=["POST", "GET"])
 @cross_origin()
