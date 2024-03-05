@@ -48,4 +48,26 @@ function fetchTimelineData(content_path){
         })
 }
 
+function getOriginalData(content_path,index){
+    if(index != null){
+        fetch(`${window.location.href}sprite?index=${index}&path=${content_path}&username=admin`, {
+            method: 'GET',
+            mode: 'cors'
+          }).then(response => response.json()).then(data => {
+            // console.log("response", data);
+            src = data.imgUrl
+            resultImg = document.getElementById("metaImg")
+            if (src && src.length) {
+                resultImg.setAttribute("style", "display:block;")
+                resultImg.setAttribute('src', src)
+            } else {
+                resultImg.setAttribute("style", "display:none;")
+            }
+          }).catch(error => {
+            console.log("error", error);
+          });
+    }
+   
+}
+
 

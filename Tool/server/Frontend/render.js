@@ -93,7 +93,7 @@ function drawCanvas(res) {
     window.vueApp.renderer = new THREE.WebGLRenderer();
     window.vueApp.renderer.setSize(rect.width, rect.width);
     window.vueApp.renderer.setClearColor(BACKGROUND_COLOR, 1);
-    var zoomSpeed = 0.1;
+    var zoomSpeed = 0.05;
     function onDocumentMouseWheel(event) {
         // 通过滚轮输入调整缩放级别
         window.vueApp.camera.zoom += event.deltaY * -zoomSpeed;

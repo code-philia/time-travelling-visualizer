@@ -2,6 +2,8 @@ body {
     margin: 0;
     overflow: hidden;
     height: 100%;
+    color:#5f5b55;
+    font-family: -apple-system, SF UI Text, Arial, PingFang SC, Hiragino Sans GB, Microsoft YaHei, WenQuanYi Micro Hei, sans-serif;
 }
 #app {
     font-family: -apple-system, SF UI Text, Arial, PingFang SC, Hiragino Sans GB, Microsoft YaHei, WenQuanYi Micro Hei, sans-serif;
@@ -65,4 +67,13 @@ body {
     position:fixed;
     top: 80px;
     right:340px;
+    font-size: 20px;
+}
+.el-radio__input.is-checked+.el-radio__label {
+    color: #571792;
+}
+
+.el-radio__input.is-checked .el-radio__inner{
+    border-color: #571792;
+    background: #571792;
 }
