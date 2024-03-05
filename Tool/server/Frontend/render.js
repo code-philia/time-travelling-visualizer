@@ -17,8 +17,8 @@ var previousMousePosition = {
 };
 
 function drawCanvas(res) {
-    if(window.vueApp.scene){
-        window.vueApp.scene.traverse(function(object) {
+    if (window.vueApp.scene) {
+        window.vueApp.scene.traverse(function (object) {
             if (object.isMesh) {
                 if (object.geometry) {
                     object.geometry.dispose();
@@ -36,11 +36,11 @@ function drawCanvas(res) {
             }
         });
 
-        while(window.vueApp.scene.children.length > 0){ 
-            window.vueApp.scene.remove(window.vueApp.scene.children[0]); 
+        while (window.vueApp.scene.children.length > 0) {
+            window.vueApp.scene.remove(window.vueApp.scene.children[0]);
         }
     }
-    if(window.vueApp.renderer){
+    if (window.vueApp.renderer) {
         window.vueApp.renderer.renderLists.dispose();
         window.vueApp.renderer.dispose();
     }
@@ -48,8 +48,8 @@ function drawCanvas(res) {
     if (container.firstChild) {
         while (container.firstChild) {
             container.removeChild(container.lastChild);
-          }
-    
+        }
+
     }
 
 
@@ -68,12 +68,25 @@ function drawCanvas(res) {
     };
     var aspect = 1
     const rect = container.getBoundingClientRect();
-
+    console.log(res.grid_index)
     // console.log('Width:', rect.width);
     // console.log('Height:', rect.height);
     window.vueApp.camera = new THREE.OrthographicCamera(x_min * aspect, x_max * aspect, y_max, y_min, 1, 1000);
-    window.vueApp.camera.position.set((x_max + x_min) / 2, (y_max + y_min) / 2, 100);
-    window.vueApp.camera.lookAt(0, 0, 0);
+    window.vueApp.camera.position.set(0, 0, 100);
+    const target = new THREE.Vector3(
+        0, 0, 0
+    );
+
+    // 根据容器尺寸调整相机视野
+    var aspectRatio = rect.width / rect.height;
+    window.vueApp.camera.left = x_min * aspectRatio;
+    window.vueApp.camera.right = x_max * aspectRatio;
+    window.vueApp.camera.top = y_max;
+    window.vueApp.camera.bottom = y_min;
+
+    // 更新相机的投影矩阵
+    window.vueApp.camera.updateProjectionMatrix();
+    window.vueApp.camera.lookAt(target);
     window.vueApp.renderer = new THREE.WebGLRenderer();
     window.vueApp.renderer.setSize(rect.width, rect.width);
     window.vueApp.renderer.setClearColor(BACKGROUND_COLOR, 1);
@@ -85,12 +98,13 @@ function drawCanvas(res) {
 
         window.vueApp.camera.updateProjectionMatrix(); // 更新相机的投影矩阵
     }
-    
+
     container.addEventListener('wheel', onDocumentMouseWheel, false)
 
-    container.addEventListener('wheel', function(event) {
-        event.preventDefault();})
-    
+    container.addEventListener('wheel', function (event) {
+        event.preventDefault();
+    })
+
     container.appendChild(window.vueApp.renderer.domElement);
     // 计算尺寸和中心位置
     var width = x_max - x_min;
@@ -271,7 +285,7 @@ function drawCanvas(res) {
 
             var deltaX = e.clientX - previousMousePosition.x;
             var deltaY = e.clientY - previousMousePosition.y;
-            console.log(deltaX,deltaY)
+            console.log(deltaX, deltaY)
 
             var dragSpeed = calculateDragSpeed();
 
