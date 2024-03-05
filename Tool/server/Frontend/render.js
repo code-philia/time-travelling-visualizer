@@ -17,6 +17,7 @@ var previousMousePosition = {
 };
 
 function drawCanvas(res) {
+    // remove previous scene
     if (window.vueApp.scene) {
         window.vueApp.scene.traverse(function (object) {
             if (object.isMesh) {
@@ -40,11 +41,13 @@ function drawCanvas(res) {
             window.vueApp.scene.remove(window.vueApp.scene.children[0]);
         }
     }
+    // remove previous scene
     if (window.vueApp.renderer) {
         window.vueApp.renderer.renderLists.dispose();
         window.vueApp.renderer.dispose();
     }
     container = document.getElementById("container")
+    // remove previous dom element
     if (container.firstChild) {
         while (container.firstChild) {
             container.removeChild(container.lastChild);
@@ -52,13 +55,13 @@ function drawCanvas(res) {
 
     }
 
-
+    // create new Three.js scene
     window.vueApp.scene = new THREE.Scene();
-    // var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    // get the boundary of the scene
     var x_min = res.grid_index[0]
-    var y_min = res.grid_index[0]
+    var y_min = res.grid_index[1]
     var x_max = res.grid_index[2]
-    var y_max = res.grid_index[2]
+    var y_max = res.grid_index[3]
 
     const cameraBounds = {
         minX: x_min,

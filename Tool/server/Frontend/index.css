@@ -61,3 +61,8 @@ body {
     background-color: #571792;
     border-color: #571792;
 }
+.tutorial_btn{
+    position:fixed;
+    top: 80px;
+    right:340px;
+}

@@ -3,8 +3,10 @@
 
 <head>
     <title>TIME-TRAVELLING</title>
-    <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta charset="UTF-8" name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <link rel="stylesheet" href="Frontend/driver.min.css">
     <link rel="stylesheet" href="Frontend/index.css">
     <!-- <script src="https://unpkg.com/element-ui/lib/index.js"></script>   -->
     <script src="https://cdn.bootcss.com/vue/2.5.16/vue.min.js"></script>
@@ -17,17 +19,21 @@
 
 <body>
     <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/driver.js/dist/driver.min.js"></script>
     <div id="app">
         <div class="header">
             Time Travelling Visualiation
         </div>
+        <el-button class="tutorial_btn" type="warning" size="mini" icon="el-icon-guide" @click.prevent.stop="guide">Guide</el-button>
         <div class="content_container">
             <div id="subject_model_info_panel">
+                <div id="contentPathInput">
                 Content Path:
-                <el-input v-model="contentPath"></el-input>
-                <el-button style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;" @click="update">Load Visualization Result</el-button>
+                <el-input v-model="contentPath"></el-input></div>
+                <el-button id="showVisResBtn" style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;"
+                    @click="update">Load Visualization Result</el-button>
                 <el-divider></el-divider>
-                <table>
+                <table id="subjectModeEvalRes">
                     <caption style="margin-bottom: 10px 0;">Model Evaluation</caption>
                     <tr>
                         <td></td>
@@ -41,9 +47,9 @@
                     </tr>
                 </table>
                 <el-divider></el-divider>
-                <div>
-                    CurHoverIndex: {{lastHoveredIndex}}<br/>
-                    prediction: {{curr_pred}}<br/>
+                <div id="curHover">
+                    CurHoverIndex: {{lastHoveredIndex}}<br />
+                    prediction: {{curr_pred}}<br />
                     label: {{curr_label}}
                 </div>
 
@@ -51,7 +57,7 @@
             <div class="mid_container">
                 <div id="container" v-loading="isCanvasLoading"></div>
             </div>
-          
+
             <div id="advanced_panel">
                 <el-checkbox v-model="showTraining">Training</el-checkbox>
                 <el-checkbox v-model="showTesting">Testing</el-checkbox>
@@ -66,46 +72,110 @@
 </body>
 
 <script>
+
     window.vueApp = new Vue({
         el: '#app',
         data() {
             return {
                 lastHoveredIndex: null,
                 contentPath: '/home/yifan/0ExpMinist/Dropout/0.5/01',
-                isCanvasLoading:false,
-                prediction_list:[],
+                isCanvasLoading: false,
+                prediction_list: [],
                 curr_pred: '',
-                curr_label:'',
-                label_list:[],
-                label_name_dict:{},
-                evaluation:{test_acc:0,train_acc:0},
-                curEpoch:1,
+                curr_label: '',
+                label_list: [],
+                label_name_dict: {},
+                evaluation: { test_acc: 0, train_acc: 0 },
+                curEpoch: 1,
                 showTraining: true,
                 showTesting: true,
-                SelectionMode:false,
+                SelectionMode: false,
                 scene: null,
                 renderer: null,
-                camera:null
+                camera: null
             }
         },
         methods: {
-            update(){
+            guide() {
+                const steps =[{
+                    element: '#contentPathInput',
+                    popover: {
+                        title: 'Content Path',
+                        description: 'Please input the absolute path of the training dynamics',
+                        position: 'right'
+                        },
+                    },
+                    {
+                    element: '#showVisResBtn',
+                    popover: {
+                        title: 'Start Render',
+                        description: 'After input the content path, you can click button to load the visulization results(default start from epoch 1)',
+                        position: 'right'
+                        },
+                    },
+                    // {
+                    // element: '#footer',
+                    // popover: {
+                    //     title: 'Time Line',
+                    //     description: '**************',
+                    //     position: 'right',
+                    //     className: 'custom-popover-position'
+                    //     },
+                    // },
+                    {
+                    element: '#subjectModeEvalRes',
+                    popover: {
+                        title: 'Subject Model Eval Res',
+                        description: 'After load the visualization result, the corresbounding result wiil be show here',
+                        position: 'right'
+                        },
+                    },
+                    {
+                    element: '#curHover',
+                    popover: {
+                        title: 'Hover Information',
+                        description: 'The detail of the current hover sample will be shown here',
+                        position: 'right'
+                        },
+                    },
+                    {
+                    element: '#container',
+                    popover: {
+                        title: 'Visualization Canvas',
+                        description: '**************',
+                        position: 'right'
+                        },
+                    },
+                    {
+                    element: '#advanced_panel',
+                    popover: {
+                        title: 'Advanced panel',
+                        description: '**************',
+                        position: 'right'
+                        },
+                    }
+                    
+                ] 
+                this.driver.defineSteps(steps)
+                this.driver.start()
+            },
+            update() {
                 this.isCanvasLoading = true
-                updateProjection(this.contentPath,this.curEpoch)
+                updateProjection(this.contentPath, this.curEpoch)
                 fetchTimelineData(this.contentPath)
             }
         },
         watch: {
-        lastHoveredIndex: {
-            immediate: true,
-            handler(newVal, oldVal) {
-                this.curr_pred = this.prediction_list[newVal];
-                this.curr_label = this.label_name_dict[this.label_list[newVal]]
+            lastHoveredIndex: {
+                immediate: true,
+                handler(newVal, oldVal) {
+                    this.curr_pred = this.prediction_list[newVal];
+                    this.curr_label = this.label_name_dict[this.label_list[newVal]]
+                }
             }
-        }
         },
-        mounted(){
-           
+        mounted() {
+            this.driver = new Driver()
         }
     })
 </script>
