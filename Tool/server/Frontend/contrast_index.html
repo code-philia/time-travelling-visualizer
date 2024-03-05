@@ -13,7 +13,7 @@
     <script src="https://d3js.org/d3.v5.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.126.1/build/three.min.js"></script>
     <script src="Frontend/request.js"></script>
-    <script src="Frontend/render.js"></script>
+    <script src="Frontend/contrast_render.js"></script>
     <script src="Frontend/utils.js"></script>
 </head>
 
@@ -106,9 +106,18 @@
                 showTraining: true,
                 showTesting: true,
                 SelectionMode: false,
-                scene: null,
-                renderer: null,
-                camera: null,
+                scene: {
+                    'ref': null,
+                    'tar': null
+                },
+                renderer: {
+                    'ref': null,
+                    'tar': null
+                },
+                camera: {
+                    'ref': null,
+                    'tar': null
+                },
                 curImg: null,
                 task: "Image",
                 zoomInSpeed: 0.01,
@@ -180,8 +189,8 @@
             },
             update() {
                 this.isCanvasLoading = true
-                updateProjection(this.contentPath, this.curEpoch)
-                fetchTimelineData(this.contentPath)
+                updateContraProjection(this.contentPath, this.curEpoch)
+                // fetchTimelineData(this.contentPath)
             }
         },
         watch: {

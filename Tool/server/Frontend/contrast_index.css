@@ -31,7 +31,8 @@ body {
     background-color: rgb(244, 244, 244);
 }
 .mid_container{
-    flex: 1
+    flex: 1;
+    display: flex;
 }
 
 #container_ref,#container_tar {
