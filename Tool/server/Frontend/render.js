@@ -72,31 +72,29 @@ function drawCanvas(res) {
     var aspect = 1
     const rect = container.getBoundingClientRect();
     console.log(res.grid_index)
-    // console.log('Width:', rect.width);
-    // console.log('Height:', rect.height);
     window.vueApp.camera = new THREE.OrthographicCamera(x_min * aspect, x_max * aspect, y_max, y_min, 1, 1000);
     window.vueApp.camera.position.set(0, 0, 100);
     const target = new THREE.Vector3(
         0, 0, 0
     );
 
-    // 根据容器尺寸调整相机视野
+    // based on screen size set the camera view 
     var aspectRatio = rect.width / rect.height;
     window.vueApp.camera.left = x_min * aspectRatio;
     window.vueApp.camera.right = x_max * aspectRatio;
     window.vueApp.camera.top = y_max;
     window.vueApp.camera.bottom = y_min;
 
-    // 更新相机的投影矩阵
+    // update the camera projection matrix
     window.vueApp.camera.updateProjectionMatrix();
     window.vueApp.camera.lookAt(target);
     window.vueApp.renderer = new THREE.WebGLRenderer();
     window.vueApp.renderer.setSize(rect.width, rect.width);
     window.vueApp.renderer.setClearColor(BACKGROUND_COLOR, 1);
-    var zoomSpeed = 0.05;
+    // set zoom speed
     function onDocumentMouseWheel(event) {
         // 通过滚轮输入调整缩放级别
-        window.vueApp.camera.zoom += event.deltaY * -zoomSpeed;
+        window.vueApp.camera.zoom += event.deltaY * - window.vueApp.canvasSetting.zoomSpeed;
         window.vueApp.camera.zoom = Math.max(MIN_ZOOM_SCALE, Math.min(window.vueApp.camera.zoom, MAX_ZOOM_SCALE)); // 限制缩放级别在0.1到10之间
 
         window.vueApp.camera.updateProjectionMatrix(); // 更新相机的投影矩阵
@@ -264,13 +262,18 @@ function drawCanvas(res) {
 
 
     //  =========================  鼠标拖拽功能  开始 =========================================== //
-    // 鼠标按下事件
+
+
     container.addEventListener('mousedown', function (e) {
-        isDragging = true;
-        console.log(isDragging)
-        container.style.cursor = 'move';
-        previousMousePosition.x = e.clientX;
-        previousMousePosition.y = e.clientY;
+        if(window.vueApp.SelectionMode && window.vueApp.isShifting ){
+
+        }else{
+            isDragging = true;
+            console.log(isDragging)
+            container.style.cursor = 'move';
+            previousMousePosition.x = e.clientX;
+            previousMousePosition.y = e.clientY;
+        }
     });
 
     // 鼠标移动事件
@@ -318,8 +321,7 @@ function drawCanvas(res) {
     function calculateDragSpeed() {
         // 根据相机的缩放级别调整拖拽速度
         var zoomLevel = window.vueApp.camera.zoom;
-        var baseSpeed = 0.1; // 基础速度，可以根据需要调整
-        return baseSpeed / zoomLevel; // 随着放大，速度降低
+        return window.vueApp.canvasSetting.dragSpeed / zoomLevel; // 随着放大，速度降低
     }
 
     // 鼠标松开事件
