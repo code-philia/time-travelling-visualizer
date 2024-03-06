@@ -54,7 +54,6 @@ function drawCanvas(res) {
         }
 
     }
-
     // create new Three.js scene
     window.vueApp.scene = new THREE.Scene();
     // get the boundary of the scene
@@ -77,7 +76,6 @@ function drawCanvas(res) {
     const target = new THREE.Vector3(
         0, 0, 0
     );
-
     // based on screen size set the camera view 
     var aspectRatio = rect.width / rect.height;
     window.vueApp.camera.left = x_min * aspectRatio;
@@ -93,11 +91,11 @@ function drawCanvas(res) {
     window.vueApp.renderer.setClearColor(BACKGROUND_COLOR, 1);
     // set zoom speed
     function onDocumentMouseWheel(event) {
-        // 通过滚轮输入调整缩放级别
+        // when mouse wheel adjust the camera zoom level 
         window.vueApp.camera.zoom += event.deltaY * - window.vueApp.canvasSetting.zoomSpeed;
-        window.vueApp.camera.zoom = Math.max(MIN_ZOOM_SCALE, Math.min(window.vueApp.camera.zoom, MAX_ZOOM_SCALE)); // 限制缩放级别在0.1到10之间
+        window.vueApp.camera.zoom = Math.max(MIN_ZOOM_SCALE, Math.min(window.vueApp.camera.zoom, MAX_ZOOM_SCALE)); // constrain min max zoom level
 
-        window.vueApp.camera.updateProjectionMatrix(); // 更新相机的投影矩阵
+        window.vueApp.camera.updateProjectionMatrix(); // update camera projection matrix
     }
 
     container.addEventListener('wheel', onDocumentMouseWheel, false)
@@ -107,7 +105,7 @@ function drawCanvas(res) {
     })
 
     container.appendChild(window.vueApp.renderer.domElement);
-    // 计算尺寸和中心位置
+    // calculate the size and the center position
     var width = x_max - x_min;
     var height = y_max - y_min;
     var centerX = x_min + width / 2;
@@ -201,7 +199,7 @@ function drawCanvas(res) {
     // raycaster.params.Points.threshold = threshold;
 
 
-    //  =========================  鼠标hover功能  开始 =========================================== //
+    //  =========================  hover  start =========================================== //
     function onMouseMove(event) {
         raycaster.params.Points.threshold = 0.2 / window.vueApp.camera.zoom; // 根据点的屏幕大小调整
         // 转换鼠标位置到归一化设备坐标 (NDC)
@@ -230,8 +228,8 @@ function drawCanvas(res) {
                 container.style.cursor = 'pointer';
 
                 // 更新当前悬停的点的大小
-                sizes.fill(NORMAL_SIZE); // 将所有点的大小重置为5
-                sizes[index] = HOVER_SIZE; // 将悬停的点的大小设置为10
+                sizes.fill(NORMAL_SIZE); // 将所有点的大小重置为NORMAL_SIZE
+                sizes[index] = HOVER_SIZE; // 将悬停的点的大小设置为HOVER_SIZE
 
                 // 更新size属性并标记为需要更新
                 geometry.attributes.size.array = new Float32Array(sizes);
@@ -250,24 +248,22 @@ function drawCanvas(res) {
                 window.vueApp.lastHoveredIndex = null;
                 resultImg = document.getElementById("metaImg")
                 resultImg.setAttribute("style", "display:none;")
-                
+
             }
         }
     }
-    //  =========================  鼠标hover功能  结束 =========================================== //
+    //  =========================  hover  end =========================================== //
 
 
 
     container.addEventListener('mousemove', onMouseMove, false);
 
 
-    //  =========================  鼠标拖拽功能  开始 =========================================== //
-
-
+    //  =========================  Drag start =========================================== //
     container.addEventListener('mousedown', function (e) {
-        if(window.vueApp.SelectionMode && window.vueApp.isShifting ){
+        if (window.vueApp.SelectionMode && window.vueApp.isShifting) {
 
-        }else{
+        } else {
             isDragging = true;
             console.log(isDragging)
             container.style.cursor = 'move';
@@ -276,41 +272,28 @@ function drawCanvas(res) {
         }
     });
 
-    // 鼠标移动事件
+    // handel mouse move
     container.addEventListener('mousemove', function (e) {
         if (isDragging) {
-            // var deltaX = e.clientX - previousMousePosition.x;
-            // var deltaY = e.clientY - previousMousePosition.y;
-
-            // var dragSpeed = calculateDragSpeed();
-
-            // camera.position.x -= deltaX * dragSpeed; // 缩放因子可以调整
-            // camera.position.y += deltaY * dragSpeed; // 缩放因子可以调整
-
-            // previousMousePosition = {
-            //     x: e.clientX,
-            //     y: e.clientY
-            // };
-
             var deltaX = e.clientX - previousMousePosition.x;
             var deltaY = e.clientY - previousMousePosition.y;
             console.log(deltaX, deltaY)
 
             var dragSpeed = calculateDragSpeed();
 
-            // 预计算新的相机位置
+            // pre calculate the camera position 
             var newPosX = window.vueApp.camera.position.x - deltaX * dragSpeed;
             var newPosY = window.vueApp.camera.position.y + deltaY * dragSpeed;
 
-            // 检查新的相机位置是否在允许的范围内，并进行调整
+            // check if the new position is in the bound 
             newPosX = Math.max(cameraBounds.minX, Math.min(newPosX, cameraBounds.maxX));
             newPosY = Math.max(cameraBounds.minY, Math.min(newPosY, cameraBounds.maxY));
 
-            // 更新相机位置
+            // update camera position
             window.vueApp.camera.position.x = newPosX;
             window.vueApp.camera.position.y = newPosY;
 
-            // 更新上一个鼠标位置
+            // update previous mouse position
             previousMousePosition = {
                 x: e.clientX,
                 y: e.clientY
@@ -319,30 +302,30 @@ function drawCanvas(res) {
     });
 
     function calculateDragSpeed() {
-        // 根据相机的缩放级别调整拖拽速度
+        // based on the Camera.zoom and base speed(get from setting) adjust the drag speed
         var zoomLevel = window.vueApp.camera.zoom;
-        return window.vueApp.canvasSetting.dragSpeed / zoomLevel; // 随着放大，速度降低
+        return window.vueApp.canvasSetting.dragSpeed / zoomLevel; // Zooming in slows down dragging
     }
 
-    // 鼠标松开事件
+    // mouse up event
     container.addEventListener('mouseup', function (e) {
         isDragging = false;
         container.style.cursor = 'default';
     });
 
-    //  =========================  鼠标拖拽功能  结束 =========================================== //
+    //  =========================  Drag  end =========================================== //
 
-    // 添加光源
+    // create light
     var light = new THREE.PointLight(0xffffff, 1, 500);
     light.position.set(50, 50, 50);
-    var ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // 第二个参数是光照强度
+    var ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // The second parameter is the light intensity
     window.vueApp.scene.add(ambientLight);
     window.vueApp.scene.add(light);
 
-    // 设置相机位置
+    // set the camera position
     window.vueApp.camera.position.z = 30;
 
-    // 渲染循环
+    // render
     function animate() {
         requestAnimationFrame(animate);
         window.vueApp.renderer.render(window.vueApp.scene, window.vueApp.camera);
