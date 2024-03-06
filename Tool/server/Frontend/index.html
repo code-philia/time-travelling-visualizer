@@ -95,7 +95,24 @@
                 <el-checkbox style="margin-top: 10px;" v-model="SelectionMode">Selection Mode</el-checkbox>
                 <el-divider></el-divider>
                 <el-tabs>
-                    <el-tab-pane label="Normal Query">Normal Query</el-tab-pane>
+                    <el-tab-pane label="Normal Query">
+                        <div class="query-row">
+                            <el-select v-model="predicates.key" >
+                                <el-option value="label" label="label">
+                                </el-option>
+                                <el-option value="prediction" label="prediction">
+                                </el-option>
+                            </el-select>
+                            <el-input style="margin-left:20px;" v-model="predicates.value"></el-input>
+                        </div>
+                        <div class="query-row">
+                            Confidence:  <el-input style="margin-left:20px; margin-right:10px;" v-model="confidence[0]"> </el-input> - <el-input style="margin-left:10px;" v-model="confidence[1]"></el-input>
+                        </div>
+                        <el-button style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;" >
+                            Start Query
+                        </el-button>
+
+                    </el-tab-pane>
                  
                     <el-tab-pane label="Advanced Query">Advanced Query</el-tab-pane>
                   </el-tabs>
@@ -135,7 +152,12 @@
                 canvasSetting: {
                     zoomSpeed: 0.01,
                     dragSpeed: 0.1
-                }
+                },
+                predicates: {
+                    key:'lable',
+                    value: null
+                },
+                confidence:[0,1]
             }
         },
         methods: {
