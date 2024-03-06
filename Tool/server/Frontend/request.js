@@ -31,9 +31,16 @@ function updateProjection(content_path, iteration) {
         window.vueApp.label_list = res.label_list
         window.vueApp.label_name_dict = res.label_name_dict
         window.vueApp.evaluation = res.evaluation
+        window.vueApp.curEpoch = iteration
+       
     })
     .catch(error => {
         console.error('Error fetching data:', error);
+        window.vueApp.isCanvasLoading = false
+        window.vueApp.$message({
+            type: 'error',
+            message: `Backend error`
+          });
     });
 }
 function fetchTimelineData(content_path){
@@ -99,6 +106,12 @@ function updateContraProjection(content_path, iteration) {
     })
     .catch(error => {
         console.error('Error fetching data:', error);
+        window.vueApp.isCanvasLoading = false
+        window.vueApp.$message({
+            type: 'error',
+            message: `Backend error`
+          });
+
     });
 }
 

@@ -23,19 +23,28 @@
     <div id="app" v-loading="isCanvasLoading">
         <div class="header">
             Time Travelling Visualizer
-        <a href="/contrast" style="color: #fff; position:fixed; right: 20px;top:4px;"><i class="el-icon-open" style="font-size: 24px;" ></i></a>
+            <a href="/contrast" style="color: #fff; position:fixed; right: 60px;top:4px;"><i class="el-icon-open"
+                    style="font-size: 24px;"></i></a>
+            <a id="connectUs" href="mailto:lin_yun@sjtu.edu.cn?subject=Time Travelling visualizer Bug&body=Hi Prof Lin" style="color: #fff; position:fixed; right: 20px;top:4px;"><i class="el-icon-message"
+                        style="font-size: 24px;"></i></a>
         </div>
         <el-button class="tutorial_btn" type="success" icon="el-icon-question" size="mini"
             @click.prevent.stop="guide"></el-button>
         <el-popover placement="left" width="200" trigger="click">
             <div>
-                Canvas Intereaction Setting<br/>
-                zoom in speed?<br/>
-                drag speed?<br/>
-                or light?<br/>
-                <el-button>Save</el-button>
+                <span style="line-height: 40px; font-weight: 800;">Canvas Intereaction</span>
+                <br />
+                <div class="setting-item">
+                    <span>Zoom Speed:</span> <el-input @input="filterInput('zoomSpeed', $event)" style="width: 100px;" size="mini"
+                        v-model="canvasSetting.zoomSpeed"></el-input>
+                </div>
+                <div class="setting-item">
+                    <span>Drag Speed:</span> <el-input @input="filterInput('dragSpeed', $event)" style="width: 100px;" size="mini"
+                        v-model="canvasSetting.dragSpeed"></el-input>
+                </div>
             </div>
-            <el-button style="position: fixed; top: 130px; right:340px; font-size: 20px;" size="mini" type="warning" slot="reference" icon="el-icon-setting"></el-button>
+            <el-button style="position: fixed; top: 130px; right:340px; font-size: 20px;" size="mini" type="warning"
+                slot="reference" icon="el-icon-setting"></el-button>
         </el-popover>
         <div class="content_container">
             <div id="subject_model_info_panel">
@@ -83,8 +92,13 @@
             <div id="advanced_panel">
                 <el-checkbox v-model="showTraining">Training</el-checkbox>
                 <el-checkbox v-model="showTesting">Testing</el-checkbox>
-                <el-checkbox v-model="SelectionMode">Selection Mode</el-checkbox>
+                <el-checkbox style="margin-top: 10px;" v-model="SelectionMode">Selection Mode</el-checkbox>
                 <el-divider></el-divider>
+                <el-tabs>
+                    <el-tab-pane label="Normal Query">Normal Query</el-tab-pane>
+                 
+                    <el-tab-pane label="Advanced Query">Advanced Query</el-tab-pane>
+                  </el-tabs>
             </div>
         </div>
         <div id="footer">
@@ -112,17 +126,41 @@
                 showTraining: true,
                 showTesting: true,
                 SelectionMode: false,
+                isShifting: false,
                 scene: null,
                 renderer: null,
                 camera: null,
                 curImg: null,
                 task: "Image",
-                zoomInSpeed: 0.01,
+                canvasSetting: {
+                    zoomSpeed: 0.01,
+                    dragSpeed: 0.1
+                }
             }
         },
         methods: {
+            filterInput(key, event) {
+                console.log(key, event)
+                let value = event
+                
+                value = value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1');
+
+                if ((value.match(/\./g) || []).length > 1) {
+                    value = value.replace(/\.$/, '');
+                }
+                this.canvasSetting[key] = value;
+            },
             guide() {
-                const steps = [{
+                const steps = [
+                // {
+                //     element: '#connectUs',
+                //     popover: {
+                //         title: 'Connect Us',
+                //         description: '**************',
+                //         position: 'left'
+                //     },
+                // },
+                {
                     element: '#contentPathInput',
                     popover: {
                         title: 'Content Path',
