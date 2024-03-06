@@ -98,51 +98,25 @@ $ cd Vis
 $ conda activate visualizer
 $ (visualizer) python vis_snapshot.py--start "epoch start number" --end "epoch end number" --content_path "your dataset path"
 ``` -->
-# Run Your interactive Visualizer Tool
-![Interactive Visualizer Tool](screenshot.png)
-## Backend
+# Run interactive Visualizer Tool
 ```
-$ cd /VisTool/Backend/server
+$ cd /Tool/server
 $ conda activate visualizer
-$ (visualizer) python server.py
+$ (visualizer) ./start_server.sh
 ```
 you will see: 
 ```
 * Serving Flask app 'server' (lazy loading)
 * Environment: production
 * Debug mode: off
-* Running on http://localhost:5000
+* Running on http://ip:port
+
+Access the user interface by opening http://ip:port in your web browser.
 ```
 
-## Frontend (Option1:Accessing the Built Frontend)
-The built version of our frontend interface is stored in the directory /VisTool/Frontend(BUILT). To access it, follow these steps:
-1. Navigate to the directory: /VisTool/Frontend(BUILT)
-2. Open the file standalone.html in a web browser.
-3. Enter the content_path (path to the training dynamic dataset, default is time-travelling-visualizer/training_dynamic) and the backend IP address and port (default is XX.XX.XXX:5000).
-4. Click on the 'Login' button to start using the frontend.
+![Interactive Visualizer Tool](screenshot.png)
 
 
-## Frontend (Option2: build frontend yourself)
-
-1. Download Bazel from [Bazel's official website](https://bazel.build/install) (version 3.2.0 recommended).
-2. Verify the successful installation of Bazel by checking its version:
-```
-> bazel version
-3.2.0
-```
-3. To run the frontend, use the following commands:
-```
-cd /VisTool/Frontend
-bazel run tensorboard/projector:standalone
-```
-and you can see:
-```
-Closure Rules WebfilesServer
-Listening on: http://XXX.XX.XXX:6006/
-```
-4. Access the frontend by opening http://XXX.XX.XXX:6006/ in your web browser.
-5. Enter the content_path (path to the training dynamic dataset, default is time-travelling-visualizer/training_dynamic) and the backend IP address and port (default is XX.XX.XXX:5000).
-6. Click on the 'Login' button to start using the frontend.
 
 ## Acknowledgement
 😊 Note: We appreciate [Yang Xianglin's](https://github.com/xianglinyang) contribution from [paper 1](#paper1-ref) for the tool's backend part: [DeepDebugger](https://github.com/xianglinyang/DeepDebugger), which we have integrated into our code.
