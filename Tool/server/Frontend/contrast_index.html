@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>TIME-TRAVELLING</title>
+    <meta charset="UTF-8" name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <link rel="stylesheet" href="Frontend/driver.min.css">
+    <link rel="stylesheet" href="Frontend/contrast_index.css">
+    <!-- <script src="https://unpkg.com/element-ui/lib/index.js"></script>   -->
+    <script src="https://cdn.bootcss.com/vue/2.5.16/vue.min.js"></script>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.126.1/build/three.min.js"></script>
+    <script src="Frontend/request.js"></script>
+    <script src="Frontend/contrast_render.js"></script>
+    <script src="Frontend/utils.js"></script>
+</head>
+
+<body>
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/driver.js/dist/driver.min.js"></script>
+    <div id="app" v-loading="isCanvasLoading">
+        <div class="header">
+            Time Travelling Visualizer (Contrast)
+            <a href="/" style="color: #fff; position:fixed; right: 20px;top:4px;"><i class="el-icon-back" style="font-size: 24px;" ></i></a>
+        </div>
+        <el-button class="tutorial_btn" type="success" icon="el-icon-question" size="mini"
+            @click.prevent.stop="guide"></el-button>
+        <el-popover placement="left" width="200" trigger="click">
+            <div>
+                Canvas Intereaction Setting<br/>
+                zoom in speed?<br/>
+                drag speed?<br/>
+                or light?<br/>
+                <el-button>Save</el-button>
+            </div>
+            <el-button style="position: fixed; top: 130px; right:0px; font-size: 20px;" size="mini" type="warning" slot="reference" icon="el-icon-setting"></el-button>
+        </el-popover>
+        <div class="content_container">
+            <div id="subject_model_info_panel">
+                <div id="contentSetting">
+                    <span style="display: inline-block; margin-right: 20px;">Task:</span>
+                    <el-radio v-model="task" label="Image">Image</el-radio>
+                    <el-radio v-model="task" label="Text">Text</el-radio>
+                </div>
+                <el-divider></el-divider>
+                <div id="contentPathInput">
+                    Content Path:
+                    <el-input v-model="contentPath"></el-input>
+                </div>
+                <el-button id="showVisResBtn"
+                    style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;" @click="update">Load
+                    Visualization Result</el-button>
+                <el-divider></el-divider>
+                <table id="subjectModeEvalRes">
+                    <caption style="margin-bottom: 10px 0;">Model Evaluation</caption>
+                    <tr>
+                        <td></td>
+                        <td>training acc</td>
+                        <td>Testing acc</td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td>{{evaluation.train_acc}}</td>
+                        <td>{{evaluation.test_acc}}</td>
+                    </tr>
+                </table>
+                <el-divider></el-divider>
+                <div id="curHover">
+                    CurHoverIndex: {{lastHoveredIndex}}<br />
+                    prediction: {{curr_pred}}<br />
+                    label: {{curr_label}}<br />
+
+                    <img id="metaImg" height="100px" />
+                </div>
+
+            </div>
+            <div class="mid_container">
+                <div id="container_ref"></div>
+                <div id="container_tar"></div>
+            </div>
+        </div>
+        <div id="footer">
+            <svg id="timeLinesvg"></svg>
+        </div>
+    </div>
+</body>
+
+<script>
+
+    window.vueApp = new Vue({
+        el: '#app',
+        data() {
+            return {
+                lastHoveredIndex: null,
+                contentPath: '/home/yifan/0ExpMinist/Dropout/0.5/01',
+                isCanvasLoading: false,
+                prediction_list: [],
+                curr_pred: '',
+                curr_label: '',
+                label_list: [],
+                label_name_dict: {},
+                evaluation: { test_acc: 0, train_acc: 0 },
+                curEpoch: 1,
+                showTraining: true,
+                showTesting: true,
+                SelectionMode: false,
+                scene: {
+                    'ref': null,
+                    'tar': null
+                },
+                renderer: {
+                    'ref': null,
+                    'tar': null
+                },
+                camera: {
+                    'ref': null,
+                    'tar': null
+                },
+                curImg: null,
+                task: "Image",
+                zoomInSpeed: 0.01,
+            }
+        },
+        methods: {
+            guide() {
+                const steps = [{
+                    element: '#contentPathInput',
+                    popover: {
+                        title: 'Content Path',
+                        description: 'Please input the absolute path of the training dynamics',
+                        position: 'right'
+                    },
+                },
+                {
+                    element: '#showVisResBtn',
+                    popover: {
+                        title: 'Start Render',
+                        description: 'After input the content path, you can click button to load the visulization results(default start from epoch 1)',
+                        position: 'right'
+                    },
+                },
+                // {
+                // element: '#footer',
+                // popover: {
+                //     title: 'Time Line',
+                //     description: '**************',
+                //     position: 'right',
+                //     className: 'custom-popover-position'
+                //     },
+                // },
+                {
+                    element: '#subjectModeEvalRes',
+                    popover: {
+                        title: 'Subject Model Eval Res',
+                        description: 'After load the visualization result, the corresbounding result wiil be show here',
+                        position: 'right'
+                    },
+                },
+                {
+                    element: '#curHover',
+                    popover: {
+                        title: 'Hover Information',
+                        description: 'The detail of the current hover sample will be shown here',
+                        position: 'right'
+                    },
+                },
+                {
+                    element: '#container',
+                    popover: {
+                        title: 'Visualization Canvas',
+                        description: '**************',
+                        position: 'right'
+                    },
+                },
+                {
+                    element: '#advanced_panel',
+                    popover: {
+                        title: 'Advanced panel',
+                        description: '**************',
+                        position: 'left'
+                    },
+                }
+
+                ]
+                this.driver.defineSteps(steps)
+                this.driver.start()
+            },
+            update() {
+                this.isCanvasLoading = true
+                updateContraProjection(this.contentPath, this.curEpoch)
+                // fetchTimelineData(this.contentPath)
+            }
+        },
+        watch: {
+            lastHoveredIndex: {
+                immediate: true,
+                handler(newVal, oldVal) {
+                    this.curr_pred = this.prediction_list[newVal];
+                    this.curr_label = this.label_name_dict[this.label_list[newVal]]
+                    if (newVal != null) {
+                        getOriginalData(this.contentPath, newVal)
+
+                    }
+
+                }
+            }
+        },
+        mounted() {
+            this.driver = new Driver()
+            
+        },
+        unmounted(){
+            this.isCanvasLoading = true
+        }
+    })
+</script>
+
+</html>
