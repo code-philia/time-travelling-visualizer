@@ -8,7 +8,7 @@ headers.append('Content-Type', 'application/json');
 headers.append('Accept', 'application/json');
 
 // updateProjection
-function updateProjection(content_path, iteration) {
+function updateProjection(content_path, iteration, taskType) {
     console.log(content_path,iteration)
     fetch(`${window.location.href}updateProjection`, {
         method: 'POST',
@@ -19,7 +19,8 @@ function updateProjection(content_path, iteration) {
             "vis_method": 'Trustvis',
             'setting': 'normal',
             "content_path": content_path,
-            "predicates": {}
+            "predicates": {},
+            "TaskType": taskType
         }),
         headers: headers,
         mode: 'cors'
@@ -57,7 +58,7 @@ function fetchTimelineData(content_path){
 
 function getOriginalData(content_path,index){
     if(index != null){
-        fetch(`${window.location.href}sprite?index=${index}&path=${content_path}&username=admin`, {
+        fetch(`${window.location.href}spriteImage?index=${index}&path=${content_path}&username=admin`, {
             method: 'GET',
             mode: 'cors'
           }).then(response => response.json()).then(data => {
@@ -78,7 +79,7 @@ function getOriginalData(content_path,index){
 }
 
 
-function updateContraProjection(content_path, iteration) {
+function updateContraProjection(content_path, iteration, taskType) {
     console.log('contrast',content_path,iteration)
     
     fetch(`${window.location.href}/updateProjection`, {
@@ -90,7 +91,8 @@ function updateContraProjection(content_path, iteration) {
             "vis_method": 'Trustvis',
             'setting': 'normal',
             "content_path": content_path,
-            "predicates": {}
+            "predicates": {},
+            "TaskType": taskType
         }),
         headers: headers,
         mode: 'cors'
