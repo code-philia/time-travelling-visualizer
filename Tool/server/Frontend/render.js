@@ -522,7 +522,7 @@ function drawTimeline(res) {
 
                         let value = e.target.nextSibling.innerHTML.split("|")[0]
                         window.vueApp.isCanvasLoading = true
-                        updateProjection(window.vueApp.contentPath, value)
+                        updateProjection(window.vueApp.contentPath, value, window.vueApp.taskType)
                         window.sessionStorage.setItem('acceptIndicates', "")
                         window.sessionStorage.setItem('rejectIndicates', "")
                         window.vueApp.curEpoch = value
