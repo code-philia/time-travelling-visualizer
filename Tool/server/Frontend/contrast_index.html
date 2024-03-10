@@ -39,11 +39,18 @@
         </el-popover>
         <div class="content_container">
             <div id="subject_model_info_panel">
-                <div id="contentSetting">
-                    <span style="display: inline-block; margin-right: 20px;">Task:</span>
-                    <el-radio v-model="task" label="Image">Image</el-radio>
-                    <el-radio v-model="task" label="Text">Text</el-radio>
+                <div id="contentSettingData">
+                    <span style="display: inline-block; margin-right: 20px;">Data Type:</span>
+                    <el-radio v-model="dataType" label="Image">Image</el-radio>
+                    <el-radio v-model="dataType" label="Text">Text</el-radio>
                 </div>
+                <el-divider></el-divider>
+                <div id="contentSettingTask">
+                    <span style="display: inline-block; margin-right: 20px;">Task Type:</span>
+                    <el-radio v-model="taskType" label="Classification">Classification</el-radio>
+                    <el-radio v-model="taskType" label="Non-Classification">Non-Classification</el-radio>
+                </div>
+
                 <el-divider></el-divider>
                 <div id="contentPathInput">
                     Content Path:
@@ -103,8 +110,9 @@
             return {
                 lastHoveredIndex1: null,
                 lastHoveredIndex2: null,
-                contentPath: '/home/yifan/0ExpMinist/Dropout/0.5/01',
+                contentPath: '/home/timeTravelling/guorui/git_space/TestFrontend/time-travelling-visualizer/Backdoor',
                 isCanvasLoading: false,
+                taskType: 'Classification',
                 prediction_list: [],
                 curr_pred1: '',
                 curr_pred2: '',
@@ -129,7 +137,7 @@
                     'tar': null
                 },
                 curImg: null,
-                task: "Image",
+                dataType: "Image",
                 zoomInSpeed: 0.01,
             }
         },
@@ -199,7 +207,7 @@
             },
             update() {
                 this.isCanvasLoading = true
-                updateContraProjection(this.contentPath, this.curEpoch)
+                updateContraProjection(this.contentPath, this.curEpoch, this.taskType)
                 // fetchTimelineData(this.contentPath)
             }
         },
