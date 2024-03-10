@@ -9,6 +9,116 @@ from sklearn.manifold import trustworthiness
 from scipy.stats import kendalltau, spearmanr, pearsonr, rankdata
 
 
+def evaluate_isAlign(embeddingLeft, embeddingRight, align_metric=1):
+    lens = len(embeddingLeft)
+    align_indices = []
+    for i in range(lens):
+        dist = np.linalg.norm( embeddingLeft[i]-embeddingRight[i])
+        if dist < align_metric:
+            align_indices.append(i)
+    return align_indices
+
+
+def evaluate_isAlign_single(embeddingLeft, embeddingRight, selected_left, selected_right,align_metric=1):
+    lens = len(embeddingLeft)
+    align_indices_left = []
+    align_indices_right = []
+
+    if selected_left != -1:
+        for i in range(lens):
+            dist = np.linalg.norm( embeddingLeft[selected_left]-embeddingRight[i])
+            if dist < align_metric:
+                align_indices_right.append(i)
+    if selected_right != -1:
+        for i in range(lens):
+            dist = np.linalg.norm( embeddingLeft[i]-embeddingRight[selected_right])
+            if dist < align_metric:
+                align_indices_left.append(i)
+
+    return align_indices_left, align_indices_right
+       
+def evaluate_isNearestNeighbour(embeddingLeft, embeddingRight, n_neighbors=15, metric="euclidean"):
+    """
+    Find indices where none of the nearest neighbors in embeddingLeft are preserved in embeddingRight.
+    :param embeddingLeft: ndarray, first set of low dimensional representations
+    :param embeddingRight: ndarray, second set of low dimensional representations
+    :param n_neighbors: int, number of nearest neighbors to consider
+    :param metric: str, metric for nearest neighbor calculation, default "euclidean"
+    :return: list of indices where none of the neighbors are preserved
+    """
+    n_trees = 5 + int(round((embeddingLeft.shape[0]) ** 0.5 / 20.0))
+    n_iters = max(5, int(round(np.log2(embeddingLeft.shape[0]))))
+
+    nnd_left = NNDescent(
+        embeddingLeft,
+        n_neighbors=n_neighbors,
+        metric=metric,
+        n_trees=n_trees,
+        n_iters=n_iters,
+        max_candidates=60,
+        verbose=True
+    )
+    left_neighbors, _ = nnd_left.neighbor_graph
+
+    nnd_right = NNDescent(
+        embeddingRight,
+        n_neighbors=n_neighbors,
+        metric=metric,
+        n_trees=n_trees,
+        n_iters=n_iters,
+        max_candidates=60,
+        verbose=True
+    )
+    right_neighbors, _ = nnd_right.neighbor_graph
+
+    non_preserved_indices = []
+    for i in range(len(embeddingLeft)):
+        if len(np.intersect1d(left_neighbors[i], right_neighbors[i])) == 0:
+            non_preserved_indices.append(i)
+
+    return non_preserved_indices
+
+def evaluate_isNearestNeighbour_single(embeddingLeft, embeddingRight, selected_left, selected_right, n_neighbors=15,  metric="euclidean"):
+
+    n_trees = 5 + int(round((embeddingLeft.shape[0]) ** 0.5 / 20.0))
+    n_iters = max(5, int(round(np.log2(embeddingLeft.shape[0]))))
+
+    nnd_left = NNDescent(
+        embeddingLeft,
+        n_neighbors=n_neighbors,
+        metric=metric,
+        n_trees=n_trees,
+        n_iters=n_iters,
+        max_candidates=60,
+        verbose=True
+    )
+    left_neighbors, _ = nnd_left.neighbor_graph
+
+    nnd_right = NNDescent(
+        embeddingRight,
+        n_neighbors=n_neighbors,
+        metric=metric,
+        n_trees=n_trees,
+        n_iters=n_iters,
+        max_candidates=60,
+        verbose=True
+    )
+    right_neighbors, _ = nnd_right.neighbor_graph
+
+    nearest_neighbors_leftE_rightS = []
+    nearest_neighbors_rightE_rightS = []
+    nearest_neighbors_leftE_leftS = []
+    nearest_neighbors_rightE_leftS = []
+    if selected_left != -1:
+        nearest_neighbors_leftE_leftS = left_neighbors[selected_left].tolist()
+        nearest_neighbors_rightE_leftS = right_neighbors[selected_left].tolist()
+
+    if selected_right != -1:
+
+        nearest_neighbors_leftE_rightS = left_neighbors[selected_right].tolist()
+        nearest_neighbors_rightE_rightS = right_neighbors[selected_right].tolist()
+
+    return nearest_neighbors_leftE_leftS, nearest_neighbors_leftE_rightS, nearest_neighbors_rightE_leftS, nearest_neighbors_rightE_rightS
 def evaluate_proj_nn_perseverance_knn(data, embedding, n_neighbors, metric="euclidean"):
     """
     evaluate projection function, nn preserving property using knn algorithm
