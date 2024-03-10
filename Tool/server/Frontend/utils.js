@@ -8,7 +8,7 @@ const INDEX_NUM_ELEMENTS = 1;
 const XYZ_NUM_ELEMENTS = 3;
 
 
-function createUniforms(){
+  function createUniforms(){
     return {
       texture: {type: 't'},
       spritesPerRow: {type: 'f'},
@@ -22,7 +22,7 @@ function createUniforms(){
     };
 }
 
-function createVertexShader() {
+  function createVertexShader() {
   return `
   // Index of the specific vertex (passed in as bufferAttribute), and the
   // variable that will be used to pass it to the fragment shader.
@@ -78,7 +78,7 @@ function createVertexShader() {
   }`;
 }
 
-const FRAGMENT_SHADER_POINT_TEST_CHUNK = `
+  const FRAGMENT_SHADER_POINT_TEST_CHUNK = `
   bool point_in_unit_circle(vec2 spriteCoord) {
     vec2 centerToP = spriteCoord - vec2(0.5, 0.5);
     return dot(centerToP, centerToP) < (0.5 * 0.5);
@@ -99,7 +99,7 @@ const FRAGMENT_SHADER_POINT_TEST_CHUNK = `
   }
 `;
 
-function createFragmentShader() {
+  function createFragmentShader() {
   return `
   varying vec2 xyIndex;
   varying vec3 vColor;
@@ -130,7 +130,7 @@ function createFragmentShader() {
   }`;
 }
 
-const FRAGMENT_SHADER_PICKING = `
+  const FRAGMENT_SHADER_PICKING = `
   varying vec2 xyIndex;
   varying vec3 vColor;
   uniform bool isImage;
@@ -150,7 +150,7 @@ const FRAGMENT_SHADER_PICKING = `
     }
   }`;
 
-  function cleanMaterial(material) {
+   function cleanMaterial(material) {
     material.dispose();
     
     // 释放纹理
@@ -162,3 +162,38 @@ const FRAGMENT_SHADER_PICKING = `
     if (material.envMap) material.envMap.dispose();
     // ...处理其他类型的纹理
 }
+
+
+// make general elements draggable, not canvas draggable
+  function makeDraggable(dragHandle, draggableElement) {
+  var dragOffsetX, dragOffsetY;
+
+  dragHandle.onmousedown = dragMouseDown;
+
+  function dragMouseDown(e) {
+    e = e || window.event;
+    e.preventDefault();
+
+    dragOffsetX = e.clientX - draggableElement.offsetLeft;
+    dragOffsetY = e.clientY - draggableElement.offsetTop;
+    document.onmouseup = closeDragElement;
+
+    document.onmousemove = elementDrag;
+  }
+
+  function elementDrag(e) {
+    e = e || window.event;
+    e.preventDefault();
+
+    draggableElement.style.left = (e.clientX - dragOffsetX) + "px";
+    draggableElement.style.top = (e.clientY - dragOffsetY) + "px";
+  }
+
+  function closeDragElement() {
+
+    document.onmouseup = null;
+    document.onmousemove = null;
+  }
+}
+
+

@@ -67,13 +67,7 @@
                     </tr>
                 </table>
                 <el-divider></el-divider>
-                <div id="curHover">
-                    CurHoverIndex: {{lastHoveredIndex}}<br />
-                    prediction: {{curr_pred}}<br />
-                    label: {{curr_label}}<br />
-
-                    <img id="metaImg" height="100px" />
-                </div>
+               
 
             </div>
             <div class="mid_container">
@@ -84,6 +78,20 @@
         <div id="footer">
             <svg id="timeLinesvg"></svg>
         </div>
+        <div id="currHover1">
+            CurrHoverIndex: {{lastHoveredIndex1}}<br />
+            prediction: {{curr_pred1}}<br />
+            label: {{curr_label1}}<br />
+
+            <img id="metaImg1" height="100px" />
+        </div>
+        <div id="currHover2">
+            CurrHoverIndex: {{lastHoveredIndex2}}<br />
+            prediction: {{curr_pred2}}<br />
+            label: {{curr_label2}}<br />
+
+            <img id="metaImg2" height="100px" />
+        </div>
     </div>
 </body>
 
@@ -93,11 +101,13 @@
         el: '#app',
         data() {
             return {
-                lastHoveredIndex: null,
+                lastHoveredIndex1: null,
+                lastHoveredIndex2: null,
                 contentPath: '/home/yifan/0ExpMinist/Dropout/0.5/01',
                 isCanvasLoading: false,
                 prediction_list: [],
-                curr_pred: '',
+                curr_pred1: '',
+                curr_pred2: '',
                 curr_label: '',
                 label_list: [],
                 label_name_dict: {},
@@ -159,7 +169,7 @@
                     },
                 },
                 {
-                    element: '#curHover',
+                    element: '#currHover1',
                     popover: {
                         title: 'Hover Information',
                         description: 'The detail of the current hover sample will be shown here',
@@ -194,11 +204,23 @@
             }
         },
         watch: {
-            lastHoveredIndex: {
+            lastHoveredIndex1: {
                 immediate: true,
                 handler(newVal, oldVal) {
-                    this.curr_pred = this.prediction_list[newVal];
-                    this.curr_label = this.label_name_dict[this.label_list[newVal]]
+                    this.curr_pred1 = this.prediction_list[newVal];
+                    this.curr_label1 = this.label_name_dict[this.label_list[newVal]]
+                    if (newVal != null) {
+                        getOriginalData(this.contentPath, newVal)
+
+                    }
+
+                }
+            },
+            lastHoveredIndex2: {
+                immediate: true,
+                handler(newVal, oldVal) {
+                    this.curr_pred2 = this.prediction_list[newVal];
+                    this.curr_label2 = this.label_name_dict[this.label_list[newVal]]
                     if (newVal != null) {
                         getOriginalData(this.contentPath, newVal)
 

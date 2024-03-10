@@ -16,7 +16,7 @@ var previousMousePosition = {
     y: 0
 };
 
-function drawCanvas(res) {
+  function drawCanvas(res) {
     // remove previous scene
     if (window.vueApp.scene) {
         window.vueApp.scene.traverse(function (object) {
@@ -70,7 +70,7 @@ function drawCanvas(res) {
     };
     var aspect = 1
     const rect = container.getBoundingClientRect();
-    console.log(res.grid_index)
+    // console.log(res.grid_index)
     window.vueApp.camera = new THREE.OrthographicCamera(x_min * aspect, x_max * aspect, y_max, y_min, 1, 1000);
     window.vueApp.camera.position.set(0, 0, 100);
     const target = new THREE.Vector3(
@@ -82,13 +82,22 @@ function drawCanvas(res) {
     window.vueApp.camera.right = x_max * aspectRatio;
     window.vueApp.camera.top = y_max;
     window.vueApp.camera.bottom = y_min;
-
+    // console.log("startCamleft",window.vueApp.camera.left )
+    // console.log("startCamright",window.vueApp.camera.right )
+    // console.log("startCamtop",window.vueApp.camera.top )
+    // console.log("startCambottom",window.vueApp.camera.bottom )
     // update the camera projection matrix
     window.vueApp.camera.updateProjectionMatrix();
     window.vueApp.camera.lookAt(target);
     window.vueApp.renderer = new THREE.WebGLRenderer();
-    window.vueApp.renderer.setSize(rect.width, rect.width);
+    window.vueApp.renderer.setSize(rect.width, rect.height);
     window.vueApp.renderer.setClearColor(BACKGROUND_COLOR, 1);
+    // console.log("heightrec", rect.height)
+    // console.log("widthrec", rect.width)
+
+
+
+
     // set zoom speed
     function onDocumentMouseWheel(event) {
         // when mouse wheel adjust the camera zoom level 
@@ -121,7 +130,7 @@ function drawCanvas(res) {
     img.onload = () => {
         ctx.drawImage(img, 0, 0, 128, 128);
         let texture = new THREE.CanvasTexture(canvas);
-        // texture.needsUpdate = true; // 不设置needsUpdate为true的话，可能纹理贴图不刷新
+        texture.needsUpdate = true; // 不设置needsUpdate为true的话，可能纹理贴图不刷新
         var plane_geometry = new THREE.PlaneGeometry(width, height);
         var material = new THREE.MeshPhongMaterial({
             map: texture,
@@ -131,6 +140,8 @@ function drawCanvas(res) {
         newMesh.position.set(centerX, centerY, 0);
         window.vueApp.scene.add(newMesh);
     }
+
+
     // 创建数据点
     var dataPoints = res.result
     dataPoints.push()
@@ -206,6 +217,10 @@ function drawCanvas(res) {
         var rect = window.vueApp.renderer.domElement.getBoundingClientRect();
         mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        // console.log("mouseX", mouse.x)
+        // console.log("mouseY", mouse.y)
+        // console.log("clientX",event.clientX)
+        // console.log("clientY",event.clientY)
         // 通过鼠标位置更新射线
         raycaster.setFromCamera(mouse, window.vueApp.camera);
         // 检测射线与点云的相交
@@ -269,30 +284,92 @@ function drawCanvas(res) {
             container.style.cursor = 'move';
             previousMousePosition.x = e.clientX;
             previousMousePosition.y = e.clientY;
+            // previousMousePosition.x = e.cl;
+            // previousMousePosition.y = mouse.y;
         }
     });
 
     // handel mouse move
     container.addEventListener('mousemove', function (e) {
         if (isDragging) {
-            var deltaX = e.clientX - previousMousePosition.x;
-            var deltaY = e.clientY - previousMousePosition.y;
-            console.log(deltaX, deltaY)
+            // var targ = e.target ? e.target : e.srcElement;
+            // if (targ.className != 'mid_container') {return};
+            // if(!targ.style.left) { targ.style.left='0px'};
+            // if (!targ.style.top) { targ.style.top='0px'};
+            // coordX = parseInt(targ.style.left);
+			// coordY = parseInt(targ.style.top);
+            // targ.style.left=coordX+e.clientX-offsetX+'px';
+            // targ.style.top=coordY+e.clientY-offsetY+'px';
 
-            var dragSpeed = calculateDragSpeed();
+            // var deltaX = e.clientX - previousMousePosition.x;
+            // var deltaY = e.clientY - previousMousePosition.y;
+            // // var deltaX = mouse.x - previousMousePosition.x;
+            // // var deltaY = mouse.y - previousMousePosition.y;
+            // const camera = window.vueApp.camera;
+            // const viewport = window.vueApp.renderer.domElement;
+            
+            // // Get NDC space dimensions
+            // const ndcHeight = camera.top - camera.bottom;
+            // const ndcWidth = camera.right - camera.left;
+            
+            // // Convert NDC to pixels based on viewport size
+            // const cameraHeight = ndcHeight * viewport.clientHeight;
+            // const cameraWidth = ndcWidth * viewport.clientWidth;
+            // const cameraLeft = camera.left * viewport.clientWidth;
+            // const cameraRight = camera.right * viewport.clientWidth;
+            // const cameraTop = camera.top * viewport.clientHeight;
+            // const cameraBottom = camera.bottom * viewport.clientHeight;
+            // console.log("Camera Width:", cameraWidth);
+            // console.log("Camera Height:", cameraHeight);
 
-            // pre calculate the camera position 
-            var newPosX = window.vueApp.camera.position.x - deltaX * dragSpeed;
-            var newPosY = window.vueApp.camera.position.y + deltaY * dragSpeed;
 
-            // check if the new position is in the bound 
+            // deltaX = ((deltaX - cameraLeft) / (cameraRight-cameraLeft)) * 2 - 1;
+            // deltaY = -((deltaY -cameraTop) / (cameraTop-cameraBottom)) * 2 + 1;
+            // console.log(typeof deltaX, deltaY)
+            // var dragSpeed = calculateDragSpeed();
+
+            // console.log("camearX",window.vueApp.camera.position.x )
+            // console.log("cameraY", window.vueApp.camera.position.y)
+            // // pre calculate the camera position 
+            // var newPosX = window.vueApp.camera.position.x - deltaX * 1;
+            // var newPosY = window.vueApp.camera.position.y + deltaY * 1;
+            // console.log("newPosx", newPosX)
+            // console.log("newposY", newPosY)
+            // // check if the new position is in the bound 
+            // newPosX = Math.max(cameraBounds.minX, Math.min(newPosX, cameraBounds.maxX));
+            // newPosY = Math.max(cameraBounds.minY, Math.min(newPosY, cameraBounds.maxY));
+
+            // // update camera position
+            // window.vueApp.camera.position.x = newPosX;
+            // window.vueApp.camera.position.y = newPosY;
+
+            const currentZoom = window.vueApp.camera.zoom;
+
+
+            let deltaX = e.clientX - previousMousePosition.x;
+            let deltaY = e.clientY - previousMousePosition.y;
+    
+            const aspectRatio = window.innerWidth / window.innerHeight;
+            const viewportWidth = window.vueApp.renderer.domElement.clientWidth;
+            const viewportHeight = window.vueApp.renderer.domElement.clientHeight;
+    
+            // Scale factors
+            const scaleX = (window.vueApp.camera.right - window.vueApp.camera.left) / viewportWidth;
+            const scaleY = (window.vueApp.camera.top - window.vueApp.camera.bottom) / viewportHeight;
+    
+            // Convert pixel movement to world units
+            deltaX = (deltaX * scaleX) / currentZoom;
+            deltaY = (deltaY * scaleY) / currentZoom;
+    
+            // Update the camera position based on the scaled delta
+            var newPosX = window.vueApp.camera.position.x - deltaX * 1;
+            var newPosY = window.vueApp.camera.position.y + deltaY * 1;
+
             newPosX = Math.max(cameraBounds.minX, Math.min(newPosX, cameraBounds.maxX));
             newPosY = Math.max(cameraBounds.minY, Math.min(newPosY, cameraBounds.maxY));
-
-            // update camera position
+      // update camera position
             window.vueApp.camera.position.x = newPosX;
             window.vueApp.camera.position.y = newPosY;
-
             // update previous mouse position
             previousMousePosition = {
                 x: e.clientX,
@@ -335,28 +412,27 @@ function drawCanvas(res) {
     window.vueApp.isCanvasLoading = false
 }
 
-
 function drawTimeline(res) {
-    console.log('res', res)
+    console.log('resaaaaaaaaa', res)
     // this.d3loader()
-
+  
     const d3 = window.d3;
-
+  
     let svgDom = document.getElementById('timeLinesvg')
-
-
+  
+  
     while (svgDom?.firstChild) {
         svgDom.removeChild(svgDom.lastChild);
     }
-
-
-
+  
+  
+  
     let total = res.structure.length
     window.treejson = res.structure
-
+  
     let data = res.structure
-
-
+  
+  
     function tranListToTreeData(arr) {
         const newArr = []
         const map = {}
@@ -369,7 +445,7 @@ function drawTimeline(res) {
             const key = item.value
             map[key] = item
         })
-
+  
         // 2. 对于arr中的每一项
         arr.forEach(item => {
             const parent = map[item.pid]
@@ -381,7 +457,7 @@ function drawTimeline(res) {
                 newArr.push(item)
             }
         })
-
+  
         return newArr
     }
     data = tranListToTreeData(data)[0]
@@ -389,12 +465,12 @@ function drawTimeline(res) {
     var svg = d3.select(svgDom);
     var width = svg.attr("width");
     var height = svg.attr("height");
-
+  
     //create group
     var g = svg.append("g")
         .attr("transform", "translate(" + margin + "," + 0 + ")");
-
-
+  
+  
     //create layer layout
     var hierarchyData = d3.hierarchy(data)
         .sum(function (d, i) {
@@ -407,10 +483,10 @@ function drawTimeline(res) {
     //        node.parent - parent id, root is null.
     //        node.children.
     //        node.value - total value current node and descendants;
-
+  
     //create tree
     let len = total
-
+  
     let svgWidth = len * 40
     if (window.sessionStorage.taskType === 'active learning') {
         svgWidth = 1000
@@ -422,21 +498,21 @@ function drawTimeline(res) {
         svgDom.style.height = 90
         // svgDom.style.width = 2000
     }
-
-
+  
+  
     var tree = d3.tree()
         .size([100, svgWidth])
         .separation(function (a, b) {
             return (a.parent == b.parent ? 1 : 2) / a.depth;
         });
-
+  
     //init
     var treeData = tree(hierarchyData)
-
+  
     //line node
     var nodes = treeData.descendants();
     var links = treeData.links();
-
+  
     //line
     var link = d3.linkHorizontal()
         .x(function (d) {
@@ -445,8 +521,8 @@ function drawTimeline(res) {
         .y(function (d) {
             return d.x;
         });
-
-
+  
+  
     //path
     g.append('g')
         .selectAll('path')
@@ -470,8 +546,8 @@ function drawTimeline(res) {
         .attr('stroke', '#452d8a')
         .attr('stroke-width', 1)
         .attr('fill', 'none');
-
-
+  
+  
     //创建节点与文字分组
     var gs = g.append('g')
         .selectAll('.g')
@@ -482,7 +558,7 @@ function drawTimeline(res) {
             console.log("D", d)
             return 'translate(' + d.data.pid * 40 + ',' + d.x + ')';
         });
-
+  
     //绘制文字和节点
     gs.append('circle')
         .attr('r', 8)
@@ -494,7 +570,7 @@ function drawTimeline(res) {
         .attr('stroke', function (d, i) {
             return d.data.value == window.vueApp.curEpoch ? 'orange' : '#452d8a'
         })
-
+  
     gs.append('text')
         .attr('x', function (d, i) {
             return d.children ? 5 : 10;
@@ -509,7 +585,7 @@ function drawTimeline(res) {
             } else {
                 return `${d.data.value}`;
             }
-
+  
         })
     setTimeout(() => {
         let list = svgDom.querySelectorAll("circle");
@@ -519,7 +595,7 @@ function drawTimeline(res) {
                 c.style.cursor = "pointer"
                 c.addEventListener('click', (e) => {
                     if (e.target.nextSibling.innerHTML != window.iteration) {
-
+  
                         let value = e.target.nextSibling.innerHTML.split("|")[0]
                         window.vueApp.isCanvasLoading = true
                         updateProjection(window.vueApp.contentPath, value)
@@ -529,8 +605,215 @@ function drawTimeline(res) {
                         drawTimeline(res)
                     }
                 })
-
+  
             }
         }
     }, 50)
-}
+  }
+
+
+  function drawTimeline(res) {
+    console.log('res', res)
+    // this.d3loader()
+  
+    const d3 = window.d3;
+  
+    let svgDom = document.getElementById('timeLinesvg')
+  
+  
+    while (svgDom?.firstChild) {
+        svgDom.removeChild(svgDom.lastChild);
+    }
+  
+  
+  
+    let total = res.structure.length
+    window.treejson = res.structure
+  
+    let data = res.structure
+  
+  
+    function tranListToTreeData(arr) {
+        const newArr = []
+        const map = {}
+        // {
+        //   '01': {id:"01", pid:"",   "name":"老王",children: [] },
+        //   '02': {id:"02", pid:"01", "name":"小张",children: [] },
+        // }
+        arr.forEach(item => {
+            item.children = []
+            const key = item.value
+            map[key] = item
+        })
+  
+        // 2. 对于arr中的每一项
+        arr.forEach(item => {
+            const parent = map[item.pid]
+            if (parent) {
+                //    如果它有父级，把当前对象添加父级元素的children中
+                parent.children.push(item)
+            } else {
+                //    如果它没有父级（pid:''）,直接添加到newArr
+                newArr.push(item)
+            }
+        })
+  
+        return newArr
+    }
+    data = tranListToTreeData(data)[0]
+    var margin = 20;
+    var svg = d3.select(svgDom);
+    var width = svg.attr("width");
+    var height = svg.attr("height");
+  
+    //create group
+    var g = svg.append("g")
+        .attr("transform", "translate(" + margin + "," + 0 + ")");
+  
+  
+    //create layer layout
+    var hierarchyData = d3.hierarchy(data)
+        .sum(function (d, i) {
+            return d.value;
+        });
+    //    nodes attributes:
+    //        node.data - data.
+    //        node.depth - root is 0.
+    //        node.height -  leaf node is 0.
+    //        node.parent - parent id, root is null.
+    //        node.children.
+    //        node.value - total value current node and descendants;
+  
+    //create tree
+    let len = total
+  
+    let svgWidth = len * 40
+    if (window.sessionStorage.taskType === 'active learning') {
+        svgWidth = 1000
+    }
+    // svgWidth = 1000
+    console.log('svgWid', len, svgWidth)
+    svgDom.style.width = svgWidth + 200
+    if (window.sessionStorage.selectedSetting !== 'active learning' && window.sessionStorage.selectedSetting !== 'dense al') {
+        svgDom.style.height = 90
+        // svgDom.style.width = 2000
+    }
+  
+  
+    var tree = d3.tree()
+        .size([100, svgWidth])
+        .separation(function (a, b) {
+            return (a.parent == b.parent ? 1 : 2) / a.depth;
+        });
+  
+    //init
+    var treeData = tree(hierarchyData)
+  
+    //line node
+    var nodes = treeData.descendants();
+    var links = treeData.links();
+  
+    //line
+    var link = d3.linkHorizontal()
+        .x(function (d) {
+            return d.y;
+        }) //linkHorizontal
+        .y(function (d) {
+            return d.x;
+        });
+  
+  
+    //path
+    g.append('g')
+        .selectAll('path')
+        .data(links)
+        .enter()
+        .append('path')
+        .attr('d', function (d, i) {
+            var start = {
+                x: d.source.x,
+                y: d.source.y
+            };
+            var end = {
+                x: d.target.x,
+                y: d.target.y
+            };
+            return link({
+                source: start,
+                target: end
+            });
+        })
+        .attr('stroke', '#452d8a')
+        .attr('stroke-width', 1)
+        .attr('fill', 'none');
+  
+  
+    //创建节点与文字分组
+    var gs = g.append('g')
+        .selectAll('.g')
+        .data(nodes)
+        .enter()
+        .append('g')
+        .attr('transform', function (d, i) {
+            console.log("D", d)
+            return 'translate(' + d.data.pid * 40 + ',' + d.x + ')';
+        });
+  
+    //绘制文字和节点
+    gs.append('circle')
+        .attr('r', 8)
+        .attr('fill', function (d, i) {
+            // console.log("1111",d.data.value, window.iteration, d.data.value == window.iteration )
+            return d.data.value == window.vueApp.curEpoch ? 'orange' : '#452d8a'
+        })
+        .attr('stroke-width', 1)
+        .attr('stroke', function (d, i) {
+            return d.data.value == window.vueApp.curEpoch ? 'orange' : '#452d8a'
+        })
+  
+    gs.append('text')
+        .attr('x', function (d, i) {
+            return d.children ? 5 : 10;
+        })
+        .attr('y', function (d, i) {
+            return d.children ? -20 : -5;
+        })
+        .attr('dy', 10)
+        .text(function (d, i) {
+            if (window.sessionStorage.taskType === 'active learning') {
+                return `${d.data.value}|${d.data.name}`;
+            } else {
+                return `${d.data.value}`;
+            }
+  
+        })
+    setTimeout(() => {
+        let list = svgDom.querySelectorAll("circle");
+        for (let i = 0; i <= list.length; i++) {
+            let c = list[i]
+            if (c) {
+                c.style.cursor = "pointer"
+                c.addEventListener('click', (e) => {
+                    if (e.target.nextSibling.innerHTML != window.iteration) {
+  
+                        let value = e.target.nextSibling.innerHTML.split("|")[0]
+                        window.vueApp.isCanvasLoading = true
+                        updateProjection(window.vueApp.contentPath, value)
+                        window.sessionStorage.setItem('acceptIndicates', "")
+                        window.sessionStorage.setItem('rejectIndicates', "")
+                        window.vueApp.curEpoch = value
+                        drawTimeline(res)
+                    }
+                })
+  
+            }
+        }
+    }, 50)
+  }
+
+  
+window.onload = function() {
+    const currHover = document.getElementById('currHover');
+    console.log("eataaaaa", currHover)
+    makeDraggable(currHover, currHover);
+  };

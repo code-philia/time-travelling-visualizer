@@ -16,7 +16,7 @@ var previousMousePosition = {
     y: 0
 };
 
-function drawCanvas(res,id, flag='ref') {
+  function drawCanvas(res,id, flag='ref') {
 
     // remove previous scene
     container = document.getElementById(id)
@@ -349,28 +349,27 @@ function drawCanvas(res,id, flag='ref') {
     window.vueApp.isCanvasLoading = false
 }
 
-
-function drawTimeline(res) {
+  function drawTimeline(res) {
     console.log('res', res)
     // this.d3loader()
-
+  
     const d3 = window.d3;
-
+  
     let svgDom = document.getElementById('timeLinesvg')
-
-
+  
+  
     while (svgDom?.firstChild) {
         svgDom.removeChild(svgDom.lastChild);
     }
-
-
-
+  
+  
+  
     let total = res.structure.length
     window.treejson = res.structure
-
+  
     let data = res.structure
-
-
+  
+  
     function tranListToTreeData(arr) {
         const newArr = []
         const map = {}
@@ -383,7 +382,7 @@ function drawTimeline(res) {
             const key = item.value
             map[key] = item
         })
-
+  
         // 2. 对于arr中的每一项
         arr.forEach(item => {
             const parent = map[item.pid]
@@ -395,7 +394,7 @@ function drawTimeline(res) {
                 newArr.push(item)
             }
         })
-
+  
         return newArr
     }
     data = tranListToTreeData(data)[0]
@@ -403,12 +402,12 @@ function drawTimeline(res) {
     var svg = d3.select(svgDom);
     var width = svg.attr("width");
     var height = svg.attr("height");
-
+  
     //create group
     var g = svg.append("g")
         .attr("transform", "translate(" + margin + "," + 0 + ")");
-
-
+  
+  
     //create layer layout
     var hierarchyData = d3.hierarchy(data)
         .sum(function (d, i) {
@@ -421,10 +420,10 @@ function drawTimeline(res) {
     //        node.parent - parent id, root is null.
     //        node.children.
     //        node.value - total value current node and descendants;
-
+  
     //create tree
     let len = total
-
+  
     let svgWidth = len * 40
     if (window.sessionStorage.taskType === 'active learning') {
         svgWidth = 1000
@@ -436,21 +435,21 @@ function drawTimeline(res) {
         svgDom.style.height = 90
         // svgDom.style.width = 2000
     }
-
-
+  
+  
     var tree = d3.tree()
         .size([100, svgWidth])
         .separation(function (a, b) {
             return (a.parent == b.parent ? 1 : 2) / a.depth;
         });
-
+  
     //init
     var treeData = tree(hierarchyData)
-
+  
     //line node
     var nodes = treeData.descendants();
     var links = treeData.links();
-
+  
     //line
     var link = d3.linkHorizontal()
         .x(function (d) {
@@ -459,8 +458,8 @@ function drawTimeline(res) {
         .y(function (d) {
             return d.x;
         });
-
-
+  
+  
     //path
     g.append('g')
         .selectAll('path')
@@ -484,8 +483,8 @@ function drawTimeline(res) {
         .attr('stroke', '#452d8a')
         .attr('stroke-width', 1)
         .attr('fill', 'none');
-
-
+  
+  
     //创建节点与文字分组
     var gs = g.append('g')
         .selectAll('.g')
@@ -496,7 +495,7 @@ function drawTimeline(res) {
             console.log("D", d)
             return 'translate(' + d.data.pid * 40 + ',' + d.x + ')';
         });
-
+  
     //绘制文字和节点
     gs.append('circle')
         .attr('r', 8)
@@ -508,7 +507,7 @@ function drawTimeline(res) {
         .attr('stroke', function (d, i) {
             return d.data.value == window.vueApp.curEpoch ? 'orange' : '#452d8a'
         })
-
+  
     gs.append('text')
         .attr('x', function (d, i) {
             return d.children ? 5 : 10;
@@ -523,7 +522,7 @@ function drawTimeline(res) {
             } else {
                 return `${d.data.value}`;
             }
-
+  
         })
     setTimeout(() => {
         let list = svgDom.querySelectorAll("circle");
@@ -533,7 +532,7 @@ function drawTimeline(res) {
                 c.style.cursor = "pointer"
                 c.addEventListener('click', (e) => {
                     if (e.target.nextSibling.innerHTML != window.iteration) {
-
+  
                         let value = e.target.nextSibling.innerHTML.split("|")[0]
                         window.vueApp.isCanvasLoading = true
                         updateProjection(window.vueApp.contentPath, value)
@@ -543,8 +542,17 @@ function drawTimeline(res) {
                         drawTimeline(res)
                     }
                 })
-
+  
             }
         }
     }, 50)
-}
+  }
+  
+
+window.onload = function() {
+    const currHover1 = document.getElementById('currHover1');
+    const currHover2 = document.getElementById('currHover2');
+
+    makeDraggable(currHover1, currHover1);
+    makeDraggable(currHover2, currHover2);
+};
