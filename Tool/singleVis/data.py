@@ -236,6 +236,7 @@ class NormalDataProvider(DataProvider):
         self._meta_data()
         self._estimate_boundary(num, l_bound)
 
+
     def train_representation(self, epoch):
         # load train data
         train_data_loc = os.path.join(self.model_path, "{}_{:d}".format(self.epoch_name, epoch), "train_data.npy")
@@ -244,6 +245,7 @@ class NormalDataProvider(DataProvider):
         try:
             train_data = np.load(train_data_loc)
             train_data = train_data[index]
+            
         except Exception as e:
             print("no train data saved for Epoch {}".format(epoch))
             train_data = None
@@ -256,11 +258,11 @@ class NormalDataProvider(DataProvider):
         index = load_labelled_data_index(index_file)
         try:
             training_labels = torch.load(training_data_loc, map_location="cpu")
-            training_labels = training_labels[index]
+            training_labels = np.array(training_labels)
         except Exception as e:
             print("no train labels saved for Epoch {}".format(epoch))
             training_labels = None
-        return training_labels.numpy()
+        return training_labels
 
     def test_representation(self, epoch):
         data_loc = os.path.join(self.model_path, "{}_{:d}".format(self.epoch_name, epoch), "test_data.npy")
@@ -282,14 +284,15 @@ class NormalDataProvider(DataProvider):
         try:
             testing_labels = torch.load(testing_data_loc).to(device="cpu")
             index_file = os.path.join(self.model_path, "{}_{:d}".format(self.epoch_name, epoch), "test_index.json")
-            print(index_file)
+       
             if os.path.exists(index_file):
                 idxs = load_labelled_data_index(index_file)
                 testing_labels = testing_labels[idxs]
+                testing_labels = testing_labels.cpu().numpy()
         except Exception as e:
             print("no test labels saved for Epoch {}".format(epoch))
             testing_labels = None
-        return testing_labels.cpu().numpy()
+        return testing_labels
 
     def border_representation(self, epoch):
         border_centers_loc = os.path.join(self.model_path, "{}_{:d}".format(self.epoch_name, epoch),

@@ -11,9 +11,9 @@ import gc
 import shutil
 sys.path.append('..')
 sys.path.append('.')
-from utils import update_epoch_projection, initialize_backend, add_line
+from utils import update_epoch_projection, initialize_backend, add_line, getConfChangeIndices, getContraVisChangeIndices, getContraVisChangeIndicesSingle,getCriticalChangeIndices
 
-
+import time
 # flask for API server
 app = Flask(__name__,static_folder='Frontend')
 cors = CORS(app, supports_credentials=True)
@@ -29,20 +29,21 @@ def update_projection():
     VIS_METHOD = res['vis_method']
     SETTING = res["setting"]
     print(CONTENT_PATH,VIS_METHOD,SETTING)
-
+    start = time.time()
     iteration = int(res['iteration'])
     predicates = res["predicates"]
     # username = res['username']
-    
+    TaskType = res['TaskType']
     # sys.path.append(CONTENT_PATH)
     context = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
     # use the true one
     # EPOCH = (iteration-1)*context.strategy.data_provider.p + context.strategy.data_provider.s
     EPOCH = int(iteration)
-
+    
     embedding_2d, grid, decision_view, label_name_dict, label_color_list, label_list, max_iter, training_data_index, \
-    testing_data_index, eval_new, prediction_list, selected_points, properties = update_epoch_projection(context, EPOCH, predicates)
-
+    testing_data_index, eval_new, prediction_list, selected_points, properties, highlightedPointIndices, error_message = update_epoch_projection(context, EPOCH, predicates, TaskType)
+    end = time.time()
+    print("duration", end-start)
     # sys.path.remove(CONTENT_PATH)
     # add_line(API_result_path,['TT',username])
     grid = np.array(grid)
@@ -58,7 +59,9 @@ def update_projection():
                                   'evaluation': eval_new,
                                   'prediction_list': prediction_list,
                                   "selectedPoints":selected_points.tolist(),
-                                  "properties":properties.tolist()}), 200)
+                                  "properties":properties.tolist(),
+                                  "errorMessage": error_message
+                                  }), 200)
 
 app.route('/contrast/updateProjection', methods=["POST", "GET"])(update_projection)
 
@@ -102,7 +105,7 @@ def filter():
 
 
 # base64
-@app.route('/sprite', methods=["POST","GET"])
+@app.route('/spriteImage', methods=["POST","GET"])
 @cross_origin()
 def sprite_image():
     path = request.args.get("path")
@@ -120,6 +123,34 @@ def sprite_image():
     add_line(API_result_path,['SI',username])
     return make_response(jsonify({"imgUrl":'data:image/png;base64,' + img_stream}), 200)
 
+app.route('/contrast/spriteImage', methods=["POST", "GET"])(sprite_image)
+
+@app.route('/spriteText', methods=["POST","GET"])
+@cross_origin()
+def sprite_text():
+    path = request.args.get("path")
+    index = request.args.get("index")
+    iteration = request.args.get("iteration")
+    
+    CONTENT_PATH = os.path.normpath(path)
+    idx = int(index)
+    start = time.time()
+    text_save_dir_path = os.path.join(CONTENT_PATH, f"Model/Epoch_{iteration}/labels",  "text_{}.txt".format(idx))
+    if os.path.exists(text_save_dir_path):
+        with open(text_save_dir_path, 'r') as text_f:
+            # Read the contents of the file and store it in sprite_texts
+            sprite_texts = text_f.read()
+    else:
+        print("File does not exist:", text_save_dir_path)
+  
+    response_data = {
+        "texts": sprite_texts
+    }
+    end = time.time()
+    print("processTime", end-start)
+    return make_response(jsonify(response_data), 200)
+
+app.route('/contrast/spriteText', methods=["POST", "GET"])(sprite_text)
 
 @app.route('/spriteList', methods=["POST"])
 @cross_origin()
@@ -143,6 +174,110 @@ def sprite_list_image():
             # urlList.append('data:image/png;base64,' + img_stream)
     return make_response(jsonify({"urlList":urlList}), 200)
 
+app.route('/contrast/spriteList', methods=["POST", "GET"])(sprite_list_image)
+
+# contrast Not use spriteList?
+
+@app.route('/highlightConfChange', methods=["POST", "GET"])
+@cross_origin()
+def highlight_conf_change():
+    res = request.get_json()
+    CONTENT_PATH = os.path.normpath(res['path'])
+    VIS_METHOD = res['vis_method']
+    SETTING = res["setting"]
+    curr_iteration = int(res['iteration'])
+    last_iteration = int(res['last_iteration'])
+    confChangeInput = float(res['confChangeInput'])
+    print(confChangeInput)
+    username = res['username']
+    # sys.path.append(CONTENT_PATH)
+    context = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
+  
+    confChangeIndices = getConfChangeIndices(context, curr_iteration, last_iteration, confChangeInput)
+    print(confChangeIndices)
+    # sys.path.remove(CONTENT_PATH)
+    # add_line(API_result_path,['TT',username])
+    return make_response(jsonify({
+                                  "confChangeIndices": confChangeIndices.tolist()
+                                  }), 200)
+
+@app.route('/contravis/contraVisHighlightSingle', methods=["POST", "GET"])
+@cross_origin()
+def contravis_highlight_single():
+    start_time = time.time()
+    res = request.get_json()
+    CONTENT_PATH_LEFT = res['content_path_left']
+    CONTENT_PATH_RIGHT = res['content_path_right']
+    VIS_METHOD = res['vis_method']
+    SETTING = res["setting"]
+    curr_iteration = int(res['iterationLeft'])
+    last_iteration = int(res['iterationRight'])
+    method = res['method']
+    left_selected = res['selectedPointLeft']
+    right_selected = res['selectedPointRight']
+    username = res['username']
+    
+    context_left = initialize_backend(CONTENT_PATH_LEFT, VIS_METHOD, SETTING)
+    context_right = initialize_backend(CONTENT_PATH_RIGHT, VIS_METHOD, SETTING)
+  
+    contraVisChangeIndicesLeft, contraVisChangeIndicesRight, contraVisChangeIndicesLeftLeft, contraVisChangeIndicesLeftRight, contraVisChangeIndicesRightLeft, contraVisChangeIndicesRightRight = getContraVisChangeIndicesSingle(context_left,context_right, curr_iteration, last_iteration, method, left_selected, right_selected)
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    print(elapsed_time)
+    return make_response(jsonify({
+                                  "contraVisChangeIndicesLeft": contraVisChangeIndicesLeft,
+                                  "contraVisChangeIndicesRight": contraVisChangeIndicesRight,
+                                  "contraVisChangeIndicesLeftLeft": contraVisChangeIndicesLeftLeft,
+                                  "contraVisChangeIndicesLeftRight": contraVisChangeIndicesLeftRight,
+                                  "contraVisChangeIndicesRightLeft": contraVisChangeIndicesRightLeft,
+                                  "contraVisChangeIndicesRightRight": contraVisChangeIndicesRightRight
+                                  }), 200)
+
+
+@app.route('/contrast/contraVisHighlight', methods=["POST", "GET"])
+@cross_origin()
+def contravis_highlight():
+    res = request.get_json()
+    VIS_METHOD = res['vis_method']
+    SETTING = res["setting"]
+    curr_iteration = int(res['iterationLeft'])
+    last_iteration = int(res['iterationRight'])
+    method = res['method']
+    CONTENT_PATH_LEFT = res['content_path_left']
+    CONTENT_PATH_RIGHT = res['content_path_right']
+    username = res['username']
+    
+    context_left = initialize_backend(CONTENT_PATH_LEFT, VIS_METHOD, SETTING)
+    context_right = initialize_backend(CONTENT_PATH_RIGHT, VIS_METHOD, SETTING)
+    contraVisChangeIndices = getContraVisChangeIndices(context_left,context_right, curr_iteration, last_iteration, method)
+    print(len(contraVisChangeIndices))
+    return make_response(jsonify({
+                                  "contraVisChangeIndices": contraVisChangeIndices
+                                  }), 200)
+
+
+	
+@app.route('/highlightCriticalChange', methods=["POST", "GET"])
+@cross_origin()
+def highlight_critical_change():
+    res = request.get_json()
+    CONTENT_PATH = os.path.normpath(res['path'])
+    VIS_METHOD = res['vis_method']
+    SETTING = res["setting"]
+    curr_iteration = int(res['iteration'])
+    last_iteration = int(res['last_iteration'])
+    username = res['username']
+    
+    # sys.path.append(CONTENT_PATH)
+    context = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
+  
+    predChangeIndices = getCriticalChangeIndices(context, curr_iteration, last_iteration)
+    
+    # sys.path.remove(CONTENT_PATH)
+    # add_line(API_result_path,['TT',username])
+    return make_response(jsonify({
+                                  "predChangeIndices": predChangeIndices.tolist()
+                                  }), 200)
 
 @app.route('/al_query', methods=["POST"])
 @cross_origin()
@@ -236,7 +371,7 @@ def al_train():
 
     # update iteration projection
     embedding_2d, grid, decision_view, label_name_dict, label_color_list, label_list, _, training_data_index, \
-    testing_data_index, eval_new, prediction_list, selected_points, properties = update_epoch_projection(context, NEW_ITERATION, dict())
+    testing_data_index, eval_new, prediction_list, selected_points, properties, _, _ = update_epoch_projection(context, NEW_ITERATION, dict(),None)
     
     # rewirte json =========
     res_json_path = os.path.join(CONTENT_PATH, "iteration_structure.json")
@@ -354,7 +489,7 @@ def get_res():
                 grid = pickle.load(f)
             gridlist[str(i)] = grid
         else:
-            embedding_2d, grid, _, _, _, _, _, _, _, _, _, _, _ = update_epoch_projection(timevis, EPOCH, predicates)
+            embedding_2d, grid, _, _, _, _, _, _, _, _, _, _, _, _,_  = update_epoch_projection(timevis, EPOCH, predicates, None)
             results[str(i)] = embedding_2d
             gridlist[str(i)] = grid
         # read background img
