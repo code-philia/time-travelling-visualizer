@@ -76,13 +76,7 @@
                     </tr>
                 </table>
                 <el-divider></el-divider>
-                <div id="curHover">
-                    CurHoverIndex: {{lastHoveredIndex}}<br />
-                    prediction: {{curr_pred}}<br />
-                    label: {{curr_label}}<br />
-
-                    <img id="metaImg" height="100px" />
-                </div>
+             
 
             </div>
             <div class="mid_container">
@@ -120,6 +114,13 @@
         </div>
         <div id="footer">
             <svg id="timeLinesvg"></svg>
+        </div>
+        <div id="currHover">
+            CurrHoverIndex: {{lastHoveredIndex}}<br />
+            prediction: {{curr_pred}}<br />
+            label: {{curr_label}}<br />
+
+            <img id="metaImg" height="100px" />
         </div>
     </div>
 </body>
@@ -216,7 +217,7 @@
                     },
                 },
                 {
-                    element: '#curHover',
+                    element: '#currHover',
                     popover: {
                         title: 'Hover Information',
                         description: 'The detail of the current hover sample will be shown here',

@@ -8,7 +8,7 @@ headers.append('Content-Type', 'application/json');
 headers.append('Accept', 'application/json');
 
 // updateProjection
-function updateProjection(content_path, iteration) {
+  function updateProjection(content_path, iteration) {
     console.log(content_path,iteration)
     fetch(`${window.location.href}updateProjection`, {
         method: 'POST',
@@ -43,7 +43,7 @@ function updateProjection(content_path, iteration) {
           });
     });
 }
-function fetchTimelineData(content_path){
+  function fetchTimelineData(content_path){
     fetch(`${window.location.href}/get_itertaion_structure?path=${content_path}&method=Trustvis&setting=normal`, {
         method: 'POST',
         headers: headers,
@@ -55,7 +55,7 @@ function fetchTimelineData(content_path){
         })
 }
 
-function getOriginalData(content_path,index){
+  function getOriginalData(content_path,index){
     if(index != null){
         fetch(`${window.location.href}sprite?index=${index}&path=${content_path}&username=admin`, {
             method: 'GET',
@@ -78,7 +78,7 @@ function getOriginalData(content_path,index){
 }
 
 
-function updateContraProjection(content_path, iteration) {
+  function updateContraProjection(content_path, iteration) {
     console.log('contrast',content_path,iteration)
     
     fetch(`${window.location.href}/updateProjection`, {

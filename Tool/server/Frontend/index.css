@@ -97,3 +97,14 @@ body {
     height: 54px;
     line-height: 54px;
 }
+#currHover {
+    position: fixed; /* or 'absolute' depending on your layout */
+    z-index: 1000; /* Ensure this is high enough to be on top of other elements */
+    background-color: white; /* Optional: for better visibility */
+    border: 1px solid #23bdbd; /* Optional: just for styling */
+    padding: 10px; /* Optional: just for styling */
+    cursor: move; /* Change cursor to indicate the div is movable */
+    top: 500px; /* Initial position */
+    left: 50px; /* Initial position */
+  }
+  
