@@ -106,5 +106,22 @@ body {
     cursor: move; /* Change cursor to indicate the div is movable */
     top: 500px; /* Initial position */
     left: 50px; /* Initial position */
+    max-width: 300px;
   }
-  
+#hoverLabel {
+    position: absolute;
+    display: none;
+    pointer-events: none;
+    transform: translate(5px, -5px);
+    font-size: 20px;
+    color:black;
+}
+#fixedHoverLabel {
+    position: absolute;
+    display: none;
+    color: green; 
+    font-size: 20px; 
+    pointer-events: none;
+    font-weight: bold;
+}
+ 

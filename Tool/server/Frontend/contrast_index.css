@@ -11,14 +11,24 @@ body {
 
 .content_container {
     display: flex;
+    max-height: 800px;
+    flex-direction: row; 
+    overflow: auto; 
+}
+.overall_container {
+    overflow: auto;
+    height: 1200px;
 }
 
 #subject_model_info_panel {
     width: 260px;
     padding: 20px;
     background-color: rgb(244, 244, 244);
-    height: calc(100vh);
+    height: auto; /* Adjust based on content, could be fixed or auto */
+    overflow-y: auto; /* Allows scrolling within the panel if content overflows */
+    /* Add flex properties as needed, e.g., flex-grow, flex-shrink */
 }
+
 #opration_bar{
     background-color: rgb(244, 244, 244);
     width: 100%;
@@ -51,13 +61,34 @@ body {
     color: #fff;
 }
 
-#footer {
-    height: 90px;
+#footerRef {
+    height: 60px;
     width: 100%;
-    position: fixed;
+    position: relative;
     bottom: 0;
     background-color: rgb(244, 244, 244);
+
 }
+#footerTar {
+    height: 60px;
+    width: 100%;
+    position: relative;
+    bottom: 0;
+    background-color: rgb(244, 244, 244);
+
+}
+
+#iterationContainer {
+    height: 120x;
+    width: 100%;
+    position: fixed;
+    background-color: rgb(244, 244, 244);
+    overflow-y: auto;
+    bottom: 0;
+
+}
+
+
 .el-checkbox__input.is-checked+.el-checkbox__label{
     color: #571792;
 }
@@ -79,24 +110,60 @@ body {
     border-color: #571792;
     background: #571792;
 }
-#currHover1 {
+#currHoverRef {
     position: fixed; /* or 'absolute' depending on your layout */
     z-index: 1000; /* Ensure this is high enough to be on top of other elements */
     background-color: white; /* Optional: for better visibility */
     border: 1px solid #0a0909; /* Optional: just for styling */
     padding: 10px; /* Optional: just for styling */
     cursor: move; /* Change cursor to indicate the div is movable */
-    top: 500px; /* Initial position */
-    left: 50px; /* Initial position */
+    top: 50px; /* Initial position */
+    left: 300px; /* Initial position */
+    max-width: 300px;
   }
   
-  #currHover2 {
+  #currHoverTar {
     position: fixed; /* or 'absolute' depending on your layout */
     z-index: 1000; /* Ensure this is high enough to be on top of other elements */
     background-color: white; /* Optional: for better visibility */
     border: 1px solid #a02626; /* Optional: just for styling */
     padding: 10px; /* Optional: just for styling */
     cursor: move; /* Change cursor to indicate the div is movable */
-    top: 500px; /* Initial position */
-    left: 800px; /* Initial position */
+    top: 50px; /* Initial position */
+    left: 900px; /* Initial position */
+    max-width: 300px;
   }
+
+  #hoverLabelRef {
+    position: absolute;
+    display: none;
+    pointer-events: none;
+    transform: translate(5px, -5px);
+    font-size: 20px;
+    color:black;
+}
+#fixedHoverLabelRef {
+    position: absolute;
+    display: none;
+    color: green; 
+    font-size: 20px; 
+    pointer-events: none;
+    font-weight: bold;
+}
+#hoverLabelTar {
+    position: absolute;
+    display: none;
+    pointer-events: none;
+    transform: translate(5px, -5px);
+    font-size: 20px;
+    color:black;
+}
+#fixedHoverLabelTar {
+    position: absolute;
+    display: none;
+    color: blue; 
+    font-size: 20px; 
+    pointer-events: none;
+    font-weight: bold;
+}
+ 
