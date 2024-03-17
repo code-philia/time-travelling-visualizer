@@ -136,6 +136,7 @@ def sprite_text():
     idx = int(index)
     start = time.time()
     text_save_dir_path = os.path.join(CONTENT_PATH, f"Model/Epoch_{iteration}/labels",  "text_{}.txt".format(idx))
+    sprite_texts = ''
     if os.path.exists(text_save_dir_path):
         with open(text_save_dir_path, 'r') as text_f:
             # Read the contents of the file and store it in sprite_texts
@@ -189,7 +190,6 @@ def highlight_conf_change():
     last_iteration = int(res['last_iteration'])
     confChangeInput = float(res['confChangeInput'])
     print(confChangeInput)
-    username = res['username']
     # sys.path.append(CONTENT_PATH)
     context = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
   
@@ -201,7 +201,7 @@ def highlight_conf_change():
                                   "confChangeIndices": confChangeIndices.tolist()
                                   }), 200)
 
-@app.route('/contravis/contraVisHighlightSingle', methods=["POST", "GET"])
+@app.route('/contrast/contraVisHighlightSingle', methods=["POST", "GET"])
 @cross_origin()
 def contravis_highlight_single():
     start_time = time.time()
@@ -215,7 +215,6 @@ def contravis_highlight_single():
     method = res['method']
     left_selected = res['selectedPointLeft']
     right_selected = res['selectedPointRight']
-    username = res['username']
     
     context_left = initialize_backend(CONTENT_PATH_LEFT, VIS_METHOD, SETTING)
     context_right = initialize_backend(CONTENT_PATH_RIGHT, VIS_METHOD, SETTING)
@@ -245,7 +244,6 @@ def contravis_highlight():
     method = res['method']
     CONTENT_PATH_LEFT = res['content_path_left']
     CONTENT_PATH_RIGHT = res['content_path_right']
-    username = res['username']
     
     context_left = initialize_backend(CONTENT_PATH_LEFT, VIS_METHOD, SETTING)
     context_right = initialize_backend(CONTENT_PATH_RIGHT, VIS_METHOD, SETTING)
@@ -266,7 +264,7 @@ def highlight_critical_change():
     SETTING = res["setting"]
     curr_iteration = int(res['iteration'])
     last_iteration = int(res['last_iteration'])
-    username = res['username']
+
     
     # sys.path.append(CONTENT_PATH)
     context = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
@@ -550,6 +548,8 @@ def get_tree():
             previous_epoch = epoch
 
     return make_response(jsonify({"structure":json_data}), 200)
+
+app.route('/contrast/get_itertaion_structure', methods=["POST", "GET"])(get_tree)
 
 def check_port_inuse(port, host):
     try:

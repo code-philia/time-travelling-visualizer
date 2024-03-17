@@ -9,6 +9,8 @@ const MIN_ZOOM_SCALE = 0.8
 const MAX_ZOOM_SCALE = 30
 const NORMAL_SIZE = 5
 const HOVER_SIZE = 10
+const MAX_FOV = 70;
+const MIN_FOV = 1
 
 var isDragging = false;
 var previousMousePosition = {
@@ -16,8 +18,14 @@ var previousMousePosition = {
     y: 0
 };
 
-function drawCanvas(res) {
+  function drawCanvas(res) {
     // remove previous scene
+    if (window.vueApp.animationFrameId) {
+        console.log("stopAnimation")
+        cancelAnimationFrame(window.vueApp.animationFrameId);
+        window.vueApp.animationFrameId = undefined;
+    }
+
     if (window.vueApp.scene) {
         window.vueApp.scene.traverse(function (object) {
             if (object.isMesh) {
@@ -41,12 +49,24 @@ function drawCanvas(res) {
             window.vueApp.scene.remove(window.vueApp.scene.children[0]);
         }
     }
+    console.log("afterscene", window.vueApp.scene)
     // remove previous scene
     if (window.vueApp.renderer) {
+        if (container.contains(window.vueApp.renderer.domElement)) {
+            console.log("removeDom")
+            container.removeChild(window.vueApp.renderer.domElement);
+        }
         window.vueApp.renderer.renderLists.dispose();
         window.vueApp.renderer.dispose();
     }
+    console.log("afterrender", window.vueApp.render)
     container = document.getElementById("container")
+
+    let newContainer = container.cloneNode(true);
+    container.parentNode.replaceChild(newContainer, container);
+    container = newContainer;
+    
+    console.log("currContainer", container.firstChild)
     // remove previous dom element
     if (container.firstChild) {
         while (container.firstChild) {
@@ -54,6 +74,7 @@ function drawCanvas(res) {
         }
 
     }
+    console.log("currContainerAfter", container.firstChild)
     // create new Three.js scene
     window.vueApp.scene = new THREE.Scene();
     // get the boundary of the scene
@@ -70,39 +91,99 @@ function drawCanvas(res) {
     };
     var aspect = 1
     const rect = container.getBoundingClientRect();
-    console.log(res.grid_index)
-    window.vueApp.camera = new THREE.OrthographicCamera(x_min * aspect, x_max * aspect, y_max, y_min, 1, 1000);
-    window.vueApp.camera.position.set(0, 0, 100);
+    // console.log(res.grid_index)
+
+    // window.vueApp.camera = new THREE.PerspectiveCamera(x_min * aspect, x_max * aspect, y_max, y_min, 1, 1000);
+
     const target = new THREE.Vector3(
         0, 0, 0
     );
     // based on screen size set the camera view 
     var aspectRatio = rect.width / rect.height;
+    // window.vueApp.camera = new THREE.PerspectiveCamera(
+    //     PERSP_CAMERA_FOV_VERTICAL,
+    //     aspectRatio,
+    //     PERSP_CAMERA_NEAR_CLIP_PLANE,
+    //     PERSP_CAMERA_FAR_CLIP_PLANE
+    //   );
+    console.log("beforeCamera", window.vueApp.camera)
+    window.vueApp.camera = new THREE.OrthographicCamera(x_min * aspect, x_max * aspect, y_max, y_min, 1, 1000);
+    window.vueApp.camera.position.set(0, 0, 100);
     window.vueApp.camera.left = x_min * aspectRatio;
     window.vueApp.camera.right = x_max * aspectRatio;
     window.vueApp.camera.top = y_max;
     window.vueApp.camera.bottom = y_min;
-
+    window.vueApp.camera.fov = MAX_FOV
+    // console.log("startCamleft",window.vueApp.camera.left )
+    // console.log("startCamright",window.vueApp.camera.right )
+    // console.log("startCamtop",window.vueApp.camera.top )
+    // console.log("startCambottom",window.vueApp.camera.bottom )
     // update the camera projection matrix
     window.vueApp.camera.updateProjectionMatrix();
     window.vueApp.camera.lookAt(target);
     window.vueApp.renderer = new THREE.WebGLRenderer();
-    window.vueApp.renderer.setSize(rect.width, rect.width);
+    window.vueApp.renderer.setSize(rect.width, rect.height);
     window.vueApp.renderer.setClearColor(BACKGROUND_COLOR, 1);
+    // console.log("heightrec", rect.height)
+    // console.log("widthrec", rect.width)
+
+    console.log("afterCamera", window.vueApp.camera)
+
+  
     // set zoom speed
     function onDocumentMouseWheel(event) {
         // when mouse wheel adjust the camera zoom level 
-        window.vueApp.camera.zoom += event.deltaY * - window.vueApp.canvasSetting.zoomSpeed;
-        window.vueApp.camera.zoom = Math.max(MIN_ZOOM_SCALE, Math.min(window.vueApp.camera.zoom, MAX_ZOOM_SCALE)); // constrain min max zoom level
+        var rect = window.vueApp.renderer.domElement.getBoundingClientRect();
+        var mouseX = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        var mouseY = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    
+        // Initial raycast
+        var raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(new THREE.Vector2(mouseX, mouseY), window.vueApp.camera);
+        var intersectsBeforeZoom = raycaster.intersectObjects(window.vueApp.scene.children);
+    
+        if (intersectsBeforeZoom.length > 0) {
+            var pointBeforeZoom = intersectsBeforeZoom[0].point;
+          
+            window.vueApp.camera.zoom += event.deltaY * - window.vueApp.canvasSetting.zoomSpeed;
+            window.vueApp.camera.zoom = Math.max(MIN_ZOOM_SCALE, Math.min(window.vueApp.camera.zoom, MAX_ZOOM_SCALE)); // constrain min max zoom level
 
-        window.vueApp.camera.updateProjectionMatrix(); // update camera projection matrix
+            window.vueApp.camera.updateProjectionMatrix(); // update camera projection matrix
+  
+  
+    
+            // Second raycast after adjusting zoom
+            var raycaster2 = new THREE.Raycaster();
+            raycaster2.setFromCamera(new THREE.Vector2(mouseX, mouseY), window.vueApp.camera);
+            var intersectsAfterZoom = raycaster2.intersectObjects(window.vueApp.scene.children);
+            // console.log("rat1", raycaster)
+            // console.log("rat2", raycaster2)
+            if (intersectsAfterZoom.length > 0) {
+                var pointAfterZoom = intersectsAfterZoom[0].point;
+                console.log("pointBforeZO", pointBeforeZoom)
+                console.log("poinAfterz", pointAfterZoom)
+                // Calculate movement scale based on the difference in intersection points
+                var movementScale = pointBeforeZoom.distanceTo(pointAfterZoom);
+                console.log("movermentscale", movementScale)
+                // Determine direction towards the initial intersection point
+                var direction = new THREE.Vector3().subVectors(window.vueApp.camera.position, pointBeforeZoom).normalize();
+    
+                // Apply movement scaled by the calculated difference
+                window.vueApp.camera.position.add(direction.multiplyScalar(movementScale));
+            }
+        }
+        
+        window.vueApp.camera.updateProjectionMatrix();
+        updateCurrHoverIndex(event, null, true,''); // Your custom logic
     }
+
 
     container.addEventListener('wheel', onDocumentMouseWheel, false)
 
     container.addEventListener('wheel', function (event) {
         event.preventDefault();
     })
+    container.addEventListener('wheel', updateLabelPosition)
 
     container.appendChild(window.vueApp.renderer.domElement);
     // calculate the size and the center position
@@ -121,7 +202,7 @@ function drawCanvas(res) {
     img.onload = () => {
         ctx.drawImage(img, 0, 0, 128, 128);
         let texture = new THREE.CanvasTexture(canvas);
-        // texture.needsUpdate = true; // 不设置needsUpdate为true的话，可能纹理贴图不刷新
+        texture.needsUpdate = true; // 不设置needsUpdate为true的话，可能纹理贴图不刷新
         var plane_geometry = new THREE.PlaneGeometry(width, height);
         var material = new THREE.MeshPhongMaterial({
             map: texture,
@@ -131,6 +212,8 @@ function drawCanvas(res) {
         newMesh.position.set(centerX, centerY, 0);
         window.vueApp.scene.add(newMesh);
     }
+
+
     // 创建数据点
     var dataPoints = res.result
     dataPoints.push()
@@ -206,21 +289,26 @@ function drawCanvas(res) {
         var rect = window.vueApp.renderer.domElement.getBoundingClientRect();
         mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        // console.log("mouseX", mouse.x)
+        // console.log("mouseY", mouse.y)
+        // console.log("clientX",event.clientX)
+        // console.log("clientY",event.clientY)
         // 通过鼠标位置更新射线
         raycaster.setFromCamera(mouse, window.vueApp.camera);
         // 检测射线与点云的相交
         var intersects = raycaster.intersectObject(points);
-
+        console.log("lasthoverIndex", window.vueApp.lastHoveredIndex)
+        
         if (intersects.length > 0) {
             // 获取最接近的交点
             var intersect = intersects[0];
 
             // 获取索引 - 这需要根据具体实现来确定如何获取
             var index = intersect.index;
-
+            console.log("currIndex", index)
             // 在这里处理悬停事件
             if (window.vueApp.lastHoveredIndex != index) {
-                window.vueApp.lastHoveredIndex = index
+    
                 // 重置上一个悬停的点的大小
                 if (window.vueApp.lastHoveredIndex !== null) {
                     points.geometry.attributes.size.array[window.vueApp.lastHoveredIndex] = 5; // 假设5是原始大小
@@ -235,6 +323,10 @@ function drawCanvas(res) {
                 geometry.attributes.size.array = new Float32Array(sizes);
                 geometry.attributes.size.needsUpdate = true;
                 window.vueApp.lastHoveredIndex = index;
+
+
+                // updateCurrHoverIndex(event, index, false, '')
+             
             }
 
         } else {
@@ -242,12 +334,16 @@ function drawCanvas(res) {
             // 如果没有悬停在任何点上，也重置上一个点的大小
             if (window.vueApp.lastHoveredIndex !== null) {
                 sizes.fill(NORMAL_SIZE); // 将所有点的大小重置为5
+
                 // 更新size属性并标记为需要更新
                 geometry.attributes.size.array = new Float32Array(sizes);
+                // geometry.attributes.size.array[lastHoveredIndex] = NORMAL_SIZE
                 geometry.attributes.size.needsUpdate = true;
                 window.vueApp.lastHoveredIndex = null;
-                resultImg = document.getElementById("metaImg")
-                resultImg.setAttribute("style", "display:none;")
+                // resultImg = document.getElementById("metaInfo")
+                // resultImg.setAttribute("style", "display:none;")
+                window.vueApp.imageSrc = ""
+                // updateCurrHoverIndex(event, null, false, '')
 
             }
         }
@@ -257,6 +353,43 @@ function drawCanvas(res) {
 
 
     container.addEventListener('mousemove', onMouseMove, false);
+
+     //  =========================  db click start =========================================== //
+    container.addEventListener('dblclick', onDoubleClick);
+
+    function onDoubleClick(event) {
+        // Raycasting to find the intersected point
+        var rect = window.vueApp.renderer.domElement.getBoundingClientRect();
+        mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(mouse, window.vueApp.camera);
+      
+        var intersects = raycaster.intersectObject(points);
+        var fixedHoverLabel = document.getElementById('fixedHoverLabel')
+        if (intersects.length > 0) {
+          // Get the index and position of the double-clicked point
+          var intersect = intersects[0];
+          window.vueApp.selectedIndex = intersect.index;
+          window.vueApp.selectedPointPosition = intersect.point;
+      
+          // Call function to update label position and content
+          updateFixedHoverLabel(event.clientX, event.clientY, intersect.index, '');
+        } else {
+          // If the canvas was double-clicked without hitting a point, hide the label and reset
+          window.vueApp.selectedIndex = null;
+          window.vueApp.selectedPointPosition = null;
+          if (fixedHoverLabel) {
+            fixedHoverLabel.style.display = 'none';
+          }
+        
+        }
+      }
+
+     //  =========================  db click  end =========================================== //
+    // update position of fixed hover index when dragging or mouse down
+    // container.addEventListener('mousedown', updateLabelPosition);
+
+
 
 
     //  =========================  Drag start =========================================== //
@@ -269,43 +402,55 @@ function drawCanvas(res) {
             container.style.cursor = 'move';
             previousMousePosition.x = e.clientX;
             previousMousePosition.y = e.clientY;
+            // previousMousePosition.x = e.cl;
+            // previousMousePosition.y = mouse.y;
         }
     });
 
     // handel mouse move
     container.addEventListener('mousemove', function (e) {
         if (isDragging) {
-            var deltaX = e.clientX - previousMousePosition.x;
-            var deltaY = e.clientY - previousMousePosition.y;
-            console.log(deltaX, deltaY)
+           
+            const currentZoom = window.vueApp.camera.zoom;
 
-            var dragSpeed = calculateDragSpeed();
+            let deltaX = e.clientX - previousMousePosition.x;
+            let deltaY = e.clientY - previousMousePosition.y;
+    
+            const aspectRatio = window.innerWidth / window.innerHeight;
+            const viewportWidth = window.vueApp.renderer.domElement.clientWidth;
+            const viewportHeight = window.vueApp.renderer.domElement.clientHeight;
+    
+            // Scale factors
+            const scaleX = (window.vueApp.camera.right - window.vueApp.camera.left) / viewportWidth;
+            const scaleY = (window.vueApp.camera.top - window.vueApp.camera.bottom) / viewportHeight;
+    
+            // Convert pixel movement to world units
+            deltaX = (deltaX * scaleX) / currentZoom;
+            deltaY = (deltaY * scaleY) / currentZoom;
+    
+            // Update the camera position based on the scaled delta
+            var newPosX = window.vueApp.camera.position.x - deltaX * 1;
+            var newPosY = window.vueApp.camera.position.y + deltaY * 1;
 
-            // pre calculate the camera position 
-            var newPosX = window.vueApp.camera.position.x - deltaX * dragSpeed;
-            var newPosY = window.vueApp.camera.position.y + deltaY * dragSpeed;
-
-            // check if the new position is in the bound 
             newPosX = Math.max(cameraBounds.minX, Math.min(newPosX, cameraBounds.maxX));
             newPosY = Math.max(cameraBounds.minY, Math.min(newPosY, cameraBounds.maxY));
-
-            // update camera position
+      // update camera position
             window.vueApp.camera.position.x = newPosX;
             window.vueApp.camera.position.y = newPosY;
-
             // update previous mouse position
             previousMousePosition = {
                 x: e.clientX,
                 y: e.clientY
             };
+            var fixedHoverLabel = document.getElementById('fixedHoverLabel')
+            if (fixedHoverLabel) {
+                updateLabelPosition('');
+            }
+    
+            updateCurrHoverIndex(e, null, true, '')
+
         }
     });
-
-    function calculateDragSpeed() {
-        // based on the Camera.zoom and base speed(get from setting) adjust the drag speed
-        var zoomLevel = window.vueApp.camera.zoom;
-        return window.vueApp.canvasSetting.dragSpeed / zoomLevel; // Zooming in slows down dragging
-    }
 
     // mouse up event
     container.addEventListener('mouseup', function (e) {
@@ -327,210 +472,15 @@ function drawCanvas(res) {
 
     // render
     function animate() {
-        requestAnimationFrame(animate);
+        window.vueApp.animationFrameId = requestAnimationFrame(animate);
         window.vueApp.renderer.render(window.vueApp.scene, window.vueApp.camera);
-
     }
     animate();
     window.vueApp.isCanvasLoading = false
 }
 
-
-function drawTimeline(res) {
-    console.log('res', res)
-    // this.d3loader()
-
-    const d3 = window.d3;
-
-    let svgDom = document.getElementById('timeLinesvg')
-
-
-    while (svgDom?.firstChild) {
-        svgDom.removeChild(svgDom.lastChild);
-    }
-
-
-
-    let total = res.structure.length
-    window.treejson = res.structure
-
-    let data = res.structure
-
-
-    function tranListToTreeData(arr) {
-        const newArr = []
-        const map = {}
-        // {
-        //   '01': {id:"01", pid:"",   "name":"老王",children: [] },
-        //   '02': {id:"02", pid:"01", "name":"小张",children: [] },
-        // }
-        arr.forEach(item => {
-            item.children = []
-            const key = item.value
-            map[key] = item
-        })
-
-        // 2. 对于arr中的每一项
-        arr.forEach(item => {
-            const parent = map[item.pid]
-            if (parent) {
-                //    如果它有父级，把当前对象添加父级元素的children中
-                parent.children.push(item)
-            } else {
-                //    如果它没有父级（pid:''）,直接添加到newArr
-                newArr.push(item)
-            }
-        })
-
-        return newArr
-    }
-    data = tranListToTreeData(data)[0]
-    var margin = 20;
-    var svg = d3.select(svgDom);
-    var width = svg.attr("width");
-    var height = svg.attr("height");
-
-    //create group
-    var g = svg.append("g")
-        .attr("transform", "translate(" + margin + "," + 0 + ")");
-
-
-    //create layer layout
-    var hierarchyData = d3.hierarchy(data)
-        .sum(function (d, i) {
-            return d.value;
-        });
-    //    nodes attributes:
-    //        node.data - data.
-    //        node.depth - root is 0.
-    //        node.height -  leaf node is 0.
-    //        node.parent - parent id, root is null.
-    //        node.children.
-    //        node.value - total value current node and descendants;
-
-    //create tree
-    let len = total
-
-    let svgWidth = len * 40
-    if (window.sessionStorage.taskType === 'active learning') {
-        svgWidth = 1000
-    }
-    // svgWidth = 1000
-    console.log('svgWid', len, svgWidth)
-    svgDom.style.width = svgWidth + 200
-    if (window.sessionStorage.selectedSetting !== 'active learning' && window.sessionStorage.selectedSetting !== 'dense al') {
-        svgDom.style.height = 90
-        // svgDom.style.width = 2000
-    }
-
-
-    var tree = d3.tree()
-        .size([100, svgWidth])
-        .separation(function (a, b) {
-            return (a.parent == b.parent ? 1 : 2) / a.depth;
-        });
-
-    //init
-    var treeData = tree(hierarchyData)
-
-    //line node
-    var nodes = treeData.descendants();
-    var links = treeData.links();
-
-    //line
-    var link = d3.linkHorizontal()
-        .x(function (d) {
-            return d.y;
-        }) //linkHorizontal
-        .y(function (d) {
-            return d.x;
-        });
-
-
-    //path
-    g.append('g')
-        .selectAll('path')
-        .data(links)
-        .enter()
-        .append('path')
-        .attr('d', function (d, i) {
-            var start = {
-                x: d.source.x,
-                y: d.source.y
-            };
-            var end = {
-                x: d.target.x,
-                y: d.target.y
-            };
-            return link({
-                source: start,
-                target: end
-            });
-        })
-        .attr('stroke', '#452d8a')
-        .attr('stroke-width', 1)
-        .attr('fill', 'none');
-
-
-    //创建节点与文字分组
-    var gs = g.append('g')
-        .selectAll('.g')
-        .data(nodes)
-        .enter()
-        .append('g')
-        .attr('transform', function (d, i) {
-            console.log("D", d)
-            return 'translate(' + d.data.pid * 40 + ',' + d.x + ')';
-        });
-
-    //绘制文字和节点
-    gs.append('circle')
-        .attr('r', 8)
-        .attr('fill', function (d, i) {
-            // console.log("1111",d.data.value, window.iteration, d.data.value == window.iteration )
-            return d.data.value == window.vueApp.curEpoch ? 'orange' : '#452d8a'
-        })
-        .attr('stroke-width', 1)
-        .attr('stroke', function (d, i) {
-            return d.data.value == window.vueApp.curEpoch ? 'orange' : '#452d8a'
-        })
-
-    gs.append('text')
-        .attr('x', function (d, i) {
-            return d.children ? 5 : 10;
-        })
-        .attr('y', function (d, i) {
-            return d.children ? -20 : -5;
-        })
-        .attr('dy', 10)
-        .text(function (d, i) {
-            if (window.sessionStorage.taskType === 'active learning') {
-                return `${d.data.value}|${d.data.name}`;
-            } else {
-                return `${d.data.value}`;
-            }
-
-        })
-    setTimeout(() => {
-        let list = svgDom.querySelectorAll("circle");
-        for (let i = 0; i <= list.length; i++) {
-            let c = list[i]
-            if (c) {
-                c.style.cursor = "pointer"
-                c.addEventListener('click', (e) => {
-                    if (e.target.nextSibling.innerHTML != window.iteration) {
-
-                        let value = e.target.nextSibling.innerHTML.split("|")[0]
-                        window.vueApp.isCanvasLoading = true
-                        updateProjection(window.vueApp.contentPath, value, window.vueApp.taskType)
-                        window.sessionStorage.setItem('acceptIndicates', "")
-                        window.sessionStorage.setItem('rejectIndicates', "")
-                        window.vueApp.curEpoch = value
-                        drawTimeline(res)
-                    }
-                })
-
-            }
-        }
-    }, 50)
-}
+window.onload = function() {
+    const currHover = document.getElementById('currHover');
+    console.log("eataaaaa", currHover)
+    makeDraggable(currHover, currHover);
+  };

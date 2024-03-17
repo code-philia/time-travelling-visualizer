@@ -9,17 +9,40 @@ const MIN_ZOOM_SCALE = 0.8
 const MAX_ZOOM_SCALE = 30
 const NORMAL_SIZE = 5
 const HOVER_SIZE = 10
-
+const YELLOW = [1.0, 1.0, 0.0]; 
+const BLUE = [0.0, 0.0, 1.0]; 
+const GREEN = [0.0, 1.0, 0.0]; 
+var  points1 = []
+var points2 = []
 var isDragging = false;
 var previousMousePosition = {
     x: 0,
     y: 0
 };
+var EventBus = new Vue();
 
 function drawCanvas(res,id, flag='ref') {
+    // reset since both of ref and tar refer to the same eventBus
+
+    EventBus.$off(referToAnotherFlag(flag) + 'update-curr-hover');
+
+    // stop previous epoch's animation
+    if (window.vueApp.animationFrameId[flag]) {
+        console.log("stopAnimation")
+        cancelAnimationFrame(window.vueApp.animationFrameId[flag]);
+        window.vueApp.animationFrameId[flag] = undefined;
+    }
+
+
 
     // remove previous scene
     container = document.getElementById(id)
+
+    // This part removes event listeners
+    let newContainer = container.cloneNode(true);
+    container.parentNode.replaceChild(newContainer, container);
+    container = newContainer;
+
     // remove previous dom element
     if (container.firstChild) {
         while (container.firstChild) {
@@ -47,11 +70,15 @@ function drawCanvas(res,id, flag='ref') {
         });
 
         while (window.vueApp.scene[flag].children.length > 0) {
-            window.vueApp.scene.remove(window.vueApp.scene.children[0]);
+            window.vueApp.scene[flag].remove(window.vueApp.scene[flag].children[0]);
         }
     }
     // remove previous scene
     if (window.vueApp.renderer[flag]) {
+        if (container.contains(window.vueApp.renderer[flag].domElement)) {
+            console.log("removeDom")
+            container.removeChild(window.vueApp.renderer.domElement);
+        }
         window.vueApp.renderer[flag].renderLists.dispose();
         window.vueApp.renderer[flag].dispose();
     }
@@ -90,7 +117,7 @@ function drawCanvas(res,id, flag='ref') {
     window.vueApp.camera[flag].updateProjectionMatrix();
     window.vueApp.camera[flag].lookAt(target);
     window.vueApp.renderer[flag] = new THREE.WebGLRenderer();
-    window.vueApp.renderer[flag].setSize(rect.width, rect.width);
+    window.vueApp.renderer[flag].setSize(rect.width, rect.height);
     window.vueApp.renderer[flag].setClearColor(BACKGROUND_COLOR, 1);
     var zoomSpeed = 0.05;
     function onDocumentMouseWheel(event) {
@@ -143,12 +170,13 @@ function drawCanvas(res,id, flag='ref') {
     var position = [];
     var colors = [];
     var sizes = []
+
     dataPoints.forEach(function (point, i) {
         position.push(point[0], point[1], 0); // 添加位置
         colors.push(color[i][0] / 255, color[i][1] / 255, color[i][2] / 255); // 添加颜色
         sizes.push(NORMAL_SIZE)
     });
-
+    console.log("Positions"+flag, position)
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(position, 3));
     geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
     geometry.setAttribute('size', new THREE.Float32BufferAttribute(sizes, 1));
@@ -192,6 +220,25 @@ function drawCanvas(res,id, flag='ref') {
     });
 
     var points = new THREE.Points(geometry, shaderMaterial);
+    if (flag == 'ref') {
+        points1 = points.geometry.attributes.position
+    } else {
+        points2 = points.geometry.attributes.position
+    }
+
+    // Save original sizes
+    var originalSizes = [];
+    if (geometry.getAttribute('size')) {
+        originalSizes = Array.from(geometry.getAttribute('size').array);
+    }
+
+    // Save original colors
+    var originalColors = [];
+    if (geometry.getAttribute('color')) {
+        originalColors = Array.from(geometry.getAttribute('color').array);
+    }
+
+  
     window.vueApp.scene[flag].add(points);
 
     // 创建 Raycaster 和 mouse 变量
@@ -201,9 +248,48 @@ function drawCanvas(res,id, flag='ref') {
     // var threshold = distance * 0.1; // 根据距离动态调整阈值，这里的0.01是系数，可能需要调整
     // raycaster.params.Points.threshold = threshold;
 
+   //  =========================  db click start =========================================== //
+   container.addEventListener('dblclick', onDoubleClick);
+
+   function onDoubleClick(event) {
+       // Raycasting to find the intersected point
+       var rect = window.vueApp.renderer[flag].domElement.getBoundingClientRect();
+       mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+       mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+       raycaster.setFromCamera(mouse, window.vueApp.camera[flag]);
+     
+       var intersects = raycaster.intersectObject(points);
+       let specifiedFixedHoverLabel = makeSpecifiedVariableName('fixedHoverLabel',flag)
+       var fixedHoverLabel = document.getElementById(specifiedFixedHoverLabel)
+       let specifiedSelectedIndex = makeSpecifiedVariableName('selectedIndex', flag)
+       let specifiedSelectedPointPosition = makeSpecifiedVariableName('selectedPointPosition', flag)
+       if (intersects.length > 0) {
+         // Get the index and position of the double-clicked point
+         var intersect = intersects[0];
+
+         window.vueApp[specifiedSelectedIndex] = intersect.index;
+         window.vueApp[specifiedSelectedPointPosition]= intersect.point;
+     
+         // Call function to update label position and content
+         updateFixedHoverLabel(event.clientX, event.clientY, intersect.index, flag);
+       } else {
+         // If the canvas was double-clicked without hitting a point, hide the label and reset
+         window.vueApp[specifiedSelectedIndex] = null;
+         window.vueApp[specifiedSelectedPointPosition]= null;
+         if (fixedHoverLabel) {
+           fixedHoverLabel.style.display = 'none';
+         }
+       
+       }
+     }
+
+
+    //  =========================  db click  end =========================================== //
+
 
     //  =========================  鼠标hover功能  开始 =========================================== //
     function onMouseMove(event) {
+       
         raycaster.params.Points.threshold = 0.2 / window.vueApp.camera[flag].zoom; // 根据点的屏幕大小调整
         // 转换鼠标位置到归一化设备坐标 (NDC)
         var rect = window.vueApp.renderer[flag].domElement.getBoundingClientRect();
@@ -213,51 +299,235 @@ function drawCanvas(res,id, flag='ref') {
         raycaster.setFromCamera(mouse, window.vueApp.camera[flag]);
         // 检测射线与点云的相交
         var intersects = raycaster.intersectObject(points);
-
+        let specifiedLastHoveredIndex = makeSpecifiedVariableName('lastHoveredIndex', flag)
+        let specifiedImageSrc = makeSpecifiedVariableName('imageSrc', flag)
+        let specifiedHighlightAttributes = makeSpecifiedVariableName('highlightAttributes', flag)
+        
+        
+    
+    
         if (intersects.length > 0) {
             // 获取最接近的交点
             var intersect = intersects[0];
 
             // 获取索引 - 这需要根据具体实现来确定如何获取
             var index = intersect.index;
-
+            if (window.vueApp.hoverMode == "pair") {
+                EventBus.$emit(flag + 'update-curr-hover', { Index: index, flag });
+            }
+         
             // 在这里处理悬停事件
-            if (window.vueApp.lastHoveredIndex != index) {
-                window.vueApp.lastHoveredIndex = index
-                // 重置上一个悬停的点的大小
-                if (window.vueApp.lastHoveredIndex !== null) {
-                    points.geometry.attributes.size.array[window.vueApp.lastHoveredIndex] = 5; // 假设5是原始大小
+            if (window.vueApp[specifiedLastHoveredIndex] != index) {
+
+                if (window.vueApp[specifiedLastHoveredIndex] != null) {
+                    if (window.vueApp[specifiedHighlightAttributes].allHighlightedSet) {
+                        
+                        var isInsideHighlightedSet = window.vueApp[specifiedHighlightAttributes].allHighlightedSet.has(window.vueApp[specifiedLastHoveredIndex])
+                        console.log("isInsidehighhlihgheset", isInsideHighlightedSet )
+                        if (!isInsideHighlightedSet) {
+                            points.geometry.attributes.size.array[window.vueApp[specifiedLastHoveredIndex]] = NORMAL_SIZE;
+                            console.log("updateSizehighlighted" )
+                        }
+                    } else {
+                        points.geometry.attributes.size.array[window.vueApp[specifiedLastHoveredIndex]] = NORMAL_SIZE; // 假设5是原始大小
+                    }
+                  
                 }
                 container.style.cursor = 'pointer';
 
-                // 更新当前悬停的点的大小
-                sizes.fill(NORMAL_SIZE); // 将所有点的大小重置为5
-                sizes[index] = HOVER_SIZE; // 将悬停的点的大小设置为10
 
-                // 更新size属性并标记为需要更新
-                geometry.attributes.size.array = new Float32Array(sizes);
+                geometry.attributes.size.array[index] = HOVER_SIZE
+
                 geometry.attributes.size.needsUpdate = true;
-                window.vueApp.lastHoveredIndex = index;
+
+                window.vueApp[specifiedLastHoveredIndex] = index;
+
+                var pointPosition = new THREE.Vector3();
+                pointPosition.fromBufferAttribute(points.geometry.attributes.position, index);
+            
+                updateHoverIndexUsingPointPosition(pointPosition, index, false, flag, window.vueApp.camera[flag], window.vueApp.renderer[flag]) 
             }
+
 
         } else {
+            if (window.vueApp.hoverMode == "pair") {
+                EventBus.$emit(flag + 'update-curr-hover', { Index: null, flag });
+            }
             container.style.cursor = 'default';
             // 如果没有悬停在任何点上，也重置上一个点的大小
-            if (window.vueApp.lastHoveredIndex !== null) {
-                sizes.fill(NORMAL_SIZE); // 将所有点的大小重置为5
-                // 更新size属性并标记为需要更新
-                geometry.attributes.size.array = new Float32Array(sizes);
+            if (window.vueApp[specifiedLastHoveredIndex] != null) {
+                if (window.vueApp[specifiedHighlightAttributes].allHighlightedSet) {
+                    
+                    var isInsideHighlightedSet = window.vueApp[specifiedHighlightAttributes].allHighlightedSet.has(window.vueApp[specifiedLastHoveredIndex])
+                    if (!isInsideHighlightedSet) {
+                        points.geometry.attributes.size.array[window.vueApp[specifiedLastHoveredIndex]] = NORMAL_SIZE;
+                    }
+                } else {
+                    points.geometry.attributes.size.array[window.vueApp[specifiedLastHoveredIndex]] = NORMAL_SIZE; 
+                }
+                  
                 geometry.attributes.size.needsUpdate = true;
-                window.vueApp.lastHoveredIndex = null;
-                resultImg = document.getElementById("metaImg")
-                resultImg.setAttribute("style", "display:none;")
-                
+
+                window.vueApp[specifiedLastHoveredIndex] = null;
+                window.vueApp[specifiedImageSrc] = ""
+
+                updateHoverIndexUsingPointPosition(pointPosition, null, false, flag, window.vueApp.camera[flag], window.vueApp.renderer[flag]) 
+    
             }
         }
+      
     }
     //  =========================  鼠标hover功能  结束 =========================================== //
 
+    function updatePairHover(index) {
+        let specifiedLastHoveredIndex = makeSpecifiedVariableName('lastHoveredIndex', flag)
+        let specifiedImageSrc = makeSpecifiedVariableName('imageSrc', flag)
+        let specifiedHighlightAttributes = makeSpecifiedVariableName('highlightAttributes', flag)
 
+        if (index != null) {
+            if (window.vueApp[specifiedLastHoveredIndex] != index) {
+
+                if (window.vueApp[specifiedLastHoveredIndex] != null) {
+                    if (window.vueApp[specifiedHighlightAttributes].allHighlightedSet) {
+                    
+                        var isInsideHighlightedSet = window.vueApp[specifiedHighlightAttributes].allHighlightedSet.has(window.vueApp[specifiedLastHoveredIndex])
+                        if (!isInsideHighlightedSet) {
+                            points.geometry.attributes.size.array[window.vueApp[specifiedLastHoveredIndex]] = NORMAL_SIZE;
+                        }
+                    } else {
+                        points.geometry.attributes.size.array[window.vueApp[specifiedLastHoveredIndex]] = NORMAL_SIZE; 
+                    }
+    
+                }
+                container.style.cursor = 'pointer';
+
+                geometry.attributes.size.array[index] = HOVER_SIZE
+
+                geometry.attributes.size.needsUpdate = true;
+
+                window.vueApp[specifiedLastHoveredIndex] = index;
+
+
+                var pointPosition = new THREE.Vector3();
+
+
+                pointPosition.fromBufferAttribute(points.geometry.attributes.position, index);
+
+                updateHoverIndexUsingPointPosition(pointPosition, index, false, flag, window.vueApp.camera[flag], window.vueApp.renderer[flag]) 
+            }
+
+
+        } else {
+            container.style.cursor = 'default';
+            if (window.vueApp[specifiedLastHoveredIndex] != null) {
+
+                if (window.vueApp[specifiedHighlightAttributes].allHighlightedSet) {
+                    
+                    var isInsideHighlightedSet = window.vueApp[specifiedHighlightAttributes].allHighlightedSet.has(window.vueApp[specifiedLastHoveredIndex])
+                    if (!isInsideHighlightedSet) {
+                        points.geometry.attributes.size.array[window.vueApp[specifiedLastHoveredIndex]] = NORMAL_SIZE;
+                    }
+                } else {
+                    points.geometry.attributes.size.array[window.vueApp[specifiedLastHoveredIndex]] = NORMAL_SIZE; 
+                }
+
+                geometry.attributes.size.needsUpdate = true;
+                window.vueApp[specifiedLastHoveredIndex] = null;
+                window.vueApp[specifiedImageSrc] = ""
+        
+                updateHoverIndexUsingPointPosition(pointPosition, null, false, flag, window.vueApp.camera[flag], window.vueApp.renderer[flag]) 
+    
+            }
+        }
+
+    }
+
+    EventBus.$on(referToAnotherFlag(flag) + 'update-curr-hover', (payload) => {
+        if (payload.flag !== flag) { 
+            // Update local variables or perform actions based on the received data
+            updatePairHover(payload.Index)
+        }
+    });
+
+    // In the Vue instance where you want to observe changes
+    let specifiedHighlightAttributes = makeSpecifiedVariableName('highlightAttributes', flag)
+    window.vueApp.$watch(specifiedHighlightAttributes, updateHighlights, {
+        deep: true // Use this if specifiedHighlightAttributes is an object to detect nested changes
+    });
+
+    function updateHighlights() {
+        console.log("updateHihglight")
+        var indicesToChangeYellow = window.vueApp[specifiedHighlightAttributes].highlightedPointsYellow
+        var indicesToChangeBlue = window.vueApp[specifiedHighlightAttributes].highlightedPointsBlue
+        var indicesToChangeGreen = window.vueApp[specifiedHighlightAttributes].highlightedPointsGreen
+        var indicesAllHighlighted =  window.vueApp[specifiedHighlightAttributes].allHighlightedSet
+        if (indicesToChangeYellow == null) {
+            indicesToChangeYellow = []
+        } else {
+            indicesToChangeYellow  = Array.from(indicesToChangeYellow)
+        }
+        if (indicesToChangeBlue == null) {
+            indicesToChangeBlue = []
+        } else {
+            indicesToChangeBlue = Array.from(indicesToChangeBlue)
+        }
+        if (indicesToChangeGreen == null) {
+            indicesToChangeGreen = []
+        } else {
+            indicesToChangeGreen = Array.from(indicesToChangeGreen)
+        }
+        if (indicesAllHighlighted == null) {
+            indicesAllHighlighted = []
+        } else {
+            indicesAllHighlighted = Array.from(indicesAllHighlighted)
+        }
+
+        resetToOriginalColorSize()
+
+        updateColorSizeForHighlights(indicesAllHighlighted, indicesToChangeYellow, indicesToChangeBlue, indicesToChangeGreen)
+    }
+    function resetToOriginalColorSize() {
+        var sizesAttribute = geometry.getAttribute('size');
+        var colorsAttribute = geometry.getAttribute('color');
+        sizesAttribute.array.set(originalSizes);
+        colorsAttribute.array.set(originalColors);
+        
+        // Mark as needing update
+        sizesAttribute.needsUpdate = true;
+        colorsAttribute.needsUpdate = true;
+    }
+
+    function updateColorSizeForHighlights(indicesAllHighlighted, indicesToChangeYellow, indicesToChangeBlue, indicesToChangeGreen) {
+        
+        var sizesAttribute = geometry.getAttribute('size');
+        indicesAllHighlighted.forEach(index => {
+            sizesAttribute.array[index] = HOVER_SIZE;
+        });
+        sizesAttribute.needsUpdate = true; 
+
+        // Update colors
+        var colorsAttribute = geometry.getAttribute('color');
+        indicesToChangeYellow.forEach(index => {
+            colorsAttribute.array[index * 3] = YELLOW[0]; // R
+            colorsAttribute.array[index * 3 + 1] = YELLOW[1]; // G
+            colorsAttribute.array[index * 3 + 2] = YELLOW[2]; // B
+        });
+
+
+        indicesToChangeGreen.forEach(index => {
+            colorsAttribute.array[index * 3] = GREEN[0]; // R
+            colorsAttribute.array[index * 3 + 1] = GREEN[1]; // G
+            colorsAttribute.array[index * 3 + 2] = GREEN[2]; // B
+        });
+
+        indicesToChangeBlue.forEach(index => {
+            colorsAttribute.array[index * 3] = BLUE[0]; // R
+            colorsAttribute.array[index * 3 + 1] = BLUE[1]; // G
+            colorsAttribute.array[index * 3 + 2] = BLUE[2]; // B
+        });
+
+        colorsAttribute.needsUpdate = true; 
+    }
 
     container.addEventListener('mousemove', onMouseMove, false);
 
@@ -266,7 +536,7 @@ function drawCanvas(res,id, flag='ref') {
     // 鼠标按下事件
     container.addEventListener('mousedown', function (e) {
         isDragging = true;
-        console.log(isDragging)
+
         container.style.cursor = 'move';
         previousMousePosition.x = e.clientX;
         previousMousePosition.y = e.clientY;
@@ -275,51 +545,46 @@ function drawCanvas(res,id, flag='ref') {
     // 鼠标移动事件
     container.addEventListener('mousemove', function (e) {
         if (isDragging) {
-            // var deltaX = e.clientX - previousMousePosition.x;
-            // var deltaY = e.clientY - previousMousePosition.y;
+            const currentZoom = window.vueApp.camera[flag].zoom;
+        
+            let deltaX = e.clientX - previousMousePosition.x;
+            let deltaY = e.clientY - previousMousePosition.y;
+    
+            const viewportWidth = window.vueApp.renderer[flag].domElement.clientWidth;
+            const viewportHeight = window.vueApp.renderer[flag].domElement.clientHeight;
+    
+            // Scale factors
+            const scaleX = (window.vueApp.camera[flag].right - window.vueApp.camera[flag].left) / viewportWidth;
+            const scaleY = (window.vueApp.camera[flag].top - window.vueApp.camera[flag].bottom) / viewportHeight;
+    
+            // Convert pixel movement to world units
+            deltaX = (deltaX * scaleX) / currentZoom;
+            deltaY = (deltaY * scaleY) / currentZoom;
+    
+            // Update the camera position based on the scaled delta
+            var newPosX = window.vueApp.camera[flag].position.x - deltaX * 1;
+            var newPosY = window.vueApp.camera[flag].position.y + deltaY * 1;
 
-            // var dragSpeed = calculateDragSpeed();
-
-            // camera.position.x -= deltaX * dragSpeed; // 缩放因子可以调整
-            // camera.position.y += deltaY * dragSpeed; // 缩放因子可以调整
-
-            // previousMousePosition = {
-            //     x: e.clientX,
-            //     y: e.clientY
-            // };
-
-            var deltaX = e.clientX - previousMousePosition.x;
-            var deltaY = e.clientY - previousMousePosition.y;
-            console.log(deltaX, deltaY)
-
-            var dragSpeed = calculateDragSpeed();
-
-            // 预计算新的相机位置
-            var newPosX = window.vueApp.camera[flag].position.x - deltaX * dragSpeed;
-            var newPosY = window.vueApp.camera[flag].position.y + deltaY * dragSpeed;
-
-            // 检查新的相机位置是否在允许的范围内，并进行调整
             newPosX = Math.max(cameraBounds.minX, Math.min(newPosX, cameraBounds.maxX));
             newPosY = Math.max(cameraBounds.minY, Math.min(newPosY, cameraBounds.maxY));
-
-            // 更新相机位置
+             // update camera position
             window.vueApp.camera[flag].position.x = newPosX;
             window.vueApp.camera[flag].position.y = newPosY;
-
-            // 更新上一个鼠标位置
+            // update previous mouse position
             previousMousePosition = {
                 x: e.clientX,
                 y: e.clientY
             };
+            let specifiedFixedHoverLabel = makeSpecifiedVariableName('fixedHoverLabel', flag)
+            var fixedHoverLabel = document.getElementById(specifiedFixedHoverLabel)
+            if (fixedHoverLabel) {
+                updateLabelPosition(flag);
+            }
+            //todo
+            updateCurrHoverIndex(e, null, true, flag)
         }
     });
 
-    function calculateDragSpeed() {
-        // 根据相机的缩放级别调整拖拽速度
-        var zoomLevel = window.vueApp.camera[flag].zoom;
-        var baseSpeed = 0.1; // 基础速度，可以根据需要调整
-        return baseSpeed / zoomLevel; // 随着放大，速度降低
-    }
 
     // 鼠标松开事件
     container.addEventListener('mouseup', function (e) {
@@ -341,7 +606,8 @@ function drawCanvas(res,id, flag='ref') {
 
     // 渲染循环
     function animate() {
-        requestAnimationFrame(animate);
+
+        window.vueApp.animationFrameId[flag] = requestAnimationFrame(animate);
         window.vueApp.renderer[flag].render(window.vueApp.scene[flag], window.vueApp.camera[flag]);
 
     }
@@ -350,201 +616,14 @@ function drawCanvas(res,id, flag='ref') {
 }
 
 
-function drawTimeline(res) {
-    console.log('res', res)
-    // this.d3loader()
-
-    const d3 = window.d3;
-
-    let svgDom = document.getElementById('timeLinesvg')
 
 
-    while (svgDom?.firstChild) {
-        svgDom.removeChild(svgDom.lastChild);
-    }
+window.onload = function() {
+    let specifiedCurrHoverRef = makeSpecifiedVariableName('currHover', 'ref')
+    let specifiedCurrHoverTar = makeSpecifiedVariableName('currHover', 'tar')
+    const currHover1 = document.getElementById(specifiedCurrHoverRef);
+    const currHover2 = document.getElementById(specifiedCurrHoverTar);
 
-
-
-    let total = res.structure.length
-    window.treejson = res.structure
-
-    let data = res.structure
-
-
-    function tranListToTreeData(arr) {
-        const newArr = []
-        const map = {}
-        // {
-        //   '01': {id:"01", pid:"",   "name":"老王",children: [] },
-        //   '02': {id:"02", pid:"01", "name":"小张",children: [] },
-        // }
-        arr.forEach(item => {
-            item.children = []
-            const key = item.value
-            map[key] = item
-        })
-
-        // 2. 对于arr中的每一项
-        arr.forEach(item => {
-            const parent = map[item.pid]
-            if (parent) {
-                //    如果它有父级，把当前对象添加父级元素的children中
-                parent.children.push(item)
-            } else {
-                //    如果它没有父级（pid:''）,直接添加到newArr
-                newArr.push(item)
-            }
-        })
-
-        return newArr
-    }
-    data = tranListToTreeData(data)[0]
-    var margin = 20;
-    var svg = d3.select(svgDom);
-    var width = svg.attr("width");
-    var height = svg.attr("height");
-
-    //create group
-    var g = svg.append("g")
-        .attr("transform", "translate(" + margin + "," + 0 + ")");
-
-
-    //create layer layout
-    var hierarchyData = d3.hierarchy(data)
-        .sum(function (d, i) {
-            return d.value;
-        });
-    //    nodes attributes:
-    //        node.data - data.
-    //        node.depth - root is 0.
-    //        node.height -  leaf node is 0.
-    //        node.parent - parent id, root is null.
-    //        node.children.
-    //        node.value - total value current node and descendants;
-
-    //create tree
-    let len = total
-
-    let svgWidth = len * 40
-    if (window.sessionStorage.taskType === 'active learning') {
-        svgWidth = 1000
-    }
-    // svgWidth = 1000
-    console.log('svgWid', len, svgWidth)
-    svgDom.style.width = svgWidth + 200
-    if (window.sessionStorage.selectedSetting !== 'active learning' && window.sessionStorage.selectedSetting !== 'dense al') {
-        svgDom.style.height = 90
-        // svgDom.style.width = 2000
-    }
-
-
-    var tree = d3.tree()
-        .size([100, svgWidth])
-        .separation(function (a, b) {
-            return (a.parent == b.parent ? 1 : 2) / a.depth;
-        });
-
-    //init
-    var treeData = tree(hierarchyData)
-
-    //line node
-    var nodes = treeData.descendants();
-    var links = treeData.links();
-
-    //line
-    var link = d3.linkHorizontal()
-        .x(function (d) {
-            return d.y;
-        }) //linkHorizontal
-        .y(function (d) {
-            return d.x;
-        });
-
-
-    //path
-    g.append('g')
-        .selectAll('path')
-        .data(links)
-        .enter()
-        .append('path')
-        .attr('d', function (d, i) {
-            var start = {
-                x: d.source.x,
-                y: d.source.y
-            };
-            var end = {
-                x: d.target.x,
-                y: d.target.y
-            };
-            return link({
-                source: start,
-                target: end
-            });
-        })
-        .attr('stroke', '#452d8a')
-        .attr('stroke-width', 1)
-        .attr('fill', 'none');
-
-
-    //创建节点与文字分组
-    var gs = g.append('g')
-        .selectAll('.g')
-        .data(nodes)
-        .enter()
-        .append('g')
-        .attr('transform', function (d, i) {
-            console.log("D", d)
-            return 'translate(' + d.data.pid * 40 + ',' + d.x + ')';
-        });
-
-    //绘制文字和节点
-    gs.append('circle')
-        .attr('r', 8)
-        .attr('fill', function (d, i) {
-            // console.log("1111",d.data.value, window.iteration, d.data.value == window.iteration )
-            return d.data.value == window.vueApp.curEpoch ? 'orange' : '#452d8a'
-        })
-        .attr('stroke-width', 1)
-        .attr('stroke', function (d, i) {
-            return d.data.value == window.vueApp.curEpoch ? 'orange' : '#452d8a'
-        })
-
-    gs.append('text')
-        .attr('x', function (d, i) {
-            return d.children ? 5 : 10;
-        })
-        .attr('y', function (d, i) {
-            return d.children ? -20 : -5;
-        })
-        .attr('dy', 10)
-        .text(function (d, i) {
-            if (window.sessionStorage.taskType === 'active learning') {
-                return `${d.data.value}|${d.data.name}`;
-            } else {
-                return `${d.data.value}`;
-            }
-
-        })
-    setTimeout(() => {
-        let list = svgDom.querySelectorAll("circle");
-        for (let i = 0; i <= list.length; i++) {
-            let c = list[i]
-            if (c) {
-                c.style.cursor = "pointer"
-                c.addEventListener('click', (e) => {
-                    if (e.target.nextSibling.innerHTML != window.iteration) {
-
-                        let value = e.target.nextSibling.innerHTML.split("|")[0]
-                        window.vueApp.isCanvasLoading = true
-                        updateProjection(window.vueApp.contentPath, value)
-                        window.sessionStorage.setItem('acceptIndicates', "")
-                        window.sessionStorage.setItem('rejectIndicates', "")
-                        window.vueApp.curEpoch = value
-                        drawTimeline(res)
-                    }
-                })
-
-            }
-        }
-    }, 50)
-}
+    makeDraggable(currHover1, currHover1);
+    makeDraggable(currHover2, currHover2);
+};

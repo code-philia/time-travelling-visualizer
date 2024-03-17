@@ -83,13 +83,7 @@
                     </tr>
                 </table>
                 <el-divider></el-divider>
-                <div id="curHover">
-                    CurHoverIndex: {{lastHoveredIndex}}<br />
-                    prediction: {{curr_pred}}<br />
-                    label: {{curr_label}}<br />
-
-                    <img id="metaImg" height="100px" />
-                </div>
+             
 
             </div>
             <div class="mid_container">
@@ -128,6 +122,29 @@
         <div id="footer">
             <svg id="timeLinesvg"></svg>
         </div>
+        <div id="currHover">
+            CurrHoverIndex: {{lastHoveredIndex}}<br />
+            prediction: {{curr_pred}}<br />
+            label: {{curr_label}}<br />
+            <div v-if="dataType === 'Image'">
+                <img :src="imageSrc" alt="Image Description" height="100px" />
+              </div>
+              <div v-else >
+                <div style="overflow-y: auto;">
+                    <p>{{ textContent }}</p>
+                </div>
+              </div>
+          
+            
+        </div>
+        <div id="hoverLabel">
+            <!-- Label content -->
+        </div>
+      
+        <div id="fixedHoverLabel" >
+
+        </div>
+  
     </div>
 </body>
 
@@ -147,7 +164,7 @@
                 label_list: [],
                 label_name_dict: {},
                 evaluation: { test_acc: 0, train_acc: 0 },
-                curEpoch: 1,
+                currEpoch: 1,
                 showTraining: true,
                 showTesting: true,
                 SelectionMode: false,
@@ -156,7 +173,12 @@
                 renderer: null,
                 camera: null,
                 curImg: null,
+                imageSrc: "",
+                textContent:"",
                 dataType: "Image",
+                selectedIndex: null, 
+                selectedPointPosition: null,
+                hoverIndex: null,
                 canvasSetting: {
                     zoomSpeed: 0.01,
                     dragSpeed: 0.1
@@ -224,7 +246,7 @@
                     },
                 },
                 {
-                    element: '#curHover',
+                    element: '#currHover',
                     popover: {
                         title: 'Hover Information',
                         description: 'The detail of the current hover sample will be shown here',
@@ -254,8 +276,9 @@
             },
             update() {
                 this.isCanvasLoading = true
-                updateProjection(this.contentPath, this.curEpoch, this.taskType)
-                fetchTimelineData(this.contentPath)
+                console.log("taskType",this.taskType)
+                updateProjection(this.contentPath, this.currEpoch, this.taskType)
+                fetchTimelineData(this.contentPath, "")
             }
         },
         watch: {
@@ -265,7 +288,7 @@
                     this.curr_pred = this.prediction_list[newVal];
                     this.curr_label = this.label_name_dict[this.label_list[newVal]]
                     if (newVal != null) {
-                        getOriginalData(this.contentPath, newVal)
+                        getOriginalData(this.contentPath, newVal, this.dataType, "")
 
                     }
 
