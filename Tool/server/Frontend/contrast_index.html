@@ -37,7 +37,10 @@
             </div>
             <el-button style="position: fixed; top: 130px; right:0px; font-size: 20px;" size="mini" type="warning" slot="reference" icon="el-icon-setting"></el-button>
         </el-popover>
+
+        <div class = "overall_container">
         <div class="content_container">
+
             <div id="subject_model_info_panel">
                 <div id="contentSettingData">
                     <span style="display: inline-block; margin-right: 20px;">Data Type:</span>
@@ -52,44 +55,133 @@
                 </div>
 
                 <el-divider></el-divider>
-                <div id="contentPathInput">
-                    Content Path:
-                    <el-input v-model="contentPath"></el-input>
+                <div id="contentPathInputRef">
+                    Content Path Left:
+                    <el-input v-model="contentPathRef"></el-input>
                 </div>
+                <el-divider></el-divider>
+                <div id="contentPathInputTar">
+                    Content Path Right:
+                    <el-input v-model="contentPathTar"></el-input>
+                </div>
+                <el-divider></el-divider>
                 <el-button id="showVisResBtn"
-                    style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;" @click="update">Load
+                    style="background-color: #571792; color: #fff; width: 100%; margin-top: 0px;" @click="update">Load
                     Visualization Result</el-button>
                 <el-divider></el-divider>
-                <table id="subjectModeEvalRes">
-                    <caption style="margin-bottom: 10px 0;">Model Evaluation</caption>
-                    <tr>
-                        <td></td>
-                        <td>training acc</td>
-                        <td>Testing acc</td>
-                    </tr>
-                    <tr>
-                        <td></td>
-                        <td>{{evaluation.train_acc}}</td>
-                        <td>{{evaluation.test_acc}}</td>
-                    </tr>
-                </table>
-                <el-divider></el-divider>
-                <div id="curHover">
-                    CurHoverIndex: {{lastHoveredIndex}}<br />
-                    prediction: {{curr_pred}}<br />
-                    label: {{curr_label}}<br />
+                
+                <div id="select-container">
+                    <span style="display: inline-block; line-height: 30px; vertical-align: top; margin-left:20px; margin-right: 5px;">Multiton:</span>
+                    <select v-model="multiOption" id="highlightMethodInput" class="login-input" style="height: 30px; width: 50px;">
+                      <option value="align" selected>align</option>
+                      <option value="nearest neighbour">nearest neighbour</option>
+                      <option value="both" selected>both</option>
+                    </select>
+                    <button id="highlightButton" @click="highlightDataMulti">Show</button>
+             
+                    <span style="display: inline-block; line-height: 30px; vertical-align: top; margin-left:20px;margin-right: 5px; margin-top: 10px">Singleton:</span>
+                    <select v-model="singleOption"  id="highlightMethodInputSingle" class="login-input" style="height: 30px; width: 50px;">
+                    <option value="align" selected>align</option>
+                    <option value="nearest neighbour">nearest neighbour</option>
+                    <option value="reset" selected>reset</option>
+                    </select>
+                    <button id="highlightButtonSingle" @click="highlightDataSingle">Show</button>
+           
+                    <span style="display: inline-block; line-height: 30px; vertical-align: top; margin-left:20px;margin-right: 5px;margin-top: 10px ">Hover Mode:</span>
+                    <select v-model="hoverMode" id="changeHoverMode" class="login-input" style="height: 30px; width: 50px;">
+                    <option value="single" selected>single</option>
+                    <option value="pair">pair</option>
+                    </select>
 
-                    <img id="metaImg" height="100px" />
+             
+                    <span style="display: inline-block; line-height: 30px; vertical-align: top; margin-left:20px;margin-right: 5px; margin-top: 10px">Cocurrent Mode:</span>
+                    <select v-model= "concurrentMode" id="changeConcurrentMode" class="login-input" style="height: 30px; width: 50px;">
+                    <option value="yes" selected>yes</option>
+                    <option value="no">no</option>
+                    </select>
+
+                  
                 </div>
+               
 
             </div>
+
             <div class="mid_container">
-                <div id="container_ref"></div>
-                <div id="container_tar"></div>
+                <div id="container_ref">
+                    <div id="hoverLabelRef">
+                        <!-- Label content -->
+                    </div>
+                  
+                    <div id="fixedHoverLabelRef" >
+            
+                    </div>
+                </div>
+                <div id="container_tar">
+                    <div id="hoverLabelTar">
+                        <!-- Label content -->
+                    </div>
+                  
+                    <div id="fixedHoverLabelTar" >
+            
+                    </div>
+                </div>
+            </div>
+
+          
+        </div>
+       
+        <div id = "iterationContainer"> 
+            <div id="footerRef">
+                <svg id="timeLinesvgRef"></svg>
+            </div>
+            <div id="footerTar">
+                <svg id="timeLinesvgTar"></svg>
             </div>
         </div>
-        <div id="footer">
-            <svg id="timeLinesvg"></svg>
+
+        </div>
+
+        <div id="currHoverRef">
+            CurrHoverIndex: {{lastHoveredIndexRef}}<br />
+            prediction: {{curr_predRef}}<br />
+            label: {{curr_labelRef}}<br />
+
+            <div v-if="dataType === 'Image'">
+                <img :src="imageSrcRef" alt="Image Description" height="100px" />
+              </div>
+              <div v-else>
+                <div style="max-height: 300px; overflow-y: auto;">
+                    <p>{{ textContentRef }}</p>
+                </div>
+              </div>
+        </div>
+        <div id="currHoverTar">
+            CurrHoverIndex: {{lastHoveredIndexTar}}<br />
+            prediction: {{curr_predTar}}<br />
+            label: {{curr_labelTar}}<br />
+
+            <div v-if="dataType === 'Image'">
+                <img :src="imageSrcTar" alt="Image Description" height="100px" />
+              </div>
+              <div v-else>
+                <div style="max-height: 300px; overflow-y: auto;">
+                    <p>{{ textContentTar }}</p>
+                </div>
+              </div>
+        </div>
+        <div id="hoverLabelTar">
+            <!-- Label content -->
+        </div>
+      
+        <div id="fixedHoverLabelTar" >
+
+        </div> 
+        <div id="hoverLabelRef">
+            <!-- Label content -->
+        </div>
+      
+        <div id="fixedHoverLabelRef" >
+
         </div>
     </div>
 </body>
@@ -100,20 +192,55 @@
         el: '#app',
         data() {
             return {
-                lastHoveredIndex: null,
-                contentPath: '/home/timeTravelling/guorui/git_space/TestFrontend/time-travelling-visualizer/Backdoor',
+                lastHoveredIndexRef: null,
+                lastHoveredIndexTar: null,
+                contentPathRef: '/home/timeTravelling/guorui/git_space/TestFrontend/time-travelling-visualizer/Backdoor',
+                contentPathTar: '/home/timeTravelling/guorui/git_space/TestFrontend/time-travelling-visualizer/Backdoor',
                 isCanvasLoading: false,
                 taskType: 'Classification',
-                prediction_list: [],
-                curr_pred: '',
-                curr_label: '',
-                label_list: [],
-                label_name_dict: {},
+                prediction_listRef: [],
+                prediction_listTar: [],
+                curr_predRef: '',
+                curr_predTar: '',
+                curr_labelRef: '',
+                curr_labelTar: '',
+                label_listRef: [],
+                label_listTar: [],
+                label_name_dictRef: {},
+                label_name_dictTar: {},
                 evaluation: { test_acc: 0, train_acc: 0 },
-                curEpoch: 1,
+                currEpochRef: 1,
+                currEpochTar: 1,
                 showTraining: true,
                 showTesting: true,
                 SelectionMode: false,
+                imageSrcRef: '',
+                textContentRef: '',
+                imageSrcTar:'',
+                textContentTar:'',
+                selectedIndexRef: null,
+                selectedIndexTar: null,
+                selectedPointPositionRef: null,
+                selectedPointPositionTar: null,
+                hoverIndexRef: null,
+                hoverIndexTar: null,
+                highlightAttributesRef: {
+                    highlightedPointsYellow: null,
+                    highlightedPointsBlue: null,
+                    highlightedPointsGreen: null,
+                    allHighlightedSet: null,
+                    boldIndices: null,
+                },
+
+                highlightAttributesTar: {
+                    highlightedPointsYellow: null,
+                    highlightedPointsBlue: null,
+                    highlightedPointsGreen: null,
+                    allHighlightedSet:null,
+                    boldIndices: null,
+                },
+                multiOption:"align",
+                singleOption:"align",
                 scene: {
                     'ref': null,
                     'tar': null
@@ -126,15 +253,22 @@
                     'ref': null,
                     'tar': null
                 },
+                animationFrameId: {
+                    'ref': null,
+                    'tar': null
+                },
+
                 curImg: null,
                 dataType: "Image",
                 zoomInSpeed: 0.01,
+                hoverMode:"single",
+                concurrentMode: "no",
             }
         },
         methods: {
             guide() {
                 const steps = [{
-                    element: '#contentPathInput',
+                    element: '#contentPathInputRef',
                     popover: {
                         title: 'Content Path',
                         description: 'Please input the absolute path of the training dynamics',
@@ -167,7 +301,7 @@
                     },
                 },
                 {
-                    element: '#curHover',
+                    element: '#currHoverRef',
                     popover: {
                         title: 'Hover Information',
                         description: 'The detail of the current hover sample will be shown here',
@@ -175,7 +309,7 @@
                     },
                 },
                 {
-                    element: '#container',
+                    element: '#container_ref',
                     popover: {
                         title: 'Visualization Canvas',
                         description: '**************',
@@ -197,18 +331,40 @@
             },
             update() {
                 this.isCanvasLoading = true
-                updateContraProjection(this.contentPath, this.curEpoch, this.taskType)
-                // fetchTimelineData(this.contentPath)
+                updateContraProjection(this.contentPathRef, this.currEpochRef, this.taskType, 'ref')
+                fetchTimelineData(this.contentPathRef, 'ref')
+                updateContraProjection(this.contentPathTar, this.currEpochTar, this.taskType, 'tar')
+                fetchTimelineData(this.contentPathTar, 'tar')
+            },
+
+            highlightDataMulti() { 
+                getHighlightedPoints("multi")        
+            },
+            highlightDataSingle() {
+                getHighlightedPoints("single")  
             }
+
         },
         watch: {
-            lastHoveredIndex: {
+            lastHoveredIndexRef: {
                 immediate: true,
                 handler(newVal, oldVal) {
-                    this.curr_pred = this.prediction_list[newVal];
-                    this.curr_label = this.label_name_dict[this.label_list[newVal]]
+                    this.curr_predRef = this.prediction_listRef[newVal];
+                    this.curr_labelRef = this.label_name_dictRef[this.label_listRef[newVal]]
                     if (newVal != null) {
-                        getOriginalData(this.contentPath, newVal)
+                        getOriginalData(this.contentPathRef, newVal,this.dataType, 'ref')
+
+                    }
+
+                }
+            },
+            lastHoveredIndexTar: {
+                immediate: true,
+                handler(newVal, oldVal) {
+                    this.curr_predTar = this.prediction_listTar[newVal];
+                    this.curr_labelTar = this.label_name_dictTar[this.label_listTar[newVal]]
+                    if (newVal != null) {
+                        getOriginalData(this.contentPathTar, newVal,this.dataType, 'tar')
 
                     }
 
