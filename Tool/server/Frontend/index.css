@@ -17,7 +17,8 @@ body {
     width: 260px;
     padding: 20px;
     background-color: rgb(244, 244, 244);
-    height: calc(100vh);
+    height: calc(80vh); /* Adjust based on content, could be fixed or auto */
+    overflow-y: auto; /* Allows scrolling within the panel if content overflows */
 }
 #opration_bar{
     background-color: rgb(244, 244, 244);
@@ -50,9 +51,9 @@ body {
 }
 
 #footer {
-    height: 90px;
+    height: 60px;
     width: 100%;
-    position: fixed;
+    position: relative;
     bottom: 0;
     background-color: rgb(244, 244, 244);
 }

@@ -11,7 +11,7 @@ import gc
 import shutil
 sys.path.append('..')
 sys.path.append('.')
-from utils import update_epoch_projection, initialize_backend, add_line, getConfChangeIndices, getContraVisChangeIndices, getContraVisChangeIndicesSingle,getCriticalChangeIndices
+from utils import getVisError, update_epoch_projection, initialize_backend, add_line, getConfChangeIndices, getContraVisChangeIndices, getContraVisChangeIndicesSingle,getCriticalChangeIndices
 
 import time
 # flask for API server
@@ -41,7 +41,7 @@ def update_projection():
     EPOCH = int(iteration)
     
     embedding_2d, grid, decision_view, label_name_dict, label_color_list, label_list, max_iter, training_data_index, \
-    testing_data_index, eval_new, prediction_list, selected_points, properties, highlightedPointIndices, error_message = update_epoch_projection(context, EPOCH, predicates, TaskType)
+    testing_data_index, eval_new, prediction_list, selected_points, properties, error_message = update_epoch_projection(context, EPOCH, predicates, TaskType)
     end = time.time()
     print("duration", end-start)
     # sys.path.remove(CONTENT_PATH)
@@ -64,6 +64,8 @@ def update_projection():
                                   }), 200)
 
 app.route('/contrast/updateProjection', methods=["POST", "GET"])(update_projection)
+
+
 
 @app.route('/query', methods=["POST"])
 @cross_origin()
@@ -102,6 +104,7 @@ def filter():
     sys.path.remove(CONTENT_PATH)
     add_line(API_result_path,['SQ',username])
     return make_response(jsonify({"selectedPoints": selected_points.tolist()}), 200)
+
 
 
 # base64
@@ -254,7 +257,32 @@ def contravis_highlight():
                                   }), 200)
 
 
-	
+@app.route('/getVisualizationError', methods=["POST", "GET"])
+@cross_origin()
+def get_visualization_error():
+    start_time = time.time()
+    res = request.get_json()
+    CONTENT_PATH= res['content_path']
+ 
+    VIS_METHOD = res['vis_method']
+    SETTING = res["setting"]
+    curr_iteration = int(res['iteration'])
+
+    method = res['method']
+    print("vismethod", VIS_METHOD)
+    context= initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
+
+    visualization_error = getVisError(context, curr_iteration,  method)
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    print(elapsed_time)
+    print(len(visualization_error))
+    return make_response(jsonify({
+                                  "visualizationError": visualization_error,       
+                                  }), 200)
+
+app.route('/contrast/getVisualizationError', methods=["POST", "GET"])(get_visualization_error)
+
 @app.route('/highlightCriticalChange', methods=["POST", "GET"])
 @cross_origin()
 def highlight_critical_change():

@@ -479,7 +479,7 @@ class Trustvis(StrategyAbstractClass):
         ENCODER_DIMS = VISUALIZATION_PARAMETER["ENCODER_DIMS"]
         DECODER_DIMS = VISUALIZATION_PARAMETER["DECODER_DIMS"]
 
-        VIS_MODEL_NAME = 'vis'
+        VIS_MODEL_NAME = 'trustvis'
 
         # define hyperparameters
         self.DEVICE = torch.device("cuda:{}".format(GPU_ID) if torch.cuda.is_available() else "cpu")
@@ -497,7 +497,7 @@ class Trustvis(StrategyAbstractClass):
 
         self.umap_fn = umap_loss_fn
         self.recon_fn = recon_loss_fn
-        
+        print("trsusss", VIS_MODEL_NAME)
         self.projector = DVIProjector(vis_model=self.model, content_path=self.CONTENT_PATH, vis_model_name=VIS_MODEL_NAME, device=self.DEVICE)
         self.vis = visualizer(self.data_provider, self.projector, 200, "tab10")
         self.evaluator = Evaluator(self.data_provider, self.projector)

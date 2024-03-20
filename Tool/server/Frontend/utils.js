@@ -198,19 +198,31 @@ const XYZ_NUM_ELEMENTS = 3;
   }
 }
 
-function updateFixedHoverLabel(x, y, index, flag) {
-  let specifiedFixedHoverLabel = makeSpecifiedVariableName('fixedHoverLabel', flag)
+function updateFixedHoverLabel(x, y, index, flag, canvas, labelType, isDisplay) {
+  let specifiedFixedHoverLabel = makeSpecifiedVariableName(labelType, flag)
+  console.log("specifiedHoverLabel", specifiedFixedHoverLabel)
   const label = document.getElementById(specifiedFixedHoverLabel);
-  label.style.left = `${x + 5}px`; // Offset the label slightly to the right
-  label.style.top = `${y - 5}px`; // Offset the label slightly down
-  label.textContent = `${index}`; // Set the index as the label's text
-  label.style.display = 'block'; // Show the label
+  if (!isDisplay) {
+    label.style.display = 'none';
+    return
+  }
+
+  var rect = canvas.getBoundingClientRect();
+
+  // make sure selected index are not shown outside of viewport
+  if (x > rect.right || y > rect.bottom || x < rect.left || y < rect.top) {
+    label.style.display = 'none';
+  } else {
+    label.style.left = `${x + 2}px`;
+    label.style.top = `${y - 2}px`; 
+    label.textContent = `${index}`;
+    label.style.display = 'block'; 
+  }
 }
 
-function updateLabelPosition(flag) {
-  let specifiedSelectedPointPosition = makeSpecifiedVariableName('selectedPointPosition', flag)
+function updateLabelPosition(flag, pointPosition, pointIndex, labelType, isDisplay) {
  
-  if (window.vueApp[specifiedSelectedPointPosition]) {
+  if (pointPosition) {
     let camera = window.vueApp.camera
     let canvas = window.vueApp.renderer.domElement;
     if (flag != '') {
@@ -218,14 +230,18 @@ function updateLabelPosition(flag) {
       canvas = window.vueApp.renderer[flag].domElement;
     }
 
-    const vector = window.vueApp[specifiedSelectedPointPosition].clone().project(camera);
+    var vector = pointPosition.clone().project(camera);
 
     
-    const x = (vector.x * 0.5 + 0.5) * canvas.clientWidth;
-    const y = -(vector.y * 0.5 - 0.5) * canvas.clientHeight;
+    vector.x =  Math.round((vector.x * 0.5 + 0.5) * canvas.clientWidth);
+    vector.y = - Math.round((vector.y * 0.5 - 0.5) * canvas.clientHeight);
 
-    let specifiedSelectedIndex = makeSpecifiedVariableName('selectedIndex', flag)
-    updateFixedHoverLabel(x, y, window.vueApp[specifiedSelectedIndex], flag);
+    var rect = canvas.getBoundingClientRect();
+    vector.x += rect.left;
+    vector.y += rect.top;
+
+    updateFixedHoverLabel(vector.x, vector.y, pointIndex, flag, canvas, labelType, isDisplay);
+    
   }
 }
 function updateCurrHoverIndex(event, index, isDisplay, flag) {
@@ -281,6 +297,7 @@ function updateHoverIndexUsingPointPosition(pointPosition, index, isDisplay, fla
   }
 }
 
+// map intersect point onto position on camera
 function toScreenPosition(obj, camera, renderer) {
   var vector = new THREE.Vector3();
   // obj is a point in 3D space
@@ -300,8 +317,6 @@ function toScreenPosition(obj, camera, renderer) {
       y: vector.y
   };
 }
-
-
 
 function capitalizeFirstLetter(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
@@ -342,10 +357,7 @@ function drawTimeline(res, flag) {
   function tranListToTreeData(arr) {
       const newArr = []
       const map = {}
-      // {
-      //   '01': {id:"01", pid:"",   "name":"老王",children: [] },
-      //   '02': {id:"02", pid:"01", "name":"小张",children: [] },
-      // }
+
       arr.forEach(item => {
           item.children = []
           const key = item.value
@@ -382,13 +394,6 @@ function drawTimeline(res, flag) {
       .sum(function (d, i) {
           return d.value;
       });
-  //    nodes attributes:
-  //        node.data - data.
-  //        node.depth - root is 0.
-  //        node.height -  leaf node is 0.
-  //        node.parent - parent id, root is null.
-  //        node.children.
-  //        node.value - total value current node and descendants;
 
   //create tree
   let len = total
@@ -499,7 +504,6 @@ function drawTimeline(res, flag) {
           let c = list[i]
           if (c) {
               c.style.cursor = "pointer"
-            
               c.addEventListener('click', (e) => {
                   if (e.target.nextSibling.innerHTML != window.vueApp[specifiedCurrEpoch]) {
 
@@ -513,17 +517,13 @@ function drawTimeline(res, flag) {
                           let specifiedContentPathMirror = makeSpecifiedVariableName('contentPath', anotherFlag)
                           let specifiedCurrEpochMirror = makeSpecifiedVariableName('currEpoch', anotherFlag)
 
-                          if (window.vueApp[specifiedCurrEpochMirror] != value) {
-                     
-               
+                          if (window.vueApp[specifiedCurrEpochMirror] != value) {                   
                             updateContraProjection(window.vueApp[specifiedContentPathMirror], value, window.vueApp.taskType, anotherFlag)
                             window.vueApp[specifiedCurrEpochMirror] = value
                             drawTimeline(res, anotherFlag)
                           //todo res currently only support same epoch number from different content paths
-                          }
-                          
-                        } 
-                        
+                          }             
+                        }  
                       } else {
                         updateProjection(window.vueApp[specifiedContentPath], value, window.vueApp.taskType)
                       }
@@ -564,3 +564,9 @@ function setIntersection(sets) {
 
   return intersection;
 }
+
+function calculateZoomSpeed(currentZoom, BASE_ZOOM_SPEED, MAX_ZOOM_SCALE) {
+  const speed = BASE_ZOOM_SPEED / currentZoom;
+  return Math.max(speed, BASE_ZOOM_SPEED / MAX_ZOOM_SCALE); 
+}
+
