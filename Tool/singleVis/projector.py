@@ -199,6 +199,7 @@ class DVIProjector(Projector):
         super().__init__(vis_model, content_path, vis_model_name, device)
 
     def load(self, iteration):
+        print("DVIPROJECTOR", self.vis_model_name)
         file_path = os.path.join(self.content_path, "Model", "Epoch_{}".format(iteration), "{}.pth".format(self.vis_model_name))
         save_model = torch.load(file_path, map_location="cpu")
         self.vis_model.load_state_dict(save_model["state_dict"])

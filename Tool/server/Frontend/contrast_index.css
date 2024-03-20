@@ -11,22 +11,16 @@ body {
 
 .content_container {
     display: flex;
-    max-height: 800px;
+    height: 640px;
     flex-direction: row; 
-    overflow: auto; 
-}
-.overall_container {
-    overflow: auto;
-    height: 1200px;
 }
 
 #subject_model_info_panel {
     width: 260px;
     padding: 20px;
     background-color: rgb(244, 244, 244);
-    height: auto; /* Adjust based on content, could be fixed or auto */
-    overflow-y: auto; /* Allows scrolling within the panel if content overflows */
-    /* Add flex properties as needed, e.g., flex-grow, flex-shrink */
+    height: 100%; 
+    overflow-y: auto; 
 }
 
 #opration_bar{
@@ -111,26 +105,26 @@ body {
     background: #571792;
 }
 #currHoverRef {
-    position: fixed; /* or 'absolute' depending on your layout */
-    z-index: 1000; /* Ensure this is high enough to be on top of other elements */
-    background-color: white; /* Optional: for better visibility */
-    border: 1px solid #0a0909; /* Optional: just for styling */
-    padding: 10px; /* Optional: just for styling */
-    cursor: move; /* Change cursor to indicate the div is movable */
-    top: 50px; /* Initial position */
-    left: 300px; /* Initial position */
+    position: fixed; 
+    z-index: 1000; 
+    background-color: white;
+    border: 1px solid #0a0909;
+    padding: 10px;
+    cursor: move;
+    top: 50px;
+    left: 300px;
     max-width: 300px;
   }
   
   #currHoverTar {
-    position: fixed; /* or 'absolute' depending on your layout */
-    z-index: 1000; /* Ensure this is high enough to be on top of other elements */
-    background-color: white; /* Optional: for better visibility */
-    border: 1px solid #a02626; /* Optional: just for styling */
-    padding: 10px; /* Optional: just for styling */
-    cursor: move; /* Change cursor to indicate the div is movable */
-    top: 50px; /* Initial position */
-    left: 900px; /* Initial position */
+    position: fixed; 
+    z-index: 1000; 
+    background-color: white; 
+    border: 1px solid #a02626; 
+    padding: 10px; 
+    cursor: move; 
+    top: 50px;
+    left: 900px; 
     max-width: 300px;
   }
 
@@ -150,6 +144,23 @@ body {
     pointer-events: none;
     font-weight: bold;
 }
+
+#fixedBoldLabel0Ref {
+    position: absolute;
+    display: none;
+    color: yellow; 
+    font-size: 20px; 
+    pointer-events: none;
+    font-weight: bold;
+}
+#fixedBoldLabel1Ref {
+    position: absolute;
+    display: none;
+    color: yellow; 
+    font-size: 20px; 
+    pointer-events: none;
+    font-weight: bold;
+}
 #hoverLabelTar {
     position: absolute;
     display: none;
@@ -161,9 +172,44 @@ body {
 #fixedHoverLabelTar {
     position: absolute;
     display: none;
-    color: blue; 
+    color: green; 
     font-size: 20px; 
     pointer-events: none;
     font-weight: bold;
 }
  
+#fixedBoldLabel0Tar {
+    position: absolute;
+    display: none;
+    color: yellow; 
+    font-size: 20px; 
+    pointer-events: none;
+    font-weight: bold;
+}
+#fixedBoldLabel1Tar {
+    position: absolute;
+    display: none;
+    color: yellow; 
+    font-size: 20px; 
+    pointer-events: none;
+    font-weight: bold;
+}
+
+#checkbox-container {
+    display: flex; 
+    justify-content: space-around; 
+    align-items: flex-start;
+    margin-left: 30px;
+  }
+  
+  #ref-checkbox-container, #tar-checkbox-container {
+    flex: 1; 
+    padding: 10px; 
+    margin-left: 10px;
+  }
+  .setting-item{
+    display:flex;
+    height: 30px;
+    line-height: 30px;
+    justify-content: space-between;
+}
