@@ -23,22 +23,26 @@
     <div id="app" v-loading="isCanvasLoading">
         <div class="header">
             Time Travelling Visualizer (Contrast)
-            <a href="/" style="color: #fff; position:fixed; right: 20px;top:4px;"><i class="el-icon-back" style="font-size: 24px;" ></i></a>
+            <a href="/" style="color: #fff; position:fixed; right: 20px;top:4px;"><i class="el-icon-back"
+                    style="font-size: 24px;"></i></a>
         </div>
         <el-button class="tutorial_btn" type="success" icon="el-icon-question" size="mini"
             @click.prevent.stop="guide"></el-button>
-        <el-popover placement="left" width="200" trigger="click">
+          <el-popover placement="left" width="200" trigger="click">
             <div>
-                Canvas Intereaction Setting<br/>
-                zoom in speed?<br/>
-                drag speed?<br/>
-                or light?<br/>
-                <el-button>Save</el-button>
+                <span style="line-height: 40px; font-weight: 800;">Canvas Intereaction</span>
+                <br />
+                <div class="setting-item">
+                    <el-button size="mini" @click="resetCameraRef">Reset Left Camera</el-button>
+                </div>
+                <div class="setting-item">
+                    <el-button size="mini" @click="resetCameraTar">Reset Right Camera</el-button>
+                </div>
             </div>
-            <el-button style="position: fixed; top: 130px; right:0px; font-size: 20px;" size="mini" type="warning" slot="reference" icon="el-icon-setting"></el-button>
+            <el-button style="position: fixed; top: 130px; right:0px; font-size: 20px;" size="mini" type="warning"
+                slot="reference" icon="el-icon-setting"></el-button>
         </el-popover>
 
-        <div class = "overall_container">
         <div class="content_container">
 
             <div id="subject_model_info_panel">
@@ -69,40 +73,106 @@
                     style="background-color: #571792; color: #fff; width: 100%; margin-top: 0px;" @click="update">Load
                     Visualization Result</el-button>
                 <el-divider></el-divider>
+                <el-button id="loadVDBBtn"
+                    style="background-color: #571792; color: #fff; width: 100%; margin-top: 0px;" @click="VDBHandler">Load
+                    Vector Database</el-button>
+                <el-divider></el-divider>
                 
                 <div id="select-container">
-                    <span style="display: inline-block; line-height: 30px; vertical-align: top; margin-left:20px; margin-right: 5px;">Multiton:</span>
-                    <select v-model="multiOption" id="highlightMethodInput" class="login-input" style="height: 30px; width: 50px;">
-                      <option value="align" selected>align</option>
-                      <option value="nearest neighbour">nearest neighbour</option>
-                      <option value="both" selected>both</option>
+                    <span
+                        style="display: inline-block; line-height: 30px; vertical-align: top; margin-left:20px; margin-right: 5px;">Multiton:</span>
+                    <select v-model="multiOption" id="highlightMethodInput" class="login-input"
+                        style="height: 30px; width: 50px;">
+                        <option value="align" selected>align</option>
+                        <option value="nearest neighbour">nearest neighbour</option>
+                        <option value="both" selected>both</option>
                     </select>
                     <button id="highlightButton" @click="highlightDataMulti">Show</button>
-             
-                    <span style="display: inline-block; line-height: 30px; vertical-align: top; margin-left:20px;margin-right: 5px; margin-top: 10px">Singleton:</span>
-                    <select v-model="singleOption"  id="highlightMethodInputSingle" class="login-input" style="height: 30px; width: 50px;">
-                    <option value="align" selected>align</option>
-                    <option value="nearest neighbour">nearest neighbour</option>
-                    <option value="reset" selected>reset</option>
+
+                    <span
+                        style="display: inline-block; line-height: 30px; vertical-align: top; margin-left:20px;margin-right: 5px; margin-top: 10px">Singleton:</span>
+                    <select v-model="singleOption" id="highlightMethodInputSingle" class="login-input"
+                        style="height: 30px; width: 50px;">
+                        <option value="align" selected>align</option>
+                        <option value="nearest neighbour">nearest neighbour</option>
+                        <option value="reset" selected>reset</option>
                     </select>
                     <button id="highlightButtonSingle" @click="highlightDataSingle">Show</button>
-           
-                    <span style="display: inline-block; line-height: 30px; vertical-align: top; margin-left:20px;margin-right: 5px;margin-top: 10px ">Hover Mode:</span>
-                    <select v-model="hoverMode" id="changeHoverMode" class="login-input" style="height: 30px; width: 50px;">
-                    <option value="single" selected>single</option>
-                    <option value="pair">pair</option>
-                    </select>
 
-             
-                    <span style="display: inline-block; line-height: 30px; vertical-align: top; margin-left:20px;margin-right: 5px; margin-top: 10px">Cocurrent Mode:</span>
-                    <select v-model= "concurrentMode" id="changeConcurrentMode" class="login-input" style="height: 30px; width: 50px;">
-                    <option value="yes" selected>yes</option>
-                    <option value="no">no</option>
+                    <span
+                        style="display: inline-block; line-height: 30px; vertical-align: top; margin-left:20px;margin-right: 5px;margin-top: 10px ">Hover
+                        Mode:</span>
+                    <select v-model="hoverMode" id="changeHoverMode" class="login-input"
+                        style="height: 30px; width: 50px;">
+                        <option value="single" selected>single</option>
+                        <option value="pair">pair</option>
                     </select>
-
-                  
+                    <el-tabs>
+                        <el-tab-pane label="Advanced Query">
+                            <div class="switch-container">
+                                <input type="checkbox" class="switch-input" v-model="isSwitchOn">
+                                <label class="switch-label" for="switch" @click="toggleSwitch"></label>
+                            </div>
+                            <div class="advanced-query-row">
+                                <el-select v-model="query.key" >
+                                    <el-option value="left-index" label="left-index">
+                                    </el-option>
+                                    <el-option value="right-index" label="right-index">
+                                    </el-option>
+                                    <el-option value="inter-index" label="inter-index">
+                                    </el-option>
+                                    <el-option value="nl" label="nl">
+                                    </el-option>
+                                    <el-option value="vector" label="vector">
+                                    </el-option>
+                                </el-select>
+                                <el-input style="margin-left:20px;" v-model="query.value"></el-input>
+                            </div>
+                            <div class="advanced-query-row">
+                                K:  <el-input style="margin-left:20px;" v-model="query.k"></el-input>
+                            </div>
+                            <el-button style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;" @click="indexSearchHandler" id="vdbquery">
+                                Start Query
+                            </el-button>
+                            <el-button style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;" id="clearquery">
+                                Clear Query
+                            </el-button>
+                            
+                            <!-- 显示查询结果 -->
+                            <span id="resultContainer">
+                                <ul>
+                                <li v-for="result in query_result" :key="result.id">
+                                    Distance: {{ result.distance }}, ID: {{ result.id }}
+                                </li>
+                                </ul>
+                            </span>
+                        </el-tab-pane>
+                    </el-tabs>
+                    <span
+                        style="display: inline-block; line-height: 30px; vertical-align: top; margin-left:20px;margin-right: 5px; margin-top: 10px">Cocurrent
+                        Mode:</span>
+                    <select v-model="concurrentMode" id="changeConcurrentMode" class="login-input"
+                        style="height: 30px; width: 50px;">
+                        <option value="yes" selected>yes</option>
+                        <option value="no">no</option>
+                    </select>
                 </div>
-               
+                <el-divider></el-divider>
+                <div id="checkbox-container">
+                    <div id="ref-checkbox-container">
+                        <p> Left </p>
+                        <el-checkbox v-model="showTrainingRef">Training</el-checkbox>
+                        <el-checkbox v-model="showTestingRef">Testing</el-checkbox>
+                        <el-checkbox v-model="showVisErrorRef">Visualization Error</el-checkbox>
+                    </div>
+                    <div id="tar-checkbox-container">
+                        <p> Right </p>
+                        <el-checkbox v-model="showTrainingTar">Training</el-checkbox>
+                        <el-checkbox v-model="showTestingTar">Testing</el-checkbox>
+                        <el-checkbox v-model="showVisErrorTar">Visualization Error</el-checkbox>
+                    </div>
+                </div>
+
 
             </div>
 
@@ -111,26 +181,24 @@
                     <div id="hoverLabelRef">
                         <!-- Label content -->
                     </div>
-                  
-                    <div id="fixedHoverLabelRef" >
-            
+
+                    <div id="fixedHoverLabelRef">
+
                     </div>
                 </div>
                 <div id="container_tar">
                     <div id="hoverLabelTar">
                         <!-- Label content -->
                     </div>
-                  
-                    <div id="fixedHoverLabelTar" >
-            
+
+                    <div id="fixedHoverLabelTar">
+
                     </div>
                 </div>
             </div>
-
-          
         </div>
-       
-        <div id = "iterationContainer"> 
+
+        <div id="iterationContainer">
             <div id="footerRef">
                 <svg id="timeLinesvgRef"></svg>
             </div>
@@ -139,7 +207,7 @@
             </div>
         </div>
 
-        </div>
+
 
         <div id="currHoverRef">
             CurrHoverIndex: {{lastHoveredIndexRef}}<br />
@@ -148,12 +216,12 @@
 
             <div v-if="dataType === 'Image'">
                 <img :src="imageSrcRef" alt="Image Description" height="100px" />
-              </div>
-              <div v-else>
+            </div>
+            <div v-else>
                 <div style="max-height: 300px; overflow-y: auto;">
                     <p>{{ textContentRef }}</p>
                 </div>
-              </div>
+            </div>
         </div>
         <div id="currHoverTar">
             CurrHoverIndex: {{lastHoveredIndexTar}}<br />
@@ -162,25 +230,37 @@
 
             <div v-if="dataType === 'Image'">
                 <img :src="imageSrcTar" alt="Image Description" height="100px" />
-              </div>
-              <div v-else>
+            </div>
+            <div v-else>
                 <div style="max-height: 300px; overflow-y: auto;">
                     <p>{{ textContentTar }}</p>
                 </div>
-              </div>
+            </div>
         </div>
         <div id="hoverLabelTar">
             <!-- Label content -->
         </div>
-      
-        <div id="fixedHoverLabelTar" >
 
-        </div> 
+        <div id="fixedHoverLabelTar">
+
+        </div>
+        <div id="fixedBoldLabel0Tar">
+
+        </div>
+        <div id="fixedBoldLabel1Tar">
+
+        </div>
         <div id="hoverLabelRef">
             <!-- Label content -->
         </div>
-      
-        <div id="fixedHoverLabelRef" >
+
+        <div id="fixedHoverLabelRef">
+
+        </div>
+        <div id="fixedBoldLabel0Ref">
+
+        </div>
+        <div id="fixedBoldLabel1Ref">
 
         </div>
     </div>
@@ -194,10 +274,11 @@
             return {
                 lastHoveredIndexRef: null,
                 lastHoveredIndexTar: null,
-                contentPathRef: '/home/timeTravelling/guorui/git_space/TestFrontend/time-travelling-visualizer/Backdoor',
-                contentPathTar: '/home/timeTravelling/guorui/git_space/TestFrontend/time-travelling-visualizer/Backdoor',
+                contentPathRef: '/home/yiming/cophi/training_dynamic/code_training_dynamic/saved_models/ruby_fine_tine_5',
+                contentPathTar: '/home/yiming/cophi/training_dynamic/code_training_dynamic/saved_models/ruby_fine_tine_5',
                 isCanvasLoading: false,
                 taskType: 'Classification',
+                query_result: {},
                 prediction_listRef: [],
                 prediction_listTar: [],
                 curr_predRef: '',
@@ -211,36 +292,51 @@
                 evaluation: { test_acc: 0, train_acc: 0 },
                 currEpochRef: 1,
                 currEpochTar: 1,
+                train_indexRef: null,
+                test_indexRef: null,
+                train_indexTar: null,
+                test_indexTar: null,
                 showTraining: true,
                 showTesting: true,
                 SelectionMode: false,
                 imageSrcRef: '',
                 textContentRef: '',
-                imageSrcTar:'',
-                textContentTar:'',
+                imageSrcTar: '',
+                textContentTar: '',
                 selectedIndexRef: null,
                 selectedIndexTar: null,
                 selectedPointPositionRef: null,
                 selectedPointPositionTar: null,
                 hoverIndexRef: null,
                 hoverIndexTar: null,
+                showVisErrorRef: false,
+                showVisErrorTar: false,
+                showTrainingRef: true,
+                showTrainingTar: true,
+                showTestingRef: true,
+                showTestingTar: true,
+                visibilityMapRef: null,
+                visibilityMapTar: null,
                 highlightAttributesRef: {
                     highlightedPointsYellow: null,
                     highlightedPointsBlue: null,
                     highlightedPointsGreen: null,
                     allHighlightedSet: null,
                     boldIndices: null,
+                    visualizationError: null,
                 },
 
                 highlightAttributesTar: {
                     highlightedPointsYellow: null,
                     highlightedPointsBlue: null,
                     highlightedPointsGreen: null,
-                    allHighlightedSet:null,
+                    allHighlightedSet: null,
                     boldIndices: null,
+                    visualizationError: null,
                 },
-                multiOption:"align",
-                singleOption:"align",
+
+                multiOption: "align",
+                singleOption: "align",
                 scene: {
                     'ref': null,
                     'tar': null
@@ -261,28 +357,59 @@
                 curImg: null,
                 dataType: "Image",
                 zoomInSpeed: 0.01,
-                hoverMode:"single",
+                hoverMode: "single",
                 concurrentMode: "no",
+                query: {
+                    key:'left-index',
+                    value: null,
+                    k:null
+                },
+                isSwitchOn: false,
             }
         },
         methods: {
+            resetCameraRef() {
+                const target = new THREE.Vector3(
+                    0, 0, 0
+                );
+                this.camera['ref'].zoom = 1;
+                this.camera['ref'].lookAt(target);
+                this.camera['ref'].updateProjectionMatrix();
+            },
+            resetCameraTar() {
+                const target = new THREE.Vector3(
+                    0, 0, 0
+                );
+                this.camera['tar'].zoom = 1;
+                this.camera['tar'].lookAt(target);
+                this.camera['tar'].updateProjectionMatrix();
+            },
             guide() {
-                const steps = [{
-                    element: '#contentPathInputRef',
-                    popover: {
-                        title: 'Content Path',
-                        description: 'Please input the absolute path of the training dynamics',
-                        position: 'right'
+                const steps = [
+                    {
+                        element: '#contentSettingData',
+                        popover: {
+                            title: 'Data Type Selection',
+                            description: 'Please choose the data type used by the subject model',
+                            position: 'right'
+                        },
                     },
-                },
-                {
-                    element: '#showVisResBtn',
-                    popover: {
-                        title: 'Start Render',
-                        description: 'After input the content path, you can click button to load the visulization results(default start from epoch 1)',
-                        position: 'right'
+                    {
+                        element: '#contentSettingTask',
+                        popover: {
+                            title: 'Task Type Selection',
+                            description: 'Please choose whether your subject model is used for classification or not',
+                            position: 'right'
+                        },
                     },
-                },
+                    {
+                        element: '#loadVDBBtn',
+                        popover: {
+                            title: 'load database',
+                            description: 'you can click button to load the vector database based on the visualized epochs',
+                            position: 'right'
+                        },
+                    },
                 // {
                 // element: '#footer',
                 // popover: {
@@ -292,38 +419,119 @@
                 //     className: 'custom-popover-position'
                 //     },
                 // },
-                {
-                    element: '#subjectModeEvalRes',
-                    popover: {
-                        title: 'Subject Model Eval Res',
-                        description: 'After load the visualization result, the corresbounding result wiil be show here',
-                        position: 'right'
+                    {
+                        element: '#subjectModeEvalRes',
+                        popover: {
+                            title: 'Subject Model Eval Res',
+                            description: 'After load the visualization result, the corresbounding result wiil be show here',
+                            position: 'right'
+                        },
                     },
-                },
-                {
-                    element: '#currHoverRef',
-                    popover: {
-                        title: 'Hover Information',
-                        description: 'The detail of the current hover sample will be shown here',
-                        position: 'right'
+                        {
+                            element: '#contentPathInputRef',
+                            popover: {
+                                title: 'Content Path Left',
+                                description: 'Please input the absolute path of the training/testing dynamics shown on the left',
+                                position: 'right'
+                            },
+                        
                     },
-                },
-                {
-                    element: '#container_ref',
-                    popover: {
-                        title: 'Visualization Canvas',
-                        description: '**************',
-                        position: 'right'
+                    {
+                        element: '#contentPathInputTar',
+                        popover: {
+                            title: 'Content Path Right',
+                            description: 'Similarly, input for the one shown on the right',
+                            position: 'right'
+                        },
                     },
-                },
-                {
-                    element: '#advanced_panel',
-                    popover: {
-                        title: 'Advanced panel',
-                        description: '**************',
-                        position: 'left'
+                    {
+                        element: '#showVisResBtn',
+                        popover: {
+                            title: 'Load Visualization Results',
+                            description: 'After input the content path, you can click this to load the visulization results(default start from epoch 1)',
+                            position: 'right'
+                        },
                     },
-                }
+                    {
+                        element: '#highlightMethodInput',
+                        popover: {
+                            title: 'Highligh All Similar Data',
+                            description: 'align: highlight data in two projections which has distance of less than 1 in between in embedding space\n nearest neighbour: highlight data in two projections which share the same 15 neighbours in embedding space',
+                            position: 'right'
+                        },
+                    },
+                    {
+                        element: '#highlightMethodInputSingle',
+                        popover: {
+                            title: 'Load Visualization Results',
+                            description: 'align: It will highlight all points that are within distance 1 of selected points\' absolute position on the other projection\n nearest neighbour: highlight selected points\' nearst neighbours in both projections\n reset: clear all highlighted points.',
+                            position: 'right'
+                        },
+                    },
+                    {
+                        element: '#changeHoverMode',
+                        popover: {
+                            title: 'Hover Mode',
+                            description: 'Switch between single hover and double hover mode',
+                            position: 'right'
+                        },
+                    },
+                    {
+                        element: '#changeConcurrentMode',
+                        popover: {
+                            title: 'Concurrent Projection',
+                            description: 'Switch between independent epoch change and concurrent epoch change',
+                            position: 'right'
+                        },
+                    },
+                    {
+                        element: '#ref-checkbox-container',
+                        popover: {
+                            title: 'Data Demonstration Preference',
+                            description: 'Check differnt boxes to show Training/Testing data points used by subject model. Check to show visualization errors(points with different embedding and high dimension prediction ) ',
+                            position: 'right'
+                        },
+                    },
+                    {
+                        element: '#tar-checkbox-container',
+                        popover: {
+                            title: 'Data Demonstration Preference',
+                            description: 'The same to the right projection',
+                            position: 'right'
+                        },
+                    },
+                    {
+                        element: '#footerRef',
+                        popover: {
+                            title: 'Time Line',
+                            description: 'It shows the total number of epochs of left loaded training/testing dynamics.',
+                            position: 'above',
+                        },
+                    },
+                    {
+                        element: '#footerTar',
+                        popover: {
+                            title: 'Time Line',
+                            description: 'It shows the total number of epochs of right loaded training/testing dynamics.',
+                            position: 'above',
+                        },
+                    },
+                    {
+                        element: '#currHoverRef',
+                        popover: {
+                            title: 'Hover Information for left projection',
+                            description: 'The detail of the current hover sample in left projection will be shown here',
+                            position: 'right'
+                        },
+                    },
+                    {
+                        element: '#currHoverTar',
+                        popover: {
+                            title: 'Hover Information for right projection',
+                            description: 'The detail of the current hover sample in right projection will be shown here',
+                            position: 'right'
+                        },
+                    },
 
                 ]
                 this.driver.defineSteps(steps)
@@ -336,12 +544,23 @@
                 updateContraProjection(this.contentPathTar, this.currEpochTar, this.taskType, 'tar')
                 fetchTimelineData(this.contentPathTar, 'tar')
             },
+            VDBHandler() {
+                contrastloadVectorDBCode(this.contentPathRef, this.currEpochRef)
+                contrastloadVectorDBNl(this.contentPathTar, this.currEpochTar)
+            },
+            indexSearchHandler() {
+                contrastIndexSearch(this.query, this.isSwitchOn);
+            },
+            toggleSwitch() {
+                this.isSwitchOn = !this.isSwitchOn;
+                console.log(this.isSwitchOn)
+            },
 
-            highlightDataMulti() { 
-                getHighlightedPoints("multi")        
+            highlightDataMulti() {
+                getHighlightedPoints("multi")
             },
             highlightDataSingle() {
-                getHighlightedPoints("single")  
+                getHighlightedPoints("single")
             }
 
         },
@@ -353,6 +572,14 @@
                     this.curr_labelRef = this.label_name_dictRef[this.label_listRef[newVal]]
                     if (newVal != null) {
                         getOriginalData(this.contentPathRef, newVal,this.dataType, 'ref')
+                        const updatedQuery = {
+                            ...this.query,
+                            // key: 'inter-index',
+                            value: newVal
+                        };
+                        if (this.isSwitchOn) {
+                            contrastIndexSearch(updatedQuery, this.isSwitchOn);
+                        }
 
                     }
 
@@ -365,17 +592,45 @@
                     this.curr_labelTar = this.label_name_dictTar[this.label_listTar[newVal]]
                     if (newVal != null) {
                         getOriginalData(this.contentPathTar, newVal,this.dataType, 'tar')
+                        const updatedQuery = {
+                            ...this.query,
+                            // key: 'inter-index',
+                            value: newVal
+                        };
+                        if (this.isSwitchOn) {
+                            contrastIndexSearch(updatedQuery, this.isSwitchOn);
+                        }
 
                     }
 
+                }
+            },
+            showVisErrorRef: {
+                immediate: true,
+                handler(newVal, oldVal) {
+                    if (newVal) {
+                        getHighlightedPoints('visError', 'ref')
+                    } else {
+                        this.highlightAttributesRef.visualizationError = null
+                    }
+                }
+            },
+            showVisErrorTar: {
+                immediate: true,
+                handler(newVal, oldVal) {
+                    if (newVal) {
+                        getHighlightedPoints('visError', 'tar')
+                    } else {
+                        this.highlightAttributesTar.visualizationError = null
+                    }
                 }
             }
         },
         mounted() {
             this.driver = new Driver()
-            
+
         },
-        unmounted(){
+        unmounted() {
             this.isCanvasLoading = true
         }
     })

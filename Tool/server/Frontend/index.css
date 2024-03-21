@@ -124,4 +124,35 @@ body {
     pointer-events: none;
     font-weight: bold;
 }
- 
+.advanced-query-row{
+    display:flex;
+    height: 54px;
+    line-height: 54px;
+}
+.switch-container {
+    position: relative;
+    width: 60px;
+    height: 30px;
+}
+
+.switch-input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.switch-label {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #ccc;
+    border-radius: 15px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.switch-input:checked + .switch-label {
+    background-color: #5cb85c;
+}
