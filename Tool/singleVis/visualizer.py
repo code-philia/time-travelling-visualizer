@@ -357,8 +357,12 @@ class visualizer(VisualizerAbstractClass):
         # TODO 10 classes?
         mesh_max_class = self.class_num - 1
         mesh_classes = np.arange(len(self.classes))
-        color = self.cmap(mesh_classes / mesh_max_class)
+        # apply more color
+        color_map = plt.cm.get_cmap('tab20', self.class_num)
+        color = color_map(mesh_classes / mesh_max_class)
         color = color[:, 0:3]
+        # color = self.cmap(mesh_classes / mesh_max_class)
+        # color = color[:, 0:3]
         # color = np.concatenate((color, np.zeros((1,3))), axis=0)
         return color
 

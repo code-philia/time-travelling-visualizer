@@ -12,6 +12,9 @@ const HOVER_SIZE = 10
 const YELLOW = [1.0, 1.0, 0.0]; 
 const BLUE = [0.0, 0.0, 1.0]; 
 const GREEN = [0.0, 1.0, 0.0]; 
+const ORANGE = [1.0, 0.5, 0.0]
+const GRAY = [0.8,0.8,0.8]
+var baseZoomSpeed = 0.01;
 var  points1 = []
 var points2 = []
 var isDragging = false;
@@ -19,11 +22,13 @@ var previousMousePosition = {
     x: 0,
     y: 0
 };
+const selectedLabel = 'fixedHoverLabel'
+const boldLable = 'fixedBoldLabel'
+
 var EventBus = new Vue();
 
 function drawCanvas(res,id, flag='ref') {
-    // reset since both of ref and tar refer to the same eventBus
-
+    // reset since both of ref and tar refer to the same eventBus, we need to reset the previously bounded sender/receiver 
     EventBus.$off(referToAnotherFlag(flag) + 'update-curr-hover');
 
     // stop previous epoch's animation
@@ -32,8 +37,6 @@ function drawCanvas(res,id, flag='ref') {
         cancelAnimationFrame(window.vueApp.animationFrameId[flag]);
         window.vueApp.animationFrameId[flag] = undefined;
     }
-
-
 
     // remove previous scene
     container = document.getElementById(id)
@@ -119,13 +122,31 @@ function drawCanvas(res,id, flag='ref') {
     window.vueApp.renderer[flag] = new THREE.WebGLRenderer();
     window.vueApp.renderer[flag].setSize(rect.width, rect.height);
     window.vueApp.renderer[flag].setClearColor(BACKGROUND_COLOR, 1);
-    var zoomSpeed = 0.05;
-    function onDocumentMouseWheel(event) {
-        // 通过滚轮输入调整缩放级别
-        window.vueApp.camera[flag].zoom += event.deltaY * -zoomSpeed;
-        window.vueApp.camera[flag].zoom = Math.max(MIN_ZOOM_SCALE, Math.min(window.vueApp.camera[flag].zoom, MAX_ZOOM_SCALE)); // 限制缩放级别在0.1到10之间
 
-        window.vueApp.camera[flag].updateProjectionMatrix(); // 更新相机的投影矩阵
+    function onDocumentMouseWheel(event) {
+        const currentZoom = window.vueApp.camera[flag].zoom;
+        var zoomSpeed = calculateZoomSpeed(currentZoom, baseZoomSpeed, MAX_ZOOM_SCALE); 
+        var newZoom = currentZoom + event.deltaY * -zoomSpeed;
+        newZoom = Math.max(MIN_ZOOM_SCALE, Math.min(newZoom, MAX_ZOOM_SCALE)); 
+    
+        window.vueApp.camera[flag].zoom = newZoom; 
+    
+        window.vueApp.camera[flag].updateProjectionMatrix(); 
+    
+        // Call function to update current hover index or any other updates needed after zoom
+        var specifiedSelectedIndex = makeSpecifiedVariableName('selectedIndex', flag)
+        var specifiedSelectedPointPosition = makeSpecifiedVariableName('selectedPointPosition', flag)
+
+        updateLabelPosition(flag, window.vueApp[specifiedSelectedPointPosition], window.vueApp[specifiedSelectedIndex], selectedLabel, true)
+        var specifiedHighlightAttributes = makeSpecifiedVariableName('highlightAttributes', flag)
+        if (window.vueApp[specifiedHighlightAttributes].boldIndices) {
+            var lens = window.vueApp[specifiedHighlightAttributes].boldIndices.length
+            for (var i = 0; i < lens; i++) {
+                var pointPosition = new THREE.Vector3();
+                pointPosition.fromBufferAttribute(points.geometry.attributes.position, window.vueApp[specifiedHighlightAttributes].boldIndices[i]);
+                updateLabelPosition(flag, pointPosition, window.vueApp[specifiedHighlightAttributes].boldIndices[i], boldLable + i, true)
+            }
+        }
     }
 
     container.addEventListener('wheel', onDocumentMouseWheel, false)
@@ -169,17 +190,20 @@ function drawCanvas(res,id, flag='ref') {
     var geometry = new THREE.BufferGeometry();
     var position = [];
     var colors = [];
-    var sizes = []
+    var sizes = [];
+    var alphas = [];
 
     dataPoints.forEach(function (point, i) {
         position.push(point[0], point[1], 0); // 添加位置
         colors.push(color[i][0] / 255, color[i][1] / 255, color[i][2] / 255); // 添加颜色
-        sizes.push(NORMAL_SIZE)
+        sizes.push(NORMAL_SIZE);
+        alphas.push(1.0)
     });
-    console.log("Positions"+flag, position)
+
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(position, 3));
     geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
     geometry.setAttribute('size', new THREE.Float32BufferAttribute(sizes, 1));
+    geometry.setAttribute('alpha', new THREE.Float32BufferAttribute(alphas, 1));
 
     FRAGMENT_SHADER = createFragmentShader();
     VERTEX_SHADER = createVertexShader()
@@ -195,22 +219,30 @@ function drawCanvas(res,id, flag='ref') {
             sizeAttenuation: { type: 'bool' },
             PointSize: { type: 'f' },
         },
-        // vertexShader: VERTEX_SHADER,
-        // fragmentShader: FRAGMENT_SHADER,
-        vertexShader: `attribute float size; varying vec3 vColor; 
-        void main() { 
-            vColor = color; 
-            gl_PointSize = size; 
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-        fragmentShader: `
-    varying vec3 vColor;
-    void main() {
-        float r = distance(gl_PointCoord, vec2(0.5, 0.5));
-        if (r > 0.5) {
-            discard;
-        }
-        gl_FragColor = vec4(vColor, 0.6);
-    }`,
+        vertexShader: `
+        attribute float size;
+        attribute float alpha;
+        varying vec3 vColor;
+        varying float vAlpha; 
+
+        void main() {
+            vColor = color;
+            vAlpha = alpha; 
+            gl_PointSize = size;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }`,
+    fragmentShader: `
+        varying vec3 vColor;
+        varying float vAlpha; // Receive alpha from vertex shader
+
+        void main() {
+            float r = distance(gl_PointCoord, vec2(0.5, 0.5));
+            if (r > 0.5) {
+                discard;
+            }
+            if (vAlpha < 0.5) discard;
+            gl_FragColor = vec4(vColor, 0.6); 
+        }`,
         transparent: true,
         vertexColors: true,
         depthTest: false,
@@ -220,12 +252,7 @@ function drawCanvas(res,id, flag='ref') {
     });
 
     var points = new THREE.Points(geometry, shaderMaterial);
-    if (flag == 'ref') {
-        points1 = points.geometry.attributes.position
-    } else {
-        points2 = points.geometry.attributes.position
-    }
-
+    console.log("pointlenght",dataPoints.length)
     // Save original sizes
     var originalSizes = [];
     if (geometry.getAttribute('size')) {
@@ -238,6 +265,18 @@ function drawCanvas(res,id, flag='ref') {
         originalColors = Array.from(geometry.getAttribute('color').array);
     }
 
+    var specifiedSelectedIndex = makeSpecifiedVariableName('selectedIndex', flag)
+    var specifiedSelectedPointPosition = makeSpecifiedVariableName('selectedPointPosition', flag)
+    if (window.vueApp[specifiedSelectedIndex]) {
+        points.geometry.attributes.size.array[window.vueApp[specifiedSelectedIndex]] = HOVER_SIZE
+        // points.geometry.attributes.color.array[window.vueApp.selectedIndex] = SELECTED_COLOR
+        // update selected point position in new epoch 
+        var pointPosition = new THREE.Vector3();
+        pointPosition.fromBufferAttribute(points.geometry.attributes.position, window.vueApp[specifiedSelectedIndex]);
+        window.vueApp[specifiedSelectedPointPosition] = pointPosition;
+        geometry.attributes.size.needsUpdate = true
+        updateLabelPosition(flag, pointPosition, window.vueApp[specifiedSelectedIndex], selectedLabel, true)
+    }
   
     window.vueApp.scene[flag].add(points);
 
@@ -259,37 +298,84 @@ function drawCanvas(res,id, flag='ref') {
        raycaster.setFromCamera(mouse, window.vueApp.camera[flag]);
      
        var intersects = raycaster.intersectObject(points);
-       let specifiedFixedHoverLabel = makeSpecifiedVariableName('fixedHoverLabel',flag)
-       var fixedHoverLabel = document.getElementById(specifiedFixedHoverLabel)
        let specifiedSelectedIndex = makeSpecifiedVariableName('selectedIndex', flag)
        let specifiedSelectedPointPosition = makeSpecifiedVariableName('selectedPointPosition', flag)
        if (intersects.length > 0) {
+
+        if (window.vueApp[specifiedSelectedIndex] != null) {
+            var specifiedHighlightAttributes = makeSpecifiedVariableName('highlightAttributes', flag)
+            
+            // if boldIndices exist and it include last selectedIndex, then should not reset size
+            const currBold = window.vueApp[specifiedHighlightAttributes].boldIndices
+            if (currBold) {
+                var isInclude = currBold.includes(window.vueApp[specifiedSelectedIndex])
+                if (!isInclude) {
+                    points.geometry.attributes.size.array[window.vueApp[specifiedSelectedIndex]] = NORMAL_SIZE; 
+                } 
+            } else {
+                points.geometry.attributes.size.array[window.vueApp[specifiedSelectedIndex]] = NORMAL_SIZE; 
+            }
+        }
+       
          // Get the index and position of the double-clicked point
          var intersect = intersects[0];
 
          window.vueApp[specifiedSelectedIndex] = intersect.index;
          window.vueApp[specifiedSelectedPointPosition]= intersect.point;
-     
+         points.geometry.attributes.size.array[window.vueApp[specifiedSelectedIndex]] = HOVER_SIZE; 
+      
+         geometry.attributes.size.needsUpdate = true;
          // Call function to update label position and content
-         updateFixedHoverLabel(event.clientX, event.clientY, intersect.index, flag);
+         updateLabelPosition(flag, window.vueApp[specifiedSelectedPointPosition], window.vueApp[specifiedSelectedIndex], selectedLabel, true)
        } else {
+        // this works even if window.vueApp[specifiedSelectedIndex] is null
+        points.geometry.attributes.size.array[window.vueApp[specifiedSelectedIndex]] = NORMAL_SIZE; 
+        geometry.attributes.size.needsUpdate = true;
          // If the canvas was double-clicked without hitting a point, hide the label and reset
          window.vueApp[specifiedSelectedIndex] = null;
          window.vueApp[specifiedSelectedPointPosition]= null;
-         if (fixedHoverLabel) {
-           fixedHoverLabel.style.display = 'none';
-         }
-       
+         updateFixedHoverLabel(null, null, null, flag, null, selectedLabel, false)
        }
      }
 
-
     //  =========================  db click  end =========================================== //
-
+    function updateLastHoverIndexSize(lastHoveredIndex, highlihghtedPoints,  selectedIndex, boldIndices, visualizationError) {
+        if (lastHoveredIndex != null) {
+            var isNormalSize = true;
+            if (highlihghtedPoints) {
+                var isInsideHighlightedSet =highlihghtedPoints.has(lastHoveredIndex)
+                if (isInsideHighlightedSet) {
+                    isNormalSize = false;
+                }
+            } 
+            if (selectedIndex != null) {
+                if (lastHoveredIndex == selectedIndex) {
+                   isNormalSize = false
+                }
+            } 
+            if (boldIndices != null) {
+                var isInsideBoldIndices =boldIndices.includes(lastHoveredIndex)
+                if (isInsideBoldIndices) {
+                    isNormalSize = false
+                }
+            } 
+            if (visualizationError != null) {
+                var isInsideVisError = visualizationError.has(lastHoveredIndex)
+                if (isInsideVisError) {
+                    isNormalSize = false
+                }
+            }       
+      
+            if (isNormalSize) {
+                points.geometry.attributes.size.array[lastHoveredIndex] = NORMAL_SIZE; 
+            } else {
+                points.geometry.attributes.size.array[lastHoveredIndex] = HOVER_SIZE; 
+            }
+        }
+      }
 
     //  =========================  鼠标hover功能  开始 =========================================== //
     function onMouseMove(event) {
-       
         raycaster.params.Points.threshold = 0.2 / window.vueApp.camera[flag].zoom; // 根据点的屏幕大小调整
         // 转换鼠标位置到归一化设备坐标 (NDC)
         var rect = window.vueApp.renderer[flag].domElement.getBoundingClientRect();
@@ -297,58 +383,50 @@ function drawCanvas(res,id, flag='ref') {
         mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
         // 通过鼠标位置更新射线
         raycaster.setFromCamera(mouse, window.vueApp.camera[flag]);
+
         // 检测射线与点云的相交
         var intersects = raycaster.intersectObject(points);
         let specifiedLastHoveredIndex = makeSpecifiedVariableName('lastHoveredIndex', flag)
         let specifiedImageSrc = makeSpecifiedVariableName('imageSrc', flag)
         let specifiedHighlightAttributes = makeSpecifiedVariableName('highlightAttributes', flag)
-        
-        
-    
+        let specifiedSelectedIndex = makeSpecifiedVariableName('selectedIndex', flag)
     
         if (intersects.length > 0) {
+            let nn = [];
             // 获取最接近的交点
             var intersect = intersects[0];
-
             // 获取索引 - 这需要根据具体实现来确定如何获取
             var index = intersect.index;
             if (window.vueApp.hoverMode == "pair") {
                 EventBus.$emit(flag + 'update-curr-hover', { Index: index, flag });
             }
-         
             // 在这里处理悬停事件
             if (window.vueApp[specifiedLastHoveredIndex] != index) {
-
-                if (window.vueApp[specifiedLastHoveredIndex] != null) {
-                    if (window.vueApp[specifiedHighlightAttributes].allHighlightedSet) {
-                        
-                        var isInsideHighlightedSet = window.vueApp[specifiedHighlightAttributes].allHighlightedSet.has(window.vueApp[specifiedLastHoveredIndex])
-                        console.log("isInsidehighhlihgheset", isInsideHighlightedSet )
-                        if (!isInsideHighlightedSet) {
-                            points.geometry.attributes.size.array[window.vueApp[specifiedLastHoveredIndex]] = NORMAL_SIZE;
-                            console.log("updateSizehighlighted" )
-                        }
-                    } else {
-                        points.geometry.attributes.size.array[window.vueApp[specifiedLastHoveredIndex]] = NORMAL_SIZE; // 假设5是原始大小
-                    }
-                  
-                }
+                sizes.fill(NORMAL_SIZE);
+                geometry.attributes.size.array = new Float32Array(sizes);
+                updateLastHoverIndexSize(window.vueApp[specifiedLastHoveredIndex], window.vueApp[specifiedHighlightAttributes].allHighlightedSet,
+                    window.vueApp[specifiedSelectedIndex], window.vueApp[specifiedHighlightAttributes].boldIndices, window.vueApp[specifiedHighlightAttributes].visualizationError)
                 container.style.cursor = 'pointer';
-
-
                 geometry.attributes.size.array[index] = HOVER_SIZE
+                
+                Object.values(window.vueApp.query_result).forEach(item => {
+                    if (typeof item === 'object' && item !== null) {
+                        nn.push(item.id);
+                    }
+                });
+                console.log(nn);
+                // 遍历 nn 列表，将每个索引位置的元素设置为 HOVER_SIZE
+                nn.forEach((item, index) => {
+                    console.log(item);
+                    geometry.attributes.size.array[item] = HOVER_SIZE
+                });
 
                 geometry.attributes.size.needsUpdate = true;
-
                 window.vueApp[specifiedLastHoveredIndex] = index;
-
                 var pointPosition = new THREE.Vector3();
                 pointPosition.fromBufferAttribute(points.geometry.attributes.position, index);
-            
                 updateHoverIndexUsingPointPosition(pointPosition, index, false, flag, window.vueApp.camera[flag], window.vueApp.renderer[flag]) 
             }
-
-
         } else {
             if (window.vueApp.hoverMode == "pair") {
                 EventBus.$emit(flag + 'update-curr-hover', { Index: null, flag });
@@ -356,21 +434,14 @@ function drawCanvas(res,id, flag='ref') {
             container.style.cursor = 'default';
             // 如果没有悬停在任何点上，也重置上一个点的大小
             if (window.vueApp[specifiedLastHoveredIndex] != null) {
-                if (window.vueApp[specifiedHighlightAttributes].allHighlightedSet) {
-                    
-                    var isInsideHighlightedSet = window.vueApp[specifiedHighlightAttributes].allHighlightedSet.has(window.vueApp[specifiedLastHoveredIndex])
-                    if (!isInsideHighlightedSet) {
-                        points.geometry.attributes.size.array[window.vueApp[specifiedLastHoveredIndex]] = NORMAL_SIZE;
-                    }
-                } else {
-                    points.geometry.attributes.size.array[window.vueApp[specifiedLastHoveredIndex]] = NORMAL_SIZE; 
-                }
-                  
+                console.log("emptyseelectedindex", window.vueApp[specifiedSelectedIndex])
+                updateLastHoverIndexSize(window.vueApp[specifiedLastHoveredIndex], window.vueApp[specifiedHighlightAttributes].allHighlightedSet,
+                    window.vueApp[specifiedSelectedIndex], window.vueApp[specifiedHighlightAttributes].boldIndices, window.vueApp[specifiedHighlightAttributes].visualizationError)
+                sizes.fill(NORMAL_SIZE);
+                geometry.attributes.size.array = new Float32Array(sizes);
                 geometry.attributes.size.needsUpdate = true;
-
                 window.vueApp[specifiedLastHoveredIndex] = null;
                 window.vueApp[specifiedImageSrc] = ""
-
                 updateHoverIndexUsingPointPosition(pointPosition, null, false, flag, window.vueApp.camera[flag], window.vueApp.renderer[flag]) 
     
             }
@@ -379,64 +450,83 @@ function drawCanvas(res,id, flag='ref') {
     }
     //  =========================  鼠标hover功能  结束 =========================================== //
 
+    //  =========================  vector database search button start =========================================== //
+    document.querySelector('#vdbquery').addEventListener('click', indexSearchHandler);
+    function indexSearchHandler() {
+        let nn = [];
+        Object.values(window.vueApp.query_result).forEach(item => {
+            if (typeof item === 'object' && item !== null) {
+                nn.push(item.id);
+            }
+        });
+        console.log(nn);
+        // 遍历 nn 列表，将每个索引位置的元素设置为 HOVER_SIZE
+        nn.forEach((item, index) => {
+            console.log(item);
+            geometry.attributes.size.array[item] = HOVER_SIZE
+        });
+
+        geometry.attributes.size.needsUpdate = true;
+        resultContainer = document.getElementById("resultContainer");
+        resultContainer.setAttribute("style", "display:block;")
+      }
+
+    document.querySelector('#clearquery').addEventListener('click', clearSearchHandler);
+    function clearSearchHandler() {
+        sizes.fill(NORMAL_SIZE);
+        geometry.attributes.size.array = new Float32Array(sizes);
+        geometry.attributes.size.needsUpdate = true;
+        window.vueApp.lastHoveredIndex = null;
+        resultContainer = document.getElementById("resultContainer");
+        resultContainer.setAttribute("style", "display:none;")
+      }
+
+    //  =========================  vector database search button end =========================================== //
+
     function updatePairHover(index) {
         let specifiedLastHoveredIndex = makeSpecifiedVariableName('lastHoveredIndex', flag)
         let specifiedImageSrc = makeSpecifiedVariableName('imageSrc', flag)
         let specifiedHighlightAttributes = makeSpecifiedVariableName('highlightAttributes', flag)
+        let nn = [];
 
         if (index != null) {
+            sizes.fill(NORMAL_SIZE);
+            geometry.attributes.size.array = new Float32Array(sizes);
             if (window.vueApp[specifiedLastHoveredIndex] != index) {
-
-                if (window.vueApp[specifiedLastHoveredIndex] != null) {
-                    if (window.vueApp[specifiedHighlightAttributes].allHighlightedSet) {
-                    
-                        var isInsideHighlightedSet = window.vueApp[specifiedHighlightAttributes].allHighlightedSet.has(window.vueApp[specifiedLastHoveredIndex])
-                        if (!isInsideHighlightedSet) {
-                            points.geometry.attributes.size.array[window.vueApp[specifiedLastHoveredIndex]] = NORMAL_SIZE;
-                        }
-                    } else {
-                        points.geometry.attributes.size.array[window.vueApp[specifiedLastHoveredIndex]] = NORMAL_SIZE; 
-                    }
-    
-                }
+                updateLastHoverIndexSize(window.vueApp[specifiedLastHoveredIndex], window.vueApp[specifiedHighlightAttributes].allHighlightedSet,
+                    window.vueApp[specifiedSelectedIndex], window.vueApp[specifiedHighlightAttributes].boldIndices, window.vueApp[specifiedHighlightAttributes].visualizationError)
                 container.style.cursor = 'pointer';
-
                 geometry.attributes.size.array[index] = HOVER_SIZE
 
+                Object.values(window.vueApp.query_result).forEach(item => {
+                    if (typeof item === 'object' && item !== null) {
+                        nn.push(item.id);
+                    }
+                });
+                console.log(nn);
+                // 遍历 nn 列表，将每个索引位置的元素设置为 HOVER_SIZE
+                nn.forEach((item, index) => {
+                    console.log(item);
+                    geometry.attributes.size.array[item] = HOVER_SIZE
+                });
+
                 geometry.attributes.size.needsUpdate = true;
-
                 window.vueApp[specifiedLastHoveredIndex] = index;
-
-
                 var pointPosition = new THREE.Vector3();
-
-
                 pointPosition.fromBufferAttribute(points.geometry.attributes.position, index);
-
                 updateHoverIndexUsingPointPosition(pointPosition, index, false, flag, window.vueApp.camera[flag], window.vueApp.renderer[flag]) 
             }
-
-
         } else {
             container.style.cursor = 'default';
             if (window.vueApp[specifiedLastHoveredIndex] != null) {
-
-                if (window.vueApp[specifiedHighlightAttributes].allHighlightedSet) {
-                    
-                    var isInsideHighlightedSet = window.vueApp[specifiedHighlightAttributes].allHighlightedSet.has(window.vueApp[specifiedLastHoveredIndex])
-                    if (!isInsideHighlightedSet) {
-                        points.geometry.attributes.size.array[window.vueApp[specifiedLastHoveredIndex]] = NORMAL_SIZE;
-                    }
-                } else {
-                    points.geometry.attributes.size.array[window.vueApp[specifiedLastHoveredIndex]] = NORMAL_SIZE; 
-                }
-
+                updateLastHoverIndexSize(window.vueApp[specifiedLastHoveredIndex], window.vueApp[specifiedHighlightAttributes].allHighlightedSet,
+                    window.vueApp[specifiedSelectedIndex], window.vueApp[specifiedHighlightAttributes].boldIndices, window.vueApp[specifiedHighlightAttributes].visualizationError)
+                sizes.fill(NORMAL_SIZE);
+                geometry.attributes.size.array = new Float32Array(sizes);
                 geometry.attributes.size.needsUpdate = true;
                 window.vueApp[specifiedLastHoveredIndex] = null;
                 window.vueApp[specifiedImageSrc] = ""
-        
                 updateHoverIndexUsingPointPosition(pointPosition, null, false, flag, window.vueApp.camera[flag], window.vueApp.renderer[flag]) 
-    
             }
         }
 
@@ -449,6 +539,52 @@ function drawCanvas(res,id, flag='ref') {
         }
     });
 
+    var specifiedShowTesting = makeSpecifiedVariableName('showTesting', flag)
+    var specifiedShowTraining = makeSpecifiedVariableName('showTraining', flag)
+    var specifiedVisibilityMap = makeSpecifiedVariableName('visibilityMap', flag)
+    window.vueApp.$watch(specifiedShowTesting, updateCurrentDisplay);
+    window.vueApp.$watch(specifiedShowTraining, updateCurrentDisplay);
+    
+    function updateCurrentDisplay() {
+        console.log("currDisplay")
+        let specifiedTrainIndex = makeSpecifiedVariableName('train_index', flag)
+        let specifiedTestIndex = makeSpecifiedVariableName('test_index', flag)
+        console.log("visibliytyMPA", window.vueApp[specifiedVisibilityMap])
+        if (window.vueApp[specifiedShowTraining]) {
+            console.log("trainindex", window.vueApp[specifiedTrainIndex])
+
+            window.vueApp[specifiedTrainIndex].forEach(index => {
+                window.vueApp[specifiedVisibilityMap][index] = true; // Show train points
+            });
+        } else {
+            window.vueApp[specifiedTrainIndex].forEach(index => {
+                window.vueApp[specifiedVisibilityMap][index] = false; // Show train points
+            });
+        }
+        if (window.vueApp[specifiedShowTesting]) {
+            console.log("testindex", window.vueApp[specifiedTestIndex])
+            window.vueApp[specifiedTestIndex].forEach(index => {
+                window.vueApp[specifiedVisibilityMap][index] = true; // Show test points
+            });
+        } else {
+            window.vueApp[specifiedTestIndex].forEach(index => {
+                window.vueApp[specifiedVisibilityMap][index] = false; // Show test points
+            });
+        }
+        
+        applyVisibility();
+    }
+  
+    function applyVisibility() {
+        const alphas = geometry.attributes.alpha.array;
+        if (window.vueApp[specifiedVisibilityMap]) {
+            window.vueApp[specifiedVisibilityMap].forEach((visible, index) => {
+                alphas[index] = visible ? 1.0 : 0.0; // 1 show 0 hide
+            });
+            geometry.attributes.alpha.needsUpdate = true;
+            console.log("updateVisibility", geometry.attributes.alpha.array)
+        }
+    }
     // In the Vue instance where you want to observe changes
     let specifiedHighlightAttributes = makeSpecifiedVariableName('highlightAttributes', flag)
     window.vueApp.$watch(specifiedHighlightAttributes, updateHighlights, {
@@ -461,6 +597,7 @@ function drawCanvas(res,id, flag='ref') {
         var indicesToChangeBlue = window.vueApp[specifiedHighlightAttributes].highlightedPointsBlue
         var indicesToChangeGreen = window.vueApp[specifiedHighlightAttributes].highlightedPointsGreen
         var indicesAllHighlighted =  window.vueApp[specifiedHighlightAttributes].allHighlightedSet
+        var visError = window.vueApp[specifiedHighlightAttributes].visualizationError
         if (indicesToChangeYellow == null) {
             indicesToChangeYellow = []
         } else {
@@ -481,31 +618,61 @@ function drawCanvas(res,id, flag='ref') {
         } else {
             indicesAllHighlighted = Array.from(indicesAllHighlighted)
         }
-
+        if (visError == null) {
+            visError = []
+        } else {
+            visError = Array.from(visError)
+        }
+        
         resetToOriginalColorSize()
 
-        updateColorSizeForHighlights(indicesAllHighlighted, indicesToChangeYellow, indicesToChangeBlue, indicesToChangeGreen)
+        updateColorSizeForHighlights(indicesAllHighlighted, indicesToChangeYellow, indicesToChangeBlue, indicesToChangeGreen, visError)
+        console.log("GreenIndices", indicesToChangeGreen)
+        console.log("YELLOWndices", indicesToChangeYellow)
+        console.log("BLUEIndices", indicesToChangeBlue)
+        console.log('visError', visError)
+        var boldIndices = window.vueApp[specifiedHighlightAttributes].boldIndices
+        if (boldIndices == null) {
+            boldIndices = []
+        } else {
+           boldIndices = Array.from(boldIndices)
+        }
+        updateColorSizeForBoldIndices(boldIndices)
     }
     function resetToOriginalColorSize() {
+        var specifiedSelectedIndex = makeSpecifiedVariableName('selectedIndex', flag)
         var sizesAttribute = geometry.getAttribute('size');
         var colorsAttribute = geometry.getAttribute('color');
         sizesAttribute.array.set(originalSizes);
         colorsAttribute.array.set(originalColors);
-        
+        // not reset selectedIndex
+        if ( window.vueApp[specifiedSelectedIndex]) {
+            sizesAttribute.array[window.vueApp[specifiedSelectedIndex]] = HOVER_SIZE
+        }
+ 
         // Mark as needing update
         sizesAttribute.needsUpdate = true;
         colorsAttribute.needsUpdate = true;
+
+        // clear all bold labels
+        var lens = 2
+        for (var i = 0; i < lens; i++) {
+            updateFixedHoverLabel(null, null, null, flag, null, boldLable + i, false)
+        }
     }
 
-    function updateColorSizeForHighlights(indicesAllHighlighted, indicesToChangeYellow, indicesToChangeBlue, indicesToChangeGreen) {
+    function updateColorSizeForHighlights(indicesAllHighlighted, indicesToChangeYellow, indicesToChangeBlue, indicesToChangeGreen, visError) {
         
         var sizesAttribute = geometry.getAttribute('size');
         indicesAllHighlighted.forEach(index => {
             sizesAttribute.array[index] = HOVER_SIZE;
         });
+        visError.forEach(index => {
+            sizesAttribute.array[index] = HOVER_SIZE;
+        });
         sizesAttribute.needsUpdate = true; 
 
-        // Update colors
+        // yellow indices are triggered by right selected index
         var colorsAttribute = geometry.getAttribute('color');
         indicesToChangeYellow.forEach(index => {
             colorsAttribute.array[index * 3] = YELLOW[0]; // R
@@ -513,20 +680,50 @@ function drawCanvas(res,id, flag='ref') {
             colorsAttribute.array[index * 3 + 2] = YELLOW[2]; // B
         });
 
-
-        indicesToChangeGreen.forEach(index => {
-            colorsAttribute.array[index * 3] = GREEN[0]; // R
-            colorsAttribute.array[index * 3 + 1] = GREEN[1]; // G
-            colorsAttribute.array[index * 3 + 2] = GREEN[2]; // B
-        });
-
+        // blue indices are triggered by left selected index
         indicesToChangeBlue.forEach(index => {
             colorsAttribute.array[index * 3] = BLUE[0]; // R
             colorsAttribute.array[index * 3 + 1] = BLUE[1]; // G
             colorsAttribute.array[index * 3 + 2] = BLUE[2]; // B
         });
 
+        // green indices represent intersection of blue and yellow indices
+        indicesToChangeGreen.forEach(index => {
+            colorsAttribute.array[index * 3] = GREEN[0]; // R
+            colorsAttribute.array[index * 3 + 1] = GREEN[1]; // G
+            colorsAttribute.array[index * 3 + 2] = GREEN[2]; // B
+        });
+
+        // gray indices represent visualization errors, this will reset original colors, since it has higher pripority
+        visError.forEach(index => {
+            colorsAttribute.array[index * 3] = GRAY[0]; // R
+            colorsAttribute.array[index * 3 + 1] = GRAY[1]; // G
+            colorsAttribute.array[index * 3 + 2] = GRAY[2]; // B
+        });
+
         colorsAttribute.needsUpdate = true; 
+    }
+
+    function updateColorSizeForBoldIndices(boldIndices) {
+        var sizesAttribute = geometry.getAttribute('size');
+        var colorsAttribute = geometry.getAttribute('color');
+        // bold indices have color orange
+        boldIndices.forEach(index => {
+            sizesAttribute.array[index] = HOVER_SIZE;
+            colorsAttribute.array[index * 3] = ORANGE[0]; // R
+            colorsAttribute.array[index * 3 + 1] = ORANGE[1]; // G
+            colorsAttribute.array[index * 3 + 2] = ORANGE[2]; // B
+        });
+        sizesAttribute.needsUpdate = true; 
+        colorsAttribute.needsUpdate = true; 
+        // show Label for bold indices
+        var lens = boldIndices.length
+        for (var i = 0; i < lens; i++) {
+            var pointPosition = new THREE.Vector3();
+            // usually boldIndices has size 1
+            pointPosition.fromBufferAttribute(points.geometry.attributes.position, boldIndices[i]);
+            updateLabelPosition(flag, pointPosition, boldIndices[i], boldLable + i, true)
+        }
     }
 
     container.addEventListener('mousemove', onMouseMove, false);
@@ -575,10 +772,21 @@ function drawCanvas(res,id, flag='ref') {
                 x: e.clientX,
                 y: e.clientY
             };
-            let specifiedFixedHoverLabel = makeSpecifiedVariableName('fixedHoverLabel', flag)
-            var fixedHoverLabel = document.getElementById(specifiedFixedHoverLabel)
-            if (fixedHoverLabel) {
-                updateLabelPosition(flag);
+         
+            var specifiedSelectedIndex = makeSpecifiedVariableName('selectedIndex', flag)
+            var specifiedSelectedPointPosition = makeSpecifiedVariableName('selectedPointPosition', flag)
+            updateLabelPosition(flag, window.vueApp[specifiedSelectedPointPosition], window.vueApp[specifiedSelectedIndex], selectedLabel, true)
+        
+
+            var specifiedHighlightAttributes = makeSpecifiedVariableName('highlightAttributes', flag)
+            if (window.vueApp[specifiedHighlightAttributes].boldIndices) {
+                var lens = window.vueApp[specifiedHighlightAttributes].boldIndices.length
+                for (var i = 0; i < lens; i++) {
+                    var pointPosition = new THREE.Vector3();
+                    // usually boldIndices has size 1
+                    pointPosition.fromBufferAttribute(points.geometry.attributes.position, window.vueApp[specifiedHighlightAttributes].boldIndices[i]);
+                    updateLabelPosition(flag, pointPosition, window.vueApp[specifiedHighlightAttributes].boldIndices[i], boldLable + i, true)
+                }
             }
             //todo
             updateCurrHoverIndex(e, null, true, flag)
@@ -615,9 +823,6 @@ function drawCanvas(res,id, flag='ref') {
     window.vueApp.isCanvasLoading = false
 }
 
-
-
-
 window.onload = function() {
     let specifiedCurrHoverRef = makeSpecifiedVariableName('currHover', 'ref')
     let specifiedCurrHoverTar = makeSpecifiedVariableName('currHover', 'tar')
@@ -627,3 +832,51 @@ window.onload = function() {
     makeDraggable(currHover1, currHover1);
     makeDraggable(currHover2, currHover2);
 };
+
+function contrastUpdateSizes() {
+    const nn = []; // 创建一个空的 sizes 列表
+    flag='ref'
+    
+    Object.values(window.vueApp.query_result).forEach(item => {
+        if (typeof item === 'object' && item !== null) {
+            nn.push(item.id);
+        }
+    });
+    console.log(nn);
+    // 遍历 nn 列表，将每个索引位置的元素设置为 HOVER_SIZE
+    nn.forEach((item, index) => {
+        console.log(item);
+        // sizes[item] = HOVER_SIZE;
+        var index = [item, flag];
+        console.log(index)
+        console.log(typeof(index))
+        console.log(geometry.attributes.size.array)
+        geometry.attributes.size.array[index] = HOVER_SIZE;
+        geometry.attributes.size.needsUpdate = true;
+    });
+    // 更新size属性并标记为需要更新
+    // geometry.attributes.size.array = new Float32Array(sizes);
+    // geometry.attributes.size.needsUpdate = true;
+    // window.vueApp.lastHoveredIndex = index;
+    resultContainer = document.getElementById("resultContainer");
+    resultContainer.setAttribute("style", "display:block;")
+}
+
+function clear() {
+    sizes.fill(NORMAL_SIZE); // 将所有点的大小重置为5
+    // 更新size属性并标记为需要更新
+    geometry.attributes.size.array = new Float32Array(sizes);
+    geometry.attributes.size.needsUpdate = true;
+    window.vueApp.lastHoveredIndex = null;
+    resultImg = document.getElementById("metaImg")
+    resultImg.setAttribute("style", "display:none;")
+    spriteTextElement = document.getElementById("spriteTextElement");
+    spriteTextElement.textContent = ""; // 清空文本内容
+    resultContainer = document.getElementById("resultContainer");
+    resultContainer.setAttribute("style", "display:none;")
+}
+
+function show_query_text() {
+    resultContainer = document.getElementById("resultContainer");
+    resultContainer.setAttribute("style", "display:block;")
+}

@@ -11,7 +11,7 @@ import gc
 import shutil
 sys.path.append('..')
 sys.path.append('.')
-from utils import update_epoch_projection, initialize_backend, add_line, getConfChangeIndices, getContraVisChangeIndices, getContraVisChangeIndicesSingle,getCriticalChangeIndices
+from utils import getVisError, update_epoch_projection, initialize_backend, add_line, getConfChangeIndices, getContraVisChangeIndices, getContraVisChangeIndicesSingle,getCriticalChangeIndices
 
 import time
 # flask for API server
@@ -20,6 +20,307 @@ cors = CORS(app, supports_credentials=True)
 app.config['CORS_HEADERS'] = 'Content-Type'
 
 API_result_path = "./admin_API_result.csv"
+
+
+import time
+
+import numpy as np
+from pymilvus import (
+    connections,
+    utility,
+    FieldSchema, CollectionSchema, DataType,
+    Collection,
+)
+
+fmt = "\n=== {:30} ===\n"
+search_latency_fmt = "search latency = {:.4f}s"
+# num_entities, dim = 3000, 8
+code_entities = None
+code_embeddings_collection = None
+nl_entities = None
+nl_embeddings_collection = None
+@app.route('/loadVectorDB', methods=["POST", "GET"])
+@cross_origin()
+def load_vectorDB():
+    global code_entities
+    global code_embeddings_collection
+    res = request.get_json()
+    CONTENT_PATH = os.path.normpath(res['path'])
+    
+    print(CONTENT_PATH)
+
+    iteration = int(res['iteration'])
+    
+    EPOCH = int(iteration)
+
+    code_path = CONTENT_PATH + '/Model/Epoch_' + str(EPOCH) + '/train_data.npy'
+    code_embeddings = np.load(code_path)
+    dim = code_embeddings.shape[1]
+
+    print(fmt.format("start connecting to Milvus"))
+    connections.connect("default", host="localhost", port="19530")
+
+    has_code_embeddings = utility.has_collection("code_embeddings")
+
+    print(f"Does collection code_embeddings exist in Milvus: {has_code_embeddings}")
+    # utility.drop_collection("code_embeddings")
+    # utility.drop_collection("nl_embeddings")
+
+    # Define fields for code_embeddings collection
+    code_embeddings_fields = [
+        FieldSchema(name="pk", dtype=DataType.VARCHAR, is_primary=True, auto_id=False, max_length=100),
+        FieldSchema(name="code_embeddings", dtype=DataType.FLOAT_VECTOR, dim=dim)
+    ]
+    # Create schema for code_embeddings collection and nl_embeddings collection
+    code_embeddings_schema = CollectionSchema(code_embeddings_fields, "code_embeddings in Milvus")
+
+    print(fmt.format("Create collection `code_embeddings`"))
+    code_embeddings_collection = Collection("code_embeddings", code_embeddings_schema, consistency_level="Strong")
+
+    print(fmt.format("Start inserting entities"))
+    # rng = np.random.default_rng(seed=19530)
+
+    code_entities = [
+        [str(i) for i in range(len(code_embeddings))],
+        code_embeddings,    # field embeddings, supports numpy.ndarray and list
+    ]
+
+    # # insert_result = hello_milvus.insert(entities)
+
+    # batch_size = 1000  # 调整批次大小
+    # num_batches = len(code_entities[0]) // batch_size
+
+    # for i in range(num_batches):
+    #     start = i * batch_size
+    #     end = (i + 1) * batch_size
+    #     batch_entities = [entity[start:end] for entity in code_entities]
+    #     code_insert_result = code_embeddings_collection.insert(batch_entities)
+
+    # remaining_entities = [entity[num_batches * batch_size:] for entity in code_entities]
+    # if remaining_entities:
+    #     code_insert_result = code_embeddings_collection.insert(remaining_entities)
+
+    # nl_batch_size = 1000  # 调整批次大小
+    # nl_num_batches = len(nl_entities[0]) // nl_batch_size
+
+    # for i in range(num_batches):
+    #     start = i * nl_batch_size
+    #     end = (i + 1) * nl_batch_size
+    #     batch_entities = [entity[start:end] for entity in nl_entities]
+    #     nl_insert_result = nl_embeddings_collection.insert(batch_entities)
+
+    # remaining_entities = [entity[nl_num_batches * nl_batch_size:] for entity in nl_entities]
+    # if remaining_entities:
+    #     nl_insert_result = nl_embeddings_collection.insert(remaining_entities)
+
+    # code_insert_result = code_embeddings_collection.insert(code_entities)
+    # nl_insert_result = nl_embeddings_collection.insert(nl_entities)
+
+    # hello_milvus.flush()
+    print(f"Number of code entities in Milvus: {code_embeddings_collection.num_entities}")  # check the num_entites
+
+    print(fmt.format("Start Creating index IVF_FLAT"))
+    index = {
+        "index_type": "IVF_FLAT",
+        "metric_type": "L2",
+        "params": {"nlist": 128},
+    }
+
+    code_embeddings_collection.create_index("code_embeddings", index)
+
+    print(fmt.format("Start loading"))
+    code_embeddings_collection.load()
+
+    return make_response(jsonify({}), 200)
+
+@app.route('/contrastloadVectorDBCode', methods=["POST", "GET"])
+@cross_origin()
+def load_vectorDB_code():
+    global code_entities
+    global code_embeddings_collection
+    res = request.get_json()
+    CONTENT_PATH = os.path.normpath(res['path'])
+    
+    print(CONTENT_PATH)
+
+    iteration = int(res['iteration'])
+    
+    EPOCH = int(iteration)
+
+    code_path = CONTENT_PATH + '/Model/Epoch_' + str(EPOCH) + '/train_data.npy'
+    code_embeddings = np.load(code_path)
+    dim = code_embeddings.shape[1]
+
+    print(fmt.format("start connecting to Milvus"))
+    connections.connect("default", host="localhost", port="19530")
+
+    has_code_embeddings = utility.has_collection("code_embeddings")
+
+    print(f"Does collection code_embeddings exist in Milvus: {has_code_embeddings}")
+    # utility.drop_collection("code_embeddings")
+    # utility.drop_collection("nl_embeddings")
+
+    # Define fields for code_embeddings collection
+    code_embeddings_fields = [
+        FieldSchema(name="pk", dtype=DataType.VARCHAR, is_primary=True, auto_id=False, max_length=100),
+        FieldSchema(name="code_embeddings", dtype=DataType.FLOAT_VECTOR, dim=dim)
+    ]
+    # Create schema for code_embeddings collection and nl_embeddings collection
+    code_embeddings_schema = CollectionSchema(code_embeddings_fields, "code_embeddings in Milvus")
+
+    print(fmt.format("Create collection `code_embeddings`"))
+    code_embeddings_collection = Collection("code_embeddings", code_embeddings_schema, consistency_level="Strong")
+
+    print(fmt.format("Start inserting entities"))
+    # rng = np.random.default_rng(seed=19530)
+
+    code_entities = [
+        [str(i) for i in range(len(code_embeddings))],
+        code_embeddings,    # field embeddings, supports numpy.ndarray and list
+    ]
+
+    # # insert_result = hello_milvus.insert(entities)
+
+    # batch_size = 1000  # 调整批次大小
+    # num_batches = len(code_entities[0]) // batch_size
+
+    # for i in range(num_batches):
+    #     start = i * batch_size
+    #     end = (i + 1) * batch_size
+    #     batch_entities = [entity[start:end] for entity in code_entities]
+    #     code_insert_result = code_embeddings_collection.insert(batch_entities)
+
+    # remaining_entities = [entity[num_batches * batch_size:] for entity in code_entities]
+    # if remaining_entities:
+    #     code_insert_result = code_embeddings_collection.insert(remaining_entities)
+
+    # nl_batch_size = 1000  # 调整批次大小
+    # nl_num_batches = len(nl_entities[0]) // nl_batch_size
+
+    # for i in range(num_batches):
+    #     start = i * nl_batch_size
+    #     end = (i + 1) * nl_batch_size
+    #     batch_entities = [entity[start:end] for entity in nl_entities]
+    #     nl_insert_result = nl_embeddings_collection.insert(batch_entities)
+
+    # remaining_entities = [entity[nl_num_batches * nl_batch_size:] for entity in nl_entities]
+    # if remaining_entities:
+    #     nl_insert_result = nl_embeddings_collection.insert(remaining_entities)
+
+    # code_insert_result = code_embeddings_collection.insert(code_entities)
+    # nl_insert_result = nl_embeddings_collection.insert(nl_entities)
+
+    # hello_milvus.flush()
+    print(f"Number of code entities in Milvus: {code_embeddings_collection.num_entities}")  # check the num_entites
+
+    print(fmt.format("Start Creating index IVF_FLAT"))
+    index = {
+        "index_type": "IVF_FLAT",
+        "metric_type": "L2",
+        "params": {"nlist": 128},
+    }
+
+    code_embeddings_collection.create_index("code_embeddings", index)
+
+    print(fmt.format("Start loading"))
+    code_embeddings_collection.load()
+
+    return make_response(jsonify({}), 200)
+
+@app.route('/contrastloadVectorDBNl', methods=["POST", "GET"])
+@cross_origin()
+def load_vectorDB_nl():
+    global nl_entities
+    global nl_embeddings_collection
+    res = request.get_json()
+    CONTENT_PATH = os.path.normpath(res['path'])
+    
+    print(CONTENT_PATH)
+
+    iteration = int(res['iteration'])
+    
+    EPOCH = int(iteration)
+
+    nl_path = CONTENT_PATH + '/Model/Epoch_' + str(EPOCH) + '/train_data.npy'
+    nl_embeddings = np.load(nl_path)
+    dim = nl_embeddings.shape[1]
+
+    print(fmt.format("start connecting to Milvus"))
+    connections.connect("default", host="localhost", port="19530")
+
+    has_nl_embeddings = utility.has_collection("nl_embeddings")
+
+    print(f"Does collection nl_embeddings exist in Milvus: {has_nl_embeddings}")
+    # utility.drop_collection("code_embeddings")
+    # utility.drop_collection("nl_embeddings")
+
+    # Define fields for code_embeddings collection
+    nl_embeddings_fields = [
+        FieldSchema(name="pk", dtype=DataType.VARCHAR, is_primary=True, auto_id=False, max_length=100),
+        FieldSchema(name="nl_embeddings", dtype=DataType.FLOAT_VECTOR, dim=dim)
+    ]
+    # Create schema for code_embeddings collection and nl_embeddings collection
+    nl_embeddings_schema = CollectionSchema(nl_embeddings_fields, "nl_embeddings in Milvus")
+
+    print(fmt.format("Create collection `nl_embeddings`"))
+    nl_embeddings_collection = Collection("nl_embeddings", nl_embeddings_schema, consistency_level="Strong")
+
+    print(fmt.format("Start inserting entities"))
+    # rng = np.random.default_rng(seed=19530)
+
+    nl_entities = [
+        [str(i) for i in range(len(nl_embeddings))],
+        nl_embeddings,    # field embeddings, supports numpy.ndarray and list
+    ]
+
+    # # insert_result = hello_milvus.insert(entities)
+
+    # batch_size = 1000  # 调整批次大小
+    # num_batches = len(code_entities[0]) // batch_size
+
+    # for i in range(num_batches):
+    #     start = i * batch_size
+    #     end = (i + 1) * batch_size
+    #     batch_entities = [entity[start:end] for entity in code_entities]
+    #     code_insert_result = code_embeddings_collection.insert(batch_entities)
+
+    # remaining_entities = [entity[num_batches * batch_size:] for entity in code_entities]
+    # if remaining_entities:
+    #     code_insert_result = code_embeddings_collection.insert(remaining_entities)
+
+    # nl_batch_size = 1000  # 调整批次大小
+    # nl_num_batches = len(nl_entities[0]) // nl_batch_size
+
+    # for i in range(num_batches):
+    #     start = i * nl_batch_size
+    #     end = (i + 1) * nl_batch_size
+    #     batch_entities = [entity[start:end] for entity in nl_entities]
+    #     nl_insert_result = nl_embeddings_collection.insert(batch_entities)
+
+    # remaining_entities = [entity[nl_num_batches * nl_batch_size:] for entity in nl_entities]
+    # if remaining_entities:
+    #     nl_insert_result = nl_embeddings_collection.insert(remaining_entities)
+
+    # code_insert_result = code_embeddings_collection.insert(code_entities)
+    # nl_insert_result = nl_embeddings_collection.insert(nl_entities)
+
+    # hello_milvus.flush()
+    print(f"Number of nl entities in Milvus: {nl_embeddings_collection.num_entities}")  # check the num_entites
+
+    print(fmt.format("Start Creating index IVF_FLAT"))
+    index = {
+        "index_type": "IVF_FLAT",
+        "metric_type": "L2",
+        "params": {"nlist": 128},
+    }
+
+    nl_embeddings_collection.create_index("nl_embeddings", index)
+
+    print(fmt.format("Start loading"))
+    nl_embeddings_collection.load()
+
+    return make_response(jsonify({}), 200)
+
 
 @app.route('/updateProjection', methods=["POST", "GET"])
 @cross_origin()
@@ -41,7 +342,7 @@ def update_projection():
     EPOCH = int(iteration)
     
     embedding_2d, grid, decision_view, label_name_dict, label_color_list, label_list, max_iter, training_data_index, \
-    testing_data_index, eval_new, prediction_list, selected_points, properties, highlightedPointIndices, error_message = update_epoch_projection(context, EPOCH, predicates, TaskType)
+    testing_data_index, eval_new, prediction_list, selected_points, properties, error_message = update_epoch_projection(context, EPOCH, predicates, TaskType)
     end = time.time()
     print("duration", end-start)
     # sys.path.remove(CONTENT_PATH)
@@ -64,6 +365,8 @@ def update_projection():
                                   }), 200)
 
 app.route('/contrast/updateProjection', methods=["POST", "GET"])(update_projection)
+
+
 
 @app.route('/query', methods=["POST"])
 @cross_origin()
@@ -102,6 +405,7 @@ def filter():
     sys.path.remove(CONTENT_PATH)
     add_line(API_result_path,['SQ',username])
     return make_response(jsonify({"selectedPoints": selected_points.tolist()}), 200)
+
 
 
 # base64
@@ -254,7 +558,32 @@ def contravis_highlight():
                                   }), 200)
 
 
-	
+@app.route('/getVisualizationError', methods=["POST", "GET"])
+@cross_origin()
+def get_visualization_error():
+    start_time = time.time()
+    res = request.get_json()
+    CONTENT_PATH= res['content_path']
+ 
+    VIS_METHOD = res['vis_method']
+    SETTING = res["setting"]
+    curr_iteration = int(res['iteration'])
+
+    method = res['method']
+    print("vismethod", VIS_METHOD)
+    context= initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
+
+    visualization_error = getVisError(context, curr_iteration,  method)
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    print(elapsed_time)
+    print(len(visualization_error))
+    return make_response(jsonify({
+                                  "visualizationError": visualization_error,       
+                                  }), 200)
+
+app.route('/contrast/getVisualizationError', methods=["POST", "GET"])(get_visualization_error)
+
 @app.route('/highlightCriticalChange', methods=["POST", "GET"])
 @cross_origin()
 def highlight_critical_change():
@@ -550,6 +879,106 @@ def get_tree():
     return make_response(jsonify({"structure":json_data}), 200)
 
 app.route('/contrast/get_itertaion_structure', methods=["POST", "GET"])(get_tree)
+
+@app.route('/indexSearch', methods=["POST", "GET"])
+@cross_origin()
+def index_search():
+    global code_entities
+    global code_embeddings_collection
+    res = request.get_json()
+
+    query = res["query"]
+
+    print(query)
+    if query["key"] == "index":
+        index = int(query["value"])
+        code_vectors_to_search = [code_entities[-1][index]]
+    if query["key"] == "nl":
+        sys.path.append('/home/yiming/cophi/training_dynamic/code_training_dynamic/saved_models/ruby_fine_tine_5/Model')
+        from run import gen_nl_vector
+        string = query["value"]
+        code_vectors_to_search = [gen_nl_vector(string)]
+
+    search_params = {
+        "metric_type": "L2",
+        "params": {"nprobe": 10},
+    }
+
+    DEFAULT_LIMIT = 5
+    k_num = int(query["k"]) if query.get("k") is not None else DEFAULT_LIMIT
+
+    code_code_result = code_embeddings_collection.search(code_vectors_to_search, "code_embeddings", search_params, limit=k_num)
+
+    for hits in code_code_result:
+        for hit in hits:
+            print(f"code_code hit: {hit}")
+
+    hit_list = []
+    for hits in code_code_result:
+        for hit in hits:
+            hit_dict = {
+                'distance': hit.distance,
+                'id': hit.id
+            }
+            hit_list.append(hit_dict)
+
+    print(hit_list)
+    return make_response(jsonify({'result': hit_list}), 200)
+
+
+@app.route('/contrastIndexSearch', methods=["POST", "GET"])
+@cross_origin()
+def contrast_index_search():
+    global code_entities
+    global code_embeddings_collection
+    res = request.get_json()
+
+    query = res["query"]
+
+    print(query)
+    if query["key"] == "left-index":
+        index = int(query["value"])
+        vectors_to_search = [code_entities[-1][index]]
+    if query["key"] == "right-index":
+        index = int(query["value"])
+        vectors_to_search = [nl_entities[-1][index]]
+    if query["key"] == "inter-index":
+        index = int(query["value"])
+        vectors_to_search = [nl_entities[-1][index]]
+    if query["key"] == "nl":
+        sys.path.append('/home/yiming/cophi/training_dynamic/code_training_dynamic/saved_models/ruby_fine_tine_5/Model')
+        from run import gen_nl_vector
+        string = query["value"]
+        vectors_to_search = [gen_nl_vector(string)]
+
+    search_params = {
+        "metric_type": "L2",
+        "params": {"nprobe": 10},
+    }
+
+    DEFAULT_LIMIT = 5
+    k_num = int(query["k"]) if query.get("k") is not None else DEFAULT_LIMIT
+
+    if query["key"] == "right-index":
+        search_result = nl_embeddings_collection.search(vectors_to_search, "nl_embeddings", search_params, limit=k_num)
+    else:
+        search_result = code_embeddings_collection.search(vectors_to_search, "code_embeddings", search_params, limit=k_num)
+
+    for hits in search_result:
+        for hit in hits:
+            print(f"code_code hit: {hit}")
+
+    hit_list = []
+    for hits in search_result:
+        for hit in hits:
+            hit_dict = {
+                'distance': hit.distance,
+                'id': hit.id
+            }
+            hit_list.append(hit_dict)
+
+    print(hit_list)
+    return make_response(jsonify({'result': hit_list}), 200)
 
 def check_port_inuse(port, host):
     try:
