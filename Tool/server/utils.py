@@ -27,6 +27,7 @@ def initialize_strategy(CONTENT_PATH, VIS_METHOD, SETTING, dense=False):
     
     if SETTING == "normal" or SETTING == "abnormal":
         if VIS_METHOD == "Trustvis":
+            print("trustvis")
             strategy = Trustvis(CONTENT_PATH, config)
         elif VIS_METHOD == "DVI":
             strategy = tfDeepVisualInsight(CONTENT_PATH, config)
@@ -151,11 +152,13 @@ def get_eval_new(context, EPOCH):
     return eval_new
 
 def get_train_test_data(context, EPOCH):
-    
     train_data = context.train_representation_data(EPOCH)
     test_data = context.test_representation_data(EPOCH)
     all_data = np.concatenate((train_data, test_data), axis=0)
+    print(len(test_data))
+    print(len(train_data))
     return all_data
+
 def get_train_test_label(context, EPOCH, all_data):
     train_labels = context.train_labels(EPOCH)
     test_labels = context.test_labels(EPOCH)
@@ -222,9 +225,6 @@ def update_epoch_projection(context, EPOCH, predicates, TaskType):
         
         label_color_list = color[labels].tolist()
        
-        # print("color", color[:20])
-    
-        # print("label color list",label_color_list[:20])
     else:
         n_clusters = 10
         kmeans = KMeans(n_clusters=n_clusters, random_state=0).fit(all_data)
@@ -234,7 +234,6 @@ def update_epoch_projection(context, EPOCH, predicates, TaskType):
         colors_rgb = (colormap(np.arange(n_clusters))[:, :3] * 255).astype(int)  
         label_color_list = [colors_rgb[label].tolist() for label in labels_kmeans]
     
-        # print("label color list",label_color_list[:20])
 
     start1 =time.time()
     print("midquestion2",start1-start2)
@@ -271,30 +270,55 @@ def update_epoch_projection(context, EPOCH, predicates, TaskType):
     selected_points = get_selected_points(context, predicates, EPOCH, training_data_number, testing_data_number)
     
     properties = get_properties(context, training_data_number, testing_data_number, training_data_index, EPOCH)
-    highlightedPointIndices = []
+    # highlightedPointIndices = []
     #todo highlighpoint only when called with showVis
-    if (TaskType == 'Classification'):
-        # high_pred = context.strategy.data_provider.get_pred(EPOCH, all_data).argmax(1)
-        # inv_high_dim_data = context.strategy.projector.batch_inverse(EPOCH, embedding_2d)
-        # inv_high_pred = context.strategy.data_provider.get_pred(EPOCH, inv_high_dim_data).argmax(1)
-        # highlightedPointIndices = np.where(high_pred != inv_high_pred)[0]
-        print()
-    else:
+    # if (TaskType == 'Classification'):
+    #     high_pred = context.strategy.data_provider.get_pred(EPOCH, all_data).argmax(1)
+    #     inv_high_dim_data = context.strategy.projector.batch_inverse(EPOCH, embedding_2d)
+    #     inv_high_pred = context.strategy.data_provider.get_pred(EPOCH, inv_high_dim_data).argmax(1)
+    #     highlightedPointIndices = np.where(high_pred != inv_high_pred)[0]
+    #     print()
+    # else:
         
-        # inv_high_dim_data = context.strategy.projector.batch_inverse(EPOCH, embedding_2d)
-        # # todo, change train data to all data
-        # squared_distances = np.sum((train_data - inv_high_dim_data) ** 2, axis=1)
-        # squared_threshold = 1 ** 2
-        # highlightedPointIndices = np.where(squared_distances > squared_threshold)[0]
-        print()
+    #     inv_high_dim_data = context.strategy.projector.batch_inverse(EPOCH, embedding_2d)
+    #     # todo, change train data to all data
+    #     squared_distances = np.sum((all_data - inv_high_dim_data) ** 2, axis=1)
+    #     squared_threshold = 1 ** 2
+    #     highlightedPointIndices = np.where(squared_distances > squared_threshold)[0]
+    #     print()
+
     end1 = time.time()
     print("midduration", start1-end)
     print("endduration", end1-start1)
     print("EMBEDDINGLEN", len(embedding_2d))
-    return embedding_2d.tolist(), grid, b_fig, label_name_dict, label_color_list, label_list, max_iter, training_data_index, testing_data_index, eval_new, prediction_list, selected_points, properties, highlightedPointIndices,error_message
+    return embedding_2d.tolist(), grid, b_fig, label_name_dict, label_color_list, label_list, max_iter, training_data_index, testing_data_index, eval_new, prediction_list, selected_points, properties,error_message
 
 
+def getVisError(context, EPOCH, TaskType):
+    highlightedPointIndices = []
+    all_data = get_train_test_data(context, EPOCH)
+    embedding_2d = get_embedding(context, all_data, EPOCH)
+    train_data = context.train_representation_data(EPOCH)
+    if (TaskType == 'Classification'):
+        high_pred = context.strategy.data_provider.get_pred(EPOCH, train_data).argmax(1)
+        inv_high_dim_data = context.strategy.projector.batch_inverse(EPOCH, embedding_2d)
+        inv_high_pred = context.strategy.data_provider.get_pred(EPOCH, inv_high_dim_data).argmax(1)
+        highlightedPointIndices = np.where(high_pred != inv_high_pred)[0]
+        print(len(inv_high_dim_data))
+        print(len(embedding_2d))
+        print(high_pred)
+        print(inv_high_pred)
+        print(np.where(high_pred != inv_high_pred))
+    elif (TaskType == 'Non-Classification'):
+        inv_high_dim_data = context.strategy.projector.batch_inverse(EPOCH, embedding_2d)
+        # todo, change train data to all data
+        squared_distances = np.sum((all_data - inv_high_dim_data) ** 2, axis=1)
+        squared_threshold = 1 ** 2
+        highlightedPointIndices = np.where(squared_distances > squared_threshold)[0]
+    else:
+        return
 
+    return highlightedPointIndices.tolist()
 
 	
 def getContraVisChangeIndices(context_left,context_right, iterationLeft, iterationRight, method):
