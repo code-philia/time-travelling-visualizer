@@ -373,6 +373,59 @@ function getHighlightedPoints(task, flag) {
     }
 }
 
+function getPredictionFlipIndices(flag) {
+//   @app.route('/highlightCriticalChange', methods=["POST", "GET"])
+// @cross_origin()
+// def highlight_critical_change():
+//     res = request.get_json()
+//     CONTENT_PATH = os.path.normpath(res['path'])
+//     VIS_METHOD = res['vis_method']
+//     SETTING = res["setting"]
+//     curr_iteration = int(res['iteration'])
+//     next_iteration = int(res['next_iteration'])
+
+//     context = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
+  
+//     predChangeIndices = getCriticalChangeIndices(context, curr_iteration, next_iteration)
+    
+//     return make_response(jsonify({
+//                                   "predChangeIndices": predChangeIndices.tolist()
+//                                   }), 200)
+
+  var specifiedContentPath = makeSpecifiedVariableName('contentPath', flag)
+  
+  var specifiedCurrEpoch = makeSpecifiedVariableName('currEpoch', flag)
+
+
+  const requestOptions = {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      "iteration": window.vueApp[specifiedCurrEpoch],
+      "next_iteration":  `${+window.vueApp[specifiedCurrEpoch] + 1}`,
+      "vis_method": 'Trustvis',
+      'setting': 'normal',
+      "content_path": window.vueApp[specifiedContentPath],
+    }),
+  };
+
+  fetch(`${window.location.href}/getPredictionFlipIndices`, requestOptions)
+  .then(response => {
+    if (!response.ok) {
+      throw new Error(`Server responded with status: ${response.status}`);
+    }
+    return response.json();
+  })
+  .then(data => {
+      var specifiedPredictionFlipIndices = makeSpecifiedVariableName('predictionFlipIndices', flag)
+      window.vueApp[specifiedPredictionFlipIndices] = new Set(data.predChangeIndices)
+      console.log("predChanges",   window.vueApp[specifiedPredictionFlipIndices])
+  })
+  .catch(error => {
+    console.error('Error during highlightCriticalChange fetch:', error);
+  });
+}
+
 
 // index search
 function indexSearch(query, switchOn) {

@@ -17,7 +17,7 @@ body {
     width: 260px;
     padding: 20px;
     background-color: rgb(244, 244, 244);
-    height: calc(80vh); /* Adjust based on content, could be fixed or auto */
+    height: 80vh; /* Adjust based on content, could be fixed or auto */
     overflow-y: auto; /* Allows scrolling within the panel if content overflows */
 }
 #opration_bar{
@@ -37,7 +37,7 @@ body {
 
 #container {
     width: 100%;
-    height: 100%;
+    height: 80vh;
     margin: 10px;
 }
 
@@ -51,11 +51,12 @@ body {
 }
 
 #footer {
-    height: 60px;
+    height: 10vh;
     width: 100%;
     position: relative;
     bottom: 0;
     background-color: rgb(244, 244, 244);
+    overflow: auto;
 }
 .el-checkbox__input.is-checked+.el-checkbox__label{
     color: #571792;
@@ -99,14 +100,14 @@ body {
     line-height: 54px;
 }
 #currHover {
-    position: fixed; /* or 'absolute' depending on your layout */
-    z-index: 1000; /* Ensure this is high enough to be on top of other elements */
-    background-color: white; /* Optional: for better visibility */
-    border: 1px solid #23bdbd; /* Optional: just for styling */
-    padding: 10px; /* Optional: just for styling */
-    cursor: move; /* Change cursor to indicate the div is movable */
-    top: 500px; /* Initial position */
-    left: 50px; /* Initial position */
+    position: fixed; 
+    z-index: 1000;
+    background-color: white; 
+    border: 1px solid #23bdbd; 
+    padding: 10px;
+    cursor: move;
+    top: 500px; 
+    left: 50px; 
     max-width: 300px;
   }
 #hoverLabel {

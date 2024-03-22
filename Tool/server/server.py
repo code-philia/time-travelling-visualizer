@@ -336,13 +336,13 @@ def update_projection():
     # username = res['username']
     TaskType = res['TaskType']
     # sys.path.append(CONTENT_PATH)
-    context = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
+    context, error_message_context = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
     # use the true one
     # EPOCH = (iteration-1)*context.strategy.data_provider.p + context.strategy.data_provider.s
     EPOCH = int(iteration)
     
     embedding_2d, grid, decision_view, label_name_dict, label_color_list, label_list, max_iter, training_data_index, \
-    testing_data_index, eval_new, prediction_list, selected_points, properties, error_message = update_epoch_projection(context, EPOCH, predicates, TaskType)
+    testing_data_index, eval_new, prediction_list, selected_points, properties, error_message_projection = update_epoch_projection(context, EPOCH, predicates, TaskType)
     end = time.time()
     print("duration", end-start)
     # sys.path.remove(CONTENT_PATH)
@@ -361,7 +361,7 @@ def update_projection():
                                   'prediction_list': prediction_list,
                                   "selectedPoints":selected_points.tolist(),
                                   "properties":properties.tolist(),
-                                  "errorMessage": error_message
+                                  "errorMessage": error_message_context + error_message_projection
                                   }), 200)
 
 app.route('/contrast/updateProjection', methods=["POST", "GET"])(update_projection)
@@ -381,7 +381,7 @@ def filter():
     username = res['username']
 
     sys.path.append(CONTENT_PATH)
-    context = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
+    context, error_message = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
     # TODO: fix when active learning
     EPOCH = iteration
 
@@ -495,7 +495,7 @@ def highlight_conf_change():
     confChangeInput = float(res['confChangeInput'])
     print(confChangeInput)
     # sys.path.append(CONTENT_PATH)
-    context = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
+    context, error_message = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
   
     confChangeIndices = getConfChangeIndices(context, curr_iteration, last_iteration, confChangeInput)
     print(confChangeIndices)
@@ -520,8 +520,8 @@ def contravis_highlight_single():
     left_selected = res['selectedPointLeft']
     right_selected = res['selectedPointRight']
     
-    context_left = initialize_backend(CONTENT_PATH_LEFT, VIS_METHOD, SETTING)
-    context_right = initialize_backend(CONTENT_PATH_RIGHT, VIS_METHOD, SETTING)
+    context_left, error_message = initialize_backend(CONTENT_PATH_LEFT, VIS_METHOD, SETTING)
+    context_right, error_message = initialize_backend(CONTENT_PATH_RIGHT, VIS_METHOD, SETTING)
   
     contraVisChangeIndicesLeft, contraVisChangeIndicesRight, contraVisChangeIndicesLeftLeft, contraVisChangeIndicesLeftRight, contraVisChangeIndicesRightLeft, contraVisChangeIndicesRightRight = getContraVisChangeIndicesSingle(context_left,context_right, curr_iteration, last_iteration, method, left_selected, right_selected)
     end_time = time.time()
@@ -549,8 +549,8 @@ def contravis_highlight():
     CONTENT_PATH_LEFT = res['content_path_left']
     CONTENT_PATH_RIGHT = res['content_path_right']
     
-    context_left = initialize_backend(CONTENT_PATH_LEFT, VIS_METHOD, SETTING)
-    context_right = initialize_backend(CONTENT_PATH_RIGHT, VIS_METHOD, SETTING)
+    context_left, error_message = initialize_backend(CONTENT_PATH_LEFT, VIS_METHOD, SETTING)
+    context_right, error_message = initialize_backend(CONTENT_PATH_RIGHT, VIS_METHOD, SETTING)
     contraVisChangeIndices = getContraVisChangeIndices(context_left,context_right, curr_iteration, last_iteration, method)
     print(len(contraVisChangeIndices))
     return make_response(jsonify({
@@ -571,7 +571,7 @@ def get_visualization_error():
 
     method = res['method']
     print("vismethod", VIS_METHOD)
-    context= initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
+    context, error_message= initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
 
     visualization_error = getVisError(context, curr_iteration,  method)
     end_time = time.time()
@@ -584,27 +584,25 @@ def get_visualization_error():
 
 app.route('/contrast/getVisualizationError', methods=["POST", "GET"])(get_visualization_error)
 
-@app.route('/highlightCriticalChange', methods=["POST", "GET"])
+@app.route('/getPredictionFlipIndices', methods=["POST", "GET"])
 @cross_origin()
 def highlight_critical_change():
     res = request.get_json()
-    CONTENT_PATH = os.path.normpath(res['path'])
+    CONTENT_PATH = os.path.normpath(res['content_path'])
     VIS_METHOD = res['vis_method']
     SETTING = res["setting"]
     curr_iteration = int(res['iteration'])
-    last_iteration = int(res['last_iteration'])
+    next_iteration = int(res['next_iteration'])
 
-    
-    # sys.path.append(CONTENT_PATH)
-    context = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
+    context, error_message = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
   
-    predChangeIndices = getCriticalChangeIndices(context, curr_iteration, last_iteration)
+    predChangeIndices = getCriticalChangeIndices(context, curr_iteration, next_iteration)
     
-    # sys.path.remove(CONTENT_PATH)
-    # add_line(API_result_path,['TT',username])
     return make_response(jsonify({
                                   "predChangeIndices": predChangeIndices.tolist()
                                   }), 200)
+
+app.route('/contrast/getPredictionFlipIndices', methods=["POST", "GET"])(highlight_critical_change)
 
 @app.route('/al_query', methods=["POST"])
 @cross_origin()
@@ -624,7 +622,7 @@ def al_query():
     isRecommend = data["isRecommend"]
 
     sys.path.append(CONTENT_PATH)
-    context = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING, dense=True)
+    context, error_message = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING, dense=True)
     # TODO add new sampling rule
     indices, labels, scores = context.al_query(iteration, budget, strategy, np.array(acc_idxs).astype(np.int64), np.array(rej_idxs).astype(np.int64))
 
@@ -656,7 +654,7 @@ def anomaly_query():
     isRecommend = data["isRecommend"]
 
     sys.path.append(CONTENT_PATH)
-    context = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
+    context, error_message = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
 
     context.save_acc_and_rej(acc_idxs, rej_idxs, user_name)
     indices, scores, labels = context.suggest_abnormal(strategy, np.array(acc_idxs).astype(np.int64), np.array(rej_idxs).astype(np.int64), budget)
@@ -690,7 +688,7 @@ def al_train():
     sys.path.append(CONTENT_PATH)
     # default setting al_train is light version, we only save the last epoch
     
-    context = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
+    context, error_message = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
     context.save_acc_and_rej(iteration, acc_idxs, rej_idxs, user_name)
     context.al_train(iteration, acc_idxs)
     NEW_ITERATION =  context.get_max_iter()
@@ -788,7 +786,7 @@ def get_res():
     gridlist = dict()
 
     sys.path.append(CONTENT_PATH)
-    context = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
+    context, error_message = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
     
     EPOCH_START = context.strategy.config["EPOCH_START"]
     EPOCH_PERIOD = context.strategy.config["EPOCH_PERIOD"]
@@ -800,7 +798,7 @@ def get_res():
     for i in range(1, epoch_num+1, 1):
         EPOCH = (i-1)*EPOCH_PERIOD + EPOCH_START
 
-        timevis = initialize_backend(CONTENT_PATH)
+        timevis , error_message= initialize_backend(CONTENT_PATH)
 
         # detect whether we have query before
         fname = "Epoch" if timevis.data_provider.mode == "normal" or timevis.data_provider.mode == "abnormal" else "Iteration"
@@ -852,7 +850,7 @@ def get_tree():
     SETTING = request.args.get("setting")
 
     sys.path.append(CONTENT_PATH)
-    context = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
+    context, error_message = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
     
     EPOCH_START = context.strategy.config["EPOCH_START"]
     EPOCH_PERIOD = context.strategy.config["EPOCH_PERIOD"]

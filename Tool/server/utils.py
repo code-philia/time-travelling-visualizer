@@ -24,34 +24,35 @@ def initialize_strategy(CONTENT_PATH, VIS_METHOD, SETTING, dense=False):
         conf = json.load(f)
     # VIS_METHOD = "DVI" 
     config = conf["DVI"]
-    
-    if SETTING == "normal" or SETTING == "abnormal":
-        if VIS_METHOD == "Trustvis":
-            print("trustvis")
-            strategy = Trustvis(CONTENT_PATH, config)
-        elif VIS_METHOD == "DVI":
-            strategy = tfDeepVisualInsight(CONTENT_PATH, config)
-        elif VIS_METHOD == "TimeVis":
-            strategy = TimeVis(CONTENT_PATH, config)
-        elif VIS_METHOD == "DeepDebugger":
-            strategy = DeepDebugger(CONTENT_PATH, config)
-        else:
-            raise NotImplementedError
-    elif SETTING == "active learning":
-        if dense:
-            if VIS_METHOD == "DVI":
-                strategy = tfDVIDenseAL(CONTENT_PATH, config)
+    error_message = ""
+    try:
+        if SETTING == "normal" or SETTING == "abnormal":
+            if VIS_METHOD == "Trustvis":
+                strategy = Trustvis(CONTENT_PATH, config)
+            elif VIS_METHOD == "DVI":
+                strategy = tfDeepVisualInsight(CONTENT_PATH, config)
             elif VIS_METHOD == "TimeVis":
-                strategy = TimeVisDenseAL(CONTENT_PATH, config)
+                strategy = TimeVis(CONTENT_PATH, config)
+            elif VIS_METHOD == "DeepDebugger":
+                strategy = DeepDebugger(CONTENT_PATH, config)
             else:
-                raise NotImplementedError
+                error_message += "Unsupported visualization method\n"
+        elif SETTING == "active learning":
+            if dense:
+                if VIS_METHOD == "DVI":
+                    strategy = tfDVIDenseAL(CONTENT_PATH, config)
+                elif VIS_METHOD == "TimeVis":
+                    strategy = TimeVisDenseAL(CONTENT_PATH, config)
+                else:
+                    error_message += "Unsupported visualization method\n"
+            else:
+                strategy = DVIAL(CONTENT_PATH, config)
+        
         else:
-            strategy = DVIAL(CONTENT_PATH, config)
-    
-    else:
-        raise NotImplementedError
-
-    return strategy
+            error_message += "Unsupported setting\n"
+    except Exception as e:
+        error_message += "mismatch in input vis method and current visualization model\n"
+    return strategy, error_message
 
 def initialize_context(strategy, setting):
     if setting == "normal":
@@ -80,9 +81,9 @@ def initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING, dense=False):
     Returns:
         backend: a context with a specific strategy
     """
-    strategy = initialize_strategy(CONTENT_PATH, VIS_METHOD, SETTING, dense)
+    strategy, error_message = initialize_strategy(CONTENT_PATH, VIS_METHOD, SETTING, dense)
     context = initialize_context(strategy=strategy, setting=SETTING)
-    return context
+    return context, error_message
 
 
 
@@ -388,31 +389,18 @@ def getContraVisChangeIndicesSingle(context_left,context_right, iterationLeft, i
     elif (method == "nearest neighbour"):
         predChangeIndicesLeft_Left, predChangeIndicesLeft_Right,predChangeIndicesRight_Left, predChangeIndicesRight_Right= evaluate_isNearestNeighbour_single(embedding_2d, last_embedding_2d, left_selected, right_selected)
     return predChangeIndicesLeft, predChangeIndicesRight, predChangeIndicesLeft_Left, predChangeIndicesLeft_Right, predChangeIndicesRight_Left, predChangeIndicesRight_Right
-def getCriticalChangeIndices(context, curr_iteration, last_iteration):
+
+def getCriticalChangeIndices(context, curr_iteration, next_iteration):
     predChangeIndices = []
     
-    train_data = context.train_representation_data(curr_iteration)
-    test_data = context.test_representation_data(curr_iteration)
-    all_data = np.concatenate((train_data, test_data), axis=0)
-    embedding_path = os.path.join(context.strategy.data_provider.checkpoint_path(curr_iteration), "embedding.npy")
-    if os.path.exists(embedding_path):
-        embedding_2d = np.load(embedding_path)
-    else:
-        embedding_2d = context.strategy.projector.batch_project(curr_iteration, all_data)
-        np.save(embedding_path, embedding_2d)
-    last_train_data = context.train_representation_data(last_iteration)
-    last_test_data = context.test_representation_data(last_iteration)
-    last_all_data = np.concatenate((last_train_data, last_test_data), axis=0)
-    last_embedding_path = os.path.join(context.strategy.data_provider.checkpoint_path(last_iteration), "embedding.npy")
-    if os.path.exists(last_embedding_path):
-        last_embedding_2d = np.load(last_embedding_path)
-    else:
-        last_embedding_2d = context.strategy.projector.batch_project(last_iteration, last_all_data)
-        np.save(last_embedding_path, last_embedding_2d)
+    all_data = get_train_test_data(context, curr_iteration)
+    all_data_next = get_train_test_data(context, next_iteration)
+  
     high_pred = context.strategy.data_provider.get_pred(curr_iteration, all_data).argmax(1)
-    last_high_pred = context.strategy.data_provider.get_pred(last_iteration, last_all_data).argmax(1)
-    predChangeIndices = np.where(high_pred != last_high_pred)[0]
+    next_high_pred = context.strategy.data_provider.get_pred(next_iteration, all_data_next).argmax(1)
+    predChangeIndices = np.where(high_pred != next_high_pred)[0]
     return predChangeIndices
+
 def getConfChangeIndices(context, curr_iteration, last_iteration, confChangeInput):
     
     train_data = context.train_representation_data(curr_iteration)
