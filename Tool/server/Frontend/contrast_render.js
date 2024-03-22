@@ -300,7 +300,7 @@ function drawCanvas(res,id, flag='ref') {
        var intersects = raycaster.intersectObject(points);
        let specifiedSelectedIndex = makeSpecifiedVariableName('selectedIndex', flag)
        let specifiedSelectedPointPosition = makeSpecifiedVariableName('selectedPointPosition', flag)
-       if (intersects.length > 0) {
+       if (intersects.length > 0 && checkVisibility(geometry.attributes.alpha.array, intersects[0].index)) {
 
         if (window.vueApp[specifiedSelectedIndex] != null) {
             var specifiedHighlightAttributes = makeSpecifiedVariableName('highlightAttributes', flag)
@@ -391,7 +391,7 @@ function drawCanvas(res,id, flag='ref') {
         let specifiedHighlightAttributes = makeSpecifiedVariableName('highlightAttributes', flag)
         let specifiedSelectedIndex = makeSpecifiedVariableName('selectedIndex', flag)
     
-        if (intersects.length > 0) {
+        if (intersects.length > 0 && checkVisibility(geometry.attributes.alpha.array, intersects[0].index)) {
             // 获取最接近的交点
             var intersect = intersects[0];
             // 获取索引 - 这需要根据具体实现来确定如何获取
@@ -425,10 +425,8 @@ function drawCanvas(res,id, flag='ref') {
                 window.vueApp[specifiedLastHoveredIndex] = null;
                 window.vueApp[specifiedImageSrc] = ""
                 updateHoverIndexUsingPointPosition(pointPosition, null, false, flag, window.vueApp.camera[flag], window.vueApp.renderer[flag]) 
-    
             }
         }
-      
     }
     //  =========================  鼠标hover功能  结束 =========================================== //
 
@@ -472,50 +470,24 @@ function drawCanvas(res,id, flag='ref') {
 
     var specifiedShowTesting = makeSpecifiedVariableName('showTesting', flag)
     var specifiedShowTraining = makeSpecifiedVariableName('showTraining', flag)
-    var specifiedVisibilityMap = makeSpecifiedVariableName('visibilityMap', flag)
+    var specifiedPredictionFlipIndices = makeSpecifiedVariableName('predictionFlipIndices', flag)
+
     window.vueApp.$watch(specifiedShowTesting, updateCurrentDisplay);
     window.vueApp.$watch(specifiedShowTraining, updateCurrentDisplay);
+    window.vueApp.$watch(specifiedPredictionFlipIndices, updateCurrentDisplay);  
     
     function updateCurrentDisplay() {
         console.log("currDisplay")
         let specifiedTrainIndex = makeSpecifiedVariableName('train_index', flag)
         let specifiedTestIndex = makeSpecifiedVariableName('test_index', flag)
-        console.log("visibliytyMPA", window.vueApp[specifiedVisibilityMap])
-        if (window.vueApp[specifiedShowTraining]) {
-            console.log("trainindex", window.vueApp[specifiedTrainIndex])
 
-            window.vueApp[specifiedTrainIndex].forEach(index => {
-                window.vueApp[specifiedVisibilityMap][index] = true; // Show train points
-            });
-        } else {
-            window.vueApp[specifiedTrainIndex].forEach(index => {
-                window.vueApp[specifiedVisibilityMap][index] = false; // Show train points
-            });
-        }
-        if (window.vueApp[specifiedShowTesting]) {
-            console.log("testindex", window.vueApp[specifiedTestIndex])
-            window.vueApp[specifiedTestIndex].forEach(index => {
-                window.vueApp[specifiedVisibilityMap][index] = true; // Show test points
-            });
-        } else {
-            window.vueApp[specifiedTestIndex].forEach(index => {
-                window.vueApp[specifiedVisibilityMap][index] = false; // Show test points
-            });
-        }
-        
-        applyVisibility();
+        // this is not alphas array at the beginning
+        geometry.attributes.alpha.array = updateShowingIndices(geometry.attributes.alpha.array, window.vueApp[specifiedShowTraining], window.vueApp[specifiedTrainIndex], window.vueApp[specifiedPredictionFlipIndices])
+        geometry.attributes.alpha.array = updateShowingIndices(geometry.attributes.alpha.array, window.vueApp[specifiedShowTesting], window.vueApp[specifiedTestIndex], window.vueApp[specifiedPredictionFlipIndices])
+
+        geometry.attributes.alpha.needsUpdate = true;
     }
   
-    function applyVisibility() {
-        const alphas = geometry.attributes.alpha.array;
-        if (window.vueApp[specifiedVisibilityMap]) {
-            window.vueApp[specifiedVisibilityMap].forEach((visible, index) => {
-                alphas[index] = visible ? 1.0 : 0.0; // 1 show 0 hide
-            });
-            geometry.attributes.alpha.needsUpdate = true;
-            console.log("updateVisibility", geometry.attributes.alpha.array)
-        }
-    }
     // In the Vue instance where you want to observe changes
     let specifiedHighlightAttributes = makeSpecifiedVariableName('highlightAttributes', flag)
     window.vueApp.$watch(specifiedHighlightAttributes, updateHighlights, {
