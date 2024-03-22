@@ -11,12 +11,12 @@ body {
 
 .content_container {
     display: flex;
-    height: 640px;
+    height: 80vh;
     flex-direction: row; 
 }
 
 #subject_model_info_panel {
-    width: 260px;
+    width: 30vh;
     padding: 20px;
     background-color: rgb(244, 244, 244);
     height: 100%; 
@@ -61,6 +61,7 @@ body {
     position: relative;
     bottom: 0;
     background-color: rgb(244, 244, 244);
+    overflow: auto;
 
 }
 #footerTar {
@@ -69,17 +70,17 @@ body {
     position: relative;
     bottom: 0;
     background-color: rgb(244, 244, 244);
+    overflow: auto;
 
 }
 
 #iterationContainer {
-    height: 120x;
+    height: 15vh;
     width: 100%;
-    position: fixed;
+    position: relative;
     background-color: rgb(244, 244, 244);
-    overflow-y: auto;
+    overflow: auto;
     bottom: 0;
-
 }
 
 
@@ -196,20 +197,31 @@ body {
 }
 
 #checkbox-container {
-    display: flex; 
+    width: 100%;
     justify-content: space-around; 
     align-items: flex-start;
-    margin-left: 30px;
+    bottom: 3vh;
+    position:relative;
   }
   
   #ref-checkbox-container, #tar-checkbox-container {
-    flex: 1; 
-    padding: 10px; 
-    margin-left: 10px;
+    position: relative;
+    margin-left: 20px;
   }
+
   .setting-item{
     display:flex;
     height: 30px;
     line-height: 30px;
     justify-content: space-between;
+}
+
+#visMethodInputRef {
+    position: relative;
+    top:2vh;
+}
+
+#visMethodInputTar {
+    position: relative;
+    top:2vh;
 }
