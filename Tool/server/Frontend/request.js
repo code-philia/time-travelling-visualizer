@@ -18,7 +18,7 @@ function updateProjection(content_path, iteration, taskType) {
             "path": content_path, 
             "iteration": iteration,
             "resolution": 200,
-            "vis_method": 'Trustvis',
+            "vis_method": window.vueApp.visMethod,
             'setting': 'normal',
             "content_path": content_path,
             "predicates": {},
@@ -29,7 +29,14 @@ function updateProjection(content_path, iteration, taskType) {
     })
     .then(response => response.json())
     .then(res => {
- 
+        // unblocking known error messages
+        // set error message info 
+        if (window.vueApp.errorMessage) {
+          window.vueApp.errorMessage =  res.errorMessage
+        } else {
+          alert(res.errorMessage)
+          window.vueApp.errorMessage =  res.errorMessage
+        }
         drawCanvas(res);
         window.vueApp.prediction_list = res.prediction_list
         window.vueApp.label_list = res.label_list
@@ -38,15 +45,13 @@ function updateProjection(content_path, iteration, taskType) {
         window.vueApp.currEpoch = iteration
         window.vueApp.test_index = res.testing_data
         window.vueApp.train_index = res.training_data
-
-        window.vueApp.visibilityMap = new Array(window.vueApp.train_index.length + window.vueApp.test_index.length).fill(true);
     })
     .catch(error => {
         console.error('Error fetching data:', error);
         window.vueApp.isCanvasLoading = false
         window.vueApp.$message({
             type: 'error',
-            message: `Backend error`
+            message: `Unknown Backend Error`
           });
     });
 }
@@ -58,6 +63,8 @@ function updateProjection(content_path, iteration, taskType) {
       })
       .then(response => response.json())
         .then(res => {
+            var specifiedTotalEpoch = makeSpecifiedVariableName('totalEpoch', flag)
+            window.vueApp[specifiedTotalEpoch] = res.structure.length
             drawTimeline(res, flag)
         })
 }
@@ -97,14 +104,14 @@ function updateProjection(content_path, iteration, taskType) {
 
 function updateContraProjection(content_path, iteration, taskType, flag) {
     console.log('contrast',content_path,iteration)
-    
+    let specifiedVisMethod = makeSpecifiedVariableName('visMethod', flag)
     fetch(`${window.location.href}/updateProjection`, {
         method: 'POST',
         body: JSON.stringify({
             "path": content_path, 
             "iteration": iteration,
             "resolution": 200,
-            "vis_method": 'Trustvis',
+            "vis_method": window.vueApp[specifiedVisMethod],
             'setting': 'normal',
             "content_path": content_path,
             "predicates": {},
@@ -115,10 +122,21 @@ function updateContraProjection(content_path, iteration, taskType, flag) {
     })
     .then(response => response.json())
     .then(res => {
-      currId = 'container_tar'    
+      currId = 'container_tar'   
+      alert_prefix = "right:\n"  
         if (flag == 'ref') {
             currId = 'container_ref'
+            alert_prefix = "left:\n" 
         } 
+        // set error message info 
+        let specifiedErrorMessage = makeSpecifiedVariableName('errorMessage', flag)
+        if (window.vueApp[specifiedErrorMessage]) {
+          window.vueApp[specifiedErrorMessage] = alert_prefix + res.errorMessage
+        } else {
+          alert(alert_prefix + res.errorMessage)
+          window.vueApp[specifiedErrorMessage] = alert_prefix + res.errorMessage
+        }
+   
         drawCanvas(res, currId,flag);
         let specifiedPredictionlist = makeSpecifiedVariableName('prediction_list', flag)
         let specifiedLabelList = makeSpecifiedVariableName('label_list', flag)
@@ -127,7 +145,7 @@ function updateContraProjection(content_path, iteration, taskType, flag) {
         let specifiedCurrEpoch = makeSpecifiedVariableName('currEpoch', flag)
         let specifiedTrainingIndex = makeSpecifiedVariableName('train_index', flag)
         let specifiedTestingIndex = makeSpecifiedVariableName('test_index', flag)
-        let specifiedVisibilityMap = makeSpecifiedVariableName('visibilityMap', flag)
+
 
         window.vueApp[specifiedPredictionlist] = res.prediction_list
         window.vueApp[specifiedLabelList] = res.label_list
@@ -137,7 +155,6 @@ function updateContraProjection(content_path, iteration, taskType, flag) {
         window.vueApp[specifiedTestingIndex] = res.testing_data
         window.vueApp[specifiedTrainingIndex] = res.training_data
 
-        window.vueApp[specifiedVisibilityMap]= new Array(res.testing_data.length + res.training_data.length).fill(true);
     })
     .catch(error => {
         console.error('Error fetching data:', error);
@@ -371,5 +388,58 @@ function getHighlightedPoints(task, flag) {
     } else {
         console.log("error")
     }
+}
+
+function getPredictionFlipIndices(flag) {
+//   @app.route('/highlightCriticalChange', methods=["POST", "GET"])
+// @cross_origin()
+// def highlight_critical_change():
+//     res = request.get_json()
+//     CONTENT_PATH = os.path.normpath(res['path'])
+//     VIS_METHOD = res['vis_method']
+//     SETTING = res["setting"]
+//     curr_iteration = int(res['iteration'])
+//     next_iteration = int(res['next_iteration'])
+
+//     context = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
+  
+//     predChangeIndices = getCriticalChangeIndices(context, curr_iteration, next_iteration)
+    
+//     return make_response(jsonify({
+//                                   "predChangeIndices": predChangeIndices.tolist()
+//                                   }), 200)
+
+  var specifiedContentPath = makeSpecifiedVariableName('contentPath', flag)
+  
+  var specifiedCurrEpoch = makeSpecifiedVariableName('currEpoch', flag)
+
+
+  const requestOptions = {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      "iteration": window.vueApp[specifiedCurrEpoch],
+      "next_iteration":  `${+window.vueApp[specifiedCurrEpoch] + 1}`,
+      "vis_method": 'Trustvis',
+      'setting': 'normal',
+      "content_path": window.vueApp[specifiedContentPath],
+    }),
+  };
+
+  fetch(`${window.location.href}/getPredictionFlipIndices`, requestOptions)
+  .then(response => {
+    if (!response.ok) {
+      throw new Error(`Server responded with status: ${response.status}`);
+    }
+    return response.json();
+  })
+  .then(data => {
+      var specifiedPredictionFlipIndices = makeSpecifiedVariableName('predictionFlipIndices', flag)
+      window.vueApp[specifiedPredictionFlipIndices] = new Set(data.predChangeIndices)
+      console.log("predChanges",   window.vueApp[specifiedPredictionFlipIndices])
+  })
+  .catch(error => {
+    console.error('Error during highlightCriticalChange fetch:', error);
+  });
 }
 
