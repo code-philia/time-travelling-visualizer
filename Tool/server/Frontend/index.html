@@ -46,6 +46,19 @@
             <el-button style="position: fixed; top: 130px; right:340px; font-size: 20px;" size="mini" type="warning"
                 slot="reference" icon="el-icon-setting"></el-button>
         </el-popover>
+
+        <el-popover placement="left" width="200" trigger="click">
+            <div>
+                <span style="line-height: 40px; font-weight: 800;">Error Message</span>
+                <br />
+                <div class="error-message-content" style="margin: 10px 0;">
+                    {{ errorMessage }}
+                </div>
+            </div>
+            <el-button style="position: fixed; top: 180px; right:340px; font-size: 20px;" size="mini" type="danger"
+                slot="reference" icon="el-icon-warning"></el-button>
+        </el-popover>
+
         <div class="content_container">
             <div id="subject_model_info_panel">
                 <div id="contentSettingData">
@@ -65,6 +78,11 @@
                     Content Path:
                     <el-input v-model="contentPath"></el-input>
                 </div>
+                <div id="visMethodInput">
+                    Visualization Method:
+                    <el-input v-model="visMethod"></el-input>
+                </div>
+                <el-divider></el-divider>
                 <el-button id="showVisResBtn"
                     style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;" @click="update">Load
                     Visualization Result</el-button>
@@ -92,6 +110,7 @@
                 <el-checkbox v-model="showTraining">Training</el-checkbox>
                 <el-checkbox v-model="showTesting">Testing</el-checkbox>
                 <el-checkbox v-model="showVisError">Visualization Error</el-checkbox>
+                <el-checkbox v-model="showPredictionFlips">Prediction Flip</el-checkbox>
 
                 <el-checkbox style="margin-top: 10px;" v-model="SelectionMode">Selection Mode</el-checkbox>
                 <el-divider></el-divider>
@@ -198,11 +217,13 @@
                 label_name_dict: {},
                 evaluation: { test_acc: 0, train_acc: 0 },
                 currEpoch: 1,
+                totalEpoch: null,
                 train_index: null,
                 test_index: null,
                 showTraining: true,
                 showTesting: true,
                 showVisError: false,
+                showPredictionFlips: false,
                 SelectionMode: false,
                 isShifting: false,
                 scene: null,
@@ -218,7 +239,9 @@
                 highlightAttributes: {
                     visualizationError: null,
                 },
+                predictionFlipIndices: null,
                 hoverIndex: null,
+                errorMessage: null,
                 canvasSetting: {
                     zoomSpeed: 0.01,
                     dragSpeed: 0.1,
@@ -308,11 +331,11 @@
                         },
                     },
                     {
-                        element: '#timeLinesvg',
+                        element: '#footer',
                         popover: {
                             title: 'Time Line',
                             description: 'It shows the total number of epochs of loaded training/testing dynamics',
-                            position: 'right',
+                            position: 'top',
                         },
                     },
                     {
@@ -401,8 +424,16 @@
                     }
                 }
             },
-
-
+            showPredictionFlips: {
+                handler(newVal, oldVal) {
+                    // prediction flip check for next epoch only
+                    if (newVal && this.currEpoch < this.totalEpoch) {
+                        getPredictionFlipIndices('')
+                    } else {
+                        this.predictionFlipIndices = null
+                    }
+                }
+            }
         },
         mounted() {
             this.driver = new Driver()
