@@ -213,6 +213,15 @@ body {
     line-height: 30px;
     justify-content: space-between;
 }
+#visMethodInputRef {
+    position: relative;
+    top:2vh;
+}
+
+#visMethodInputTar {
+    position: relative;
+    top:2vh;
+}
 .advanced-query-row{
     display:flex;
     height: 54px;
