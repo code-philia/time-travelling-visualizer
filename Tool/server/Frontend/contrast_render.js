@@ -391,7 +391,7 @@ function drawCanvas(res,id, flag='ref') {
         let specifiedHighlightAttributes = makeSpecifiedVariableName('highlightAttributes', flag)
         let specifiedSelectedIndex = makeSpecifiedVariableName('selectedIndex', flag)
     
-        if (intersects.length > 0) {
+        if (intersects.length > 0 && checkVisibility(geometry.attributes.alpha.array, intersects[0].index)) {
             let nn = [];
             // 获取最接近的交点
             var intersect = intersects[0];

@@ -125,6 +125,10 @@ body {
     pointer-events: none;
     font-weight: bold;
 }
+#visMethodInput {
+    position: relative;
+    top:2vh;
+}
 .advanced-query-row{
     display:flex;
     height: 54px;
