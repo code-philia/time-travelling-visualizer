@@ -94,7 +94,11 @@
                     style="background-color: #571792; color: #fff; width: 100%; margin-top: 0px;" @click="update">Load
                     Visualization Result</el-button>
                 <el-divider></el-divider>
-
+                <el-button id="loadVDBBtn"
+                    style="background-color: #571792; color: #fff; width: 100%; margin-top: 0px;" @click="VDBHandler">Load
+                    Vector Database</el-button>
+                <el-divider></el-divider>
+                
                 <div id="select-container">
                     <span
                         style="display: inline-block; line-height: 30px; vertical-align: top; margin-left:20px; margin-right: 5px;">Multiton:</span>
@@ -124,8 +128,47 @@
                         <option value="single" selected>single</option>
                         <option value="pair">pair</option>
                     </select>
-
-
+                    <el-tabs>
+                        <el-tab-pane label="Advanced Query">
+                            <div class="switch-container">
+                                <input type="checkbox" class="switch-input" v-model="isSwitchOn">
+                                <label class="switch-label" for="switch" @click="toggleSwitch"></label>
+                            </div>
+                            <div class="advanced-query-row">
+                                <el-select v-model="query.key" >
+                                    <el-option value="left-index" label="left-index">
+                                    </el-option>
+                                    <el-option value="right-index" label="right-index">
+                                    </el-option>
+                                    <el-option value="inter-index" label="inter-index">
+                                    </el-option>
+                                    <el-option value="nl" label="nl">
+                                    </el-option>
+                                    <el-option value="vector" label="vector">
+                                    </el-option>
+                                </el-select>
+                                <el-input style="margin-left:20px;" v-model="query.value"></el-input>
+                            </div>
+                            <div class="advanced-query-row">
+                                K:  <el-input style="margin-left:20px;" v-model="query.k"></el-input>
+                            </div>
+                            <el-button style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;" @click="indexSearchHandler" id="vdbquery">
+                                Start Query
+                            </el-button>
+                            <el-button style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;" id="clearquery">
+                                Clear Query
+                            </el-button>
+                            
+                            <!-- 显示查询结果 -->
+                            <span id="resultContainer">
+                                <ul>
+                                <li v-for="result in query_result" :key="result.id">
+                                    Distance: {{ result.distance }}, ID: {{ result.id }}
+                                </li>
+                                </ul>
+                            </span>
+                        </el-tab-pane>
+                    </el-tabs>
                     <span
                         style="display: inline-block; line-height: 30px; vertical-align: top; margin-left:20px;margin-right: 5px; margin-top: 10px">Cocurrent
                         Mode:</span>
@@ -254,10 +297,11 @@
             return {
                 lastHoveredIndexRef: null,
                 lastHoveredIndexTar: null,
-                contentPathRef: '/home/timeTravelling/guorui/git_space/TestFrontend/time-travelling-visualizer/Backdoor',
-                contentPathTar: '/home/timeTravelling/guorui/git_space/TestFrontend/time-travelling-visualizer/Backdoor',
+                contentPathRef: '/home/yiming/cophi/training_dynamic/code_training_dynamic/saved_models/ruby_fine_tine_5',
+                contentPathTar: '/home/yiming/cophi/training_dynamic/code_training_dynamic/saved_models/ruby_fine_tine_5',
                 isCanvasLoading: false,
                 taskType: 'Classification',
+                query_result: {},
                 prediction_listRef: [],
                 prediction_listTar: [],
                 curr_predRef: '',
@@ -346,6 +390,12 @@
                 zoomInSpeed: 0.01,
                 hoverMode: "single",
                 concurrentMode: "no",
+                query: {
+                    key:'left-index',
+                    value: null,
+                    k:null
+                },
+                isSwitchOn: false,
             }
         },
         methods: {
@@ -500,6 +550,17 @@
                 updateContraProjection(this.contentPathTar, this.currEpochTar, this.taskType, 'tar')
                 fetchTimelineData(this.contentPathTar, 'tar')
             },
+            VDBHandler() {
+                contrastloadVectorDBCode(this.contentPathRef, this.currEpochRef)
+                contrastloadVectorDBNl(this.contentPathTar, this.currEpochTar)
+            },
+            indexSearchHandler() {
+                contrastIndexSearch(this.query, this.isSwitchOn);
+            },
+            toggleSwitch() {
+                this.isSwitchOn = !this.isSwitchOn;
+                console.log(this.isSwitchOn)
+            },
 
             highlightDataMulti() {
                 getHighlightedPoints("multi")
@@ -516,7 +577,15 @@
                     this.curr_predRef = this.prediction_listRef[newVal];
                     this.curr_labelRef = this.label_name_dictRef[this.label_listRef[newVal]]
                     if (newVal != null) {
-                        getOriginalData(this.contentPathRef, newVal, this.dataType, 'ref')
+                        getOriginalData(this.contentPathRef, newVal,this.dataType, 'ref')
+                        const updatedQuery = {
+                            ...this.query,
+                            // key: 'inter-index',
+                            value: newVal
+                        };
+                        if (this.isSwitchOn) {
+                            contrastIndexSearch(updatedQuery, this.isSwitchOn);
+                        }
 
                     }
 
@@ -528,7 +597,15 @@
                     this.curr_predTar = this.prediction_listTar[newVal];
                     this.curr_labelTar = this.label_name_dictTar[this.label_listTar[newVal]]
                     if (newVal != null) {
-                        getOriginalData(this.contentPathTar, newVal, this.dataType, 'tar')
+                        getOriginalData(this.contentPathTar, newVal,this.dataType, 'tar')
+                        const updatedQuery = {
+                            ...this.query,
+                            // key: 'inter-index',
+                            value: newVal
+                        };
+                        if (this.isSwitchOn) {
+                            contrastIndexSearch(updatedQuery, this.isSwitchOn);
+                        }
 
                     }
 

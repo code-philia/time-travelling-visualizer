@@ -18,7 +18,7 @@ function updateProjection(content_path, iteration, taskType) {
             "path": content_path, 
             "iteration": iteration,
             "resolution": 200,
-            "vis_method": window.vueApp.visMethod,
+            "vis_method": 'Trustvis',
             'setting': 'normal',
             "content_path": content_path,
             "predicates": {},
@@ -29,14 +29,7 @@ function updateProjection(content_path, iteration, taskType) {
     })
     .then(response => response.json())
     .then(res => {
-        // unblocking known error messages
-        // set error message info 
-        if (window.vueApp.errorMessage) {
-          window.vueApp.errorMessage =  res.errorMessage
-        } else {
-          alert(res.errorMessage)
-          window.vueApp.errorMessage =  res.errorMessage
-        }
+ 
         drawCanvas(res);
         window.vueApp.prediction_list = res.prediction_list
         window.vueApp.label_list = res.label_list
@@ -45,13 +38,15 @@ function updateProjection(content_path, iteration, taskType) {
         window.vueApp.currEpoch = iteration
         window.vueApp.test_index = res.testing_data
         window.vueApp.train_index = res.training_data
+
+        window.vueApp.visibilityMap = new Array(window.vueApp.train_index.length + window.vueApp.test_index.length).fill(true);
     })
     .catch(error => {
         console.error('Error fetching data:', error);
         window.vueApp.isCanvasLoading = false
         window.vueApp.$message({
             type: 'error',
-            message: `Unknown Backend Error`
+            message: `Backend error`
           });
     });
 }
@@ -63,8 +58,6 @@ function updateProjection(content_path, iteration, taskType) {
       })
       .then(response => response.json())
         .then(res => {
-            var specifiedTotalEpoch = makeSpecifiedVariableName('totalEpoch', flag)
-            window.vueApp[specifiedTotalEpoch] = res.structure.length
             drawTimeline(res, flag)
         })
 }
@@ -104,14 +97,14 @@ function updateProjection(content_path, iteration, taskType) {
 
 function updateContraProjection(content_path, iteration, taskType, flag) {
     console.log('contrast',content_path,iteration)
-    let specifiedVisMethod = makeSpecifiedVariableName('visMethod', flag)
+    
     fetch(`${window.location.href}/updateProjection`, {
         method: 'POST',
         body: JSON.stringify({
             "path": content_path, 
             "iteration": iteration,
             "resolution": 200,
-            "vis_method": window.vueApp[specifiedVisMethod],
+            "vis_method": 'Trustvis',
             'setting': 'normal',
             "content_path": content_path,
             "predicates": {},
@@ -122,21 +115,10 @@ function updateContraProjection(content_path, iteration, taskType, flag) {
     })
     .then(response => response.json())
     .then(res => {
-      currId = 'container_tar'   
-      alert_prefix = "right:\n"  
+      currId = 'container_tar'    
         if (flag == 'ref') {
             currId = 'container_ref'
-            alert_prefix = "left:\n" 
         } 
-        // set error message info 
-        let specifiedErrorMessage = makeSpecifiedVariableName('errorMessage', flag)
-        if (window.vueApp[specifiedErrorMessage]) {
-          window.vueApp[specifiedErrorMessage] = alert_prefix + res.errorMessage
-        } else {
-          alert(alert_prefix + res.errorMessage)
-          window.vueApp[specifiedErrorMessage] = alert_prefix + res.errorMessage
-        }
-   
         drawCanvas(res, currId,flag);
         let specifiedPredictionlist = makeSpecifiedVariableName('prediction_list', flag)
         let specifiedLabelList = makeSpecifiedVariableName('label_list', flag)
@@ -145,7 +127,7 @@ function updateContraProjection(content_path, iteration, taskType, flag) {
         let specifiedCurrEpoch = makeSpecifiedVariableName('currEpoch', flag)
         let specifiedTrainingIndex = makeSpecifiedVariableName('train_index', flag)
         let specifiedTestingIndex = makeSpecifiedVariableName('test_index', flag)
-
+        let specifiedVisibilityMap = makeSpecifiedVariableName('visibilityMap', flag)
 
         window.vueApp[specifiedPredictionlist] = res.prediction_list
         window.vueApp[specifiedLabelList] = res.label_list
@@ -155,6 +137,7 @@ function updateContraProjection(content_path, iteration, taskType, flag) {
         window.vueApp[specifiedTestingIndex] = res.testing_data
         window.vueApp[specifiedTrainingIndex] = res.training_data
 
+        window.vueApp[specifiedVisibilityMap]= new Array(res.testing_data.length + res.training_data.length).fill(true);
     })
     .catch(error => {
         console.error('Error fetching data:', error);
@@ -443,3 +426,150 @@ function getPredictionFlipIndices(flag) {
   });
 }
 
+
+// index search
+function indexSearch(query, switchOn) {
+  fetch(`${window.location.href}indexSearch`, {
+      method: 'POST',
+      body: JSON.stringify({
+          "resolution": 200,
+          "vis_method": 'Trustvis',
+          'setting': 'normal',
+          "query": {
+              key: query.key,
+              value: query.value,
+              k: query.k
+            }
+      }),
+      headers: headers,
+      mode: 'cors'
+  })
+  .then(response => response.json())
+  .then(res => {
+      window.vueApp.query_result = res.result   
+      // console.log(res.result);  
+      // console.log(window.vueApp.query_result); 
+      // console.log(typeof(window.vueApp.query_result)); 
+      // updateSizes()
+      // console.log(switchOn)
+      if (switchOn) {
+          updateSizes()
+      } else {
+          show_query_text()
+      }
+  })
+  .catch(error => {
+      console.error('Error fetching data:', error);
+      window.vueApp.isCanvasLoading = false
+      window.vueApp.$message({
+          type: 'error',
+          message: `Backend error`
+        });
+  });
+}
+
+function contrastIndexSearch(query, switchOn) {
+  fetch(`contrastIndexSearch`, {
+      method: 'POST',
+      body: JSON.stringify({
+          "resolution": 200,
+          "vis_method": 'Trustvis',
+          'setting': 'normal',
+          "query": {
+              key: query.key,
+              value: query.value,
+              k: query.k
+            }
+      }),
+      headers: headers,
+      mode: 'cors'
+  })
+  .then(response => response.json())
+  .then(res => {
+      window.vueApp.query_result = res.result   
+      show_query_text()
+  })
+  .catch(error => {
+      console.error('Error fetching data:', error);
+      window.vueApp.isCanvasLoading = false
+      window.vueApp.$message({
+          type: 'error',
+          message: `Backend error`
+        });
+  });
+}
+
+// loadVectorDB
+function loadVectorDB(content_path, iteration) {
+    console.log(content_path,iteration)
+    fetch(`${window.location.href}loadVectorDB`, {
+        method: 'POST',
+        body: JSON.stringify({
+            "path": content_path, 
+            "iteration": iteration,
+        }),
+        headers: headers,
+        mode: 'cors'
+    })
+    .then(response => response.json())
+    .then(res => {
+    })
+    .catch(error => {
+        console.error('Error fetching data:', error);
+        window.vueApp.isCanvasLoading = false
+        window.vueApp.$message({
+            type: 'error',
+            message: `Backend error`
+          });
+    });
+}
+
+// loadVectorDB
+function contrastloadVectorDBCode(content_path, iteration) {
+  console.log(content_path,iteration)
+  fetch(`${window.location.href}loadVectorDBCode`, {
+      method: 'POST',
+      body: JSON.stringify({
+          "path": content_path, 
+          "iteration": iteration,
+      }),
+      headers: headers,
+      mode: 'cors'
+  })
+  .then(response => response.json())
+  .then(res => {
+  })
+  .catch(error => {
+      console.error('Error fetching data:', error);
+      window.vueApp.isCanvasLoading = false
+      window.vueApp.$message({
+          type: 'error',
+          message: `Backend error`
+        });
+  });
+}
+
+// loadVectorDB
+function contrastloadVectorDBNl(content_path, iteration) {
+  console.log(content_path,iteration)
+  fetch(`${window.location.href}loadVectorDBNl`, {
+      method: 'POST',
+      body: JSON.stringify({
+          "path": content_path, 
+          "iteration": iteration,
+      }),
+      headers: headers,
+      mode: 'cors'
+  })
+  .then(response => response.json())
+  .then(res => {
+  })
+  .catch(error => {
+      console.error('Error fetching data:', error);
+      window.vueApp.isCanvasLoading = false
+      window.vueApp.$message({
+          type: 'error',
+          message: `Backend error`
+        });
+  });
+}

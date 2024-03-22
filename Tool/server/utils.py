@@ -245,11 +245,20 @@ def update_epoch_projection(context, EPOCH, predicates, TaskType):
     prediction_list = []
     # print("all_data",all_data.shape)
     all_data = all_data.reshape(all_data.shape[0],all_data.shape[1])
-    if (TaskType == 'classification'):
-        prediction = context.strategy.data_provider.get_pred(EPOCH, all_data).argmax(1)
+    if (TaskType == 'Classification'):
+        # check if there is stored prediction and load
+        prediction_path = os.path.join(context.strategy.data_provider.checkpoint_path(EPOCH), "modified_ranks.json")
+        if os.path.isfile(prediction_path):
+            with open(prediction_path, "r") as f:
+                predictions = json.load(f)
 
-        for i in range(len(prediction)):
-            prediction_list.append(CLASSES[prediction[i]])
+            for prediction in predictions:
+                prediction_list.append(prediction)
+        else:
+            prediction = context.strategy.data_provider.get_pred(EPOCH, all_data).argmax(1)
+
+            for i in range(len(prediction)):
+                prediction_list.append(CLASSES[prediction[i]])
     
     EPOCH_START = context.strategy.config["EPOCH_START"]
     EPOCH_PERIOD = context.strategy.config["EPOCH_PERIOD"]

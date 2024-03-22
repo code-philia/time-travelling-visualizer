@@ -253,7 +253,8 @@ class NormalDataProvider(DataProvider):
     
     def train_labels(self, epoch):
         # load train data
-        training_data_loc = os.path.join(self.content_path, "Training_data", "training_dataset_label.pth")
+        # training_data_loc = os.path.join(self.content_path, "Training_data", "training_dataset_label.pth")
+        training_data_loc = os.path.join(self.content_path, "Training_data", f"training_dataset_label_{epoch}.pth")
         index_file = os.path.join(self.model_path, "{}_{:d}".format(self.epoch_name, epoch), "index.json")
         index = load_labelled_data_index(index_file)
         try:
@@ -280,15 +281,18 @@ class NormalDataProvider(DataProvider):
     
     def test_labels(self, epoch):
         # load train data
-        testing_data_loc = os.path.join(self.content_path, "Testing_data", "testing_dataset_label.pth")
+        # testing_data_loc = os.path.join(self.content_path, "Testing_data", "testing_dataset_label.pth")
+        testing_data_loc = os.path.join(self.content_path, "Testing_data", f"testing_dataset_label_{epoch}.pth")
         try:
-            testing_labels = torch.load(testing_data_loc).to(device="cpu")
-            index_file = os.path.join(self.model_path, "{}_{:d}".format(self.epoch_name, epoch), "test_index.json")
+            # avoid index checking for testing data
+            testing_labels = torch.load(testing_data_loc, map_location="cpu")
+            testing_labels = np.array(testing_labels)
+            # index_file = os.path.join(self.model_path, "{}_{:d}".format(self.epoch_name, epoch), "test_index.json")
        
-            if os.path.exists(index_file):
-                idxs = load_labelled_data_index(index_file)
-                testing_labels = testing_labels[idxs]
-                testing_labels = testing_labels.cpu().numpy()
+            # if os.path.exists(index_file):
+            #     idxs = load_labelled_data_index(index_file)
+            #     testing_labels = testing_labels[idxs]
+            #     testing_labels = testing_labels.cpu().numpy()
         except Exception as e:
             print("no test labels saved for Epoch {}".format(epoch))
             testing_labels = None

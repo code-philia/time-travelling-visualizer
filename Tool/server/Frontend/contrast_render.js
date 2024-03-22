@@ -392,6 +392,7 @@ function drawCanvas(res,id, flag='ref') {
         let specifiedSelectedIndex = makeSpecifiedVariableName('selectedIndex', flag)
     
         if (intersects.length > 0 && checkVisibility(geometry.attributes.alpha.array, intersects[0].index)) {
+            let nn = [];
             // 获取最接近的交点
             var intersect = intersects[0];
             // 获取索引 - 这需要根据具体实现来确定如何获取
@@ -401,10 +402,25 @@ function drawCanvas(res,id, flag='ref') {
             }
             // 在这里处理悬停事件
             if (window.vueApp[specifiedLastHoveredIndex] != index) {
+                sizes.fill(NORMAL_SIZE);
+                geometry.attributes.size.array = new Float32Array(sizes);
                 updateLastHoverIndexSize(window.vueApp[specifiedLastHoveredIndex], window.vueApp[specifiedHighlightAttributes].allHighlightedSet,
                     window.vueApp[specifiedSelectedIndex], window.vueApp[specifiedHighlightAttributes].boldIndices, window.vueApp[specifiedHighlightAttributes].visualizationError)
                 container.style.cursor = 'pointer';
                 geometry.attributes.size.array[index] = HOVER_SIZE
+                
+                Object.values(window.vueApp.query_result).forEach(item => {
+                    if (typeof item === 'object' && item !== null) {
+                        nn.push(item.id);
+                    }
+                });
+                console.log(nn);
+                // 遍历 nn 列表，将每个索引位置的元素设置为 HOVER_SIZE
+                nn.forEach((item, index) => {
+                    console.log(item);
+                    geometry.attributes.size.array[item] = HOVER_SIZE
+                });
+
                 geometry.attributes.size.needsUpdate = true;
                 window.vueApp[specifiedLastHoveredIndex] = index;
                 var pointPosition = new THREE.Vector3();
@@ -418,9 +434,11 @@ function drawCanvas(res,id, flag='ref') {
             container.style.cursor = 'default';
             // 如果没有悬停在任何点上，也重置上一个点的大小
             if (window.vueApp[specifiedLastHoveredIndex] != null) {
-               console.log("emptyseelectedindex", window.vueApp[specifiedSelectedIndex])
+                console.log("emptyseelectedindex", window.vueApp[specifiedSelectedIndex])
                 updateLastHoverIndexSize(window.vueApp[specifiedLastHoveredIndex], window.vueApp[specifiedHighlightAttributes].allHighlightedSet,
                     window.vueApp[specifiedSelectedIndex], window.vueApp[specifiedHighlightAttributes].boldIndices, window.vueApp[specifiedHighlightAttributes].visualizationError)
+                sizes.fill(NORMAL_SIZE);
+                geometry.attributes.size.array = new Float32Array(sizes);
                 geometry.attributes.size.needsUpdate = true;
                 window.vueApp[specifiedLastHoveredIndex] = null;
                 window.vueApp[specifiedImageSrc] = ""
@@ -430,17 +448,66 @@ function drawCanvas(res,id, flag='ref') {
     }
     //  =========================  鼠标hover功能  结束 =========================================== //
 
+    //  =========================  vector database search button start =========================================== //
+    document.querySelector('#vdbquery').addEventListener('click', indexSearchHandler);
+    function indexSearchHandler() {
+        let nn = [];
+        Object.values(window.vueApp.query_result).forEach(item => {
+            if (typeof item === 'object' && item !== null) {
+                nn.push(item.id);
+            }
+        });
+        console.log(nn);
+        // 遍历 nn 列表，将每个索引位置的元素设置为 HOVER_SIZE
+        nn.forEach((item, index) => {
+            console.log(item);
+            geometry.attributes.size.array[item] = HOVER_SIZE
+        });
+
+        geometry.attributes.size.needsUpdate = true;
+        resultContainer = document.getElementById("resultContainer");
+        resultContainer.setAttribute("style", "display:block;")
+      }
+
+    document.querySelector('#clearquery').addEventListener('click', clearSearchHandler);
+    function clearSearchHandler() {
+        sizes.fill(NORMAL_SIZE);
+        geometry.attributes.size.array = new Float32Array(sizes);
+        geometry.attributes.size.needsUpdate = true;
+        window.vueApp.lastHoveredIndex = null;
+        resultContainer = document.getElementById("resultContainer");
+        resultContainer.setAttribute("style", "display:none;")
+      }
+
+    //  =========================  vector database search button end =========================================== //
+
     function updatePairHover(index) {
         let specifiedLastHoveredIndex = makeSpecifiedVariableName('lastHoveredIndex', flag)
         let specifiedImageSrc = makeSpecifiedVariableName('imageSrc', flag)
         let specifiedHighlightAttributes = makeSpecifiedVariableName('highlightAttributes', flag)
+        let nn = [];
 
         if (index != null) {
+            sizes.fill(NORMAL_SIZE);
+            geometry.attributes.size.array = new Float32Array(sizes);
             if (window.vueApp[specifiedLastHoveredIndex] != index) {
                 updateLastHoverIndexSize(window.vueApp[specifiedLastHoveredIndex], window.vueApp[specifiedHighlightAttributes].allHighlightedSet,
                     window.vueApp[specifiedSelectedIndex], window.vueApp[specifiedHighlightAttributes].boldIndices, window.vueApp[specifiedHighlightAttributes].visualizationError)
                 container.style.cursor = 'pointer';
                 geometry.attributes.size.array[index] = HOVER_SIZE
+
+                Object.values(window.vueApp.query_result).forEach(item => {
+                    if (typeof item === 'object' && item !== null) {
+                        nn.push(item.id);
+                    }
+                });
+                console.log(nn);
+                // 遍历 nn 列表，将每个索引位置的元素设置为 HOVER_SIZE
+                nn.forEach((item, index) => {
+                    console.log(item);
+                    geometry.attributes.size.array[item] = HOVER_SIZE
+                });
+
                 geometry.attributes.size.needsUpdate = true;
                 window.vueApp[specifiedLastHoveredIndex] = index;
                 var pointPosition = new THREE.Vector3();
@@ -452,6 +519,8 @@ function drawCanvas(res,id, flag='ref') {
             if (window.vueApp[specifiedLastHoveredIndex] != null) {
                 updateLastHoverIndexSize(window.vueApp[specifiedLastHoveredIndex], window.vueApp[specifiedHighlightAttributes].allHighlightedSet,
                     window.vueApp[specifiedSelectedIndex], window.vueApp[specifiedHighlightAttributes].boldIndices, window.vueApp[specifiedHighlightAttributes].visualizationError)
+                sizes.fill(NORMAL_SIZE);
+                geometry.attributes.size.array = new Float32Array(sizes);
                 geometry.attributes.size.needsUpdate = true;
                 window.vueApp[specifiedLastHoveredIndex] = null;
                 window.vueApp[specifiedImageSrc] = ""
@@ -735,3 +804,51 @@ window.onload = function() {
     makeDraggable(currHover1, currHover1);
     makeDraggable(currHover2, currHover2);
 };
+
+function contrastUpdateSizes() {
+    const nn = []; // 创建一个空的 sizes 列表
+    flag='ref'
+    
+    Object.values(window.vueApp.query_result).forEach(item => {
+        if (typeof item === 'object' && item !== null) {
+            nn.push(item.id);
+        }
+    });
+    console.log(nn);
+    // 遍历 nn 列表，将每个索引位置的元素设置为 HOVER_SIZE
+    nn.forEach((item, index) => {
+        console.log(item);
+        // sizes[item] = HOVER_SIZE;
+        var index = [item, flag];
+        console.log(index)
+        console.log(typeof(index))
+        console.log(geometry.attributes.size.array)
+        geometry.attributes.size.array[index] = HOVER_SIZE;
+        geometry.attributes.size.needsUpdate = true;
+    });
+    // 更新size属性并标记为需要更新
+    // geometry.attributes.size.array = new Float32Array(sizes);
+    // geometry.attributes.size.needsUpdate = true;
+    // window.vueApp.lastHoveredIndex = index;
+    resultContainer = document.getElementById("resultContainer");
+    resultContainer.setAttribute("style", "display:block;")
+}
+
+function clear() {
+    sizes.fill(NORMAL_SIZE); // 将所有点的大小重置为5
+    // 更新size属性并标记为需要更新
+    geometry.attributes.size.array = new Float32Array(sizes);
+    geometry.attributes.size.needsUpdate = true;
+    window.vueApp.lastHoveredIndex = null;
+    resultImg = document.getElementById("metaImg")
+    resultImg.setAttribute("style", "display:none;")
+    spriteTextElement = document.getElementById("spriteTextElement");
+    spriteTextElement.textContent = ""; // 清空文本内容
+    resultContainer = document.getElementById("resultContainer");
+    resultContainer.setAttribute("style", "display:none;")
+}
+
+function show_query_text() {
+    resultContainer = document.getElementById("resultContainer");
+    resultContainer.setAttribute("style", "display:block;")
+}
