@@ -570,3 +570,24 @@ function calculateZoomSpeed(currentZoom, BASE_ZOOM_SPEED, MAX_ZOOM_SCALE) {
   return Math.max(speed, BASE_ZOOM_SPEED / MAX_ZOOM_SCALE); 
 }
 
+// check index point visibility in alphas visibility array 
+function checkVisibility(array, index) {
+    return array[index] == 1.0
+}
+
+// update visibility of indices
+function updateAlphas(alphas, indices, flipIndices, shouldShow) {
+  indices.forEach(index => {
+      alphas[index] = shouldShow && (!flipIndices || flipIndices.has(index)) ? 1.0 : 0.0;
+  });
+  return alphas
+}
+
+// update indices to show on canvas
+function updateShowingIndices(alphas, isShow, indices, flip_indices) {
+  if (isShow) {
+      return updateAlphas(alphas, indices, flip_indices, true);
+  } else {
+      return updateAlphas(alphas,indices, null, false);
+  }
+}
