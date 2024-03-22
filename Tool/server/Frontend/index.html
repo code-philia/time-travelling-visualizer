@@ -134,9 +134,43 @@
                         </el-button>
 
                     </el-tab-pane>
-
-                    <el-tab-pane label="Advanced Query">Advanced Query</el-tab-pane>
-                </el-tabs>
+                 
+                    <el-tab-pane label="Advanced Query">
+                        <div class="switch-container">
+                            <input type="checkbox" class="switch-input" v-model="isSwitchOn">
+                            <label class="switch-label" for="switch" @click="toggleSwitch"></label>
+                        </div>
+                        <div class="advanced-query-row">
+                            <el-select v-model="query.key" >
+                                <el-option value="index" label="index">
+                                </el-option>
+                                <el-option value="nl" label="nl">
+                                </el-option>
+                                <el-option value="vector" label="vector">
+                                </el-option>
+                            </el-select>
+                            <el-input style="margin-left:20px;" v-model="query.value"></el-input>
+                        </div>
+                        <div class="advanced-query-row">
+                            K:  <el-input style="margin-left:20px;" v-model="query.k"></el-input>
+                        </div>
+                        <el-button style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;" @click="indexSearchHandler">
+                            Start Query
+                        </el-button>
+                        <el-button style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;" @click="clearSearchHandler">
+                            Clear Query
+                        </el-button>
+                        
+                        <!-- 显示查询结果 -->
+                        <span id="resultContainer">
+                            <ul>
+                            <li v-for="result in query_result" :key="result.id">
+                                Distance: {{ result.distance }}, ID: {{ result.id }}
+                            </li>
+                            </ul>
+                        </span>
+                    </el-tab-pane>
+                  </el-tabs>
             </div>
         </div>
         <div id="footer">
@@ -175,6 +209,7 @@
                 visMethod: 'Trustvis',
                 taskType: 'Classification',
                 isCanvasLoading: false,
+                query_result: {},
                 prediction_list: [],
                 curr_pred: '',
                 curr_label: '',
@@ -216,7 +251,13 @@
                     key: 'lable',
                     value: null
                 },
-                confidence: [0, 1]
+                query: {
+                    key:'index',
+                    value: null,
+                    k:null
+                },
+                isSwitchOn: false,
+                confidence:[0,1]
             }
         },
         methods: {
@@ -339,7 +380,18 @@
                 console.log("taskType", this.taskType)
                 updateProjection(this.contentPath, this.currEpoch, this.taskType)
                 fetchTimelineData(this.contentPath, "")
-            }
+                loadVectorDB(this.contentPath, this.currEpoch)
+            },
+            indexSearchHandler() {
+                indexSearch(this.query, this.isSwitchOn);
+            },
+            clearSearchHandler() {
+                clear();
+            },
+            toggleSwitch() {
+                this.isSwitchOn = !this.isSwitchOn; // 切换开关状态
+                console.log(this.isSwitchOn)
+            },
         },
         watch: {
             lastHoveredIndex: {
@@ -349,6 +401,15 @@
                     this.curr_label = this.label_name_dict[this.label_list[newVal]]
                     if (newVal != null) {
                         getOriginalData(this.contentPath, newVal, this.dataType, "")
+                        const updatedQuery = {
+                            ...this.query,
+                            key: 'index',
+                            value: newVal
+                        };
+                        if (this.isSwitchOn) {
+                            indexSearch(updatedQuery, this.isSwitchOn);
+                        }
+
                     }
                 }
             },
