@@ -63,7 +63,9 @@ def load_vectorDB():
     has_code_embeddings = utility.has_collection("code_embeddings")
 
     print(f"Does collection code_embeddings exist in Milvus: {has_code_embeddings}")
-    # utility.drop_collection("code_embeddings")
+
+    if has_code_embeddings:
+        utility.drop_collection("code_embeddings")
     # utility.drop_collection("nl_embeddings")
 
     # Define fields for code_embeddings collection
@@ -85,36 +87,18 @@ def load_vectorDB():
         code_embeddings,    # field embeddings, supports numpy.ndarray and list
     ]
 
-    # # insert_result = hello_milvus.insert(entities)
+    batch_size = 1000  # 调整批次大小
+    num_batches = len(code_entities[0]) // batch_size
 
-    # batch_size = 1000  # 调整批次大小
-    # num_batches = len(code_entities[0]) // batch_size
+    for i in range(num_batches):
+        start = i * batch_size
+        end = (i + 1) * batch_size
+        batch_entities = [entity[start:end] for entity in code_entities]
+        code_insert_result = code_embeddings_collection.insert(batch_entities)
 
-    # for i in range(num_batches):
-    #     start = i * batch_size
-    #     end = (i + 1) * batch_size
-    #     batch_entities = [entity[start:end] for entity in code_entities]
-    #     code_insert_result = code_embeddings_collection.insert(batch_entities)
-
-    # remaining_entities = [entity[num_batches * batch_size:] for entity in code_entities]
-    # if remaining_entities:
-    #     code_insert_result = code_embeddings_collection.insert(remaining_entities)
-
-    # nl_batch_size = 1000  # 调整批次大小
-    # nl_num_batches = len(nl_entities[0]) // nl_batch_size
-
-    # for i in range(num_batches):
-    #     start = i * nl_batch_size
-    #     end = (i + 1) * nl_batch_size
-    #     batch_entities = [entity[start:end] for entity in nl_entities]
-    #     nl_insert_result = nl_embeddings_collection.insert(batch_entities)
-
-    # remaining_entities = [entity[nl_num_batches * nl_batch_size:] for entity in nl_entities]
-    # if remaining_entities:
-    #     nl_insert_result = nl_embeddings_collection.insert(remaining_entities)
-
-    # code_insert_result = code_embeddings_collection.insert(code_entities)
-    # nl_insert_result = nl_embeddings_collection.insert(nl_entities)
+    remaining_entities = [entity[num_batches * batch_size:] for entity in code_entities]
+    if remaining_entities:
+        code_insert_result = code_embeddings_collection.insert(remaining_entities)
 
     # hello_milvus.flush()
     print(f"Number of code entities in Milvus: {code_embeddings_collection.num_entities}")  # check the num_entites
@@ -157,6 +141,8 @@ def load_vectorDB_code():
     has_code_embeddings = utility.has_collection("code_embeddings")
 
     print(f"Does collection code_embeddings exist in Milvus: {has_code_embeddings}")
+    if has_code_embeddings:
+        utility.drop_collection("code_embeddings")
     # utility.drop_collection("code_embeddings")
     # utility.drop_collection("nl_embeddings")
 
@@ -179,38 +165,19 @@ def load_vectorDB_code():
         code_embeddings,    # field embeddings, supports numpy.ndarray and list
     ]
 
-    # # insert_result = hello_milvus.insert(entities)
+    batch_size = 1000  # 调整批次大小
+    num_batches = len(code_entities[0]) // batch_size
 
-    # batch_size = 1000  # 调整批次大小
-    # num_batches = len(code_entities[0]) // batch_size
+    for i in range(num_batches):
+        start = i * batch_size
+        end = (i + 1) * batch_size
+        batch_entities = [entity[start:end] for entity in code_entities]
+        code_insert_result = code_embeddings_collection.insert(batch_entities)
 
-    # for i in range(num_batches):
-    #     start = i * batch_size
-    #     end = (i + 1) * batch_size
-    #     batch_entities = [entity[start:end] for entity in code_entities]
-    #     code_insert_result = code_embeddings_collection.insert(batch_entities)
+    remaining_entities = [entity[num_batches * batch_size:] for entity in code_entities]
+    if remaining_entities:
+        code_insert_result = code_embeddings_collection.insert(remaining_entities)
 
-    # remaining_entities = [entity[num_batches * batch_size:] for entity in code_entities]
-    # if remaining_entities:
-    #     code_insert_result = code_embeddings_collection.insert(remaining_entities)
-
-    # nl_batch_size = 1000  # 调整批次大小
-    # nl_num_batches = len(nl_entities[0]) // nl_batch_size
-
-    # for i in range(num_batches):
-    #     start = i * nl_batch_size
-    #     end = (i + 1) * nl_batch_size
-    #     batch_entities = [entity[start:end] for entity in nl_entities]
-    #     nl_insert_result = nl_embeddings_collection.insert(batch_entities)
-
-    # remaining_entities = [entity[nl_num_batches * nl_batch_size:] for entity in nl_entities]
-    # if remaining_entities:
-    #     nl_insert_result = nl_embeddings_collection.insert(remaining_entities)
-
-    # code_insert_result = code_embeddings_collection.insert(code_entities)
-    # nl_insert_result = nl_embeddings_collection.insert(nl_entities)
-
-    # hello_milvus.flush()
     print(f"Number of code entities in Milvus: {code_embeddings_collection.num_entities}")  # check the num_entites
 
     print(fmt.format("Start Creating index IVF_FLAT"))
@@ -251,6 +218,8 @@ def load_vectorDB_nl():
     has_nl_embeddings = utility.has_collection("nl_embeddings")
 
     print(f"Does collection nl_embeddings exist in Milvus: {has_nl_embeddings}")
+    if has_nl_embeddings:
+        utility.drop_collection("nl_embeddings")
     # utility.drop_collection("code_embeddings")
     # utility.drop_collection("nl_embeddings")
 
@@ -273,36 +242,18 @@ def load_vectorDB_nl():
         nl_embeddings,    # field embeddings, supports numpy.ndarray and list
     ]
 
-    # # insert_result = hello_milvus.insert(entities)
+    nl_batch_size = 1000  # 调整批次大小
+    nl_num_batches = len(nl_entities[0]) // nl_batch_size
 
-    # batch_size = 1000  # 调整批次大小
-    # num_batches = len(code_entities[0]) // batch_size
+    for i in range(nl_num_batches):
+        start = i * nl_batch_size
+        end = (i + 1) * nl_batch_size
+        batch_entities = [entity[start:end] for entity in nl_entities]
+        nl_insert_result = nl_embeddings_collection.insert(batch_entities)
 
-    # for i in range(num_batches):
-    #     start = i * batch_size
-    #     end = (i + 1) * batch_size
-    #     batch_entities = [entity[start:end] for entity in code_entities]
-    #     code_insert_result = code_embeddings_collection.insert(batch_entities)
-
-    # remaining_entities = [entity[num_batches * batch_size:] for entity in code_entities]
-    # if remaining_entities:
-    #     code_insert_result = code_embeddings_collection.insert(remaining_entities)
-
-    # nl_batch_size = 1000  # 调整批次大小
-    # nl_num_batches = len(nl_entities[0]) // nl_batch_size
-
-    # for i in range(num_batches):
-    #     start = i * nl_batch_size
-    #     end = (i + 1) * nl_batch_size
-    #     batch_entities = [entity[start:end] for entity in nl_entities]
-    #     nl_insert_result = nl_embeddings_collection.insert(batch_entities)
-
-    # remaining_entities = [entity[nl_num_batches * nl_batch_size:] for entity in nl_entities]
-    # if remaining_entities:
-    #     nl_insert_result = nl_embeddings_collection.insert(remaining_entities)
-
-    # code_insert_result = code_embeddings_collection.insert(code_entities)
-    # nl_insert_result = nl_embeddings_collection.insert(nl_entities)
+    remaining_entities = [entity[nl_num_batches * nl_batch_size:] for entity in nl_entities]
+    if remaining_entities:
+        nl_insert_result = nl_embeddings_collection.insert(remaining_entities)
 
     # hello_milvus.flush()
     print(f"Number of nl entities in Milvus: {nl_embeddings_collection.num_entities}")  # check the num_entites
