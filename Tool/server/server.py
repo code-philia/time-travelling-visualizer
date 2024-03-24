@@ -97,7 +97,7 @@ def load_vectorDB():
         code_insert_result = code_embeddings_collection.insert(batch_entities)
 
     remaining_entities = [entity[num_batches * batch_size:] for entity in code_entities]
-    if remaining_entities:
+    if remaining_entities and any(remaining_entities):
         code_insert_result = code_embeddings_collection.insert(remaining_entities)
 
     # hello_milvus.flush()
@@ -175,7 +175,7 @@ def load_vectorDB_code():
         code_insert_result = code_embeddings_collection.insert(batch_entities)
 
     remaining_entities = [entity[num_batches * batch_size:] for entity in code_entities]
-    if remaining_entities:
+    if remaining_entities and any(remaining_entities):
         code_insert_result = code_embeddings_collection.insert(remaining_entities)
 
     print(f"Number of code entities in Milvus: {code_embeddings_collection.num_entities}")  # check the num_entites
@@ -252,7 +252,7 @@ def load_vectorDB_nl():
         nl_insert_result = nl_embeddings_collection.insert(batch_entities)
 
     remaining_entities = [entity[nl_num_batches * nl_batch_size:] for entity in nl_entities]
-    if remaining_entities:
+    if remaining_entities and any(remaining_entities):
         nl_insert_result = nl_embeddings_collection.insert(remaining_entities)
 
     # hello_milvus.flush()
