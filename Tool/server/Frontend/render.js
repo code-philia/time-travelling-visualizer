@@ -531,7 +531,6 @@ var geometry = new THREE.BufferGeometry();
 
 window.onload = function() {
     const currHover = document.getElementById('currHover');
-    console.log("eataaaaa", currHover)
     makeDraggable(currHover, currHover);
   };
 
