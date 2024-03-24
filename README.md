@@ -102,7 +102,7 @@ $ (visualizer) python vis_snapshot.py--start "epoch start number" --end "epoch e
 ```
 $ cd /Tool/server
 $ conda activate visualizer
-$ (visualizer) ./start_server.sh
+$ (visualizer) python server.py
 ```
 you will see: 
 ```
