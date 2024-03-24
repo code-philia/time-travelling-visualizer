@@ -47,15 +47,6 @@ time-travelling-visualizer
 
 ⚠️ Note that, the training_dynamic folder stores the training process and the target dataset. 
 
-
-## Training Process Dataset (the training process of a model)
-
-
-You can train your classification model and save the training dynamics. For information on the structure of the training dynamics directory and the config file format, refer to the the [dataset's readme document](./training_dynamic/README.md).
-
-🍃 Training dynamics are also available on [Hugging Face](https://huggingface.co/datasets/yvonne1123/training_dynamic) for you to download. 
-
-
 # Environment Configuration
 1. create conda environment
 ```
@@ -71,6 +62,22 @@ For setting up PyTorch on that conda environment, use the guidelines provided at
 ```
 $ (visualizer) pip install -r requirements.txt
 ```
+
+## Training Process Dataset (the training process of a model)
+
+
+You can train your classification model and save the training dynamics. For information on the structure of the training dynamics directory and the config file format, refer to the the [dataset's readme document](./training_dynamic/README.md).
+
+🍃 Training dynamics examples are also available on [Hugging Face](https://huggingface.co/datasets/code-philia/mtpnet) for you to download. 
+
+1. download training dynamics example from huggingface
+```
+$ cd training_dynamic
+$ git lfs clone https://huggingface.co/datasets/code-philia/mtpnet.git
+$ unzip mtpnet/case_study_mnist_backdoor.zip
+```
+
+With this provided example, you can skip the next two steps and proceed directly to the "Run interactive Visualizer Tool" step to experience our tool.
 
 # evaluate subject model
 ```
@@ -106,6 +113,9 @@ $ (visualizer) python server.py
 ```
 you will see: 
 ```
+Starting milvus-minio ... done
+Starting milvus-etcd  ... done
+Starting milvus-standalone ... done
 * Serving Flask app 'server' (lazy loading)
 * Environment: production
 * Debug mode: off
