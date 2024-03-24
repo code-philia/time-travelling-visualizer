@@ -25,7 +25,7 @@
             Time Travelling Visualizer
             <a href="/contrast" style="color: #fff; position:fixed; right: 60px;top:4px;"><i class="el-icon-open"
                     style="font-size: 24px;"></i></a>
-            <a id="connectUs" href="mailto:lin_yun@sjtu.edu.cn?subject=Time Travelling visualizer Bug&body=Hi Prof Lin"
+            <a id="connectUs" href="mailto:zyifan828@gmail.com?subject=Time Travelling visualizer Bug&body=Hi"
                 style="color: #fff; position:fixed; right: 20px;top:4px;"><i class="el-icon-message"
                     style="font-size: 24px;"></i></a>
         </div>
@@ -177,10 +177,11 @@
             <svg id="timeLinesvg"></svg>
         </div>
         <div id="currHover">
-            CurrHoverIndex: {{lastHoveredIndex}}<br />
-            prediction: {{curr_pred}}<br />
-            label: {{curr_label}}<br />
-            <div v-if="lastHoveredIndex != null">
+            <h3>MetaData Card</h3>
+            HoverIndex: {{lastHoveredIndex}}<br />
+            Prediction: {{curr_pred}}<br />
+            Label: {{curr_label}}<br />
+            <div v-if="dataType === 'Image' && lastHoveredIndex != null">
                 <img :src="imageSrc" alt="Image Description" height="100px" />
             </div>
             <div v-else>
