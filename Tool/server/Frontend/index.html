@@ -180,7 +180,7 @@
             CurrHoverIndex: {{lastHoveredIndex}}<br />
             prediction: {{curr_pred}}<br />
             label: {{curr_label}}<br />
-            <div v-if="dataType === 'Image'">
+            <div v-if="lastHoveredIndex != null">
                 <img :src="imageSrc" alt="Image Description" height="100px" />
             </div>
             <div v-else>
@@ -205,7 +205,7 @@
         data() {
             return {
                 lastHoveredIndex: null,
-                contentPath: '/home/timeTravelling/guorui/git_space/TestFrontend/time-travelling-visualizer/Backdoor',
+                contentPath: '/home/yifan/dataset/case_study_mnist_backdoor',
                 visMethod: 'Trustvis',
                 taskType: 'Classification',
                 isCanvasLoading: false,
@@ -380,7 +380,7 @@
                 console.log("taskType", this.taskType)
                 updateProjection(this.contentPath, this.currEpoch, this.taskType)
                 fetchTimelineData(this.contentPath, "")
-                loadVectorDB(this.contentPath, this.currEpoch)
+               
             },
             indexSearchHandler() {
                 indexSearch(this.query, this.isSwitchOn);
