@@ -163,8 +163,11 @@ def get_train_test_data(context, EPOCH):
 def get_train_test_label(context, EPOCH, all_data):
     train_labels = context.train_labels(EPOCH)
     test_labels = context.test_labels(EPOCH)
-    if train_labels is None or test_labels is None:
+    if train_labels is None:
         labels = np.zeros(len(all_data), dtype=int)
+    elif test_labels is None:
+        test_labels = np.zeros(len(all_data), dtype=int)
+        labels = np.concatenate((train_labels, test_labels), axis=0).astype(int)
     else:
         labels = np.concatenate((train_labels, test_labels), axis=0).astype(int)
     return labels
@@ -196,6 +199,7 @@ def update_epoch_projection(context, EPOCH, predicates, TaskType):
     all_data = get_train_test_data(context, EPOCH)
     
     labels = get_train_test_label(context, EPOCH, all_data)
+    print('labels',labels)
     error_message = check_labels_match_alldata(labels, all_data, error_message)
     
     embedding_2d = get_embedding(context, all_data, EPOCH)
@@ -217,7 +221,7 @@ def update_epoch_projection(context, EPOCH, predicates, TaskType):
     start2 = time.time()
     print("midquestion1", start2-end)
     if TaskType == "Classification":
-
+        print('here',labels)
         color = context.strategy.vis.get_standard_classes_color() * 255
         start3 = time.time()
         print(start3-start2)

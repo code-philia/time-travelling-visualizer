@@ -253,8 +253,8 @@ class NormalDataProvider(DataProvider):
     
     def train_labels(self, epoch):
         # load train data
-        # training_data_loc = os.path.join(self.content_path, "Training_data", "training_dataset_label.pth")
-        training_data_loc = os.path.join(self.content_path, "Training_data", f"training_dataset_label_{epoch}.pth")
+        training_data_loc = os.path.join(self.content_path, "Training_data", "training_dataset_label.pth")
+        # training_data_loc = os.path.join(self.content_path, "Training_data", f"training_dataset_label_{epoch}.pth")
         index_file = os.path.join(self.model_path, "{}_{:d}".format(self.epoch_name, epoch), "index.json")
         index = load_labelled_data_index(index_file)
         try:
@@ -281,8 +281,8 @@ class NormalDataProvider(DataProvider):
     
     def test_labels(self, epoch):
         # load train data
-        # testing_data_loc = os.path.join(self.content_path, "Testing_data", "testing_dataset_label.pth")
-        testing_data_loc = os.path.join(self.content_path, "Testing_data", f"testing_dataset_label_{epoch}.pth")
+        testing_data_loc = os.path.join(self.content_path, "Testing_data", "testing_dataset_label.pth")
+        # testing_data_loc = os.path.join(self.content_path, "Testing_data", f"testing_dataset_label_{epoch}.pth")
         try:
             # avoid index checking for testing data
             testing_labels = torch.load(testing_data_loc, map_location="cpu")
