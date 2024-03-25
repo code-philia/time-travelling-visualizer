@@ -50,7 +50,6 @@ time-travelling-visualizer
 # Environment Configuration
 1. create conda environment
 ```
-$ cd Vis
 $ conda create -n visualizer python=3.7
 $ (visualizer) conda activate visualizer
 ```
@@ -59,8 +58,13 @@ $ (visualizer) conda activate visualizer
 For setting up PyTorch on that conda environment, use the guidelines provided at [PyTorch's official local installation page](https://pytorch.org/get-started/locally/). This guide will help you select the appropriate configuration based on your operating system, package manager, Python version, and CUDA version.
 
 3. install requirements
+For linux developers, you can use the following command to install the required packages.
 ```
 $ (visualizer) pip install -r requirements.txt
+```
+For windows developers, you can use the following command instead.
+```
+$ (visualizer) pip install -r win-requirements.txt
 ```
 
 ## Training Process Dataset (the training process of a model)
@@ -76,35 +80,20 @@ $ cd training_dynamic
 $ git lfs clone https://huggingface.co/datasets/code-philia/mtpnet.git
 $ unzip mtpnet/case_study_mnist_backdoor.zip
 ```
-
-With this provided example, you can skip the next two steps and proceed directly to the "Run interactive Visualizer Tool" step to experience our tool.
-
-# evaluate subject model
+2. unzip the dataset file
+For linux user, you can unzip the example dataset into training_dynamic directory using the command
 ```
-$ (visualizer) python subject_model_eval.py
-$ (visualizer) ......
-
-$ (visualizer) Successfully evaluated the subject model, and the results are saved in "your model path"/subject_model_eval.json
+$ unzip mtpnet/case_study_mnist_backdoor.zip
+```
+For windows user, you can unzip the example dataset into training_dynamic directory using the command
+```
+$ Expand-Archive mtpnet/case_study_mnist_backdoor.zip -DestinationPath .
 ```
 
-The trainig dynamic performance(testing accuracy and training accuracy) will be store in /training_dynamic/Model/subject_model_eval.json
+With this provided example, you can directly experience our tool.
 
-# Train Your Time-Travelling Visualizer
-- visualize the training process
-```
-$ cd Vis
-$ conda activate visualizer
-$ (visualizer) python trustvis_tempo.py --start "epoch start number" --end "epoch end number" --content_path "your dataset path"
-```
-the vis result will be store in /training_dynamic/trustvis_tempo/***.png
-the evaluation resulte wiil be store in "your model path"/trustvis_tempo_eval.json
+If you want to train your own visualization model, refer to the the [visualization model's readme document](./Vis/README.md).
 
-<!-- - visualization without prediction sementics
-```
-$ cd Vis
-$ conda activate visualizer
-$ (visualizer) python vis_snapshot.py--start "epoch start number" --end "epoch end number" --content_path "your dataset path"
-``` -->
 # Run interactive Visualizer Tool
 ```
 $ cd /Tool/server
