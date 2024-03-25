@@ -100,6 +100,10 @@ If you want to train your own visualization model, refer to the the [visualizati
 ```
 $ cd /Tool/server
 $ conda activate visualizer
+$ (visualizer) ./start_server.sh 
+```
+Windows users can use the following command instead to run the tool
+```
 $ (visualizer) python server.py
 ```
 you will see: 
