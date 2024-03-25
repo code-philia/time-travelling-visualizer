@@ -13,7 +13,7 @@ const MAX_FOV = 70;
 const MIN_FOV = 1
 const GRAY = [0.8,0.8,0.8]
 const selectedLabel = 'fixedHoverLabel'
-var baseZoomSpeed = 0.01;
+var baseZoomSpeed = 0.1;
 var isDragging = false;
 var previousMousePosition = {
     x: 0,

@@ -87,8 +87,8 @@
                     style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;" @click="update">Load
                     Visualization Result</el-button>
                 <el-divider></el-divider>
-                <el-button id="loadVDBBtn"
-                    style="background-color: #571792; color: #fff; width: 100%; margin-top: 0px;" @click="VDBHandler">Load
+                <el-button id="loadVDBBtn" style="background-color: #571792; color: #fff; width: 100%; margin-top: 0px;"
+                    @click="VDBHandler">Load
                     Vector Database</el-button>
                 <el-divider></el-divider>
                 <table id="subjectModeEvalRes">
@@ -113,10 +113,11 @@
             <div id="advanced_panel">
                 <el-checkbox v-model="showTraining">Training</el-checkbox>
                 <el-checkbox v-model="showTesting">Testing</el-checkbox>
+                <el-divider></el-divider>
                 <el-checkbox v-model="showVisError">Visualization Error</el-checkbox>
                 <el-checkbox v-model="showPredictionFlips">Prediction Flip</el-checkbox>
-
-                <el-checkbox style="margin-top: 10px;" v-model="SelectionMode">Selection Mode</el-checkbox>
+                <br/>
+                <el-checkbox v-model="SelectionMode">Selection Mode</el-checkbox>
                 <el-divider></el-divider>
                 <el-tabs>
                     <el-tab-pane label="Normal Query">
@@ -138,14 +139,21 @@
                         </el-button>
 
                     </el-tab-pane>
-                 
+
                     <el-tab-pane label="Advanced Query">
                         <div class="switch-container">
-                            <input type="checkbox" class="switch-input" v-model="isSwitchOn">
-                            <label class="switch-label" for="switch" @click="toggleSwitch"></label>
+                            <el-switch v-model="isSwitchOn" active-text="Open KNN" inactive-text="Close KNN">
+                            </el-switch>
+                            <!-- <input type="checkbox" class="switch-input" v-model="isSwitchOn">
+                            <label class="switch-label" for="switch" @click="toggleSwitch">Use Advanced
+                                <el-tooltip class="item" effect="dark" content="Open to on-the-fly search KNN"
+                                    placement="top-end">
+                                    <i class="el-icon-question"></i>
+                                </el-tooltip>
+                            </label> -->
                         </div>
                         <div class="advanced-query-row">
-                            <el-select v-model="query.key" >
+                            <el-select v-model="query.key">
                                 <el-option value="index" label="index">
                                 </el-option>
                                 <el-option value="nl" label="nl">
@@ -156,25 +164,27 @@
                             <el-input style="margin-left:20px;" v-model="query.value"></el-input>
                         </div>
                         <div class="advanced-query-row">
-                            K:  <el-input style="margin-left:20px;" v-model="query.k"></el-input>
+                            K: <el-input style="margin-left:20px;" v-model="query.k"></el-input>
                         </div>
-                        <el-button style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;" @click="indexSearchHandler">
+                        <el-button style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;"
+                            @click="indexSearchHandler">
                             Start Query
                         </el-button>
-                        <el-button style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;" @click="clearSearchHandler">
+                        <el-button style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px; margin-left:0px;"
+                            @click="clearSearchHandler">
                             Clear Query
                         </el-button>
-                        
+
                         <!-- 显示查询结果 -->
                         <span id="resultContainer">
                             <ul>
-                            <li v-for="result in query_result" :key="result.id">
-                                Distance: {{ result.distance }}, ID: {{ result.id }}
-                            </li>
+                                <li v-for="result in query_result" :key="result.id">
+                                    Distance: {{ result.distance }}, ID: {{ result.id }}
+                                </li>
                             </ul>
                         </span>
                     </el-tab-pane>
-                  </el-tabs>
+                </el-tabs>
             </div>
         </div>
         <div id="footer">
@@ -257,12 +267,12 @@
                     value: null
                 },
                 query: {
-                    key:'index',
+                    key: 'index',
                     value: null,
-                    k:null
+                    k: null
                 },
                 isSwitchOn: false,
-                confidence:[0,1]
+                confidence: [0, 1]
             }
         },
         methods: {
@@ -385,7 +395,7 @@
                 console.log("taskType", this.taskType)
                 updateProjection(this.contentPath, this.currEpoch, this.taskType)
                 fetchTimelineData(this.contentPath, "")
-               
+
             },
             VDBHandler() {
                 loadVectorDB(this.contentPath, this.currEpoch)
