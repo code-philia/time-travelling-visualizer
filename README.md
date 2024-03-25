@@ -58,6 +58,7 @@ $ (visualizer) conda activate visualizer
 For setting up PyTorch on that conda environment, use the guidelines provided at [PyTorch's official local installation page](https://pytorch.org/get-started/locally/). This guide will help you select the appropriate configuration based on your operating system, package manager, Python version, and CUDA version.
 
 3. install requirements
+
 For linux developers, you can use the following command to install the required packages.
 ```
 $ (visualizer) pip install -r requirements.txt
