@@ -81,6 +81,7 @@ $ git lfs clone https://huggingface.co/datasets/code-philia/mtpnet.git
 $ unzip mtpnet/case_study_mnist_backdoor.zip
 ```
 2. unzip the dataset file
+
 For linux user, you can unzip the example dataset into training_dynamic directory using the command
 ```
 $ unzip mtpnet/case_study_mnist_backdoor.zip
