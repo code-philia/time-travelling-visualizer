@@ -596,9 +596,9 @@ function updateShowingIndices(alphas, isShow, indices, flip_indices) {
 function cleanForEpochChange(flag) {
   var specifiedPointsMesh = makeSpecifiedVariableName("pointsMesh", flag)
   var specifiedOriginalSettings = makeSpecifiedVariableName("originalSettings", flag)
-  var specifiedAnimationFrameId = makeSpecifiedVariableName("animationFrameId", flag)
- 
+  console.log("specirfid point mesh", specifiedPointsMesh)
   if (window.vueApp[specifiedPointsMesh]) {
+    console.log("pointMesh")
     if (window.vueApp[specifiedPointsMesh].geometry) {
         if (window.vueApp[specifiedPointsMesh].geometry.color) {
             window.vueApp[specifiedPointsMesh].geometry.color.dispose() 
@@ -630,13 +630,14 @@ if (window.vueApp[specifiedOriginalSettings]) {
 }
 
 
-if (window.vueApp[specifiedAnimationFrameId]) {
-    console.log("stopAnimation")
-    cancelAnimationFrame(window.vueApp[specifiedAnimationFrameId]);
-    window.vueApp[specifiedAnimationFrameId] = undefined;
-}
+
 
 if (flag == '') {
+  if (window.vueApp.animationFrameId) {
+    console.log("stopAnimation")
+    cancelAnimationFrame(window.vueApp.animationFrameId);
+    window.vueApp.animationFrameId = undefined;
+}
   if (window.vueApp.scene) {
     window.vueApp.scene.traverse(function (object) {
         if (object.isMesh) {
@@ -670,6 +671,11 @@ if (window.vueApp.renderer) {
     window.vueApp.renderer.dispose();
 }
 } else {
+  if (window.vueApp.animationFrameId[flag]) {
+    console.log("stopAnimation")
+    cancelAnimationFrame(window.vueApp.animationFrameId[flag]);
+    window.vueApp.animationFrameId[flag] = undefined;
+}
   if (window.vueApp.scene[flag]) {
     window.vueApp.scene[flag].traverse(function (object) {
         if (object.isMesh) {
@@ -705,3 +711,4 @@ if (window.vueApp.renderer[flag]) {
 }
 
 }
+

@@ -5,6 +5,7 @@
     <title>TIME-TRAVELLING</title>
     <meta charset="UTF-8" name="viewport"
         content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+        
     <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
     <link rel="stylesheet" href="Frontend/driver.min.css">
     <link rel="stylesheet" href="Frontend/index.css">
@@ -23,7 +24,7 @@
     <div id="app" v-loading="isCanvasLoading">
         <div class="header">
             Time Travelling Visualizer
-            <a href="/contrast" style="color: #fff; position:fixed; right: 60px;top:4px;"><i class="el-icon-open"
+            <a href="/contrast" @click="clearStorageNavigate(event,'/contrast')"style="color: #fff; position:fixed; right: 60px;top:4px;"><i class="el-icon-open"
                     style="font-size: 24px;"></i></a>
             <a id="connectUs" href="mailto:zyifan828@gmail.com?subject=Time Travelling visualizer Bug&body=Hi"
                 style="color: #fff; position:fixed; right: 20px;top:4px;"><i class="el-icon-message"
@@ -220,7 +221,7 @@
         data() {
             return {
                 lastHoveredIndex: null,
-                contentPath: '/home/yifan/dataset/case_study_mnist_backdoor',
+                contentPath: '/home/timeTravelling/guorui/git_space/TestFrontend/time-travelling-visualizer/Backdoor',
                 visMethod: 'Trustvis',
                 taskType: 'Classification',
                 isCanvasLoading: false,
@@ -415,6 +416,82 @@
                 this.isSwitchOn = !this.isSwitchOn; // 切换开关状态
                 console.log(this.isSwitchOn)
             },
+            getInitialState() {
+                return {lastHoveredIndex: null,
+                contentPath: '/home/yifan/dataset/case_study_mnist_backdoor',
+                visMethod: 'Trustvis',
+                taskType: 'Classification',
+                isCanvasLoading: false,
+                query_result: {},
+                prediction_list: [],
+                curr_pred: '',
+                curr_label: '',
+                label_list: [],
+                label_name_dict: {},
+                evaluation: { test_acc: 0, train_acc: 0 },
+                currEpoch: 1,
+                totalEpoch: null,
+                train_index: null,
+                test_index: null,
+                showTraining: true,
+                showTesting: true,
+                showVisError: false,
+                showPredictionFlips: false,
+                SelectionMode: false,
+                isShifting: false,
+                scene: null,
+                renderer: null,
+                camera: null,
+                curImg: null,
+                imageSrc: "",
+                textContent: "",
+                dataType: "Image",
+                selectedIndex: null,
+                selectedPointPosition: null,
+                visibilityMap: null,
+                highlightAttributes: {
+                    visualizationError: null,
+                },
+                predictionFlipIndices: null,
+                hoverIndex: null,
+                errorMessage: null,
+                originalSettings: {
+                    originalColors: null,
+                    originalSizes: null,
+                },
+                pointsMesh: null,
+                canvasSetting: {
+                    zoomSpeed: 0.01,
+                    dragSpeed: 0.1,
+                    panSpeed: 0.1,
+                },
+                predicates: {
+                    key: 'lable',
+                    value: null
+                },
+                query: {
+                    key: 'index',
+                    value: null,
+                    k: null
+                },
+                isSwitchOn: false,
+                confidence: [0, 1]
+            };
+            },
+
+            resetData() {
+                Object.assign(this.$data, this.getInitialState());
+            },
+            clearStorageNavigate(event, url) {
+                event.preventDefault();
+
+                localStorage.clear();
+                sessionStorage.clear(); 
+                cleanForEpochChange('');
+                this.resetData();
+
+                window.location.href = url
+            }
         },
         watch: {
             lastHoveredIndex: {
