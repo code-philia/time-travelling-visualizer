@@ -257,6 +257,11 @@
                 predictionFlipIndices: null,
                 hoverIndex: null,
                 errorMessage: null,
+                originalSettings: {
+                    originalColors: null,
+                    originalSizes: null,
+                },
+                pointsMesh: null,
                 canvasSetting: {
                     zoomSpeed: 0.01,
                     dragSpeed: 0.1,
@@ -445,9 +450,11 @@
             showPredictionFlips: {
                 handler(newVal, oldVal) {
                     // prediction flip check for next epoch only
+                    console.log("newVal", newVal, this.currEpoch,  this.totalEpoch)
                     if (newVal && this.currEpoch < this.totalEpoch) {
                         getPredictionFlipIndices('')
                     } else {
+                        console.log("else branch")
                         this.predictionFlipIndices = null
                     }
                 }

@@ -44,16 +44,17 @@
         </el-popover>
 
         <el-popover placement="left" width="200" trigger="click">
-        <div>
-            <span style="line-height: 40px; font-weight: 800;">Error Message</span>
-            <br />
-            <div class="error-message-content" style="margin: 10px 0;">
-            {{ errorMessageRef }}
-            <el-divider></el-divider>
-            {{ errorMessageTar }}
+            <div>
+                <span style="line-height: 40px; font-weight: 800;">Error Message</span>
+                <br />
+                <div class="error-message-content" style="margin: 10px 0;">
+                    {{ errorMessageRef }}
+                    <el-divider></el-divider>
+                    {{ errorMessageTar }}
+                </div>
             </div>
-        </div>
-        <el-button style="position: fixed; top: 180px; right:0px; font-size: 20px;" size="mini" type="danger" slot="reference" icon="el-icon-warning"></el-button>
+            <el-button style="position: fixed; top: 180px; right:0px; font-size: 20px;" size="mini" type="danger"
+                slot="reference" icon="el-icon-warning"></el-button>
         </el-popover>
 
         <div class="content_container">
@@ -94,11 +95,11 @@
                     style="background-color: #571792; color: #fff; width: 100%; margin-top: 0px;" @click="update">Load
                     Visualization Result</el-button>
                 <el-divider></el-divider>
-                <el-button id="loadVDBBtn"
-                    style="background-color: #571792; color: #fff; width: 100%; margin-top: 0px;" @click="VDBHandler">Load
+                <el-button id="loadVDBBtn" style="background-color: #571792; color: #fff; width: 100%; margin-top: 0px;"
+                    @click="VDBHandler">Load
                     Vector Database</el-button>
                 <el-divider></el-divider>
-                
+
                 <div id="select-container">
                     <span
                         style="display: inline-block; line-height: 30px; vertical-align: top; margin-left:20px; margin-right: 5px;">Multiton:</span>
@@ -128,6 +129,15 @@
                         <option value="single" selected>single</option>
                         <option value="pair">pair</option>
                     </select>
+                    <span
+                    style="display: inline-block; line-height: 30px; vertical-align: top; margin-left:20px;margin-right: 5px; margin-top: 10px">Cocurrent
+                    Mode:</span>
+                    <select v-model="concurrentMode" id="changeConcurrentMode" class="login-input"
+                        style="height: 30px; width: 50px;">
+                        <option value="yes" selected>yes</option>
+                        <option value="no">no</option>
+                    </select>
+
                     <el-tabs>
                         <el-tab-pane label="Advanced Query">
                             <div class="switch-container">
@@ -135,7 +145,7 @@
                                 <label class="switch-label" for="switch" @click="toggleSwitch"></label>
                             </div>
                             <div class="advanced-query-row">
-                                <el-select v-model="query.key" >
+                                <el-select v-model="query.key">
                                     <el-option value="left-index" label="left-index">
                                     </el-option>
                                     <el-option value="right-index" label="right-index">
@@ -150,33 +160,28 @@
                                 <el-input style="margin-left:20px;" v-model="query.value"></el-input>
                             </div>
                             <div class="advanced-query-row">
-                                K:  <el-input style="margin-left:20px;" v-model="query.k"></el-input>
+                                K: <el-input style="margin-left:20px;" v-model="query.k"></el-input>
                             </div>
-                            <el-button style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;" @click="indexSearchHandler" id="vdbquery">
+                            <el-button style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;"
+                                @click="indexSearchHandler" id="vdbquery">
                                 Start Query
                             </el-button>
-                            <el-button style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;" id="clearquery">
+                            <el-button style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;"
+                                id="clearquery">
                                 Clear Query
                             </el-button>
-                            
+
                             <!-- 显示查询结果 -->
                             <span id="resultContainer">
                                 <ul>
-                                <li v-for="result in query_result" :key="result.id">
-                                    Distance: {{ result.distance }}, ID: {{ result.id }}
-                                </li>
+                                    <li v-for="result in query_result" :key="result.id">
+                                        Distance: {{ result.distance }}, ID: {{ result.id }}
+                                    </li>
                                 </ul>
                             </span>
                         </el-tab-pane>
                     </el-tabs>
-                    <span
-                        style="display: inline-block; line-height: 30px; vertical-align: top; margin-left:20px;margin-right: 5px; margin-top: 10px">Cocurrent
-                        Mode:</span>
-                    <select v-model="concurrentMode" id="changeConcurrentMode" class="login-input"
-                        style="height: 30px; width: 50px;">
-                        <option value="yes" selected>yes</option>
-                        <option value="no">no</option>
-                    </select>
+
                 </div>
                 <el-divider></el-divider>
                 <div id="checkbox-container">
@@ -346,6 +351,7 @@
                 predictionFlipIndicesTar: null,
                 errorMessageRef: null,
                 errorMessageTar: null,
+
                 visMethodRef: 'Trustvis',
                 visMethodTar: 'Trustvis',
                 highlightAttributesRef: {
@@ -365,7 +371,16 @@
                     boldIndices: null,
                     visualizationError: null,
                 },
-
+                originalSettingsRef: {
+                    originalColors: null,
+                    originalSizes: null,
+                },
+                originalSettingsTar: {
+                    originalColors: null,
+                    originalSizes: null,
+                },
+                pointsMeshRef: null,
+                pointsMeshTar: null,
                 multiOption: "align",
                 singleOption: "align",
                 scene: {
@@ -391,9 +406,9 @@
                 hoverMode: "single",
                 concurrentMode: "no",
                 query: {
-                    key:'left-index',
+                    key: 'left-index',
                     value: null,
-                    k:null
+                    k: null
                 },
                 isSwitchOn: false,
             }
@@ -577,7 +592,7 @@
                     this.curr_predRef = this.prediction_listRef[newVal];
                     this.curr_labelRef = this.label_name_dictRef[this.label_listRef[newVal]]
                     if (newVal != null) {
-                        getOriginalData(this.contentPathRef, newVal,this.dataType, 'ref')
+                        getOriginalData(this.contentPathRef, newVal, this.dataType, 'ref')
                         const updatedQuery = {
                             ...this.query,
                             // key: 'inter-index',
@@ -597,7 +612,7 @@
                     this.curr_predTar = this.prediction_listTar[newVal];
                     this.curr_labelTar = this.label_name_dictTar[this.label_listTar[newVal]]
                     if (newVal != null) {
-                        getOriginalData(this.contentPathTar, newVal,this.dataType, 'tar')
+                        getOriginalData(this.contentPathTar, newVal, this.dataType, 'tar')
                         const updatedQuery = {
                             ...this.query,
                             // key: 'inter-index',
