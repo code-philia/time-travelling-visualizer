@@ -23,7 +23,7 @@
     <div id="app" v-loading="isCanvasLoading">
         <div class="header">
             Time Travelling Visualizer (Contrast)
-            <a href="/" style="color: #fff; position:fixed; right: 20px;top:4px;"><i class="el-icon-back"
+            <a href="/" @click="clearStorageNavigate(event, '/')" style="color: #fff; position:fixed; right: 20px;top:4px;"><i class="el-icon-back"
                     style="font-size: 24px;"></i></a>
         </div>
         <el-button class="tutorial_btn" type="success" icon="el-icon-question" size="mini"
@@ -58,6 +58,7 @@
         </el-popover>
 
         <div class="content_container">
+
 
             <div id="subject_model_info_panel">
                 <div id="contentSettingData">
@@ -100,7 +101,11 @@
                     Vector Database</el-button>
                 <el-divider></el-divider>
 
+                <span
+                style="display: inline-block; line-height: 50px; vertical-align: top; margin-left:20px; margin-right: 5px;">Embedding Analysis Panel</span>
+
                 <div id="select-container">
+                    <div class="control-group">
                     <span
                         style="display: inline-block; line-height: 30px; vertical-align: top; margin-left:20px; margin-right: 5px;">Multiton:</span>
                     <select v-model="multiOption" id="highlightMethodInput" class="login-input"
@@ -109,8 +114,9 @@
                         <option value="nearest neighbour">nearest neighbour</option>
                         <option value="both" selected>both</option>
                     </select>
-                    <button id="highlightButton" @click="highlightDataMulti">Show</button>
-
+                    <button style="line-height: 20px;  margin-left:10px; margin-top: 5px" id="highlightButton" @click="highlightDataMulti">Show</button>
+                    </div>
+                    <div class="control-group">
                     <span
                         style="display: inline-block; line-height: 30px; vertical-align: top; margin-left:20px;margin-right: 5px; margin-top: 10px">Singleton:</span>
                     <select v-model="singleOption" id="highlightMethodInputSingle" class="login-input"
@@ -119,8 +125,9 @@
                         <option value="nearest neighbour">nearest neighbour</option>
                         <option value="reset" selected>reset</option>
                     </select>
-                    <button id="highlightButtonSingle" @click="highlightDataSingle">Show</button>
-
+                    <button style="line-height: 20px;  margin-left:10px; margin-top: 5px" id="highlightButtonSingle" @click="highlightDataSingle">Show</button>
+                </div>
+                <div class="control-group">
                     <span
                         style="display: inline-block; line-height: 30px; vertical-align: top; margin-left:20px;margin-right: 5px;margin-top: 10px ">Hover
                         Mode:</span>
@@ -129,6 +136,9 @@
                         <option value="single" selected>single</option>
                         <option value="pair">pair</option>
                     </select>
+                </div>
+
+                <div class="control-group">
                     <span
                     style="display: inline-block; line-height: 30px; vertical-align: top; margin-left:20px;margin-right: 5px; margin-top: 10px">Cocurrent
                     Mode:</span>
@@ -137,7 +147,8 @@
                         <option value="yes" selected>yes</option>
                         <option value="no">no</option>
                     </select>
-
+                </div>
+                <el-divider></el-divider>
                     <el-tabs>
                         <el-tab-pane label="Advanced Query">
                             <div class="switch-container">
@@ -302,8 +313,8 @@
             return {
                 lastHoveredIndexRef: null,
                 lastHoveredIndexTar: null,
-                contentPathRef: '/home/yiming/cophi/training_dynamic/code_training_dynamic/saved_models/ruby_fine_tine_5',
-                contentPathTar: '/home/yiming/cophi/training_dynamic/code_training_dynamic/saved_models/ruby_fine_tine_5',
+                contentPathRef: '/home/timeTravelling/guorui/git_space/TestFrontend/time-travelling-visualizer/Backdoor',
+                contentPathTar: '/home/timeTravelling/guorui/git_space/TestFrontend/time-travelling-visualizer/Backdoor',
                 isCanvasLoading: false,
                 taskType: 'Classification',
                 query_result: {},
@@ -582,8 +593,137 @@
             },
             highlightDataSingle() {
                 getHighlightedPoints("single")
-            }
+            },
+            getInitialState() {
+            return {
+                lastHoveredIndexRef: null,
+                lastHoveredIndexTar: null,
+                contentPathRef: '/home/timeTravelling/guorui/git_space/TestFrontend/time-travelling-visualizer/Backdoor',
+                contentPathTar: '/home/timeTravelling/guorui/git_space/TestFrontend/time-travelling-visualizer/Backdoor',
+                isCanvasLoading: false,
+                taskType: 'Classification',
+                query_result: {},
+                prediction_listRef: [],
+                prediction_listTar: [],
+                curr_predRef: '',
+                curr_predTar: '',
+                curr_labelRef: '',
+                curr_labelTar: '',
+                label_listRef: [],
+                label_listTar: [],
+                label_name_dictRef: {},
+                label_name_dictTar: {},
+                evaluation: { test_acc: 0, train_acc: 0 },
+                currEpochRef: 1,
+                currEpochTar: 1,
+                totalEpochRef: null,
+                totalEpochTar: null,
+                train_indexRef: null,
+                test_indexRef: null,
+                train_indexTar: null,
+                test_indexTar: null,
+                showTraining: true,
+                showTesting: true,
+                SelectionMode: false,
+                imageSrcRef: '',
+                textContentRef: '',
+                imageSrcTar: '',
+                textContentTar: '',
+                selectedIndexRef: null,
+                selectedIndexTar: null,
+                selectedPointPositionRef: null,
+                selectedPointPositionTar: null,
+                hoverIndexRef: null,
+                hoverIndexTar: null,
+                showVisErrorRef: false,
+                showVisErrorTar: false,
+                showTrainingRef: true,
+                showTrainingTar: true,
+                showTestingRef: true,
+                showTestingTar: true,
+                showPredictionFlipsRef: false,
+                showPredictionFlipsTar: false,
+                predictionFlipIndicesRef: null,
+                predictionFlipIndicesTar: null,
+                errorMessageRef: null,
+                errorMessageTar: null,
 
+                visMethodRef: 'Trustvis',
+                visMethodTar: 'Trustvis',
+                highlightAttributesRef: {
+                    highlightedPointsYellow: null,
+                    highlightedPointsBlue: null,
+                    highlightedPointsGreen: null,
+                    allHighlightedSet: null,
+                    boldIndices: null,
+                    visualizationError: null,
+                },
+
+                highlightAttributesTar: {
+                    highlightedPointsYellow: null,
+                    highlightedPointsBlue: null,
+                    highlightedPointsGreen: null,
+                    allHighlightedSet: null,
+                    boldIndices: null,
+                    visualizationError: null,
+                },
+                originalSettingsRef: {
+                    originalColors: null,
+                    originalSizes: null,
+                },
+                originalSettingsTar: {
+                    originalColors: null,
+                    originalSizes: null,
+                },
+                pointsMeshRef: null,
+                pointsMeshTar: null,
+                multiOption: "align",
+                singleOption: "align",
+                scene: {
+                    'ref': null,
+                    'tar': null
+                },
+                renderer: {
+                    'ref': null,
+                    'tar': null
+                },
+                camera: {
+                    'ref': null,
+                    'tar': null
+                },
+                animationFrameId: {
+                    'ref': null,
+                    'tar': null
+                },
+
+                curImg: null,
+                dataType: "Image",
+                zoomInSpeed: 0.01,
+                hoverMode: "single",
+                concurrentMode: "no",
+                query: {
+                    key: 'left-index',
+                    value: null,
+                    k: null
+                },
+                isSwitchOn: false,
+            };
+            },
+            resetData() {
+                Object.assign(this.$data, this.getInitialState());
+            },
+            clearStorageNavigate(event, url) {
+                event.preventDefault();
+
+                localStorage.clear();
+                sessionStorage.clear();
+                cleanForEpochChange('ref');
+                cleanForEpochChange('tar');
+                this.resetData();
+
+                window.location.href = url
+            }
+     
         },
         watch: {
             lastHoveredIndexRef: {

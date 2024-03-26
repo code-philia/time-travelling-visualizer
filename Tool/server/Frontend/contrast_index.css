@@ -20,7 +20,7 @@ body {
     padding: 20px;
     background-color: rgb(244, 244, 244);
     height: 100%; 
-    overflow-y: auto; 
+    overflow: auto; 
 }
 
 #opration_bar{
@@ -44,6 +44,12 @@ body {
     height: 100%;
     margin: 10px;
 }
+
+.control-group {
+    display: flex;
+    align-items: center;
+    margin-top: 5vh; 
+  }
 
 
 .header {
