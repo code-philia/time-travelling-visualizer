@@ -354,7 +354,7 @@ def filter():
             tmp = np.arange(training_data_number + testing_data_number)
         selected_points = np.intersect1d(selected_points, tmp)
     sys.path.remove(CONTENT_PATH)
-    add_line(API_result_path,['SQ',username])
+    # add_line(API_result_path,['SQ',username])
     return make_response(jsonify({"selectedPoints": selected_points.tolist()}), 200)
 
 
@@ -375,7 +375,7 @@ def sprite_image():
     with open(pic_save_dir_path, 'rb') as img_f:
         img_stream = img_f.read()
         img_stream = base64.b64encode(img_stream).decode()
-    add_line(API_result_path,['SI',username])
+    # add_line(API_result_path,['SI',username])
     return make_response(jsonify({"imgUrl":'data:image/png;base64,' + img_stream}), 200)
 
 app.route('/contrast/spriteImage', methods=["POST", "GET"])(sprite_image)
@@ -463,7 +463,8 @@ def contravis_highlight_single():
     res = request.get_json()
     CONTENT_PATH_LEFT = res['content_path_left']
     CONTENT_PATH_RIGHT = res['content_path_right']
-    VIS_METHOD = res['vis_method']
+    VIS_METHOD_LEFT = res['vis_method_left']
+    VIS_METHOD_RIGHT = res['vis_method_right']
     SETTING = res["setting"]
     curr_iteration = int(res['iterationLeft'])
     last_iteration = int(res['iterationRight'])
@@ -471,8 +472,8 @@ def contravis_highlight_single():
     left_selected = res['selectedPointLeft']
     right_selected = res['selectedPointRight']
     
-    context_left, error_message = initialize_backend(CONTENT_PATH_LEFT, VIS_METHOD, SETTING)
-    context_right, error_message = initialize_backend(CONTENT_PATH_RIGHT, VIS_METHOD, SETTING)
+    context_left, error_message = initialize_backend(CONTENT_PATH_LEFT, VIS_METHOD_LEFT, SETTING)
+    context_right, error_message = initialize_backend(CONTENT_PATH_RIGHT, VIS_METHOD_RIGHT, SETTING)
   
     contraVisChangeIndicesLeft, contraVisChangeIndicesRight, contraVisChangeIndicesLeftLeft, contraVisChangeIndicesLeftRight, contraVisChangeIndicesRightLeft, contraVisChangeIndicesRightRight = getContraVisChangeIndicesSingle(context_left,context_right, curr_iteration, last_iteration, method, left_selected, right_selected)
     end_time = time.time()
@@ -492,7 +493,8 @@ def contravis_highlight_single():
 @cross_origin()
 def contravis_highlight():
     res = request.get_json()
-    VIS_METHOD = res['vis_method']
+    VIS_METHOD_LEFT = res['vis_method_left']
+    VIS_METHOD_RIGHT = res['vis_method_right']
     SETTING = res["setting"]
     curr_iteration = int(res['iterationLeft'])
     last_iteration = int(res['iterationRight'])
@@ -500,8 +502,8 @@ def contravis_highlight():
     CONTENT_PATH_LEFT = res['content_path_left']
     CONTENT_PATH_RIGHT = res['content_path_right']
     
-    context_left, error_message = initialize_backend(CONTENT_PATH_LEFT, VIS_METHOD, SETTING)
-    context_right, error_message = initialize_backend(CONTENT_PATH_RIGHT, VIS_METHOD, SETTING)
+    context_left, error_message = initialize_backend(CONTENT_PATH_LEFT, VIS_METHOD_LEFT, SETTING)
+    context_right, error_message = initialize_backend(CONTENT_PATH_RIGHT, VIS_METHOD_RIGHT, SETTING)
     contraVisChangeIndices = getContraVisChangeIndices(context_left,context_right, curr_iteration, last_iteration, method)
     print(len(contraVisChangeIndices))
     return make_response(jsonify({
@@ -548,7 +550,7 @@ def highlight_critical_change():
     context, error_message = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
   
     predChangeIndices = getCriticalChangeIndices(context, curr_iteration, next_iteration)
-    
+    print("predchagenInd", predChangeIndices)
     return make_response(jsonify({
                                   "predChangeIndices": predChangeIndices.tolist()
                                   }), 200)
@@ -584,9 +586,11 @@ def al_query():
 
     sys.path.remove(CONTENT_PATH)
     if not isRecommend: 
-        add_line(API_result_path,['Feedback', user_name]) 
+       #  add_line(API_result_path,['Feedback', user_name]) 
+        print()
     else:
-        add_line(API_result_path,['Recommend', user_name])
+       #  add_line(API_result_path,['Recommend', user_name])
+        print()
     return make_response(jsonify({"selectedPoints": indices.tolist(), "scores": scores.tolist(), "suggestLabels":labels.tolist()}), 200)
 
 @app.route('/anomaly_query', methods=["POST"])
@@ -618,9 +622,11 @@ def anomaly_query():
 
     sys.path.remove(CONTENT_PATH)
     if not isRecommend: 
-        add_line(API_result_path,['Feedback', user_name]) 
+       #  add_line(API_result_path,['Feedback', user_name]) 
+        print()
     else:
-        add_line(API_result_path,['Recommend', user_name])
+        # add_line(API_result_path,['Recommend', user_name])
+        print()
     return make_response(jsonify({"selectedPoints": indices.tolist(), "scores": scores.tolist(), "suggestLabels":labels.tolist(),"cleanList":clean_list.tolist()}), 200)
 
 @app.route('/al_train', methods=["POST"])
@@ -666,7 +672,7 @@ def al_train():
 
     sys.path.remove(CONTENT_PATH)
  
-    add_line(API_result_path,['al_train', user_name])
+   # add_line(API_result_path,['al_train', user_name])
     return make_response(jsonify({'result': embedding_2d, 'grid_index': grid, 'grid_color': 'data:image/png;base64,' + decision_view,
                                   'label_name_dict': label_name_dict,
                                   'label_color_list': label_color_list, 'label_list': label_list,
@@ -718,7 +724,7 @@ def login():
 def record_bb():
     data = request.get_json()
     username = data['username']
-    add_line(API_result_path,['boundingbox', username])  
+    # add_line(API_result_path,['boundingbox', username])  
     return make_response(jsonify({}), 200)
   
 @app.route('/all_result_list', methods=["POST"])
@@ -779,7 +785,7 @@ def get_res():
     del config
     gc.collect()  
 
-    add_line(API_result_path,['animation', username])  
+    # add_line(API_result_path,['animation', username])  
     return make_response(jsonify({"results":results,"bgimgList":imglist, "grid": gridlist}), 200)
 
 @app.route("/", methods=["GET", "POST"])

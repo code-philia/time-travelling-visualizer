@@ -13,7 +13,7 @@ const MAX_FOV = 70;
 const MIN_FOV = 1
 const GRAY = [0.8,0.8,0.8]
 const selectedLabel = 'fixedHoverLabel'
-var baseZoomSpeed = 0.1;
+var baseZoomSpeed = 0.01;
 var isDragging = false;
 var previousMousePosition = {
     x: 0,
@@ -22,45 +22,8 @@ var previousMousePosition = {
 var sizes = []
 var geometry = new THREE.BufferGeometry();
   function drawCanvas(res) {
-    // remove previous scene
-    if (window.vueApp.animationFrameId) {
-        console.log("stopAnimation")
-        cancelAnimationFrame(window.vueApp.animationFrameId);
-        window.vueApp.animationFrameId = undefined;
-    }
-
-    if (window.vueApp.scene) {
-        window.vueApp.scene.traverse(function (object) {
-            if (object.isMesh) {
-                if (object.geometry) {
-                    object.geometry.dispose();
-                }
-                if (object.material) {
-                    if (object.material.isMaterial) {
-                        cleanMaterial(object.material);
-                    } else {
-                        // 对于多材质的情况（材质数组）
-                        for (const material of object.material) {
-                            cleanMaterial(material);
-                        }
-                    }
-                }
-            }
-        });
-
-        while (window.vueApp.scene.children.length > 0) {
-            window.vueApp.scene.remove(window.vueApp.scene.children[0]);
-        }
-    }
-    // remove previous scene
-    if (window.vueApp.renderer) {
-        if (container.contains(window.vueApp.renderer.domElement)) {
-            console.log("removeDom")
-            container.removeChild(window.vueApp.renderer.domElement);
-        }
-        window.vueApp.renderer.renderLists.dispose();
-        window.vueApp.renderer.dispose();
-    }
+    // clean storage
+    cleanForEpochChange('')
 
     container = document.getElementById("container")
 
@@ -183,6 +146,15 @@ var geometry = new THREE.BufferGeometry();
     geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
     geometry.setAttribute('size', new THREE.Float32BufferAttribute(sizes, 1));
     geometry.setAttribute('alpha', new THREE.Float32BufferAttribute(alphas, 1));
+
+
+    // reset data points
+    position = []
+    colors = []
+    color = []
+    sizes = []
+    alphas = []
+    dataPoints = []
   
     FRAGMENT_SHADER = createFragmentShader();
     VERTEX_SHADER = createVertexShader()
@@ -230,32 +202,33 @@ var geometry = new THREE.BufferGeometry();
         blending: THREE.MultiplyBlending,
     });
 
-    var points = new THREE.Points(geometry, shaderMaterial);
+    window.vueApp.pointsMesh  = new THREE.Points(geometry, shaderMaterial);
 
     // Save original sizes
-    var originalSizes = [];
+
     if (geometry.getAttribute('size')) {
-        originalSizes = Array.from(geometry.getAttribute('size').array);
+        window.vueApp.originalSettings.originalSizes = Array.from(geometry.getAttribute('size').array);
     }
 
     // Save original colors
-    var originalColors = [];
     if (geometry.getAttribute('color')) {
-        originalColors = Array.from(geometry.getAttribute('color').array);
+        window.vueApp.originalSettings.originalColors = Array.from(geometry.getAttribute('color').array);
     }
     
+
+
     if (window.vueApp.selectedIndex) {
-        points.geometry.attributes.size.array[window.vueApp.selectedIndex] = HOVER_SIZE
+        window.vueApp.pointsMesh.geometry.attributes.size.array[window.vueApp.selectedIndex] = HOVER_SIZE
         // points.geometry.attributes.color.array[window.vueApp.selectedIndex] = SELECTED_COLOR
         // update selected point position in new epoch 
         var pointPosition = new THREE.Vector3();
-        pointPosition.fromBufferAttribute(points.geometry.attributes.position, window.vueApp.selectedIndex);
+        pointPosition.fromBufferAttribute(window.vueApp.pointsMesh.geometry.attributes.position, window.vueApp.selectedIndex);
         window.vueApp.selectedPointPosition = pointPosition;
         geometry.attributes.size.needsUpdate = true
         updateLabelPosition('', window.vueApp.selectedPointPosition, window.vueApp.selectedIndex, selectedLabel, true)
     }
 
-    window.vueApp.scene.add(points);
+    window.vueApp.scene.add(window.vueApp.pointsMesh);
 
     // 创建 Raycaster 和 mouse 变量
     var raycaster = new THREE.Raycaster();
@@ -279,9 +252,9 @@ var geometry = new THREE.BufferGeometry();
                 }
             }       
             if (isNormalSize) {
-                points.geometry.attributes.size.array[lastHoveredIndex] = NORMAL_SIZE; 
+                window.vueApp.pointsMesh.geometry.attributes.size.array[lastHoveredIndex] = NORMAL_SIZE; 
             } else {
-                points.geometry.attributes.size.array[lastHoveredIndex] = HOVER_SIZE; 
+                window.vueApp.pointsMesh.geometry.attributes.size.array[lastHoveredIndex] = HOVER_SIZE; 
             }
         }
       }
@@ -297,7 +270,7 @@ var geometry = new THREE.BufferGeometry();
         // 通过鼠标位置更新射线
         raycaster.setFromCamera(mouse, window.vueApp.camera);
         // 检测射线与点云的相交
-        var intersects = raycaster.intersectObject(points);
+        var intersects = raycaster.intersectObject(window.vueApp.pointsMesh);
         let specifiedLastHoveredIndex = makeSpecifiedVariableName('lastHoveredIndex', '')
         let specifiedImageSrc = makeSpecifiedVariableName('imageSrc', '')
         let specifiedSelectedIndex = makeSpecifiedVariableName('selectedIndex', '')
@@ -379,8 +352,8 @@ var geometry = new THREE.BufferGeometry();
         var specifiedSelectedIndex = makeSpecifiedVariableName('selectedIndex', '')
         var sizesAttribute = geometry.getAttribute('size');
         var colorsAttribute = geometry.getAttribute('color');
-        sizesAttribute.array.set(originalSizes);
-        colorsAttribute.array.set(originalColors);
+        sizesAttribute.array.set(window.vueApp.originalSettings.originalSizes);
+        colorsAttribute.array.set(window.vueApp.originalSettings.originalColors);
         // not reset selectedIndex
         if ( window.vueApp[specifiedSelectedIndex]) {
             sizesAttribute.array[window.vueApp[specifiedSelectedIndex]] = HOVER_SIZE
@@ -424,11 +397,11 @@ var geometry = new THREE.BufferGeometry();
         mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
         raycaster.setFromCamera(mouse, window.vueApp.camera);
       
-        var intersects = raycaster.intersectObject(points);
+        var intersects = raycaster.intersectObject(window.vueApp.pointsMesh);
         
         if (intersects.length > 0 && checkVisibility(geometry.attributes.alpha.array, intersects[0].index)) {
             if (window.vueApp.selectedIndex != null) {
-                points.geometry.attributes.size.array[window.vueApp.selectedIndex] = NORMAL_SIZE; 
+                window.vueApp.pointsMesh.geometry.attributes.size.array[window.vueApp.selectedIndex] = NORMAL_SIZE; 
                 geometry.attributes.size.needsUpdate = true;
             }
           // Get the index and position of the double-clicked point
@@ -440,7 +413,7 @@ var geometry = new THREE.BufferGeometry();
 
         } else {
         // reset previous selected point to normal size 
-          points.geometry.attributes.size.array[window.vueApp.selectedIndex] = NORMAL_SIZE; 
+          window.vueApp.pointsMesh.geometry.attributes.size.array[window.vueApp.selectedIndex] = NORMAL_SIZE; 
           geometry.attributes.size.needsUpdate = true;
           // If the canvas was double-clicked without hitting a point, hide the label and reset
           window.vueApp.selectedIndex = null;

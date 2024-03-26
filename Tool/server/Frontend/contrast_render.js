@@ -15,8 +15,6 @@ const GREEN = [0.0, 1.0, 0.0];
 const ORANGE = [1.0, 0.5, 0.0]
 const GRAY = [0.8,0.8,0.8]
 var baseZoomSpeed = 0.01;
-var  points1 = []
-var points2 = []
 var isDragging = false;
 var previousMousePosition = {
     x: 0,
@@ -31,12 +29,8 @@ function drawCanvas(res,id, flag='ref') {
     // reset since both of ref and tar refer to the same eventBus, we need to reset the previously bounded sender/receiver 
     EventBus.$off(referToAnotherFlag(flag) + 'update-curr-hover');
 
-    // stop previous epoch's animation
-    if (window.vueApp.animationFrameId[flag]) {
-        console.log("stopAnimation")
-        cancelAnimationFrame(window.vueApp.animationFrameId[flag]);
-        window.vueApp.animationFrameId[flag] = undefined;
-    }
+    //clean storage
+    cleanForEpochChange(flag)
 
     // remove previous scene
     container = document.getElementById(id)
@@ -51,39 +45,6 @@ function drawCanvas(res,id, flag='ref') {
         while (container.firstChild) {
             container.removeChild(container.lastChild);
         }
-
-    }
-    if (window.vueApp.scene[flag]) {
-        window.vueApp.scene[flag].traverse(function (object) {
-            if (object.isMesh) {
-                if (object.geometry) {
-                    object.geometry.dispose();
-                }
-                if (object.material) {
-                    if (object.material.isMaterial) {
-                        cleanMaterial(object.material);
-                    } else {
-                        // 对于多材质的情况（材质数组）
-                        for (const material of object.material) {
-                            cleanMaterial(material);
-                        }
-                    }
-                }
-            }
-        });
-
-        while (window.vueApp.scene[flag].children.length > 0) {
-            window.vueApp.scene[flag].remove(window.vueApp.scene[flag].children[0]);
-        }
-    }
-    // remove previous scene
-    if (window.vueApp.renderer[flag]) {
-        if (container.contains(window.vueApp.renderer[flag].domElement)) {
-            console.log("removeDom")
-            container.removeChild(window.vueApp.renderer.domElement);
-        }
-        window.vueApp.renderer[flag].renderLists.dispose();
-        window.vueApp.renderer[flag].dispose();
     }
 
     // create new Three.js scene
@@ -143,7 +104,7 @@ function drawCanvas(res,id, flag='ref') {
             var lens = window.vueApp[specifiedHighlightAttributes].boldIndices.length
             for (var i = 0; i < lens; i++) {
                 var pointPosition = new THREE.Vector3();
-                pointPosition.fromBufferAttribute(points.geometry.attributes.position, window.vueApp[specifiedHighlightAttributes].boldIndices[i]);
+                pointPosition.fromBufferAttribute(window.vueApp[specifiedPointsMesh].geometry.attributes.position, window.vueApp[specifiedHighlightAttributes].boldIndices[i]);
                 updateLabelPosition(flag, pointPosition, window.vueApp[specifiedHighlightAttributes].boldIndices[i], boldLable + i, true)
             }
         }
@@ -205,6 +166,15 @@ function drawCanvas(res,id, flag='ref') {
     geometry.setAttribute('size', new THREE.Float32BufferAttribute(sizes, 1));
     geometry.setAttribute('alpha', new THREE.Float32BufferAttribute(alphas, 1));
 
+
+    // reset data points
+    position = []
+    colors = []
+    color = []
+    sizes = []
+    alphas = []
+    dataPoints = []
+
     FRAGMENT_SHADER = createFragmentShader();
     VERTEX_SHADER = createVertexShader()
     var shaderMaterial = new THREE.ShaderMaterial({
@@ -250,35 +220,34 @@ function drawCanvas(res,id, flag='ref') {
         fog: true,
         blending: THREE.MultiplyBlending,
     });
+    var specifiedPointsMesh = makeSpecifiedVariableName('pointsMesh', flag)
+    window.vueApp[specifiedPointsMesh] = new THREE.Points(geometry, shaderMaterial);
 
-    var points = new THREE.Points(geometry, shaderMaterial);
-    console.log("pointlenght",dataPoints.length)
+    var specifiedOriginalSettings = makeSpecifiedVariableName('originalSettings', flag)
     // Save original sizes
-    var originalSizes = [];
     if (geometry.getAttribute('size')) {
-        originalSizes = Array.from(geometry.getAttribute('size').array);
+        window.vueApp[specifiedOriginalSettings].originalSizes = Array.from(geometry.getAttribute('size').array);
     }
 
     // Save original colors
-    var originalColors = [];
     if (geometry.getAttribute('color')) {
-        originalColors = Array.from(geometry.getAttribute('color').array);
+        window.vueApp[specifiedOriginalSettings].originalColors = Array.from(geometry.getAttribute('color').array);
     }
 
     var specifiedSelectedIndex = makeSpecifiedVariableName('selectedIndex', flag)
     var specifiedSelectedPointPosition = makeSpecifiedVariableName('selectedPointPosition', flag)
     if (window.vueApp[specifiedSelectedIndex]) {
-        points.geometry.attributes.size.array[window.vueApp[specifiedSelectedIndex]] = HOVER_SIZE
+        window.vueApp[specifiedPointsMesh].geometry.attributes.size.array[window.vueApp[specifiedSelectedIndex]] = HOVER_SIZE
         // points.geometry.attributes.color.array[window.vueApp.selectedIndex] = SELECTED_COLOR
         // update selected point position in new epoch 
         var pointPosition = new THREE.Vector3();
-        pointPosition.fromBufferAttribute(points.geometry.attributes.position, window.vueApp[specifiedSelectedIndex]);
+        pointPosition.fromBufferAttribute(window.vueApp[specifiedPointsMesh].geometry.attributes.position, window.vueApp[specifiedSelectedIndex]);
         window.vueApp[specifiedSelectedPointPosition] = pointPosition;
         geometry.attributes.size.needsUpdate = true
         updateLabelPosition(flag, pointPosition, window.vueApp[specifiedSelectedIndex], selectedLabel, true)
     }
   
-    window.vueApp.scene[flag].add(points);
+    window.vueApp.scene[flag].add(window.vueApp[specifiedPointsMesh]);
 
     // 创建 Raycaster 和 mouse 变量
     var raycaster = new THREE.Raycaster();
@@ -297,7 +266,7 @@ function drawCanvas(res,id, flag='ref') {
        mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
        raycaster.setFromCamera(mouse, window.vueApp.camera[flag]);
      
-       var intersects = raycaster.intersectObject(points);
+       var intersects = raycaster.intersectObject(window.vueApp[specifiedPointsMesh]);
        let specifiedSelectedIndex = makeSpecifiedVariableName('selectedIndex', flag)
        let specifiedSelectedPointPosition = makeSpecifiedVariableName('selectedPointPosition', flag)
        if (intersects.length > 0 && checkVisibility(geometry.attributes.alpha.array, intersects[0].index)) {
@@ -310,10 +279,10 @@ function drawCanvas(res,id, flag='ref') {
             if (currBold) {
                 var isInclude = currBold.includes(window.vueApp[specifiedSelectedIndex])
                 if (!isInclude) {
-                    points.geometry.attributes.size.array[window.vueApp[specifiedSelectedIndex]] = NORMAL_SIZE; 
+                    window.vueApp[specifiedPointsMesh].geometry.attributes.size.array[window.vueApp[specifiedSelectedIndex]] = NORMAL_SIZE; 
                 } 
             } else {
-                points.geometry.attributes.size.array[window.vueApp[specifiedSelectedIndex]] = NORMAL_SIZE; 
+                window.vueApp[specifiedPointsMesh].geometry.attributes.size.array[window.vueApp[specifiedSelectedIndex]] = NORMAL_SIZE; 
             }
         }
        
@@ -322,14 +291,14 @@ function drawCanvas(res,id, flag='ref') {
 
          window.vueApp[specifiedSelectedIndex] = intersect.index;
          window.vueApp[specifiedSelectedPointPosition]= intersect.point;
-         points.geometry.attributes.size.array[window.vueApp[specifiedSelectedIndex]] = HOVER_SIZE; 
+         window.vueApp[specifiedPointsMesh].geometry.attributes.size.array[window.vueApp[specifiedSelectedIndex]] = HOVER_SIZE; 
       
          geometry.attributes.size.needsUpdate = true;
          // Call function to update label position and content
          updateLabelPosition(flag, window.vueApp[specifiedSelectedPointPosition], window.vueApp[specifiedSelectedIndex], selectedLabel, true)
        } else {
         // this works even if window.vueApp[specifiedSelectedIndex] is null
-        points.geometry.attributes.size.array[window.vueApp[specifiedSelectedIndex]] = NORMAL_SIZE; 
+        window.vueApp[specifiedPointsMesh].geometry.attributes.size.array[window.vueApp[specifiedSelectedIndex]] = NORMAL_SIZE; 
         geometry.attributes.size.needsUpdate = true;
          // If the canvas was double-clicked without hitting a point, hide the label and reset
          window.vueApp[specifiedSelectedIndex] = null;
@@ -367,9 +336,9 @@ function drawCanvas(res,id, flag='ref') {
             }       
       
             if (isNormalSize) {
-                points.geometry.attributes.size.array[lastHoveredIndex] = NORMAL_SIZE; 
+                window.vueApp[specifiedPointsMesh].geometry.attributes.size.array[lastHoveredIndex] = NORMAL_SIZE; 
             } else {
-                points.geometry.attributes.size.array[lastHoveredIndex] = HOVER_SIZE; 
+                window.vueApp[specifiedPointsMesh].geometry.attributes.size.array[lastHoveredIndex] = HOVER_SIZE; 
             }
         }
       }
@@ -385,7 +354,7 @@ function drawCanvas(res,id, flag='ref') {
         raycaster.setFromCamera(mouse, window.vueApp.camera[flag]);
 
         // 检测射线与点云的相交
-        var intersects = raycaster.intersectObject(points);
+        var intersects = raycaster.intersectObject(window.vueApp[specifiedPointsMesh]);
         let specifiedLastHoveredIndex = makeSpecifiedVariableName('lastHoveredIndex', flag)
         let specifiedImageSrc = makeSpecifiedVariableName('imageSrc', flag)
         let specifiedHighlightAttributes = makeSpecifiedVariableName('highlightAttributes', flag)
@@ -424,7 +393,7 @@ function drawCanvas(res,id, flag='ref') {
                 geometry.attributes.size.needsUpdate = true;
                 window.vueApp[specifiedLastHoveredIndex] = index;
                 var pointPosition = new THREE.Vector3();
-                pointPosition.fromBufferAttribute(points.geometry.attributes.position, index);
+                pointPosition.fromBufferAttribute(window.vueApp[specifiedPointsMesh].geometry.attributes.position, index);
                 updateHoverIndexUsingPointPosition(pointPosition, index, false, flag, window.vueApp.camera[flag], window.vueApp.renderer[flag]) 
             }
         } else {
@@ -511,7 +480,7 @@ function drawCanvas(res,id, flag='ref') {
                 geometry.attributes.size.needsUpdate = true;
                 window.vueApp[specifiedLastHoveredIndex] = index;
                 var pointPosition = new THREE.Vector3();
-                pointPosition.fromBufferAttribute(points.geometry.attributes.position, index);
+                pointPosition.fromBufferAttribute(window.vueApp[specifiedPointsMesh].geometry.attributes.position, index);
                 updateHoverIndexUsingPointPosition(pointPosition, index, false, flag, window.vueApp.camera[flag], window.vueApp.renderer[flag]) 
             }
         } else {
@@ -614,9 +583,11 @@ function drawCanvas(res,id, flag='ref') {
     function resetToOriginalColorSize() {
         var specifiedSelectedIndex = makeSpecifiedVariableName('selectedIndex', flag)
         var sizesAttribute = geometry.getAttribute('size');
+        var specifiedOriginalSettings = makeSpecifiedVariableName('originalSettings', flag)
         var colorsAttribute = geometry.getAttribute('color');
-        sizesAttribute.array.set(originalSizes);
-        colorsAttribute.array.set(originalColors);
+        console.log("reset", geometry.getAttribute('size'))
+        sizesAttribute.array.set(window.vueApp[specifiedOriginalSettings].originalSizes);
+        colorsAttribute.array.set(window.vueApp[specifiedOriginalSettings].originalColors);
         // not reset selectedIndex
         if ( window.vueApp[specifiedSelectedIndex]) {
             sizesAttribute.array[window.vueApp[specifiedSelectedIndex]] = HOVER_SIZE
@@ -693,7 +664,7 @@ function drawCanvas(res,id, flag='ref') {
         for (var i = 0; i < lens; i++) {
             var pointPosition = new THREE.Vector3();
             // usually boldIndices has size 1
-            pointPosition.fromBufferAttribute(points.geometry.attributes.position, boldIndices[i]);
+            pointPosition.fromBufferAttribute(window.vueApp[specifiedPointsMesh].geometry.attributes.position, boldIndices[i]);
             updateLabelPosition(flag, pointPosition, boldIndices[i], boldLable + i, true)
         }
     }
@@ -756,7 +727,7 @@ function drawCanvas(res,id, flag='ref') {
                 for (var i = 0; i < lens; i++) {
                     var pointPosition = new THREE.Vector3();
                     // usually boldIndices has size 1
-                    pointPosition.fromBufferAttribute(points.geometry.attributes.position, window.vueApp[specifiedHighlightAttributes].boldIndices[i]);
+                    pointPosition.fromBufferAttribute(window.vueApp[specifiedPointsMesh].geometry.attributes.position, window.vueApp[specifiedHighlightAttributes].boldIndices[i]);
                     updateLabelPosition(flag, pointPosition, window.vueApp[specifiedHighlightAttributes].boldIndices[i], boldLable + i, true)
                 }
             }

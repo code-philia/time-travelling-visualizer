@@ -349,6 +349,7 @@ function drawTimeline(res, flag) {
 
 
   let total = res.structure.length
+  
   window.treejson = res.structure
 
   let data = res.structure
@@ -590,4 +591,117 @@ function updateShowingIndices(alphas, isShow, indices, flip_indices) {
   } else {
       return updateAlphas(alphas,indices, null, false);
   }
+}
+
+function cleanForEpochChange(flag) {
+  var specifiedPointsMesh = makeSpecifiedVariableName("pointsMesh", flag)
+  var specifiedOriginalSettings = makeSpecifiedVariableName("originalSettings", flag)
+  var specifiedAnimationFrameId = makeSpecifiedVariableName("animationFrameId", flag)
+ 
+  if (window.vueApp[specifiedPointsMesh]) {
+    if (window.vueApp[specifiedPointsMesh].geometry) {
+        if (window.vueApp[specifiedPointsMesh].geometry.color) {
+            window.vueApp[specifiedPointsMesh].geometry.color.dispose() 
+        }
+        if (window.vueApp[specifiedPointsMesh].geometry.position) {
+            window.vueApp[specifiedPointsMesh].geometry.position.dispose() 
+        }
+        if (window.vueApp[specifiedPointsMesh].geometry.alpha) {
+            window.vueApp[specifiedPointsMesh].geometry.alpha.dispose() 
+        }
+        if (window.vueApp[specifiedPointsMesh].geometry.size) {
+            window.vueApp[specifiedPointsMesh].geometry.size.dispose() 
+        }
+        window.vueApp[specifiedPointsMesh].geometry.dispose();
+    }
+    if (window.vueApp[specifiedPointsMesh].material) {
+        window.vueApp[specifiedPointsMesh].material.dispose();
+    }
+    window.vueApp[specifiedPointsMesh] = undefined;
+}
+
+if (window.vueApp[specifiedOriginalSettings]) {
+    if (window.vueApp[specifiedOriginalSettings].originalSizes) {
+        window.vueApp[specifiedOriginalSettings].originalSizes = undefined;
+    }
+    if (window.vueApp[specifiedOriginalSettings].originalColors) {
+        window.vueApp[specifiedOriginalSettings].originalColors = undefined;
+    }
+}
+
+
+if (window.vueApp[specifiedAnimationFrameId]) {
+    console.log("stopAnimation")
+    cancelAnimationFrame(window.vueApp[specifiedAnimationFrameId]);
+    window.vueApp[specifiedAnimationFrameId] = undefined;
+}
+
+if (flag == '') {
+  if (window.vueApp.scene) {
+    window.vueApp.scene.traverse(function (object) {
+        if (object.isMesh) {
+            if (object.geometry) {
+                object.geometry.dispose();
+            }
+            if (object.material) {
+                if (object.material.isMaterial) {
+                    cleanMaterial(object.material);
+                } else {
+                    // 对于多材质的情况（材质数组）
+                    for (const material of object.material) {
+                        cleanMaterial(material);
+                    }
+                }
+            }
+        }
+    });
+
+    while (window.vueApp.scene.children.length > 0) {
+        window.vueApp.scene.remove(window.vueApp.scene.children[0]);
+    }
+}
+// remove previous scene
+if (window.vueApp.renderer) {
+    if (container.contains(window.vueApp.renderer.domElement)) {
+        console.log("removeDom")
+        container.removeChild(window.vueApp.renderer.domElement);
+    }
+    window.vueApp.renderer.renderLists.dispose();
+    window.vueApp.renderer.dispose();
+}
+} else {
+  if (window.vueApp.scene[flag]) {
+    window.vueApp.scene[flag].traverse(function (object) {
+        if (object.isMesh) {
+            if (object.geometry) {
+                object.geometry.dispose();
+            }
+            if (object.material) {
+                if (object.material.isMaterial) {
+                    cleanMaterial(object.material);
+                } else {
+                    // 对于多材质的情况（材质数组）
+                    for (const material of object.material) {
+                        cleanMaterial(material);
+                    }
+                }
+            }
+        }
+    });
+
+    while (window.vueApp.scene[flag].children.length > 0) {
+        window.vueApp.scene[flag].remove(window.vueApp.scene[flag].children[0]);
+    }
+}
+// remove previous scene
+if (window.vueApp.renderer[flag]) {
+    if (container.contains(window.vueApp.renderer[flag].domElement)) {
+        console.log("removeDom")
+        container.removeChild(window.vueApp.renderer[flag].domElement);
+    }
+    window.vueApp.renderer[flag].renderLists.dispose();
+    window.vueApp.renderer[flag].dispose();
+}
+}
+
 }
