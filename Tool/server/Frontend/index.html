@@ -224,6 +224,7 @@
         data() {
             return {
                 lastHoveredIndex: null,
+                curIndex:null,
                 contentPath: '/home/yifan/dataset/case_study_mnist_backdoor',
                 visMethod: 'Trustvis',
                 taskType: 'Classification',
@@ -504,8 +505,6 @@
             lastHoveredIndex: {
                 immediate: true,
                 handler(newVal, oldVal) {
-                    this.curr_pred = this.prediction_list[newVal];
-                    this.curr_label = this.label_name_dict[this.label_list[newVal]]
                     if (newVal != null) {
                         getOriginalData(this.contentPath, newVal, this.dataType, "")
                         const updatedQuery = {
@@ -518,6 +517,13 @@
                         }
 
                     }
+                }
+            },
+            curIndex:{
+                immediate: true,
+                handler(newVal, oldVal) {
+                    this.curr_pred = this.prediction_list[newVal];
+                    this.curr_label = this.label_name_dict[this.label_list[newVal]]
                 }
             },
 
