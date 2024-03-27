@@ -192,17 +192,25 @@ def get_properties(context, training_data_number, testing_data_number, training_
     properties[ulb] = 1
     return properties
 
-def update_epoch_projection(context, EPOCH, predicates, TaskType):
+def update_epoch_projection(context, EPOCH, predicates, TaskType,indicates):
     # TODO consider active learning setting
     error_message = ""
     start = time.time()
     all_data = get_train_test_data(context, EPOCH)
     
     labels = get_train_test_label(context, EPOCH, all_data)
+    if len(indicates):
+        all_data = all_data[indicates]
+        labels = labels[indicates]
+        
+    
     print('labels',labels)
     error_message = check_labels_match_alldata(labels, all_data, error_message)
     
     embedding_2d = get_embedding(context, all_data, EPOCH)
+    if len(indicates):
+        embedding_2d = embedding_2d[indicates]
+    print('all_data',all_data.shape,'embedding_2d',embedding_2d.shape)
     error_message = check_embedding_match_alldata(embedding_2d, all_data, error_message)
     
     training_data_number = context.strategy.config["TRAINING"]["train_num"]

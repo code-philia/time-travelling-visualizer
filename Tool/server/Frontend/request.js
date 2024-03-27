@@ -22,7 +22,8 @@ function updateProjection(content_path, iteration, taskType) {
             'setting': 'normal',
             "content_path": content_path,
             "predicates": {},
-            "TaskType": taskType
+            "TaskType": taskType,
+            "selectedPoints":window.vueApp.filter_index
         }),
         headers: headers,
         mode: 'cors'
