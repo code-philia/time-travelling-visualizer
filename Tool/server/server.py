@@ -286,6 +286,17 @@ def update_projection():
     predicates = res["predicates"]
     # username = res['username']
     TaskType = res['TaskType']
+    s = res['selectedPoints']
+    if s == '':
+        indicates = []
+    else:
+        try:
+            indicates = [int(item) for item in s.split(",") if item.isdigit()]
+        except ValueError:
+            # 处理或记录错误
+            print("Some items in the string cannot be converted to integers.")
+            indicates = []  # 或者根据你的需要进行其他处理
+        
     # sys.path.append(CONTENT_PATH)
     context, error_message_context = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
     # use the true one
@@ -293,7 +304,7 @@ def update_projection():
     EPOCH = int(iteration)
     
     embedding_2d, grid, decision_view, label_name_dict, label_color_list, label_list, max_iter, training_data_index, \
-    testing_data_index, eval_new, prediction_list, selected_points, properties, error_message_projection = update_epoch_projection(context, EPOCH, predicates, TaskType)
+    testing_data_index, eval_new, prediction_list, selected_points, properties, error_message_projection = update_epoch_projection(context, EPOCH, predicates, TaskType,indicates)
     end = time.time()
     print("duration", end-start)
     # sys.path.remove(CONTENT_PATH)

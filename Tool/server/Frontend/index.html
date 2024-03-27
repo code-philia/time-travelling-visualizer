@@ -69,7 +69,7 @@
                 </div>
                 <el-divider></el-divider>
                 <div id="contentSettingTask">
-                    <span style="display: inline-block; margin-right: 20px;">Task Type:</span>
+                    <span style="display: inline-block; margin-right: 20px;">Task Type:</span><br/>
                     <el-radio v-model="taskType" label="Classification">Classification</el-radio>
                     <el-radio v-model="taskType" label="Non-Classification">Non-Classification</el-radio>
                 </div>
@@ -122,6 +122,9 @@
                 <el-divider></el-divider>
                 <el-tabs>
                     <el-tab-pane label="Normal Query">
+                        Filter Index: 
+                        <div style="display: flex;"></el-input><el-input v-model="filter_index">
+                        </el-input><el-button style="background-color: #571792; color: #fff;" @click="filterByIndex">Filter</el-button></div>
                         <div class="query-row">
                             <el-select v-model="predicates.key">
                                 <el-option value="label" label="label">
@@ -221,9 +224,10 @@
         data() {
             return {
                 lastHoveredIndex: null,
-                contentPath: '/home/timeTravelling/guorui/git_space/TestFrontend/time-travelling-visualizer/Backdoor',
+                contentPath: '/home/yifan/dataset/case_study_mnist_backdoor',
                 visMethod: 'Trustvis',
                 taskType: 'Classification',
+                filter_index:'',
                 isCanvasLoading: false,
                 query_result: {},
                 prediction_list: [],
@@ -300,6 +304,9 @@
                 this.camera.zoom = 1;
                 this.camera.lookAt(target);
                 this.camera.updateProjectionMatrix();
+            },
+            filterByIndex(){
+                updateProjection(this.contentPath, this.currEpoch, this.taskType)
             },
             guide() {
                 const steps = [
