@@ -280,7 +280,15 @@ var previousMousePosition = {
             var intersect = intersects[0];
 
             // 获取索引 - 这需要根据具体实现来确定如何获取
-            var index = intersect.index;
+            var ind = intersect.index;
+            if(window.vueApp.filter_index!=''){
+                console.log("window.vueApp.filter_index",window.vueApp.filter_index)
+                filter_index = window.vueApp.filter_index.split(',')
+                index = filter_index[ind]
+            }else{
+                index = ind
+            }
+           
             // 在这里处理悬停事件
             if (window.vueApp.lastHoveredIndex != index) {
                 updateLastHoverIndexSize(window.vueApp[specifiedLastHoveredIndex],  window.vueApp[specifiedSelectedIndex], 
