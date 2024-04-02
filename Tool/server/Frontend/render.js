@@ -140,6 +140,7 @@ var previousMousePosition = {
         sizes.push(NORMAL_SIZE);
         alphas.push(1.0)
     });
+    console.log("datapoints", dataPoints.length)
 
     var geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(position, 3));
@@ -276,6 +277,8 @@ var previousMousePosition = {
         let specifiedSelectedIndex = makeSpecifiedVariableName('selectedIndex', '')
 
         if (intersects.length > 0 && checkVisibility(window.vueApp.pointsMesh.geometry.attributes.alpha.array, intersects[0].index)) {
+
+            console.log("currHover")
             // 获取最接近的交点
             var intersect = intersects[0];
 
@@ -330,6 +333,14 @@ var previousMousePosition = {
         window.vueApp.pointsMesh.geometry.attributes.alpha.array = updateShowingIndices(window.vueApp.pointsMesh.geometry.attributes.alpha.array, window.vueApp[specifiedShowTraining], window.vueApp[specifiedTrainIndex], window.vueApp[specifiedPredictionFlipIndices])
         window.vueApp.pointsMesh.geometry.attributes.alpha.array = updateShowingIndices(window.vueApp.pointsMesh.geometry.attributes.alpha.array, window.vueApp[specifiedShowTesting], window.vueApp[specifiedTestIndex], window.vueApp[specifiedPredictionFlipIndices])
 
+        // update position z index to allow currDisplay indices show above 
+        for (let i = 0; i < window.vueApp.pointsMesh.geometry.attributes.alpha.array.length; i++) {
+            var zIndex = i * 3 + 2; 
+            window.vueApp.pointsMesh.geometry.attributes.position.array[zIndex] = window.vueApp.pointsMesh.geometry.attributes.alpha.array[i] === 1 ? 0 : -1;
+        }
+        
+  
+        window.vueApp.pointsMesh.geometry.attributes.position.needsUpdate = true;
         window.vueApp.pointsMesh.geometry.attributes.alpha.needsUpdate = true;
     }
   
