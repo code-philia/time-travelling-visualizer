@@ -497,7 +497,7 @@ class Trustvis(StrategyAbstractClass):
 
         self.umap_fn = umap_loss_fn
         self.recon_fn = recon_loss_fn
-        self.projector = DVIProjector(vis_model=self.model, content_path=self.CONTENT_PATH, vis_model_name=VIS_MODEL_NAME, device=self.DEVICE)
+        self.projector = TrustVisProjector(vis_model=self.model, content_path=self.CONTENT_PATH, vis_model_name=VIS_MODEL_NAME, device=self.DEVICE)
         self.vis = visualizer(self.data_provider, self.projector, 200, "tab10")
         self.evaluator = Evaluator(self.data_provider, self.projector)
         self.boundary_loss = BoundaryAwareLoss(umap_loss=self.umap_fn,device=self.DEVICE)
