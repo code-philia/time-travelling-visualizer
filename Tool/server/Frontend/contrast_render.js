@@ -527,11 +527,19 @@ function drawCanvas(res,id, flag='ref') {
         console.log("currDisplay")
         let specifiedTrainIndex = makeSpecifiedVariableName('train_index', flag)
         let specifiedTestIndex = makeSpecifiedVariableName('test_index', flag)
-
+      
         // this is not alphas array at the beginning
         window.vueApp[specifiedPointsMesh].geometry.attributes.alpha.array = updateShowingIndices(window.vueApp[specifiedPointsMesh].geometry.attributes.alpha.array, window.vueApp[specifiedShowTraining], window.vueApp[specifiedTrainIndex], window.vueApp[specifiedPredictionFlipIndices])
         window.vueApp[specifiedPointsMesh].geometry.attributes.alpha.array = updateShowingIndices(window.vueApp[specifiedPointsMesh].geometry.attributes.alpha.array, window.vueApp[specifiedShowTesting], window.vueApp[specifiedTestIndex], window.vueApp[specifiedPredictionFlipIndices])
-
+        // update position z index to allow currDisplay indices show above 
+      
+        for (let i = 0; i < window.vueApp[specifiedPointsMesh].geometry.attributes.alpha.array.length; i++) {
+            var zIndex = i * 3 + 2; 
+            window.vueApp[specifiedPointsMesh].geometry.attributes.position.array[zIndex] = window.vueApp[specifiedPointsMesh].geometry.attributes.alpha.array[i] === 1 ? 0 : -1;
+        }
+        
+  
+        window.vueApp[specifiedPointsMesh].geometry.attributes.position.needsUpdate = true;
         window.vueApp[specifiedPointsMesh].geometry.attributes.alpha.needsUpdate = true;
     }
   

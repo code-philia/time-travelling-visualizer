@@ -310,15 +310,25 @@ def update_epoch_projection(context, EPOCH, predicates, TaskType,indicates):
 def getVisError(context, EPOCH, TaskType):
     highlightedPointIndices = []
     all_data = get_train_test_data(context, EPOCH)
-    embedding_2d = get_embedding(context, all_data, EPOCH)
+
     train_data = context.train_representation_data(EPOCH)
+    embedding_2d = get_embedding(context, all_data, EPOCH)
     if (TaskType == 'Classification'):
-        high_pred = context.strategy.data_provider.get_pred(EPOCH, train_data).argmax(1)
+        high_pred = context.strategy.data_provider.get_pred(EPOCH, all_data).argmax(1)
+        # project_embedding = context.strategy.projector.batch_project(EPOCH, train_data)
+        # project_embedding1 = project_embedding
+        # embed_difference = np.where(project_embedding != embedding_2d)[0]
+
         inv_high_dim_data = context.strategy.projector.batch_inverse(EPOCH, embedding_2d)
         inv_high_pred = context.strategy.data_provider.get_pred(EPOCH, inv_high_dim_data).argmax(1)
         highlightedPointIndices = np.where(high_pred != inv_high_pred)[0]
-        print(len(inv_high_dim_data))
-        print(len(embedding_2d))
+        # print(len(inv_high_dim_data))
+        # print("invhighshape", inv_high_dim_data.shape)
+        # print("embeddiffer", embed_difference)
+        # print("embed2dlen", len(embedding_2d))
+        # print("embed2dprojectlen",len(project_embedding))
+        # print("invhighlen",len(inv_high_pred))
+
         print(high_pred)
         print(inv_high_pred)
         print(np.where(high_pred != inv_high_pred))

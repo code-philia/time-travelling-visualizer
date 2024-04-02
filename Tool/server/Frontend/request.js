@@ -30,12 +30,15 @@ function updateProjection(content_path, iteration, taskType) {
     })
     .then(response => response.json())
     .then(res => {
-        if (window.vueApp.errorMessage) {
-          window.vueApp.errorMessage =  res.errorMessage
-        } else {
-          alert(res.errorMessage)
-          window.vueApp.errorMessage =  res.errorMessage
+        if (res.errorMessage != "") {
+          if (window.vueApp.errorMessage) {
+            window.vueApp.errorMessage =  res.errorMessage
+          } else {
+            alert(res.errorMessage)
+            window.vueApp.errorMessage =  res.errorMessage
+          }
         }
+       
         drawCanvas(res);
         window.vueApp.prediction_list = res.prediction_list
         window.vueApp.label_list = res.label_list
@@ -127,13 +130,16 @@ function updateContraProjection(content_path, iteration, taskType, flag) {
             currId = 'container_ref'
             alert_prefix = "left:\n" 
         } 
-        let specifiedErrorMessage = makeSpecifiedVariableName('errorMessage', flag)
-        if (window.vueApp[specifiedErrorMessage]) {
-          window.vueApp[specifiedErrorMessage] = alert_prefix + res.errorMessage
-        } else {
-          alert(alert_prefix + res.errorMessage)
-          window.vueApp[specifiedErrorMessage] = alert_prefix + res.errorMessage
+        if (res.errorMessage != "") {
+          let specifiedErrorMessage = makeSpecifiedVariableName('errorMessage', flag)
+          if (window.vueApp[specifiedErrorMessage]) {
+            window.vueApp[specifiedErrorMessage] = alert_prefix + res.errorMessage
+          } else {
+            alert(alert_prefix + res.errorMessage)
+            window.vueApp[specifiedErrorMessage] = alert_prefix + res.errorMessage
+          }
         }
+       
         drawCanvas(res, currId,flag);
         let specifiedPredictionlist = makeSpecifiedVariableName('prediction_list', flag)
         let specifiedLabelList = makeSpecifiedVariableName('label_list', flag)

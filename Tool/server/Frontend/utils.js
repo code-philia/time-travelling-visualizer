@@ -629,9 +629,6 @@ if (window.vueApp[specifiedOriginalSettings]) {
     }
 }
 
-
-
-
 if (flag == '') {
   if (window.vueApp.animationFrameId) {
     console.log("stopAnimation")
