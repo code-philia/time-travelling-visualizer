@@ -89,7 +89,7 @@ def initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING, dense=False):
 
 def check_labels_match_alldata(labels, all_data, error_message):
     if (len(labels) != len(all_data)):
-        error_message += "backend labels and data don't match!\n"
+        error_message += "The total number of data labels doesn't match with the total number of data samples!\n"
     return error_message
 
 def get_embedding(context, all_data, EPOCH):
@@ -108,12 +108,12 @@ def get_embedding_path(context, EPOCH):
 
 def check_embedding_match_alldata(embedding_2d, all_data, error_message):
     if (len(embedding_2d) != len(all_data)):
-        error_message += "backend embeddings and data don't match!\n"
+        error_message += "The total number of projected points doesn't match with the total number of data samples!\n"
     return error_message
 
 def check_config_match_embedding(training_data_number, testing_data_number, embedding_2d, error_message):
     if ((training_data_number + testing_data_number) != len(embedding_2d)):
-        error_message += "backend config's total data num and embedding length don't match!\n"
+        error_message += "config file's setting of total number of data samples and total number of projected points don't match!\n"
     return error_message
 
 def get_grid_bfig(context, EPOCH, embedding_2d):

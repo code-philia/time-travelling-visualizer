@@ -50,21 +50,25 @@ function drawCanvas(res,id, flag='ref') {
     // create new Three.js scene
     window.vueApp.scene[flag] = new THREE.Scene();
     // get the boundary of the scene
-    var x_min = res.grid_index[0]
-    var y_min = res.grid_index[1]
-    var x_max = res.grid_index[2]
-    var y_max = res.grid_index[3]
+    window.vueApp.sceneBoundary[flag].x_min = res.grid_index[0]
+    window.vueApp.sceneBoundary[flag].y_min = res.grid_index[1]
+    window.vueApp.sceneBoundary[flag].x_max = res.grid_index[2]
+    window.vueApp.sceneBoundary[flag].y_max = res.grid_index[3]
 
     const cameraBounds = {
-        minX: x_min,
-        maxX: x_max,
-        minY: y_min,
-        maxY: y_max
+        minX: window.vueApp.sceneBoundary[flag].x_min,
+        maxX: window.vueApp.sceneBoundary[flag].x_max,
+        minY: window.vueApp.sceneBoundary[flag].y_min,
+        maxY: window.vueApp.sceneBoundary[flag].y_max
     };
     var aspect = 1
     const rect = container.getBoundingClientRect();
 
-    window.vueApp.camera[flag] = new THREE.OrthographicCamera(x_min * aspect, x_max * aspect, y_max, y_min, 1, 1000);
+    window.vueApp.camera[flag] = new THREE.OrthographicCamera(window.vueApp.sceneBoundary[flag].x_min * aspect,
+         window.vueApp.sceneBoundary[flag].x_max * aspect,
+         window.vueApp.sceneBoundary[flag].y_max,
+          window.vueApp.sceneBoundary[flag].y_min,
+            1, 1000);
     window.vueApp.camera[flag].position.set(0, 0, 100);
     const target = new THREE.Vector3(
         0, 0, 0
@@ -72,10 +76,10 @@ function drawCanvas(res,id, flag='ref') {
 
     // 根据容器尺寸调整相机视野
     var aspectRatio = rect.width / rect.height;
-    window.vueApp.camera[flag].left = x_min * aspectRatio;
-    window.vueApp.camera[flag].right = x_max * aspectRatio;
-    window.vueApp.camera[flag].top = y_max;
-    window.vueApp.camera[flag].bottom = y_min;
+    window.vueApp.camera[flag].left = window.vueApp.sceneBoundary[flag].x_min * aspectRatio;
+    window.vueApp.camera[flag].right = window.vueApp.sceneBoundary[flag].x_max * aspectRatio;
+    window.vueApp.camera[flag].top =  window.vueApp.sceneBoundary[flag].y_max;
+    window.vueApp.camera[flag].bottom = window.vueApp.sceneBoundary[flag].y_min;
 
     // 更新相机的投影矩阵
     window.vueApp.camera[flag].updateProjectionMatrix();
@@ -118,10 +122,10 @@ function drawCanvas(res,id, flag='ref') {
 
     container.appendChild(window.vueApp.renderer[flag].domElement);
     // 计算尺寸和中心位置
-    var width = x_max - x_min;
-    var height = y_max - y_min;
-    var centerX = x_min + width / 2;
-    var centerY = y_min + height / 2;
+    var width = window.vueApp.sceneBoundary[flag].x_max - window.vueApp.sceneBoundary[flag].x_min;
+    var height = window.vueApp.sceneBoundary[flag].y_max - window.vueApp.sceneBoundary[flag].y_min;
+    var centerX = window.vueApp.sceneBoundary[flag].x_min + width / 2;
+    var centerY = window.vueApp.sceneBoundary[flag].y_min + height / 2;
 
     let canvas = document.createElement('canvas');
     canvas.width = 128;
