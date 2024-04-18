@@ -40,16 +40,17 @@ var previousMousePosition = {
     // create new Three.js scene
     window.vueApp.scene = new THREE.Scene();
     // get the boundary of the scene
-    var x_min = res.grid_index[0]
-    var y_min = res.grid_index[1]
-    var x_max = res.grid_index[2]
-    var y_max = res.grid_index[3]
+    window.vueApp.sceneBoundary.x_min = res.grid_index[0]
+    window.vueApp.sceneBoundary.y_min =res.grid_index[1]
+    window.vueApp.sceneBoundary.x_max = res.grid_index[2]
+    window.vueApp.sceneBoundary.y_max =res.grid_index[3]
+
 
     const cameraBounds = {
-        minX: x_min,
-        maxX: x_max,
-        minY: y_min,
-        maxY: y_max
+        minX: window.vueApp.sceneBoundary.x_min,
+        maxX: window.vueApp.sceneBoundary.x_max,
+        minY: window.vueApp.sceneBoundary.y_min,
+        maxY: window.vueApp.sceneBoundary.y_max
     };
     var aspect = 1
     const rect = container.getBoundingClientRect();
@@ -59,12 +60,19 @@ var previousMousePosition = {
     // based on screen size set the camera view 
     var aspectRatio = rect.width / rect.height;
 
-    window.vueApp.camera = new THREE.OrthographicCamera(x_min * aspect, x_max * aspect, y_max, y_min, 1, 1000);
-    window.vueApp.camera.position.set(0, 0, 100);
-    window.vueApp.camera.left = x_min * aspectRatio;
-    window.vueApp.camera.right = x_max * aspectRatio;
-    window.vueApp.camera.top = y_max;
-    window.vueApp.camera.bottom = y_min;
+    window.vueApp.camera = new THREE.OrthographicCamera(
+        window.vueApp.sceneBoundary.x_min * aspect,
+         window.vueApp.sceneBoundary.x_max * aspect,
+          window.vueApp.sceneBoundary.y_max,
+          window.vueApp.sceneBoundary.y_min,
+          1, 1000);
+
+    // set current camera position, and sceneBoundary is used to restore the camera position later.
+    window.vueApp.camera.position.set(0, 0, 100); // This will set 3d position of camera, it is important to ensure camera's angle of view will not distort 
+    window.vueApp.camera.left = window.vueApp.sceneBoundary.x_min * aspectRatio;
+    window.vueApp.camera.right =  window.vueApp.sceneBoundary.x_max * aspectRatio;
+    window.vueApp.camera.top = window.vueApp.sceneBoundary.y_max;
+    window.vueApp.camera.bottom = window.vueApp.sceneBoundary.y_min;
     window.vueApp.camera.fov = MAX_FOV
 
     window.vueApp.camera.updateProjectionMatrix();
@@ -95,10 +103,10 @@ var previousMousePosition = {
 
     container.appendChild(window.vueApp.renderer.domElement);
     // calculate the size and the center position
-    var width = x_max - x_min;
-    var height = y_max - y_min;
-    var centerX = x_min + width / 2;
-    var centerY = y_min + height / 2;
+    var width = window.vueApp.sceneBoundary.x_max - window.vueApp.sceneBoundary.x_min;
+    var height = window.vueApp.sceneBoundary.y_max - window.vueApp.sceneBoundary.y_min;
+    var centerX = window.vueApp.sceneBoundary.x_min+ width / 2;
+    var centerY = window.vueApp.sceneBoundary.y_min + height / 2;
 
     let canvas = document.createElement('canvas');
     canvas.width = 128;
@@ -278,7 +286,6 @@ var previousMousePosition = {
 
         if (intersects.length > 0 && checkVisibility(window.vueApp.pointsMesh.geometry.attributes.alpha.array, intersects[0].index)) {
 
-            console.log("currHover")
             // 获取最接近的交点
             var intersect = intersects[0];
 

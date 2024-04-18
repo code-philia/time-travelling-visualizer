@@ -117,7 +117,8 @@ function updateContraProjection(content_path, iteration, taskType, flag) {
             'setting': 'normal',
             "content_path": content_path,
             "predicates": {},
-            "TaskType": taskType
+            "TaskType": taskType,
+            "selectedPoints":''
         }),
         headers: headers,
         mode: 'cors'
@@ -460,6 +461,7 @@ function indexSearch(query, switchOn) {
       } else {
           show_query_text()
       }
+      window.vueApp.isCanvasLoading = false
   })
   .catch(error => {
       console.error('Error fetching data:', error);
@@ -488,6 +490,7 @@ function contrastIndexSearch(query, switchOn) {
   .then(res => {
       window.vueApp.query_result = res.result   
       show_query_text()
+      window.vueApp.isCanvasLoading = false
   })
   .catch(error => {
       console.error('Error fetching data:', error);
@@ -513,6 +516,7 @@ function loadVectorDB(content_path, iteration) {
     })
     .then(response => response.json())
     .then(res => {
+        window.vueApp.isCanvasLoading = false
     })
     .catch(error => {
         console.error('Error fetching data:', error);
@@ -538,6 +542,7 @@ function contrastloadVectorDBCode(content_path, iteration) {
   })
   .then(response => response.json())
   .then(res => {
+      window.vueApp.isCanvasLoading = false
   })
   .catch(error => {
       console.error('Error fetching data:', error);
@@ -563,6 +568,7 @@ function contrastloadVectorDBNl(content_path, iteration) {
   })
   .then(response => response.json())
   .then(res => {
+      window.vueApp.isCanvasLoading = false
   })
   .catch(error => {
       console.error('Error fetching data:', error);

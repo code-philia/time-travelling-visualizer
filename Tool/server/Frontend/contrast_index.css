@@ -11,16 +11,19 @@ body {
 
 .content_container {
     display: flex;
-    height: 80vh;
+    height: 82vh;
     flex-direction: row; 
 }
-
+.projectionAnalysis_container {
+    display: flex;
+    flex-direction: column; 
+    overflow: auto;
+}
 #subject_model_info_panel {
     width: 30vh;
     padding: 20px;
+    height: 78vh;
     background-color: rgb(244, 244, 244);
-    height: 100%; 
-    overflow: auto; 
 }
 
 #opration_bar{
@@ -44,12 +47,16 @@ body {
     height: 100%;
     margin: 10px;
 }
+.wrapout_ontainer {
+    display: flex;
+    flex-direction: column; 
+}
 
 .control-group {
     display: flex;
     align-items: center;
-    margin-top: 5vh; 
-  }
+    margin-top: 3vh; 
+}
 
 
 .header {
@@ -60,9 +67,28 @@ body {
     background-color: #571792;
     color: #fff;
 }
+.el-tabs__item.is-active{
+    color: #571792;
+}
+.el-tabs__active-bar{
+    background-color:  #571792;
+}
+.el-tabs__item:hover{
+    color: #7d2dc8;
+}
+.el-tabs__header {
+    height: 5vh;
+    display: flex;
+    align-items: center;
+}
+.el-tabs__content {
+    display: flex;
+    max-height: 72vh; /*subject model's height is 77vh, deduct eltab header height(5vh), to get 72vh*/
+    overflow: auto; 
+}
 
 #footerRef {
-    height: 60px;
+    height: 6vh;
     width: 100%;
     position: relative;
     bottom: 0;
@@ -71,22 +97,20 @@ body {
 
 }
 #footerTar {
-    height: 60px;
+    height: 6vh;
     width: 100%;
     position: relative;
     bottom: 0;
     background-color: rgb(244, 244, 244);
     overflow: auto;
-
 }
 
 #iterationContainer {
-    height: 15vh;
+    height: 12vh;
     width: 100%;
     position: relative;
     background-color: rgb(244, 244, 244);
     overflow: auto;
-    bottom: 0;
 }
 
 
@@ -204,17 +228,21 @@ body {
 
 #checkbox-container {
     width: 100%;
-    justify-content: space-around; 
     align-items: flex-start;
-    bottom: 3vh;
     position:relative;
   }
   
   #ref-checkbox-container, #tar-checkbox-container {
     position: relative;
     margin-left: 20px;
+    margin-bottom: 0px;
   }
-
+  #select-container {
+    width: 100%;
+    align-items: flex-start;
+    position:relative;
+  }
+  
   .setting-item{
     display:flex;
     height: 30px;
