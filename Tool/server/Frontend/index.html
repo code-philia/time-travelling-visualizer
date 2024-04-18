@@ -107,9 +107,10 @@
                 </table>
                 <el-divider></el-divider>
             </div>
-            <div class="mid_container">
+            <!-- <div class="mid_container">
                 <div id="container"></div>
-            </div>
+            </div> -->
+            <div id="container"></div>
 
             <div id="advanced_panel">
                 <el-checkbox v-model="showTraining">Training</el-checkbox>
@@ -143,7 +144,7 @@
                         </el-button>
 
                     </el-tab-pane>
-
+                   
                     <el-tab-pane label="Advanced Query">
                         <div class="switch-container">
                             <el-switch v-model="isSwitchOn" active-text="Open KNN" inactive-text="Close KNN">
@@ -225,7 +226,7 @@
             return {
                 lastHoveredIndex: null,
                 curIndex:null,
-                contentPath: '/home/yifan/dataset/case_study_mnist_backdoor',
+                contentPath: '/home/timeTravelling/guorui/git_space/TestFrontend/time-travelling-visualizer/Backdoor',
                 visMethod: 'Trustvis',
                 taskType: 'Classification',
                 filter_index:'',
@@ -283,7 +284,13 @@
                     k: null
                 },
                 isSwitchOn: false,
-                confidence: [0, 1]
+                confidence: [0, 1],
+                sceneBoundary: {
+                    x_min: null,
+                    y_min: null,
+                    x_max: null,
+                    y_max: null 
+                }
             }
         },
         methods: {
@@ -302,9 +309,25 @@
                 const target = new THREE.Vector3(
                     0, 0, 0
                 );
+                container = document.getElementById("container")
+                const rect = container.getBoundingClientRect();
+                var aspectRatio = rect.width / rect.height;
+              
+                this.camera.position.set(0, 0, 100);
+                this.camera.left = this.sceneBoundary.x_min * aspectRatio
+                this.camera.right = this.sceneBoundary.x_max * aspectRatio;
+                this.camera.top = this.sceneBoundary.y_max;
+                this.camera.bottom = this.sceneBoundary.y_min;
+  
+                this.renderer.setSize(rect.width, rect.height);
+                this.renderer.setClearColor(BACKGROUND_COLOR, 1);
+
+                const viewportWidth = this.renderer.domElement.clientWidth;
+                const viewportHeight = this.renderer.domElement.clientHeight;
+
                 this.camera.zoom = 1;
-                this.camera.lookAt(target);
                 this.camera.updateProjectionMatrix();
+                this.camera.lookAt(target);
             },
             filterByIndex(){
                 updateProjection(this.contentPath, this.currEpoch, this.taskType)
@@ -412,9 +435,11 @@
 
             },
             VDBHandler() {
+                this.isCanvasLoading = true
                 loadVectorDB(this.contentPath, this.currEpoch)
             },
             indexSearchHandler() {
+                this.isCanvasLoading = true
                 indexSearch(this.query, this.isSwitchOn);
             },
             clearSearchHandler() {
@@ -483,7 +508,13 @@
                     k: null
                 },
                 isSwitchOn: false,
-                confidence: [0, 1]
+                confidence: [0, 1],
+                sceneBoundary: {
+                    x_min: null,
+                    y_min: null,
+                    x_max: null,
+                    y_max: null 
+                }
             };
             },
 
