@@ -1,4 +1,4 @@
-# What is Training Dynamic Visualization (or, Time-Travelling Visualization)?
+# Training Dynamic Visualization
 Training Dynamic Visualization, a technique designed to visualize high-dimensional representations during the deep learning training process. In other words, our method is designed to transform the model training dynamics into an animation of canvas with colorful dots and territories.
 
 
@@ -67,6 +67,8 @@ For windows developers, you can use the following command instead.
 ```
 $ (visualizer) pip install -r win-requirements.txt
 ```
+
+Note that, if you are using VPN or other proxy, please specify `--proxy` parameter to install the packages.
 
 ## Training Process Dataset (the training process of a model)
 
