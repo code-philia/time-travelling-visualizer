@@ -1,5 +1,5 @@
-# What is Time-Travelling Visualization?
-Time-Travelling Visualization, a technique designed to visualize high-dimensional representations during the deep learning training process. In other words, our method is designed to transform the model training dynamics into an animation of canvas with colorful dots and territories.
+# What is Training Dynamic Visualization (or, Time-Travelling Visualization)?
+Training Dynamic Visualization, a technique designed to visualize high-dimensional representations during the deep learning training process. In other words, our method is designed to transform the model training dynamics into an animation of canvas with colorful dots and territories.
 
 
 ![ The results of our visualization technique for the image classifier training process from epoch10 to epoch200](image.png)
@@ -123,24 +123,28 @@ Access the user interface by opening http://ip:port in your web browser.
 
 
 
-## Acknowledgement
-😊 Note: We appreciate [Yang Xianglin's](https://github.com/xianglinyang) contribution from [paper 1](#paper1-ref) for the tool's backend part: [DeepDebugger](https://github.com/xianglinyang/DeepDebugger), which we have integrated into our code.
-
 ---
 
-<a name="paper1-ref"></a>[1] Xianglin Yang, Yun Lin, Yifan Zhang, Linpeng Huang, Jin Song Dong, Hong Mei. DeepDebugger: An Interactive Time-Travelling Debugging Approach for Deep Classifiers. ESEC/FSE 2023.
 
 # Citation
-Please consider  citing the following paper if you find this work useful for your research:
+
 ```
-@inproceedings{
-},
+@inproceedings{yang2023deepdebugger,
+  title={DeepDebugger: An Interactive Time-Travelling Debugging Approach for Deep Classifiers},
+  author={Yang, Xianglin and Lin, Yun and Zhang, Yifan and Huang, Linpeng and Dong, Jin Song and Mei, Hong},
+  booktitle={Proceedings of the 31st ACM Joint European Software Engineering Conference and Symposium on the Foundations of Software Engineering},
+  pages={973--985},
+  year={2023}
+}
+
+
 @inproceedings{yang2022temporality,
   title={Temporality Spatialization: A Scalable and Faithful Time-Travelling Visualization for Deep Classifier Training},
   author={Yang, Xianglin and Lin, Yun and Liu, Ruofan and Dong, Jin Song},
   booktitle = {Proceedings of the Thirty-First International Joint Conference on Artificial Intelligence, {IJCAI-22}},
   year={2022}
-},
+}
+
 @inproceedings{yang2022deepvisualinsight,
   title={DeepVisualInsight: Time-Travelling Visualization for Spatio-Temporal Causality of Deep Classification Training},
   author={Yang, Xianglin and Lin, Yun and Liu, Ruofan and He, Zhenfeng and Wang, Chao and Dong, Jin Song and Mei, Hong},
@@ -148,3 +152,9 @@ Please consider  citing the following paper if you find this work useful for you
   year={2022}
 }
 ```
+
+## Acknowledgement
+We appreciate all our collaborators for their contributions in this project:
+
+Xianglin Yang, Ruofan Liu, Guorui Qin, ... (the list is expanding)
+
