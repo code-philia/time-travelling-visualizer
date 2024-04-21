@@ -11,11 +11,12 @@ vis_path = ".."
 sys.path.append(vis_path)
 from context import VisContext, ActiveLearningContext, AnormalyContext
 from strategy import DeepDebugger, TimeVis, tfDeepVisualInsight, DVIAL, tfDVIDenseAL, TimeVisDenseAL, Trustvis, DeepVisualInsight
-from singleVis.eval.evaluate import evaluate_isAlign, evaluate_isNearestNeighbour, evaluate_isAlign_single, evaluate_isNearestNeighbour_single
+from singleVis.eval.evaluate import rank_similarities_and_color, evaluate_isAlign, evaluate_isNearestNeighbour, evaluate_isAlign_single, evaluate_isNearestNeighbour_single
 from sklearn.cluster import KMeans
 from scipy.special import softmax
 import matplotlib.pyplot as plt
 import time
+import torch
 """Interface align"""
 
 def initialize_strategy(CONTENT_PATH, VIS_METHOD, SETTING, dense=False):
@@ -82,6 +83,7 @@ def initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING, dense=False):
         backend: a context with a specific strategy
     """
     strategy, error_message = initialize_strategy(CONTENT_PATH, VIS_METHOD, SETTING, dense)
+    print("contenePath", CONTENT_PATH)
     context = initialize_context(strategy=strategy, setting=SETTING)
     return context, error_message
 
@@ -160,16 +162,18 @@ def get_train_test_data(context, EPOCH):
     print(len(train_data))
     return all_data
 
-def get_train_test_label(context, EPOCH, all_data):
+def get_train_test_label(context, EPOCH):
     train_labels = context.train_labels(EPOCH)
     test_labels = context.test_labels(EPOCH)
+    train_data = context.train_representation_data(EPOCH) 
+    test_data = context.test_representation_data(EPOCH)
     if train_labels is None:
-        labels = np.zeros(len(all_data), dtype=int)
-    elif test_labels is None:
-        test_labels = np.zeros(len(all_data), dtype=int)
-        labels = np.concatenate((train_labels, test_labels), axis=0).astype(int)
-    else:
-        labels = np.concatenate((train_labels, test_labels), axis=0).astype(int)
+        train_labels = np.zeros(len(train_data), dtype=int)
+    if test_labels is None:
+        test_labels = np.zeros(len(test_data), dtype=int)
+    print("errorlabels", train_labels, test_labels)
+    labels = np.concatenate((train_labels, test_labels), axis=0).astype(int)
+        
     return labels
 
 def get_selected_points(context, predicates, EPOCH, training_data_number, testing_data_number):
@@ -192,13 +196,96 @@ def get_properties(context, training_data_number, testing_data_number, training_
     properties[ulb] = 1
     return properties
 
-def update_epoch_projection(context, EPOCH, predicates, TaskType,indicates):
+def get_coloring(context, EPOCH, ColorType):
+    label_color_list = []
+    train_data =  context.train_representation_data(EPOCH) 
+    test_data =  context.test_representation_data(EPOCH) 
+    labels = get_train_test_label(context, EPOCH)
+    # coloring method
+    if ColorType == "noColoring":
+        color = context.strategy.vis.get_standard_classes_color() * 255
+
+        color = color.astype(int)      
+        label_color_list = color[labels].tolist()
+        # print("alldata", all_data.shape, EPOCH)
+       
+    elif ColorType == "singleColoring":
+        n_clusters = 20
+        save_test_label_dir = os.path.join(context.strategy.data_provider.content_path, 'Testing_data',ColorType+ "label" + str(EPOCH)+".pth")
+        save_train_label_dir = os.path.join(context.strategy.data_provider.content_path, 'Training_data',ColorType+ "label" + str(EPOCH)+".pth")
+        if os.path.exists(save_train_label_dir):
+            labels_kmeans_train = torch.load(save_train_label_dir)
+            labels_kmeans_test = torch.load(save_test_label_dir)
+        else:
+       
+            kmeans = KMeans(n_clusters=n_clusters, random_state=0).fit(train_data)
+
+            labels_kmeans_train = kmeans.labels_
+            labels_kmeans_test = kmeans.predict(test_data)
+          
+            torch.save(torch.tensor(labels_kmeans_train), save_train_label_dir)
+            torch.save(torch.tensor(labels_kmeans_test), save_test_label_dir)
+
+        colormap = plt.cm.get_cmap('tab10', n_clusters)
+    
+        colors_rgb = (colormap(np.arange(n_clusters))[:, :3] * 255).astype(int)  
+        label_color_list_train = [colors_rgb[label].tolist() for label in labels_kmeans_train]
+        label_color_list_test = [colors_rgb[label].tolist() for label in labels_kmeans_test]
+        
+        label_color_list = np.concatenate((label_color_list_train, label_color_list_test), axis=0).tolist()
+
+    else:
+        return         
+
+    return label_color_list
+
+def get_comparison_coloring(context_left, context_right, EPOCH_LEFT, EPOCH_RIGHT):
+    train_data_left = context_left.train_representation_data(EPOCH_LEFT)
+    test_data_left = context_left.test_representation_data(EPOCH_LEFT)
+    train_data_right = context_right.train_representation_data(EPOCH_RIGHT)
+    test_data_right = context_right.test_representation_data(EPOCH_RIGHT)
+    content_path_left = context_left.strategy.data_provider.content_path
+    content_path_right = context_right.strategy.data_provider.content_path
+
+    # color depends on the left content path, corresponding right content paths share the same colors with that left content path
+    save_test_label_dir_left = os.path.join(content_path_left, 'Testing_data',"doubleColoring" + "label" + str(EPOCH_LEFT) + "_"+ str(EPOCH_RIGHT) + content_path_right[1:].replace(os.sep, '*') + "curr_left"+  ".pth")
+    save_train_label_dir_left = os.path.join(content_path_left, 'Training_data',"doubleColoring" + "label" + str(EPOCH_LEFT) + "_"+ str(EPOCH_RIGHT) + content_path_right[1:].replace(os.sep, '*') + "curr_left"+ ".pth")
+    save_test_label_dir_right = os.path.join(content_path_right, 'Testing_data',"doubleColoring" + "label" + str(EPOCH_RIGHT) + "_" + str(EPOCH_LEFT) + content_path_left[1:].replace(os.sep, '*') +  "curr_right" + ".pth")
+    save_train_label_dir_right = os.path.join(content_path_right, 'Training_data',"doubleColoring" + "label" + str(EPOCH_RIGHT) + "_" + str(EPOCH_LEFT) + content_path_left[1:].replace(os.sep, '*') + "curr_right" + ".pth")
+
+    if os.path.exists(save_test_label_dir_left):
+        labels_train_left = torch.load(save_train_label_dir_left)
+        labels_test_left = torch.load(save_test_label_dir_left)
+
+        colors_train = rank_similarities_and_color(train_data_left, train_data_right, labels=labels_train_left)
+        colors_test = rank_similarities_and_color(test_data_left, test_data_right, labels=labels_test_left)
+        print("label_train_;left",labels_train_left)
+        print("labels_test_kleft", labels_test_left)
+        print("color_train", colors_train)
+        print("color_test", colors_test)
+       
+
+    else:
+        colors_train, labels_train_left = rank_similarities_and_color(train_data_left, train_data_right)
+        colors_test, labels_test_left = rank_similarities_and_color(test_data_left, test_data_right)
+
+        torch.save(torch.tensor(labels_train_left), save_train_label_dir_left)
+        torch.save(torch.tensor(labels_test_left), save_test_label_dir_left)
+        # store the same labels for right content path
+        torch.save(torch.tensor(labels_train_left), save_train_label_dir_right)
+        torch.save(torch.tensor(labels_test_left), save_test_label_dir_right)
+
+    label_color_list = np.concatenate((colors_train, colors_test), axis=0).tolist()
+
+    return label_color_list    
+
+def update_epoch_projection(context, EPOCH, predicates, TaskType, indicates):
     # TODO consider active learning setting
     error_message = ""
     start = time.time()
     all_data = get_train_test_data(context, EPOCH)
     
-    labels = get_train_test_label(context, EPOCH, all_data)
+    labels = get_train_test_label(context, EPOCH)
     if len(indicates):
         all_data = all_data[indicates]
         labels = labels[indicates]
@@ -211,6 +298,7 @@ def update_epoch_projection(context, EPOCH, predicates, TaskType,indicates):
     if len(indicates):
         embedding_2d = embedding_2d[indicates]
     print('all_data',all_data.shape,'embedding_2d',embedding_2d.shape)
+    print('indicates', indicates)
     error_message = check_embedding_match_alldata(embedding_2d, all_data, error_message)
     
     training_data_number = context.strategy.config["TRAINING"]["train_num"]
@@ -228,24 +316,8 @@ def update_epoch_projection(context, EPOCH, predicates, TaskType,indicates):
     eval_new = get_eval_new(context, EPOCH)
     start2 = time.time()
     print("midquestion1", start2-end)
-    if TaskType == "Classification":
-        print('here',labels)
-        color = context.strategy.vis.get_standard_classes_color() * 255
-        start3 = time.time()
-        print(start3-start2)
-        color = color.astype(int)
-
-        
-        label_color_list = color[labels].tolist()
-       
-    else:
-        n_clusters = 10
-        kmeans = KMeans(n_clusters=n_clusters, random_state=0).fit(all_data)
-        labels_kmeans = kmeans.labels_
-        colormap = plt.cm.get_cmap('tab10', n_clusters)
-    
-        colors_rgb = (colormap(np.arange(n_clusters))[:, :3] * 255).astype(int)  
-        label_color_list = [colors_rgb[label].tolist() for label in labels_kmeans]
+    # coloring method    
+    label_color_list = get_coloring(context, EPOCH, "noColoring")
     
 
     start1 =time.time()

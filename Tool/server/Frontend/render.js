@@ -135,7 +135,7 @@ var previousMousePosition = {
 
     dataPoints.push()
     var color = res.label_color_list
-
+    // console.log("originalColorsDraw",color )
     // var geometry = new THREE.BufferGeometry();
     var position = [];
     var colors = [];
@@ -155,7 +155,6 @@ var previousMousePosition = {
     geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
     geometry.setAttribute('size', new THREE.Float32BufferAttribute(sizes, 1));
     geometry.setAttribute('alpha', new THREE.Float32BufferAttribute(alphas, 1));
-
 
     // reset data points
     position = []
@@ -327,10 +326,12 @@ var previousMousePosition = {
     var specifiedShowTesting = makeSpecifiedVariableName('showTesting', '')
     var specifiedShowTraining = makeSpecifiedVariableName('showTraining', '')
     var specifiedPredictionFlipIndices = makeSpecifiedVariableName('predictionFlipIndices', '')
-  
+    // var specifiedOriginalSettings = makeSpecifiedVariableName('originalSettings', '')
+
     window.vueApp.$watch(specifiedShowTesting, updateCurrentDisplay);
     window.vueApp.$watch(specifiedShowTraining, updateCurrentDisplay);
     window.vueApp.$watch(specifiedPredictionFlipIndices, updateCurrentDisplay);  
+    // window.vueApp.$watch(specifiedOriginalSettings, resetToOriginalColorSize, { deep: true });
 
     function updateCurrentDisplay() {
         console.log("currDisplay")
@@ -368,45 +369,42 @@ var previousMousePosition = {
             visualizationError = Array.from(visualizationError)
         }
         resetToOriginalColorSize()
+
         updateColorSizeForHighlights(visualizationError)
+        visualizationError = []
+    }
+
+    function updateColorSizeForHighlights(visualizationError) {
+        visualizationError.forEach(index => {
+            window.vueApp.pointsMesh.geometry.getAttribute('size').array[index] = HOVER_SIZE;
+        });
+        window.vueApp.pointsMesh.geometry.getAttribute('size').needsUpdate = true; 
+
+        // yellow indices are triggered by right selected index
+        visualizationError.forEach(index => {
+            window.vueApp.pointsMesh.geometry.getAttribute('color').array[index * 3] = GRAY[0]; // R
+            window.vueApp.pointsMesh.geometry.getAttribute('color').array[index * 3 + 1] = GRAY[1]; // G
+            window.vueApp.pointsMesh.geometry.getAttribute('color').array[index * 3 + 2] = GRAY[2]; // B
+        });
+
+        window.vueApp.pointsMesh.geometry.getAttribute('color').needsUpdate = true; 
     }
 
     function resetToOriginalColorSize() {
         var specifiedSelectedIndex = makeSpecifiedVariableName('selectedIndex', '')
-        var sizesAttribute = window.vueApp.pointsMesh.geometry.getAttribute('size');
-        var colorsAttribute = window.vueApp.pointsMesh.geometry.getAttribute('color');
-        sizesAttribute.array.set(window.vueApp.originalSettings.originalSizes);
-        colorsAttribute.array.set(window.vueApp.originalSettings.originalColors);
+        window.vueApp.pointsMesh.geometry.getAttribute('size').array.set(window.vueApp.originalSettings.originalSizes);
+        window.vueApp.pointsMesh.geometry.getAttribute('color').array.set(window.vueApp.originalSettings.originalColors);
         // not reset selectedIndex
         if ( window.vueApp[specifiedSelectedIndex]) {
-            sizesAttribute.array[window.vueApp[specifiedSelectedIndex]] = HOVER_SIZE
+            window.vueApp.pointsMesh.geometry.getAttribute('size').array[window.vueApp[specifiedSelectedIndex]] = HOVER_SIZE
         }
-
+    
         // Mark as needing update
-        sizesAttribute.needsUpdate = true;
-        colorsAttribute.needsUpdate = true;
-    }
-
-    function updateColorSizeForHighlights(visualizationError) {
+        window.vueApp.pointsMesh.geometry.getAttribute('size').needsUpdate = true;
+        window.vueApp.pointsMesh.geometry.getAttribute('color').needsUpdate = true;
+        // console.log("resetColor", window.vueApp.originalSettings.originalColors)
         
-        var sizesAttribute = window.vueApp.pointsMesh.geometry.getAttribute('size');
-        visualizationError.forEach(index => {
-            sizesAttribute.array[index] = HOVER_SIZE;
-        });
-        sizesAttribute.needsUpdate = true; 
-
-        // yellow indices are triggered by right selected index
-        var colorsAttribute = window.vueApp.pointsMesh.geometry.getAttribute('color');
-        visualizationError.forEach(index => {
-            colorsAttribute.array[index * 3] = GRAY[0]; // R
-            colorsAttribute.array[index * 3 + 1] = GRAY[1]; // G
-            colorsAttribute.array[index * 3 + 2] = GRAY[2]; // B
-        });
-
-        colorsAttribute.needsUpdate = true; 
     }
-
-
 
     container.addEventListener('mousemove', onMouseMove, false);
 
@@ -525,6 +523,8 @@ var previousMousePosition = {
     window.vueApp.isCanvasLoading = false
 }
 
+
+
 window.onload = function() {
     const currHover = document.getElementById('currHover');
     makeDraggable(currHover, currHover);
@@ -539,10 +539,10 @@ function updateSizes() {
             nn.push(item.id);
         }
     });
-    console.log(nn);
+    // console.log(nn);
     // 遍历 nn 列表，将每个索引位置的元素设置为 HOVER_SIZE
     nn.forEach((item, index) => {
-        console.log(item);
+        // console.log(item);
         sizes[item] = HOVER_SIZE;
     });
     // 更新size属性并标记为需要更新

@@ -284,10 +284,18 @@ function updateHoverIndexUsingPointPosition(pointPosition, index, isDisplay, fla
           const screenPosition = toScreenPosition(pointPosition, camera, renderer);
           let specifiedHoverIndex = makeSpecifiedVariableName('hoverIndex', flag);
           window.vueApp[specifiedHoverIndex] = index;
-          hoverLabel.textContent = `${index}`;
-          hoverLabel.style.left = `${screenPosition.x + 5}px`;
-          hoverLabel.style.top = `${screenPosition.y - 5}px`;
-          hoverLabel.style.display = 'block';
+          var canvas = renderer.domElement;
+          var rect = canvas.getBoundingClientRect();
+      
+           // make sure selected index are not shown outside of viewport
+          if (screenPosition.x > rect.right || screenPosition.y > rect.bottom || screenPosition.x < rect.left || screenPosition.y < rect.top) {
+            hoverLabel.style.display = 'none';
+          } else {
+            hoverLabel.textContent = `${index}`;
+            hoverLabel.style.left = `${screenPosition.x + 5}px`;
+            hoverLabel.style.top = `${screenPosition.y - 5}px`;
+            hoverLabel.style.display = 'block';
+          }
       } else {
           if (hoverLabel) {
               hoverLabel.textContent = '';
@@ -467,7 +475,6 @@ function drawTimeline(res, flag) {
       .enter()
       .append('g')
       .attr('transform', function (d, i) {
-          console.log("D", d)
           return 'translate(' + d.data.pid * 40 + ',' + d.x + ')';
       });
 
@@ -708,4 +715,22 @@ if (window.vueApp.renderer[flag]) {
 }
 
 }
+function resetHighlightAttributes() {
+  window.vueApp.highlightAttributesRef.highlightedPointsYellow = []
+  window.vueApp.highlightAttributesRef.highlightedPointsBlue = []
+  window.vueApp.highlightAttributesRef.highlightedPointsGreen = []
+  window.vueApp.highlightAttributesTar.highlightedPointsYellow =[]
+  window.vueApp.highlightAttributesTar.highlightedPointsBlue = []
+  window.vueApp.highlightAttributesTar.highlightedPointsGreen = []
+  if (window.vueApp.highlightAttributesRef.allHighlightedSet) {
+    window.vueApp.highlightAttributesRef.allHighlightedSet.clear()
+  }
+  if (window.vueApp.highlightAttributesTar.allHighlightedSet) {
+    window.vueApp.highlightAttributesTar.allHighlightedSet.clear()
+  }
+  window.vueApp.highlightAttributesRef.allHighlightedSet = null
+  window.vueApp.highlightAttributesTar.allHighlightedSet = null
 
+  window.vueApp.highlightAttributesRef.boldIndices = []
+  window.vueApp.highlightAttributesTar.boldIndices = []
+}
