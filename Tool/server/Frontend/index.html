@@ -62,19 +62,31 @@
 
         <div class="content_container">
             <div id="subject_model_info_panel">
+                <span style="display: inline-block; margin-right: 20px;">Data Type:</span>
                 <div id="contentSettingData">
-                    <span style="display: inline-block; margin-right: 20px;">Data Type:</span>
                     <el-radio v-model="dataType" label="Image">Image</el-radio>
                     <el-radio v-model="dataType" label="Text">Text</el-radio>
                 </div>
                 <el-divider></el-divider>
+                <span style="display: inline-block; margin-right: 20px;">Task Type:</span><br/>
                 <div id="contentSettingTask">
-                    <span style="display: inline-block; margin-right: 20px;">Task Type:</span><br/>
                     <el-radio v-model="taskType" label="Classification">Classification</el-radio>
                     <el-radio v-model="taskType" label="Non-Classification">Non-Classification</el-radio>
                 </div>
 
                 <el-divider></el-divider>
+        
+                <span style="display: inline-block; margin-right: 20px;" v-if="showColorSetting">Color Points?</span>
+                <div id="colorSettingTask" v-if="showColorSetting">
+                    <el-radio v-model="colorType" label="noColoring">No Need</el-radio>
+                    <el-radio v-model="colorType" label="singleColoring">Classification Coloring</el-radio>
+                </div>
+                <el-button id="loadColorButton"
+                style="background-color: #571792; color: #fff; width: 100%; margin-top: 0px;"
+                @click="ColorHandler" v-if="showColorSetting">Load
+                Color</el-button>
+                <el-divider v-if="showColorSetting"></el-divider>
+
                 <div id="contentPathInput">
                     Content Path:
                     <el-input v-model="contentPath"></el-input>
@@ -226,9 +238,11 @@
             return {
                 lastHoveredIndex: null,
                 curIndex:null,
-                contentPath: '/home/timeTravelling/guorui/git_space/TestFrontend/time-travelling-visualizer/Backdoor',
+                contentPath: '/home/timeTravelling/guorui/git_space/DataDemo/case_study_mnist_backdoor',
                 visMethod: 'Trustvis',
                 taskType: 'Classification',
+                colorType: 'noColoring',
+                showColorSetting: false,
                 filter_index:'',
                 isCanvasLoading: false,
                 query_result: {},
@@ -438,6 +452,10 @@
                 this.isCanvasLoading = true
                 loadVectorDB(this.contentPath, this.currEpoch)
             },
+            ColorHandler() {
+                this.isCanvasLoading = true  
+                reloadColor('')   
+            },
             indexSearchHandler() {
                 this.isCanvasLoading = true
                 indexSearch(this.query, this.isSwitchOn);
@@ -451,9 +469,11 @@
             },
             getInitialState() {
                 return {lastHoveredIndex: null,
-                contentPath: '/home/yifan/dataset/case_study_mnist_backdoor',
+                contentPath: '/home/timeTravelling/guorui/git_space/DataDemo/case_study_mnist_backdoor',
                 visMethod: 'Trustvis',
                 taskType: 'Classification',
+                colorType: 'noColoring',
+                showColorSetting: false,
                 isCanvasLoading: false,
                 query_result: {},
                 prediction_list: [],
@@ -564,6 +584,9 @@
                     if (newVal) {
                         getHighlightedPoints('visError', '')
                     } else {
+                        if (this.highlightAttributes.visualizationError) {
+                            this.highlightAttributes.visualizationError.clear()
+                        }
                         this.highlightAttributes.visualizationError = null
                     }
                 }
@@ -577,6 +600,15 @@
                     } else {
                         console.log("else branch")
                         this.predictionFlipIndices = null
+                    }
+                }
+            },
+            taskType: {
+                handler(newVal, oldVal) {
+                    if (newVal == "Non-Classification") {
+                        this.showColorSetting = true
+                    } else {
+                        this.showColorSetting = false
                     }
                 }
             }
