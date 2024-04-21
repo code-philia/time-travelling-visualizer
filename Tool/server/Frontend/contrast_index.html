@@ -62,18 +62,29 @@
                 <div id="subject_model_info_panel">
                     <el-tabs @tab-click="handleTabClick">
                         <el-tab-pane label="Set Up" name="setup" style="overflow: auto;">
-                            <div id="contentSettingData">
-                                <span style="display: inline-block; margin-right: 20px;">Data Type:</span>
+                            <span style="display: inline-block; margin-right: 20px;">Data Type:</span>
+                            <div id="contentSettingData">            
                                 <el-radio v-model="dataType" label="Image">Image</el-radio>
                                 <el-radio v-model="dataType" label="Text">Text</el-radio>
                             </div>
                             <el-divider></el-divider>
+                            <span style="display: inline-block; margin-right: 20px;">Task Type:</span>
                             <div id="contentSettingTask">
-                                <span style="display: inline-block; margin-right: 20px;">Task Type:</span>
                                 <el-radio v-model="taskType" label="Classification">Classification</el-radio>
                                 <el-radio v-model="taskType" label="Non-Classification">Non-Classification</el-radio>
                             </div>
                             <el-divider></el-divider>
+                            <span style="display: inline-block; margin-right: 20px;" v-if="showColorSetting">Color Points?</span>
+                            <div id="colorSettingTask" v-if="showColorSetting">                 
+                                <el-radio v-model="colorType" label="noColoring">No Need</el-radio>
+                                <el-radio v-model="colorType" label="singleColoring">Classification Coloring</el-radio>
+                                <el-radio v-model="colorType" label="doubleColoring">Comparison Coloring</el-radio>
+                            </div>
+                            <el-button id="loadColorButton"
+                            style="background-color: #571792; color: #fff; width: 100%; margin-top: 0px;"
+                            @click="ColorHandler" v-if="showColorSetting">Load
+                            Color</el-button>
+                            <el-divider v-if="showColorSetting"></el-divider>
                             <div id="contentPathInputRef">
                                 Content Path Left:
                                 <el-input v-model="contentPathRef"></el-input>
@@ -97,6 +108,17 @@
                                 @click="update">Load
                                 Visualization Result</el-button>
                         </el-tab-pane>
+                        <el-tab-pane name="normalQuery" label="Normal Query">
+                            Filter Index for Left Projection: 
+                            <div id="filterIndexLeft" style="display: flex;"></el-input><el-input v-model="selectedIndexRef">
+                            </el-input><el-button style="background-color: #571792; color: #fff;" @click="filterByIndexRef">Filter</el-button></div>
+  
+                            <el-divider></el-divider>
+                            Filter Index for Right Projection: 
+                            <div id="filterIndexRight" style="display: flex;"></el-input><el-input v-model="selectedIndexTar">
+                            </el-input><el-button style="background-color: #571792; color: #fff;" @click="filterByIndexTar">Filter</el-button></div>
+                        </el-tab-pane>
+
                         <el-tab-pane label="Advanced Query" name="advancedQuery" style="overflow: auto;">
                             <el-button id="loadVDBBtn"
                                 style="background-color: #571792; color: #fff; width: 100%; margin-top: 0px;"
@@ -324,10 +346,12 @@
             return {
                 lastHoveredIndexRef: null,
                 lastHoveredIndexTar: null,
-                contentPathRef: '/home/timeTravelling/guorui/git_space/TestFrontend/time-travelling-visualizer/Backdoor',
-                contentPathTar: '/home/timeTravelling/guorui/git_space/TestFrontend/time-travelling-visualizer/Backdoor',
+                contentPathRef: '/home/timeTravelling/guorui/git_space/codesearch_simp/data1/codesearchQuery',
+                contentPathTar: '/home/timeTravelling/guorui/git_space/codesearch_simp/data1/codesearchCode',
                 isCanvasLoading: false,
                 taskType: 'Classification',
+                colorType: 'noColoring',
+                showColorSetting: false,
                 query_result: {},
                 prediction_listRef: [],
                 prediction_listTar: [],
@@ -373,7 +397,6 @@
                 predictionFlipIndicesTar: null,
                 errorMessageRef: null,
                 errorMessageTar: null,
-
                 visMethodRef: 'Trustvis',
                 visMethodTar: 'Trustvis',
                 highlightAttributesRef: {
@@ -653,6 +676,56 @@
                                 description: 'The detail of the current hover sample in right projection will be shown here',
                                 position: 'right'
                             },
+                        }],
+                        normalQuery: [
+
+                        {
+                            element: '#filterIndexLeft',
+                            popover: {
+                                title: 'Filter Index for Left Projection',
+                                description: 'It highlights the input index and show its position on left canvas.',
+                                position: 'above',
+                            },
+                        },
+                        {
+                            element: '#filterIndexRight',
+                            popover: {
+                                title: 'Filter Index for Right Projection',
+                                description: 'It highlights the input index and show its position on right canvas.',
+                                position: 'above',
+                            },
+                        },
+                        {
+                            element: '#footerRef',
+                            popover: {
+                                title: 'Time Line',
+                                description: 'It shows the total number of epochs of left loaded training/testing dynamics.',
+                                position: 'above',
+                            },
+                        },
+                        {
+                            element: '#footerTar',
+                            popover: {
+                                title: 'Time Line',
+                                description: 'It shows the total number of epochs of right loaded training/testing dynamics.',
+                                position: 'above',
+                            },
+                        },
+                        {
+                            element: '#currHoverRef',
+                            popover: {
+                                title: 'Hover Information for left projection',
+                                description: 'The detail of the current hover sample in left projection will be shown here',
+                                position: 'right'
+                            },
+                        },
+                        {
+                            element: '#currHoverTar',
+                            popover: {
+                                title: 'Hover Information for right projection',
+                                description: 'The detail of the current hover sample in right projection will be shown here',
+                                position: 'right'
+                            },
                         }]
                 },
 
@@ -675,6 +748,25 @@
             }
         },
         methods: {
+            filterByIndexRef() {
+                this.filterByIndex('ref', this.selectedIndexRef)
+            },
+            filterByIndexTar() {
+                this.filterByIndex('tar', this.selectedIndexTar)
+            },
+            filterByIndex(flag, index) {
+                var pointPosition = new THREE.Vector3();
+                console.log("index", index)
+                if (index) {
+                    var specifiedPointsMesh = makeSpecifiedVariableName('pointsMesh', flag)
+                    pointPosition.fromBufferAttribute(window.vueApp[specifiedPointsMesh].geometry.attributes.position, index);
+                    var specifiedSelectedPointPosition = makeSpecifiedVariableName('selectedPointPosition', flag)
+                    window.vueApp[specifiedSelectedPointPosition] = pointPosition
+                    updateLabelPosition(flag, window.vueApp[specifiedSelectedPointPosition], index, 'fixedHoverLabel', true)
+                } else {
+                    updateFixedHoverLabel(null, null, null, flag, null, 'fixedHoverLabel', false)
+                }          
+            },
             handleTabClick(tab) {
                 this.currentTabName = String(tab.name)
             },
@@ -731,6 +823,15 @@
                 contrastloadVectorDBCode(this.contentPathRef, this.currEpochRef)
                 contrastloadVectorDBNl(this.contentPathTar, this.currEpochTar)
             },
+            ColorHandler() {
+                this.isCanvasLoading = true
+                if (this.colorType == "noColoring" || this.colorType == "singleColoring") {
+                    reloadColor('ref')
+                    reloadColor('tar')
+                } else if (this.colorType == "doubleColoring") {
+                    contrastLoadColor('ref')
+                }
+            },
             indexSearchHandler() {
                 this.isCanvasLoading = true
                 contrastIndexSearch(this.query, this.isSwitchOn);
@@ -750,10 +851,12 @@
                 return {
                     lastHoveredIndexRef: null,
                     lastHoveredIndexTar: null,
-                    contentPathRef: '/home/timeTravelling/guorui/git_space/TestFrontend/time-travelling-visualizer/Backdoor',
-                    contentPathTar: '/home/timeTravelling/guorui/git_space/TestFrontend/time-travelling-visualizer/Backdoor',
+                    contentPathRef: '/home/timeTravelling/guorui/git_space/codesearch_simp/data1/codesearchQuery',
+                    contentPathTar: '/home/timeTravelling/guorui/git_space/codesearch_simp/data1/codesearchCode',
                     isCanvasLoading: false,
                     taskType: 'Classification',
+                    colorType: 'noColoring',
+                    showColorSetting: false,
                     query_result: {},
                     prediction_listRef: [],
                     prediction_listTar: [],
@@ -974,6 +1077,15 @@
                         getPredictionFlipIndices('tar')
                     } else {
                         this.predictionFlipIndicesTar = null
+                    }
+                }
+            },
+            taskType: {
+                handler(newVal, oldVal) {
+                    if (newVal == "Non-Classification") {
+                        this.showColorSetting = true
+                    } else {
+                        this.showColorSetting = false
                     }
                 }
             }
