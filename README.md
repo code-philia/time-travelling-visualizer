@@ -110,10 +110,10 @@ $ (visualizer) python server.py
 ```
 you will see: 
 ```
-Starting milvus-minio ... done
-Starting milvus-etcd  ... done
-Starting milvus-standalone ... done
-* Serving Flask app 'server' (lazy loading)
+Starting milvus-minio ... done (linux only)
+Starting milvus-etcd  ... done (linux only)
+Starting milvus-standalone ... done (linux only)
+* Serving Flask app 'server'
 * Environment: production
 * Debug mode: off
 * Running on http://ip:port
