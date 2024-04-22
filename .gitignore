@@ -46,3 +46,6 @@ Tool/__pycache__/context.cpython-37.pyc
 Tool/__pycache__/strategy.cpython-37.pyc
 Tool/server/admin_API_result.csv
 Tool/server/volumes/
+Tool/singleVis/eval/__pycache__/__init__.cpython-37.pyc
+Tool/singleVis/eval/__pycache__/evaluate.cpython-37.pyc
+Tool/singleVis/eval/__pycache__/evaluator.cpython-37.pyc

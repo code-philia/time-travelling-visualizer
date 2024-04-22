@@ -1004,7 +1004,7 @@ def check_port_inuse(port, host):
             s.close()
 # for contrast
 if __name__ == "__main__":
-    # import socket
+    import socket
     # hostname = socket.gethostname()
     # ip_address = socket.gethostbyname(hostname)
     ip_address = '0.0.0.0'
