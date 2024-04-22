@@ -11,7 +11,7 @@ import gc
 import shutil
 sys.path.append('..')
 sys.path.append('.')
-from utils import getVisError, update_epoch_projection, initialize_backend, add_line, getConfChangeIndices, getContraVisChangeIndices, getContraVisChangeIndicesSingle,getCriticalChangeIndices
+from utils import get_comparison_coloring, get_coloring, getVisError, update_epoch_projection, initialize_backend, add_line, getConfChangeIndices, getContraVisChangeIndices, getContraVisChangeIndicesSingle,getCriticalChangeIndices
 
 import time
 # flask for API server
@@ -306,6 +306,7 @@ def update_projection():
     embedding_2d, grid, decision_view, label_name_dict, label_color_list, label_list, max_iter, training_data_index, \
     testing_data_index, eval_new, prediction_list, selected_points, properties, error_message_projection = update_epoch_projection(context, EPOCH, predicates, TaskType,indicates)
     end = time.time()
+    print("label_colorlenUpdate", len(label_color_list))
     print("duration", end-start)
     # sys.path.remove(CONTENT_PATH)
     # add_line(API_result_path,['TT',username])
@@ -328,7 +329,51 @@ def update_projection():
 
 app.route('/contrast/updateProjection', methods=["POST", "GET"])(update_projection)
 
+@app.route('/getOriginalColors', methods=["POST", "GET"])
+@cross_origin()
+def get_original_colors():
+    res = request.get_json()
+    CONTENT_PATH = os.path.normpath(res['content_path'])
+    VIS_METHOD = res['vis_method']
+    SETTING = res["setting"]
+    iteration = int(res['iteration'])
+    ColorType = res['ColorType']
 
+    context, error_message_context = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
+    EPOCH = int(iteration)
+    print("colortype", ColorType)
+    label_color_list = get_coloring(context, EPOCH, ColorType)
+    print("label_colorlen", len(label_color_list))
+    return make_response(jsonify({
+                                  'label_color_list': label_color_list,        
+                                  "errorMessage": error_message_context
+                                  }), 200)
+
+app.route('/contrast/getOriginalColors', methods=["POST", "GET"])(get_original_colors)
+
+@app.route('/contrast/getComparisonColors', methods=["POST", "GET"])
+@cross_origin()
+def get_comparison_colors():
+    res = request.get_json()
+    CONTENT_PATH_LEFT = os.path.normpath(res['content_path_left'])
+    CONTENT_PATH_RIGHT = os.path.normpath(res['content_path_right'])
+    VIS_METHOD_LEFT = res['vis_method_left']
+    VIS_METHOD_RIGHT = res['vis_method_right']
+    SETTING = res["setting"]
+    iteration_left = int(res['iterationLeft'])
+    iteration_right = int(res['iterationRight'])
+
+    context_left, error_message_context = initialize_backend(CONTENT_PATH_LEFT, VIS_METHOD_LEFT, SETTING)
+    context_right, error_message_context = initialize_backend(CONTENT_PATH_RIGHT, VIS_METHOD_RIGHT, SETTING)
+    EPOCH_LEFT = int(iteration_left)
+    EPOCH_RIGHT = int(iteration_right)
+
+    label_color_list = get_comparison_coloring(context_left, context_right, EPOCH_LEFT, EPOCH_RIGHT)
+    print("label_colorlen", len(label_color_list))
+    return make_response(jsonify({
+                                  'label_color_list': label_color_list,        
+                                  "errorMessage": error_message_context
+                                  }), 200)
 
 @app.route('/query', methods=["POST"])
 @cross_origin()
@@ -561,7 +606,7 @@ def highlight_critical_change():
     context, error_message = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
   
     predChangeIndices = getCriticalChangeIndices(context, curr_iteration, next_iteration)
-    print("predchagenInd", predChangeIndices)
+    # print("predchagenInd", predChangeIndices)
     return make_response(jsonify({
                                   "predChangeIndices": predChangeIndices.tolist()
                                   }), 200)
