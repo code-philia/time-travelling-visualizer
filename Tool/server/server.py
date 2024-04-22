@@ -959,10 +959,13 @@ def check_port_inuse(port, host):
             s.close()
 # for contrast
 if __name__ == "__main__":
-    import socket
-    hostname = socket.gethostname()
-    ip_address = socket.gethostbyname(hostname)
+    # import socket
+    # hostname = socket.gethostname()
+    # ip_address = socket.gethostbyname(hostname)
+    ip_address = '0.0.0.0'
     port = 5000
     while check_port_inuse(port, ip_address):
         port = port + 1
-    app.run(host=ip_address, port=int(port))
+
+    app.run(host=ip_address, port=port)
+    # app.run(host=ip_address, port=int(port))
