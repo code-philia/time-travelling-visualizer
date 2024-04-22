@@ -6,6 +6,7 @@ Training Dynamic Visualization, a technique designed to visualize high-dimension
 # How to Use it?
 
 ## Pull Our Code
+We strongly recommend that you store source code and training dynamics in the **Linux file system** instead of the Windows file system to get a complete user experience.
 ```
 git clone https://github.com/code-philia/time-travelling-visualizer.git
 ```
@@ -77,6 +78,8 @@ For windows developers, Windows with WSL 2 enabled and Docker Desktop are needed
 For installing Linux on Windows with WSL, use the guidelines provided at [Microsofts's official WSL installation page](https://learn.microsoft.com/en-us/windows/wsl/install) 
 
 For setting up WSL 2 with Docker Desktop, see [WSL](https://docs.docker.com/desktop/wsl/).
+
+After setting 
 
 ## Training Process Dataset (the training process of a model)
 
