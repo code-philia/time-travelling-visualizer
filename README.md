@@ -70,6 +70,14 @@ $ (visualizer) pip install -r win-requirements.txt
 
 Note that, if you are using VPN or other proxy, please specify `--proxy` parameter to install the packages.
 
+4. vector database environment configuration
+
+For windows developers, Windows with WSL 2 enabled and Docker Desktop are needed.
+
+For installing Linux on Windows with WSL, use the guidelines provided at [Microsofts's official WSL installation page](https://learn.microsoft.com/en-us/windows/wsl/install) 
+
+For setting up WSL 2 with Docker Desktop, see [WSL](https://docs.docker.com/desktop/wsl/).
+
 ## Training Process Dataset (the training process of a model)
 
 
