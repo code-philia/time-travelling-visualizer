@@ -84,6 +84,11 @@
                     <el-input v-model="visMethod"></el-input>
                 </div>
                 <el-divider></el-divider>
+                <div id="customContentPathInput">
+                    Custom Content Path:
+                    <el-input v-model="customContentPath"></el-input>
+                </div>
+                <el-divider></el-divider>
                 <el-button id="showVisResBtn"
                     style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;" @click="update">Load
                     Visualization Result</el-button>
@@ -225,7 +230,10 @@
             return {
                 lastHoveredIndex: null,
                 curIndex:null,
-                contentPath: '/home/yifan/dataset/case_study_mnist_backdoor',
+                nnIndices: [],
+                // contentPath: '/home/yiming/cophi/projects/mtpnet/Text-code/NL-code-search-Adv/training_dynamic/code',
+                contentPath: '/home/yiming/cophi/training_dynamic/code_training_dynamic/saved_models/ruby_fine_tine_5',
+                customContentPath: '',
                 visMethod: 'Trustvis',
                 taskType: 'Classification',
                 filter_index:'',
@@ -407,7 +415,12 @@
             update() {
                 this.isCanvasLoading = true
                 console.log("taskType", this.taskType)
-                updateProjection(this.contentPath, this.currEpoch, this.taskType)
+                if (this.customContentPath != '') {
+                    updateCustomProjection(this.contentPath, this.customContentPath, this.currEpoch, this.taskType)
+                }
+                else{
+                    updateProjection(this.contentPath, this.currEpoch, this.taskType)
+                }
                 fetchTimelineData(this.contentPath, "")
 
             },
@@ -427,6 +440,7 @@
             getInitialState() {
                 return {lastHoveredIndex: null,
                 contentPath: '/home/yifan/dataset/case_study_mnist_backdoor',
+                customContentPath: '',
                 visMethod: 'Trustvis',
                 taskType: 'Classification',
                 isCanvasLoading: false,
@@ -506,7 +520,7 @@
                 immediate: true,
                 handler(newVal, oldVal) {
                     if (newVal != null) {
-                        getOriginalData(this.contentPath, newVal, this.dataType, "")
+                        getOriginalData(this.contentPath, newVal, this.dataType, "", this.customContentPath)
                         const updatedQuery = {
                             ...this.query,
                             key: 'index',
