@@ -100,6 +100,8 @@
                     @click="VDBHandler">Load
                     Vector Database</el-button>
                 <el-divider></el-divider>
+                Filter Index: 
+                <div style="display: flex;"></el-input><el-input v-model="filter_index"></div>
 
                 <span
                 style="display: inline-block; line-height: 50px; vertical-align: top; margin-left:20px; margin-right: 5px;">Embedding Analysis Panel</span>
@@ -151,10 +153,12 @@
                 <el-divider></el-divider>
                     <el-tabs>
                         <el-tab-pane label="Advanced Query">
-                            <div class="switch-container">
+                            <el-switch v-model="isSwitchOn" active-text="Open KNN" inactive-text="Close KNN">
+                            </el-switch>
+                            <!-- <div class="switch-container">
                                 <input type="checkbox" class="switch-input" v-model="isSwitchOn">
                                 <label class="switch-label" for="switch" @click="toggleSwitch"></label>
-                            </div>
+                            </div> -->
                             <div class="advanced-query-row">
                                 <el-select v-model="query.key">
                                     <el-option value="left-index" label="left-index">
@@ -181,6 +185,24 @@
                                 id="clearquery">
                                 Clear Query
                             </el-button>
+                            <el-divider></el-divider>
+                            <el-button id="highlightQueryError" style="background-color: #571792; color: #fff; width: 100%; margin-top: 0px;"
+                            @click="HQEHandler">Highlight Query Error</el-button>
+                            <el-divider></el-divider>
+                            <el-button id="findQueryError" style="background-color: #571792; color: #fff; width: 100%; margin-top: 0px;"
+                            @click="FQEHandler">Find Query Error</el-button>
+                            <el-divider></el-divider>
+                            <span style="display: inline-block; line-height: 50px; vertical-align: top; margin-left:20px; margin-right: 5px;">Labeling Panel</span>
+                            <div class="advanced-query-row">
+                                index: <el-input style="margin-left:20px;" v-model="labeling.value"></el-input>
+                            </div>
+                            <div class="advanced-query-row">
+                                label: <el-input style="margin-left:20px;" v-model="labeling.label"></el-input>
+                            </div>
+                            <el-divider></el-divider>
+                            <el-button id="addNewLabel" style="background-color: #571792; color: #fff; width: 100%; margin-top: 0px;"
+                            @click="NLHandler">Add Label</el-button>
+                            <el-divider></el-divider>
 
                             <!-- 显示查询结果 -->
                             <span id="resultContainer">
@@ -257,7 +279,7 @@
                 <img :src="imageSrcRef" alt="Image Description" height="100px" />
             </div>
             <div v-else>
-                <div style="max-height: 300px; overflow-y: auto;">
+                <div style="max-height: 300px; overflow-y: auto; white-space: pre;">
                     <p>{{ textContentRef }}</p>
                 </div>
             </div>
@@ -271,7 +293,7 @@
                 <img :src="imageSrcTar" alt="Image Description" height="100px" />
             </div>
             <div v-else>
-                <div style="max-height: 300px; overflow-y: auto;">
+                <div style="max-height: 300px; overflow-y: auto; white-space: pre;">
                     <p>{{ textContentTar }}</p>
                 </div>
             </div>
@@ -313,10 +335,17 @@
             return {
                 lastHoveredIndexRef: null,
                 lastHoveredIndexTar: null,
-                contentPathRef: '/home/timeTravelling/guorui/git_space/TestFrontend/time-travelling-visualizer/Backdoor',
-                contentPathTar: '/home/timeTravelling/guorui/git_space/TestFrontend/time-travelling-visualizer/Backdoor',
+                curIndexRef:null,
+                curIndexTar:null,
+                nnIndices: [],
+                // contentPathRef: '/home/timeTravelling/guorui/git_space/TestFrontend/time-travelling-visualizer/Backdoor',
+                contentPathRef: '/home/yiming/cophi/training_dynamic/NL-code-search-Adv/TD/code',
+                contentPathTar: '/home/yiming/cophi/training_dynamic/NL-code-search-Adv/TD/nl',
+                customContentPath: '',
+                // contentPathTar: '/home/timeTravelling/guorui/git_space/TestFrontend/time-travelling-visualizer/Backdoor',
                 isCanvasLoading: false,
                 taskType: 'Classification',
+                filter_index:'',
                 query_result: {},
                 prediction_listRef: [],
                 prediction_listTar: [],
@@ -422,6 +451,10 @@
                     k: null
                 },
                 isSwitchOn: false,
+                labeling: {
+                    value: null,
+                    label: ""
+                },
             }
         },
         methods: {
@@ -580,6 +613,22 @@
                 contrastloadVectorDBCode(this.contentPathRef, this.currEpochRef)
                 contrastloadVectorDBNl(this.contentPathTar, this.currEpochTar)
             },
+            HQEHandler(){
+                highlightContraProjection(this.contentPathRef, this.currEpochRef, this.taskType, 'ref')
+                fetchTimelineData(this.contentPathRef, 'ref')
+                highlightContraProjection(this.contentPathTar, this.currEpochTar, this.taskType, 'tar')
+                fetchTimelineData(this.contentPathTar, 'tar')
+            },
+            FQEHandler(){
+                queryMissSearch(this.query, this.contentPathRef, this.currEpochRef, this.contentPathTar, this.currEpochTar)
+                updateContraProjection(this.contentPathRef, this.currEpochRef, this.taskType, 'ref')
+                fetchTimelineData(this.contentPathRef, 'ref')
+                updateContraProjection(this.contentPathTar, this.currEpochTar, this.taskType, 'tar')
+                fetchTimelineData(this.contentPathTar, 'tar')
+            },
+            NLHandler(){
+                addNewLbel(this.labeling, this.contentPathRef, this.currEpochRef, this.contentPathTar, this.currEpochTar)
+            },
             indexSearchHandler() {
                 contrastIndexSearch(this.query, this.isSwitchOn);
             },
@@ -600,6 +649,7 @@
                 lastHoveredIndexTar: null,
                 contentPathRef: '/home/timeTravelling/guorui/git_space/TestFrontend/time-travelling-visualizer/Backdoor',
                 contentPathTar: '/home/timeTravelling/guorui/git_space/TestFrontend/time-travelling-visualizer/Backdoor',
+                customContentPath: '',
                 isCanvasLoading: false,
                 taskType: 'Classification',
                 query_result: {},
@@ -732,7 +782,7 @@
                     this.curr_predRef = this.prediction_listRef[newVal];
                     this.curr_labelRef = this.label_name_dictRef[this.label_listRef[newVal]]
                     if (newVal != null) {
-                        getOriginalData(this.contentPathRef, newVal, this.dataType, 'ref')
+                        getOriginalData(this.contentPathRef, newVal, this.dataType, 'ref', this.customContentPath)
                         const updatedQuery = {
                             ...this.query,
                             // key: 'inter-index',
@@ -746,13 +796,20 @@
 
                 }
             },
+            // curIndexRef:{
+            //     immediate: true,
+            //     handler(newVal, oldVal) {
+            //         this.curr_predRef = this.prediction_listRef[newVal];
+            //         this.curr_labelRef = this.label_name_dictRef[this.label_listRef[newVal]]
+            //     }
+            // },
             lastHoveredIndexTar: {
                 immediate: true,
                 handler(newVal, oldVal) {
                     this.curr_predTar = this.prediction_listTar[newVal];
                     this.curr_labelTar = this.label_name_dictTar[this.label_listTar[newVal]]
                     if (newVal != null) {
-                        getOriginalData(this.contentPathTar, newVal, this.dataType, 'tar')
+                        getOriginalData(this.contentPathTar, newVal, this.dataType, 'tar', this.customContentPath)
                         const updatedQuery = {
                             ...this.query,
                             // key: 'inter-index',
@@ -766,6 +823,13 @@
 
                 }
             },
+            // curIndexTar:{
+            //     immediate: true,
+            //     handler(newVal, oldVal) {
+            //         this.curr_predTar = this.prediction_listTar[newVal];
+            //         this.curr_labelTar = this.label_name_dictTar[this.label_listTar[newVal]]
+            //     }
+            // },
             showVisErrorRef: {
                 immediate: true,
                 handler(newVal, oldVal) {

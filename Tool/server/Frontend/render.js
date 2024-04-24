@@ -237,7 +237,7 @@ var previousMousePosition = {
     // var threshold = distance * 0.1; // 根据距离动态调整阈值，这里的0.01是系数，可能需要调整
     // raycaster.params.Points.threshold = threshold;
 
-    function updateLastHoverIndexSize(lastHoveredIndex,  selectedIndex, visualizationError) {
+    function updateLastHoverIndexSize(lastHoveredIndex,  selectedIndex, visualizationError, nnIndices) {
         if (lastHoveredIndex != null) {
             var isNormalSize = true;
             if (selectedIndex != null) {
@@ -256,6 +256,9 @@ var previousMousePosition = {
             } else {
                 window.vueApp.pointsMesh.geometry.attributes.size.array[lastHoveredIndex] = HOVER_SIZE; 
             }
+            nnIndices.forEach((item, index) => {
+                window.vueApp.pointsMesh.geometry.attributes.size.array[item] = NORMAL_SIZE
+            });
         }
       }
       
@@ -293,7 +296,7 @@ var previousMousePosition = {
             // 在这里处理悬停事件
             if (window.vueApp.lastHoveredIndex != index) {
                 updateLastHoverIndexSize(window.vueApp[specifiedLastHoveredIndex],  window.vueApp[specifiedSelectedIndex], 
-                    window.vueApp[specifiedHighlightAttributes].visualizationError)
+                    window.vueApp[specifiedHighlightAttributes].visualizationError, window.vueApp.nnIndices)
                 container.style.cursor = 'pointer';
                 window.vueApp.pointsMesh.geometry.attributes.size.array[index] = HOVER_SIZE
                 window.vueApp.pointsMesh.geometry.attributes.size.needsUpdate = true;
@@ -305,9 +308,10 @@ var previousMousePosition = {
             // 如果没有悬停在任何点上，也重置上一个点的大小
             if (window.vueApp.lastHoveredIndex !== null) {
                 updateLastHoverIndexSize(window.vueApp[specifiedLastHoveredIndex],  window.vueApp[specifiedSelectedIndex], 
-                    window.vueApp[specifiedHighlightAttributes].visualizationError)
+                    window.vueApp[specifiedHighlightAttributes].visualizationError, window.vueApp.nnIndices)
                 window.vueApp.pointsMesh.geometry.attributes.size.needsUpdate = true;
                 window.vueApp[specifiedLastHoveredIndex] = null;
+                window.vueApp.nnIndices = []
                 window.vueApp[specifiedImageSrc] = ""
                 updateCurrHoverIndex(event, null, false, '')
             }
@@ -514,37 +518,32 @@ window.onload = function() {
 
 
 function updateSizes() {
-    const nn = []; // 创建一个空的 sizes 列表
-    
+    // const nn = []; // 创建一个空的 sizes 列表
+    window.vueApp.nnIndices.forEach((item, index) => {
+        window.vueApp.pointsMesh.geometry.attributes.size.array[item] = NORMAL_SIZE
+    });
+    window.vueApp.pointsMesh.geometry.attributes.size.needsUpdate = true;
+    window.vueApp.nnIndices = []
     Object.values(window.vueApp.query_result).forEach(item => {
         if (typeof item === 'object' && item !== null) {
-            nn.push(item.id);
+            window.vueApp.nnIndices.push(item.id);
         }
     });
-    console.log(nn);
-    // 遍历 nn 列表，将每个索引位置的元素设置为 HOVER_SIZE
-    nn.forEach((item, index) => {
-        console.log(item);
-        sizes[item] = HOVER_SIZE;
+    console.log(window.vueApp.nnIndices)
+    window.vueApp.nnIndices.forEach((item, index) => {
+        window.vueApp.pointsMesh.geometry.attributes.size.array[item] = HOVER_SIZE
     });
-    // 更新size属性并标记为需要更新
-    window.vueApp.pointsMesh.geometry.attributes.size.array = new Float32Array(sizes);
     window.vueApp.pointsMesh.geometry.attributes.size.needsUpdate = true;
-    // window.vueApp.lastHoveredIndex = index;
     resultContainer = document.getElementById("resultContainer");
     resultContainer.setAttribute("style", "display:block;")
 }
 
 function clear() {
-    sizes.fill(NORMAL_SIZE); // 将所有点的大小重置为5
-    // 更新size属性并标记为需要更新
-    window.vueApp.pointsMesh.geometry.attributes.size.array = new Float32Array(sizes);
+    window.vueApp.nnIndices.forEach((item, index) => {
+        window.vueApp.pointsMesh.geometry.attributes.size.array[item] = NORMAL_SIZE
+    });
     window.vueApp.pointsMesh.geometry.attributes.size.needsUpdate = true;
-    window.vueApp.lastHoveredIndex = null;
-    resultImg = document.getElementById("metaImg")
-    resultImg.setAttribute("style", "display:none;")
-    spriteTextElement = document.getElementById("spriteTextElement");
-    spriteTextElement.textContent = ""; // 清空文本内容
+    window.vueApp.nnIndices = []
     resultContainer = document.getElementById("resultContainer");
     resultContainer.setAttribute("style", "display:none;")
 }

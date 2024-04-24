@@ -68,10 +68,10 @@ function updateProjection(content_path, iteration, taskType) {
         })
 }
 
-  function getOriginalData(content_path,index, dataType, flag){
+  function getOriginalData(content_path,index, dataType, flag, custom_path){
     if(index != null){
         let specifiedCurrEpoch = makeSpecifiedVariableName('currEpoch', flag)
-        fetch(`${window.location.href}/sprite${dataType}?index=${index}&path=${content_path}&username=admin&iteration=${window.vueApp[specifiedCurrEpoch]}`, {
+        fetch(`${window.location.href}/sprite${dataType}?index=${index}&path=${content_path}&cus_path=${custom_path}&username=admin&iteration=${window.vueApp[specifiedCurrEpoch]}&`, {
             method: 'GET',
             mode: 'cors'
           }).then(response => response.json()).then(data => {
@@ -114,7 +114,8 @@ function updateContraProjection(content_path, iteration, taskType, flag) {
             'setting': 'normal',
             "content_path": content_path,
             "predicates": {},
-            "TaskType": taskType
+            "TaskType": taskType,
+            "selectedPoints":window.vueApp.filter_index
         }),
         headers: headers,
         mode: 'cors'
@@ -481,7 +482,42 @@ function contrastIndexSearch(query, switchOn) {
   .then(response => response.json())
   .then(res => {
       window.vueApp.query_result = res.result   
-      show_query_text()
+      // if (switchOn) {
+      //   contrastUpdateSizes()
+      // } else {
+      //   contrast_show_query_text()
+      // }
+  })
+  .catch(error => {
+      console.error('Error fetching data:', error);
+      window.vueApp.isCanvasLoading = false
+      window.vueApp.$message({
+          type: 'error',
+          message: `Backend error`
+        });
+  });
+}
+
+function queryMissSearch(query,contentPathRef,currEpochRef,contentPathTar,currEpochTar) {
+  fetch(`queryMissSearch`, {
+      method: 'POST',
+      body: JSON.stringify({
+          "refpath": contentPathRef, 
+          "refiteration": currEpochRef,
+          "tarpath": contentPathTar, 
+          "tariteration": currEpochTar,
+          "query": {
+              key: query.key,
+              value: query.value,
+              k: query.k
+            }
+      }),
+      headers: headers,
+      mode: 'cors'
+  })
+  .then(response => response.json())
+  .then(res => {
+      window.vueApp.filter_index = res.result   
   })
   .catch(error => {
       console.error('Error fetching data:', error);
@@ -557,6 +593,156 @@ function contrastloadVectorDBNl(content_path, iteration) {
   })
   .then(response => response.json())
   .then(res => {
+  })
+  .catch(error => {
+      console.error('Error fetching data:', error);
+      window.vueApp.isCanvasLoading = false
+      window.vueApp.$message({
+          type: 'error',
+          message: `Backend error`
+        });
+  });
+}
+
+function updateCustomProjection(content_path, custom_path, iteration, taskType) {
+
+  console.log(content_path,iteration)
+  fetch(`${window.location.href}updateCustomProjection`, {
+      method: 'POST',
+      body: JSON.stringify({
+          "path": content_path, 
+          "cus_path": custom_path,
+          "iteration": iteration,
+          "resolution": 200,
+          "vis_method": window.vueApp.visMethod,
+          'setting': 'normal',
+          "content_path": content_path,
+          "predicates": {},
+          "TaskType": taskType,
+          "selectedPoints":window.vueApp.filter_index
+      }),
+      headers: headers,
+      mode: 'cors'
+  })
+  .then(response => response.json())
+  .then(res => {
+      if (window.vueApp.errorMessage) {
+        window.vueApp.errorMessage =  res.errorMessage
+      } else {
+        alert(res.errorMessage)
+        window.vueApp.errorMessage =  res.errorMessage
+      }
+      drawCanvas(res);
+      window.vueApp.prediction_list = res.prediction_list
+      window.vueApp.label_list = res.label_list
+      window.vueApp.label_name_dict = res.label_name_dict
+      window.vueApp.evaluation = res.evaluation
+      window.vueApp.currEpoch = iteration
+      window.vueApp.test_index = res.testing_data
+      window.vueApp.train_index = res.training_data
+  })
+  .catch(error => {
+      console.error('Error fetching data:', error);
+      window.vueApp.isCanvasLoading = false
+      window.vueApp.$message({
+          type: 'error',
+          message: `Unknown Backend Error`
+        });
+  });
+}
+
+function highlightContraProjection(content_path, iteration, taskType, flag) {
+  console.log('contrast',content_path,iteration)
+  let specifiedVisMethod = makeSpecifiedVariableName('visMethod', flag)
+  fetch(`highlightContraProjection`, {
+      method: 'POST',
+      body: JSON.stringify({
+          "path": content_path, 
+          "iteration": iteration,
+          "resolution": 200,
+          "vis_method":  window.vueApp[specifiedVisMethod],
+          'setting': 'normal',
+          "content_path": content_path,
+          "predicates": {},
+          "TaskType": taskType,
+          "selectedPoints":window.vueApp.filter_index
+      }),
+      headers: headers,
+      mode: 'cors'
+  })
+  .then(response => response.json())
+  .then(res => {
+      currId = 'container_tar'    
+      alert_prefix = "right:\n"  
+      if (flag == 'ref') {
+          currId = 'container_ref'
+          alert_prefix = "left:\n" 
+      } 
+      let specifiedErrorMessage = makeSpecifiedVariableName('errorMessage', flag)
+      if (window.vueApp[specifiedErrorMessage]) {
+        window.vueApp[specifiedErrorMessage] = alert_prefix + res.errorMessage
+      } else {
+        alert(alert_prefix + res.errorMessage)
+        window.vueApp[specifiedErrorMessage] = alert_prefix + res.errorMessage
+      }
+      drawCanvas(res, currId,flag);
+      let specifiedPredictionlist = makeSpecifiedVariableName('prediction_list', flag)
+      let specifiedLabelList = makeSpecifiedVariableName('label_list', flag)
+      let specifiedLabelNameDict = makeSpecifiedVariableName('label_name_dict', flag)
+      let specifiedEvaluation = makeSpecifiedVariableName('evaluation', flag)
+      let specifiedCurrEpoch = makeSpecifiedVariableName('currEpoch', flag)
+      let specifiedTrainingIndex = makeSpecifiedVariableName('train_index', flag)
+      let specifiedTestingIndex = makeSpecifiedVariableName('test_index', flag)
+
+      window.vueApp[specifiedPredictionlist] = res.prediction_list
+      window.vueApp[specifiedLabelList] = res.label_list
+      window.vueApp[specifiedLabelNameDict] = res.label_name_dict
+      window.vueApp[specifiedEvaluation] = res.evaluation
+      window.vueApp[specifiedCurrEpoch] = iteration
+      window.vueApp[specifiedTestingIndex] = res.testing_data
+      window.vueApp[specifiedTrainingIndex] = res.training_data
+  })
+  .catch(error => {
+      console.error('Error fetching data:', error);
+      window.vueApp.isCanvasLoading = false
+      window.vueApp.$message({
+          type: 'error',
+          message: `Unknown Backend Error`
+        });
+
+  });
+}
+
+function addNewLbel(labeling,contentPathRef,currEpochRef,contentPathTar,currEpochTar) {
+  fetch(`addNewLbel`, {
+      method: 'POST',
+      body: JSON.stringify({
+          "refpath": contentPathRef, 
+          "refiteration": currEpochRef,
+          "tarpath": contentPathTar, 
+          "tariteration": currEpochTar,
+          "labeling": {
+              value: labeling.value,
+              label: labeling.label
+            }
+      }),
+      headers: headers,
+      mode: 'cors'
+  })
+  .then(response => response.json())
+  .then(res => {
+      // 处理后端返回的结果
+      if (res.success) {
+        window.vueApp.$message({
+          type: 'success',
+          message: 'labelling successful'
+        });
+      } else {
+        window.vueApp.$message({
+          type: 'error',
+          message: 'labelling failed'
+        });
+      }
   })
   .catch(error => {
       console.error('Error fetching data:', error);
