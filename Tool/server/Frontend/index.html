@@ -62,19 +62,31 @@
 
         <div class="content_container">
             <div id="subject_model_info_panel">
+                <span style="display: inline-block; margin-right: 20px;">Data Type:</span>
                 <div id="contentSettingData">
-                    <span style="display: inline-block; margin-right: 20px;">Data Type:</span>
                     <el-radio v-model="dataType" label="Image">Image</el-radio>
                     <el-radio v-model="dataType" label="Text">Text</el-radio>
                 </div>
                 <el-divider></el-divider>
+                <span style="display: inline-block; margin-right: 20px;">Task Type:</span><br/>
                 <div id="contentSettingTask">
-                    <span style="display: inline-block; margin-right: 20px;">Task Type:</span><br/>
                     <el-radio v-model="taskType" label="Classification">Classification</el-radio>
                     <el-radio v-model="taskType" label="Non-Classification">Non-Classification</el-radio>
                 </div>
 
                 <el-divider></el-divider>
+        
+                <span style="display: inline-block; margin-right: 20px;" v-if="showColorSetting">Color Points?</span>
+                <div id="colorSettingTask" v-if="showColorSetting">
+                    <el-radio v-model="colorType" label="noColoring">No Need</el-radio>
+                    <el-radio v-model="colorType" label="singleColoring">Classification Coloring</el-radio>
+                </div>
+                <el-button id="loadColorButton"
+                style="background-color: #571792; color: #fff; width: 100%; margin-top: 0px;"
+                @click="ColorHandler" v-if="showColorSetting">Load
+                Color</el-button>
+                <el-divider v-if="showColorSetting"></el-divider>
+
                 <div id="contentPathInput">
                     Content Path:
                     <el-input v-model="contentPath"></el-input>
@@ -112,9 +124,10 @@
                 </table>
                 <el-divider></el-divider>
             </div>
-            <div class="mid_container">
+            <!-- <div class="mid_container">
                 <div id="container"></div>
-            </div>
+            </div> -->
+            <div id="container"></div>
 
             <div id="advanced_panel">
                 <el-checkbox v-model="showTraining">Training</el-checkbox>
@@ -148,7 +161,7 @@
                         </el-button>
 
                     </el-tab-pane>
-
+                   
                     <el-tab-pane label="Advanced Query">
                         <div class="switch-container">
                             <el-switch v-model="isSwitchOn" active-text="Open KNN" inactive-text="Close KNN">
@@ -208,7 +221,7 @@
                 <img :src="imageSrc" alt="Image Description" height="100px" />
             </div>
             <div v-else>
-                <div style="overflow-y: auto;">
+                <div style="overflow-y: auto; white-space: pre;">
                     <p>{{ textContent }}</p>
                 </div>
             </div>
@@ -236,6 +249,8 @@
                 customContentPath: '',
                 visMethod: 'Trustvis',
                 taskType: 'Classification',
+                colorType: 'noColoring',
+                showColorSetting: false,
                 filter_index:'',
                 isCanvasLoading: false,
                 query_result: {},
@@ -291,7 +306,13 @@
                     k: null
                 },
                 isSwitchOn: false,
-                confidence: [0, 1]
+                confidence: [0, 1],
+                sceneBoundary: {
+                    x_min: null,
+                    y_min: null,
+                    x_max: null,
+                    y_max: null 
+                }
             }
         },
         methods: {
@@ -310,9 +331,25 @@
                 const target = new THREE.Vector3(
                     0, 0, 0
                 );
+                container = document.getElementById("container")
+                const rect = container.getBoundingClientRect();
+                var aspectRatio = rect.width / rect.height;
+              
+                this.camera.position.set(0, 0, 100);
+                this.camera.left = this.sceneBoundary.x_min * aspectRatio
+                this.camera.right = this.sceneBoundary.x_max * aspectRatio;
+                this.camera.top = this.sceneBoundary.y_max;
+                this.camera.bottom = this.sceneBoundary.y_min;
+  
+                this.renderer.setSize(rect.width, rect.height);
+                this.renderer.setClearColor(BACKGROUND_COLOR, 1);
+
+                const viewportWidth = this.renderer.domElement.clientWidth;
+                const viewportHeight = this.renderer.domElement.clientHeight;
+
                 this.camera.zoom = 1;
-                this.camera.lookAt(target);
                 this.camera.updateProjectionMatrix();
+                this.camera.lookAt(target);
             },
             filterByIndex(){
                 updateProjection(this.contentPath, this.currEpoch, this.taskType)
@@ -425,9 +462,15 @@
 
             },
             VDBHandler() {
+                this.isCanvasLoading = true
                 loadVectorDB(this.contentPath, this.currEpoch)
             },
+            ColorHandler() {
+                this.isCanvasLoading = true  
+                reloadColor('')   
+            },
             indexSearchHandler() {
+                this.isCanvasLoading = true
                 indexSearch(this.query, this.isSwitchOn);
             },
             clearSearchHandler() {
@@ -443,6 +486,8 @@
                 customContentPath: '',
                 visMethod: 'Trustvis',
                 taskType: 'Classification',
+                colorType: 'noColoring',
+                showColorSetting: false,
                 isCanvasLoading: false,
                 query_result: {},
                 prediction_list: [],
@@ -497,7 +542,13 @@
                     k: null
                 },
                 isSwitchOn: false,
-                confidence: [0, 1]
+                confidence: [0, 1],
+                sceneBoundary: {
+                    x_min: null,
+                    y_min: null,
+                    x_max: null,
+                    y_max: null 
+                }
             };
             },
 
@@ -547,6 +598,9 @@
                     if (newVal) {
                         getHighlightedPoints('visError', '')
                     } else {
+                        if (this.highlightAttributes.visualizationError) {
+                            this.highlightAttributes.visualizationError.clear()
+                        }
                         this.highlightAttributes.visualizationError = null
                     }
                 }
@@ -560,6 +614,15 @@
                     } else {
                         console.log("else branch")
                         this.predictionFlipIndices = null
+                    }
+                }
+            },
+            taskType: {
+                handler(newVal, oldVal) {
+                    if (newVal == "Non-Classification") {
+                        this.showColorSetting = true
+                    } else {
+                        this.showColorSetting = false
                     }
                 }
             }

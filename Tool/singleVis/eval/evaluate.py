@@ -8,6 +8,52 @@ from sklearn.neighbors import NearestNeighbors
 from sklearn.manifold import trustworthiness
 from scipy.stats import kendalltau, spearmanr, pearsonr, rankdata
 
+def calculate_cosine_similarity(data1, data2):
+    """
+    Calculate the cosine similarity matrix between two datasets.
+    """
+    norms1 = np.linalg.norm(data1, axis=1, keepdims=True)
+    norms2 = np.linalg.norm(data2, axis=1, keepdims=True)
+    dot_product = np.dot(data1, data2.T)
+    similarity_matrix = dot_product / (norms1 * norms2.T)
+    return similarity_matrix
+
+def rank_similarities_and_color(data1, data2, labels=None):
+    """
+    Determine the coloring of indices in dataset2 based on their rank of similarity to corresponding points in dataset1.
+    """
+    dark_blue = [0, 0, 139]
+    brown = [165, 42, 42]
+    orange = [255, 165, 0]
+    light_blue = [173, 216, 230]
+    colors = np.tile(dark_blue, (data1.shape[0], 1)) 
+
+    if labels==None:
+        cosine_similarities = calculate_cosine_similarity(data1, data2)
+        rankings = np.argsort(-cosine_similarities, axis=1)
+        labels = np.zeros(data1.shape[0])
+        for i in range(data1.shape[0]):
+            corresponding_rank = np.where(rankings[i] == i)[0][0]  
+            if corresponding_rank == 0:
+                colors[i] = orange
+                labels[i] = 1
+            elif 1 <= corresponding_rank < 5:
+                colors[i] = brown
+                labels[i] = 5
+            elif 5 <= corresponding_rank < 10:
+                colors[i] = light_blue
+                labels[i] = 10
+        return colors, labels
+    else:
+        for i in range(labels.shape[0]):
+            if labels[i] == 1:
+                colors[i] = orange
+            elif labels[i] == 5:
+                colors[i] = brown 
+            elif labels[i] == 10:
+                colors[i] = light_blue  
+    
+        return colors
 
 def evaluate_isAlign(embeddingLeft, embeddingRight, align_metric=1):
     lens = len(embeddingLeft)

@@ -50,21 +50,25 @@ function drawCanvas(res,id, flag='ref') {
     // create new Three.js scene
     window.vueApp.scene[flag] = new THREE.Scene();
     // get the boundary of the scene
-    var x_min = res.grid_index[0]
-    var y_min = res.grid_index[1]
-    var x_max = res.grid_index[2]
-    var y_max = res.grid_index[3]
+    window.vueApp.sceneBoundary[flag].x_min = res.grid_index[0]
+    window.vueApp.sceneBoundary[flag].y_min = res.grid_index[1]
+    window.vueApp.sceneBoundary[flag].x_max = res.grid_index[2]
+    window.vueApp.sceneBoundary[flag].y_max = res.grid_index[3]
 
     const cameraBounds = {
-        minX: x_min,
-        maxX: x_max,
-        minY: y_min,
-        maxY: y_max
+        minX: window.vueApp.sceneBoundary[flag].x_min,
+        maxX: window.vueApp.sceneBoundary[flag].x_max,
+        minY: window.vueApp.sceneBoundary[flag].y_min,
+        maxY: window.vueApp.sceneBoundary[flag].y_max
     };
     var aspect = 1
     const rect = container.getBoundingClientRect();
 
-    window.vueApp.camera[flag] = new THREE.OrthographicCamera(x_min * aspect, x_max * aspect, y_max, y_min, 1, 1000);
+    window.vueApp.camera[flag] = new THREE.OrthographicCamera(window.vueApp.sceneBoundary[flag].x_min * aspect,
+         window.vueApp.sceneBoundary[flag].x_max * aspect,
+         window.vueApp.sceneBoundary[flag].y_max,
+          window.vueApp.sceneBoundary[flag].y_min,
+            1, 1000);
     window.vueApp.camera[flag].position.set(0, 0, 100);
     const target = new THREE.Vector3(
         0, 0, 0
@@ -72,10 +76,10 @@ function drawCanvas(res,id, flag='ref') {
 
     // 根据容器尺寸调整相机视野
     var aspectRatio = rect.width / rect.height;
-    window.vueApp.camera[flag].left = x_min * aspectRatio;
-    window.vueApp.camera[flag].right = x_max * aspectRatio;
-    window.vueApp.camera[flag].top = y_max;
-    window.vueApp.camera[flag].bottom = y_min;
+    window.vueApp.camera[flag].left = window.vueApp.sceneBoundary[flag].x_min * aspectRatio;
+    window.vueApp.camera[flag].right = window.vueApp.sceneBoundary[flag].x_max * aspectRatio;
+    window.vueApp.camera[flag].top =  window.vueApp.sceneBoundary[flag].y_max;
+    window.vueApp.camera[flag].bottom = window.vueApp.sceneBoundary[flag].y_min;
 
     // 更新相机的投影矩阵
     window.vueApp.camera[flag].updateProjectionMatrix();
@@ -118,10 +122,10 @@ function drawCanvas(res,id, flag='ref') {
 
     container.appendChild(window.vueApp.renderer[flag].domElement);
     // 计算尺寸和中心位置
-    var width = x_max - x_min;
-    var height = y_max - y_min;
-    var centerX = x_min + width / 2;
-    var centerY = y_min + height / 2;
+    var width = window.vueApp.sceneBoundary[flag].x_max - window.vueApp.sceneBoundary[flag].x_min;
+    var height = window.vueApp.sceneBoundary[flag].y_max - window.vueApp.sceneBoundary[flag].y_min;
+    var centerX = window.vueApp.sceneBoundary[flag].x_min + width / 2;
+    var centerY = window.vueApp.sceneBoundary[flag].y_min + height / 2;
 
     let canvas = document.createElement('canvas');
     canvas.width = 128;
@@ -226,11 +230,13 @@ function drawCanvas(res,id, flag='ref') {
     var specifiedOriginalSettings = makeSpecifiedVariableName('originalSettings', flag)
     // Save original sizes
     if (window.vueApp[specifiedPointsMesh].geometry.getAttribute('size')) {
+        window.vueApp[specifiedOriginalSettings].originalSizes = []
         window.vueApp[specifiedOriginalSettings].originalSizes = Array.from(window.vueApp[specifiedPointsMesh].geometry.getAttribute('size').array);
     }
 
     // Save original colors
     if (window.vueApp[specifiedPointsMesh].geometry.getAttribute('color')) {
+        window.vueApp[specifiedOriginalSettings].originalColors = []
         window.vueApp[specifiedOriginalSettings].originalColors = Array.from(window.vueApp[specifiedPointsMesh].geometry.getAttribute('color').array);
     }
 
@@ -324,21 +330,6 @@ function drawCanvas(res,id, flag='ref') {
             
             updateLastIndexSize(window.vueApp[specifiedSelectedIndex], window.vueApp[specifiedHighlightAttributes].allHighlightedSet, 
                  null, window.vueApp[specifiedHighlightAttributes].boldIndices, window.vueApp[specifiedHighlightAttributes].visualizationError, flag) 
-            // if boldIndices exist and it include last selectedIndex, then should not reset size
-            // const currBold = window.vueApp[specifiedHighlightAttributes].boldIndices
-            // console.log("currBold", currBold)
-            // if (currBold) {
-            //     var isInclude = currBold.includes(window.vueApp[specifiedSelectedIndex])
-                
-            //     if (!isInclude) {
-            //         window.vueApp[specifiedPointsMesh].geometry.attributes.size.array[window.vueApp[specifiedSelectedIndex]] = NORMAL_SIZE; 
-            //     } else {
-            //         console.log("isExe")
-            //         window.vueApp[specifiedPointsMesh].geometry.attributes.size.array[window.vueApp[specifiedSelectedIndex]] = HOVER_SIZE; 
-            //     } 
-            // } else {
-            //     window.vueApp[specifiedPointsMesh].geometry.attributes.size.array[window.vueApp[specifiedSelectedIndex]] = NORMAL_SIZE; 
-            // }
         }
        
          // Get the index and position of the double-clicked point
@@ -408,8 +399,6 @@ function drawCanvas(res,id, flag='ref') {
         }
       }
 
-
-
     //  =========================  鼠标hover功能  开始 =========================================== //
     function onMouseMove(event) {
         raycaster.params.Points.threshold = 0.2 / window.vueApp.camera[flag].zoom; // 根据点的屏幕大小调整
@@ -461,7 +450,6 @@ function drawCanvas(res,id, flag='ref') {
             container.style.cursor = 'default';
             // 如果没有悬停在任何点上，也重置上一个点的大小
             if (window.vueApp[specifiedLastHoveredIndex] != null) {
-                console.log("emptyseelectedindex", window.vueApp[specifiedSelectedIndex])
                 updateLastIndexSize(window.vueApp[specifiedLastHoveredIndex], window.vueApp[specifiedHighlightAttributes].allHighlightedSet,
                     window.vueApp[specifiedSelectedIndex], window.vueApp[specifiedHighlightAttributes].boldIndices, window.vueApp[specifiedHighlightAttributes].visualizationError, flag, window.vueApp.nnIndices)
    
@@ -519,20 +507,31 @@ function drawCanvas(res,id, flag='ref') {
     var specifiedShowTesting = makeSpecifiedVariableName('showTesting', flag)
     var specifiedShowTraining = makeSpecifiedVariableName('showTraining', flag)
     var specifiedPredictionFlipIndices = makeSpecifiedVariableName('predictionFlipIndices', flag)
+    // var specifiedOriginalSettings = makeSpecifiedVariableName('originalSettings', flag)
 
     window.vueApp.$watch(specifiedShowTesting, updateCurrentDisplay);
     window.vueApp.$watch(specifiedShowTraining, updateCurrentDisplay);
     window.vueApp.$watch(specifiedPredictionFlipIndices, updateCurrentDisplay);  
-    
+    window.vueApp.$watch(specifiedShowTesting, updateCurrentDisplay);
+    // window.vueApp.$watch(specifiedOriginalSettings, resetToOriginalColorSize, { deep: true });
+
     function updateCurrentDisplay() {
         console.log("currDisplay")
         let specifiedTrainIndex = makeSpecifiedVariableName('train_index', flag)
         let specifiedTestIndex = makeSpecifiedVariableName('test_index', flag)
-
+      
         // this is not alphas array at the beginning
         window.vueApp[specifiedPointsMesh].geometry.attributes.alpha.array = updateShowingIndices(window.vueApp[specifiedPointsMesh].geometry.attributes.alpha.array, window.vueApp[specifiedShowTraining], window.vueApp[specifiedTrainIndex], window.vueApp[specifiedPredictionFlipIndices])
         window.vueApp[specifiedPointsMesh].geometry.attributes.alpha.array = updateShowingIndices(window.vueApp[specifiedPointsMesh].geometry.attributes.alpha.array, window.vueApp[specifiedShowTesting], window.vueApp[specifiedTestIndex], window.vueApp[specifiedPredictionFlipIndices])
-
+        // update position z index to allow currDisplay indices show above 
+      
+        for (let i = 0; i < window.vueApp[specifiedPointsMesh].geometry.attributes.alpha.array.length; i++) {
+            var zIndex = i * 3 + 2; 
+            window.vueApp[specifiedPointsMesh].geometry.attributes.position.array[zIndex] = window.vueApp[specifiedPointsMesh].geometry.attributes.alpha.array[i] === 1 ? 0 : -1;
+        }
+        
+  
+        window.vueApp[specifiedPointsMesh].geometry.attributes.position.needsUpdate = true;
         window.vueApp[specifiedPointsMesh].geometry.attributes.alpha.needsUpdate = true;
     }
   
@@ -575,13 +574,13 @@ function drawCanvas(res,id, flag='ref') {
             visError = Array.from(visError)
         }
         
-        resetToOriginalColorSize()
+        resetToOriginalColorSize(flag)
 
         updateColorSizeForHighlights(indicesAllHighlighted, indicesToChangeYellow, indicesToChangeBlue, indicesToChangeGreen, visError)
-        console.log("GreenIndices", indicesToChangeGreen)
-        console.log("YELLOWndices", indicesToChangeYellow)
-        console.log("BLUEIndices", indicesToChangeBlue)
-        console.log('visError', visError)
+        // console.log("GreenIndices", indicesToChangeGreen)
+        // console.log("YELLOWndices", indicesToChangeYellow)
+        // console.log("BLUEIndices", indicesToChangeBlue)
+        // console.log('visError', visError)
         var boldIndices = window.vueApp[specifiedHighlightAttributes].boldIndices
         if (boldIndices == null) {
             boldIndices = []
@@ -589,89 +588,71 @@ function drawCanvas(res,id, flag='ref') {
            boldIndices = Array.from(boldIndices)
         }
         updateColorSizeForBoldIndices(boldIndices)
+        //reset variables to clear storage
+        indicesToChangeYellow = null
+        indicesToChangeBlue = null
+        indicesToChangeGreen = null
+        indicesAllHighlighted = null
+        visError = null
+        boldIndices = null
     }
-    function resetToOriginalColorSize() {
-        var specifiedSelectedIndex = makeSpecifiedVariableName('selectedIndex', flag)
-        var specifiedPointsMesh = makeSpecifiedVariableName('pointsMesh', flag)
-        var sizesAttribute = window.vueApp[specifiedPointsMesh].geometry.getAttribute('size');
-        var specifiedOriginalSettings = makeSpecifiedVariableName('originalSettings', flag)
-        var colorsAttribute = window.vueApp[specifiedPointsMesh].geometry.getAttribute('color');
-
-        console.log("reset", window.vueApp[specifiedPointsMesh].geometry.getAttribute('size'))
-
-        sizesAttribute.array.set(window.vueApp[specifiedOriginalSettings].originalSizes);
-        colorsAttribute.array.set(window.vueApp[specifiedOriginalSettings].originalColors);
-        // not reset selectedIndex
-        if ( window.vueApp[specifiedSelectedIndex]) {
-            sizesAttribute.array[window.vueApp[specifiedSelectedIndex]] = HOVER_SIZE
-        }
- 
-        // Mark as needing update
-        sizesAttribute.needsUpdate = true;
-        colorsAttribute.needsUpdate = true;
-
-        // clear all bold labels
-        var lens = 2
-        for (var i = 0; i < lens; i++) {
-            updateFixedHoverLabel(null, null, null, flag, null, boldLable + i, false)
-        }
-    }
-
+  
     function updateColorSizeForHighlights(indicesAllHighlighted, indicesToChangeYellow, indicesToChangeBlue, indicesToChangeGreen, visError) {
-        
-        var sizesAttribute = window.vueApp[specifiedPointsMesh].geometry.getAttribute('size');
         indicesAllHighlighted.forEach(index => {
-            sizesAttribute.array[index] = HOVER_SIZE;
+            window.vueApp[specifiedPointsMesh].geometry.getAttribute('size').array[index] = HOVER_SIZE;
         });
         visError.forEach(index => {
-            sizesAttribute.array[index] = HOVER_SIZE;
+            window.vueApp[specifiedPointsMesh].geometry.getAttribute('size').array[index] = HOVER_SIZE;
         });
-        sizesAttribute.needsUpdate = true; 
+        window.vueApp[specifiedPointsMesh].geometry.getAttribute('size').needsUpdate = true; 
 
         // yellow indices are triggered by right selected index
-        var colorsAttribute = window.vueApp[specifiedPointsMesh].geometry.getAttribute('color');
+
         indicesToChangeYellow.forEach(index => {
-            colorsAttribute.array[index * 3] = YELLOW[0]; // R
-            colorsAttribute.array[index * 3 + 1] = YELLOW[1]; // G
-            colorsAttribute.array[index * 3 + 2] = YELLOW[2]; // B
+            window.vueApp[specifiedPointsMesh].geometry.getAttribute('color').array[index * 3] = YELLOW[0]; // R
+            window.vueApp[specifiedPointsMesh].geometry.getAttribute('color').array[index * 3 + 1] = YELLOW[1]; // G
+            window.vueApp[specifiedPointsMesh].geometry.getAttribute('color').array[index * 3 + 2] = YELLOW[2]; // B
         });
 
         // blue indices are triggered by left selected index
         indicesToChangeBlue.forEach(index => {
-            colorsAttribute.array[index * 3] = BLUE[0]; // R
-            colorsAttribute.array[index * 3 + 1] = BLUE[1]; // G
-            colorsAttribute.array[index * 3 + 2] = BLUE[2]; // B
+            window.vueApp[specifiedPointsMesh].geometry.getAttribute('color').array[index * 3] = BLUE[0]; // R
+            window.vueApp[specifiedPointsMesh].geometry.getAttribute('color').array[index * 3 + 1] = BLUE[1]; // G
+            window.vueApp[specifiedPointsMesh].geometry.getAttribute('color').array[index * 3 + 2] = BLUE[2]; // B
         });
 
         // green indices represent intersection of blue and yellow indices
         indicesToChangeGreen.forEach(index => {
-            colorsAttribute.array[index * 3] = GREEN[0]; // R
-            colorsAttribute.array[index * 3 + 1] = GREEN[1]; // G
-            colorsAttribute.array[index * 3 + 2] = GREEN[2]; // B
+            window.vueApp[specifiedPointsMesh].geometry.getAttribute('color').array[index * 3] = GREEN[0]; // R
+            window.vueApp[specifiedPointsMesh].geometry.getAttribute('color').array[index * 3 + 1] = GREEN[1]; // G
+            window.vueApp[specifiedPointsMesh].geometry.getAttribute('color').array[index * 3 + 2] = GREEN[2]; // B
         });
 
         // gray indices represent visualization errors, this will reset original colors, since it has higher pripority
         visError.forEach(index => {
-            colorsAttribute.array[index * 3] = GRAY[0]; // R
-            colorsAttribute.array[index * 3 + 1] = GRAY[1]; // G
-            colorsAttribute.array[index * 3 + 2] = GRAY[2]; // B
+            window.vueApp[specifiedPointsMesh].geometry.getAttribute('color').array[index * 3] = GRAY[0]; // R
+            window.vueApp[specifiedPointsMesh].geometry.getAttribute('color').array[index * 3 + 1] = GRAY[1]; // G
+            window.vueApp[specifiedPointsMesh].geometry.getAttribute('color').array[index * 3 + 2] = GRAY[2]; // B
         });
 
-        colorsAttribute.needsUpdate = true; 
+        window.vueApp[specifiedPointsMesh].geometry.getAttribute('color').needsUpdate = true; 
+        indicesToChangeYellow = null
+        indicesToChangeBlue = null
+        indicesToChangeGreen = null
+        indicesAllHighlighted = null
+        visError = null
     }
 
     function updateColorSizeForBoldIndices(boldIndices) {
-        var sizesAttribute = window.vueApp[specifiedPointsMesh].geometry.getAttribute('size');
-        var colorsAttribute = window.vueApp[specifiedPointsMesh].geometry.getAttribute('color');
         // bold indices have color orange
         boldIndices.forEach(index => {
-            sizesAttribute.array[index] = HOVER_SIZE;
-            colorsAttribute.array[index * 3] = ORANGE[0]; // R
-            colorsAttribute.array[index * 3 + 1] = ORANGE[1]; // G
-            colorsAttribute.array[index * 3 + 2] = ORANGE[2]; // B
+            window.vueApp[specifiedPointsMesh].geometry.getAttribute('size').array[index] = HOVER_SIZE;
+            window.vueApp[specifiedPointsMesh].geometry.getAttribute('color').array[index * 3] = ORANGE[0]; // R
+            window.vueApp[specifiedPointsMesh].geometry.getAttribute('color').array[index * 3 + 1] = ORANGE[1]; // G
+            window.vueApp[specifiedPointsMesh].geometry.getAttribute('color').array[index * 3 + 2] = ORANGE[2]; // B
         });
-        sizesAttribute.needsUpdate = true; 
-        colorsAttribute.needsUpdate = true; 
+        window.vueApp[specifiedPointsMesh].geometry.getAttribute('size').needsUpdate = true; 
+        window.vueApp[specifiedPointsMesh].geometry.getAttribute('color').needsUpdate = true; 
         // show Label for bold indices
         var lens = boldIndices.length
         for (var i = 0; i < lens; i++) {
@@ -679,9 +660,36 @@ function drawCanvas(res,id, flag='ref') {
             // usually boldIndices has size 1
             pointPosition.fromBufferAttribute(window.vueApp[specifiedPointsMesh].geometry.attributes.position, boldIndices[i]);
             updateLabelPosition(flag, pointPosition, boldIndices[i], boldLable + i, true)
+            
         }
     }
 
+    function resetToOriginalColorSize() {
+        var specifiedSelectedIndex = makeSpecifiedVariableName('selectedIndex', flag)
+        var specifiedPointsMesh = makeSpecifiedVariableName('pointsMesh', flag)
+        var specifiedOriginalSettings = makeSpecifiedVariableName('originalSettings', flag)
+    
+    
+        // console.log("reset", window.vueApp[specifiedPointsMesh].geometry.getAttribute('size'))
+    
+        window.vueApp[specifiedPointsMesh].geometry.getAttribute('size').array.set(window.vueApp[specifiedOriginalSettings].originalSizes);
+        window.vueApp[specifiedPointsMesh].geometry.getAttribute('color').array.set(window.vueApp[specifiedOriginalSettings].originalColors);
+        // not reset selectedIndex
+        if ( window.vueApp[specifiedSelectedIndex]) {
+            window.vueApp[specifiedPointsMesh].geometry.getAttribute('size').array[window.vueApp[specifiedSelectedIndex]] = HOVER_SIZE
+        }
+    
+        // Mark as needing update
+        window.vueApp[specifiedPointsMesh].geometry.getAttribute('size').needsUpdate = true;
+        window.vueApp[specifiedPointsMesh].geometry.getAttribute('color').needsUpdate = true;
+    
+        // clear all bold labels
+        var lens = 2
+        for (var i = 0; i < lens; i++) {
+            updateFixedHoverLabel(null, null, null, flag, null, boldLable + i, false)
+        }
+    
+    }
     container.addEventListener('mousemove', onMouseMove, false);
 
 
@@ -778,6 +786,7 @@ function drawCanvas(res,id, flag='ref') {
     animate();
     window.vueApp.isCanvasLoading = false
 }
+
 
 window.onload = function() {
     let specifiedCurrHoverRef = makeSpecifiedVariableName('currHover', 'ref')

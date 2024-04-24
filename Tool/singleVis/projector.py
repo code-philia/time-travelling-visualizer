@@ -268,13 +268,13 @@ class TrustVisProjector(Projector):
         self.verbose = verbose
 
     def load(self, iteration):
-        file_path = os.path.join(self.content_path, "Model", "{}.pth".format(self.vis_model_name))
+        file_path = os.path.join(self.content_path, "Model", "Epoch_{}".format(iteration), "{}.pth".format(self.vis_model_name))
         save_model = torch.load(file_path, map_location="cpu")
         self.vis_model.load_state_dict(save_model["state_dict"])
         self.vis_model.to(self.DEVICE)
         self.vis_model.eval()
         if self.verbose>0:
-            print("Successfully load the TimeVis visualization model for iteration {}".format(iteration))
+            print("Successfully load the Trustvis visualization model for iteration {}".format(iteration))
 
 class PROCESSProjector(Projector):
     """
