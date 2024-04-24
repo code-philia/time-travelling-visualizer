@@ -571,3 +571,32 @@ function show_query_text() {
     resultContainer = document.getElementById("resultContainer");
     resultContainer.setAttribute("style", "display:block;")
 }
+
+function labelColor(){
+    const labels = window.vueApp.label_name_dict;
+    const colors = window.vueApp.color_list;
+
+    const tableBody = document.querySelector('#labelColor tbody');
+    tableBody.innerHTML = '';
+
+    Object.keys(labels).forEach((key, index) => {
+        const row = document.createElement('tr');
+
+        // 创建标签名单元格
+        const labelCell = document.createElement('td');
+        labelCell.textContent = labels[key];
+        row.appendChild(labelCell);
+
+        // 创建颜色单元格
+        const colorCell = document.createElement('td');
+        const colorDiv = document.createElement('div');
+        colorDiv.style.width = '30px';
+        colorDiv.style.height = '20px';
+        colorDiv.style.backgroundColor = `rgb(${colors[index]})`;
+        colorCell.appendChild(colorDiv);
+        row.appendChild(colorCell);
+
+        // 将行添加到表格中
+        tableBody.appendChild(row);
+    });
+}

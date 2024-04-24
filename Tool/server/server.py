@@ -304,13 +304,14 @@ def update_projection():
     EPOCH = int(iteration)
     
     embedding_2d, grid, decision_view, label_name_dict, label_color_list, label_list, max_iter, training_data_index, \
-    testing_data_index, eval_new, prediction_list, selected_points, properties, error_message_projection = update_epoch_projection(context, EPOCH, predicates, TaskType,indicates)
+    testing_data_index, eval_new, prediction_list, selected_points, properties, error_message_projection, color_list, confidence_list = update_epoch_projection(context, EPOCH, predicates, TaskType,indicates)
     end = time.time()
     print("label_colorlenUpdate", len(label_color_list))
     print("duration", end-start)
     # sys.path.remove(CONTENT_PATH)
     # add_line(API_result_path,['TT',username])
     grid = np.array(grid)
+    color_list = color_list.tolist()
     return make_response(jsonify({'result': embedding_2d, 
                                   'grid_index': grid.tolist(), 
                                   'grid_color': 'data:image/png;base64,' + decision_view,
@@ -324,7 +325,9 @@ def update_projection():
                                   'prediction_list': prediction_list,
                                   "selectedPoints":selected_points.tolist(),
                                   "properties":properties.tolist(),
-                                  "errorMessage": error_message_context + error_message_projection
+                                  "errorMessage": error_message_context + error_message_projection,
+                                  "color_list": color_list,
+                                  "confidence_list": confidence_list
                                   }), 200)
 
 app.route('/contrast/updateProjection', methods=["POST", "GET"])(update_projection)

@@ -216,6 +216,7 @@ def get_coloring(context, EPOCH, ColorType):
         color = color.astype(int)      
         label_color_list = color[labels].tolist()
         # print("alldata", all_data.shape, EPOCH)
+        color_list = color
        
     elif ColorType == "singleColoring":
         n_clusters = 20
@@ -241,11 +242,12 @@ def get_coloring(context, EPOCH, ColorType):
         label_color_list_test = [colors_rgb[label].tolist() for label in labels_kmeans_test]
         
         label_color_list = np.concatenate((label_color_list_train, label_color_list_test), axis=0).tolist()
+        color_list = colors_rgb
 
     else:
         return         
 
-    return label_color_list
+    return label_color_list, color_list
 
 def get_comparison_coloring(context_left, context_right, EPOCH_LEFT, EPOCH_RIGHT):
     train_data_left = context_left.train_representation_data(EPOCH_LEFT)
@@ -325,7 +327,7 @@ def update_epoch_projection(context, EPOCH, predicates, TaskType, indicates):
     start2 = time.time()
     print("midquestion1", start2-end)
     # coloring method    
-    label_color_list = get_coloring(context, EPOCH, "noColoring")
+    label_color_list, color_list = get_coloring(context, EPOCH, "noColoring")
     
 
     start1 =time.time()
@@ -335,6 +337,7 @@ def update_epoch_projection(context, EPOCH, predicates, TaskType, indicates):
     label_name_dict = dict(enumerate(CLASSES))
 
     prediction_list = []
+    confidence_list = []
     # print("all_data",all_data.shape)
     all_data = all_data.reshape(all_data.shape[0],all_data.shape[1])
     if (TaskType == 'Classification'):
@@ -347,10 +350,14 @@ def update_epoch_projection(context, EPOCH, predicates, TaskType, indicates):
             for prediction in predictions:
                 prediction_list.append(prediction)
         else:
-            prediction = context.strategy.data_provider.get_pred(EPOCH, all_data).argmax(1)
+            prediction_origin = context.strategy.data_provider.get_pred(EPOCH, all_data)
+            prediction = prediction_origin.argmax(1)
 
             for i in range(len(prediction)):
                 prediction_list.append(CLASSES[prediction[i]])
+                top_three_indices = np.argsort(prediction_origin[i])[-3:][::-1]
+                conf_list = [(label_name_dict[top_three_indices[j]], round(float(prediction_origin[i][top_three_indices[j]]), 2)) for j in range(len(top_three_indices))]
+                confidence_list.append(conf_list)
     else:
         for i in range(len(all_data)):
             prediction_list.append(0)
@@ -387,7 +394,7 @@ def update_epoch_projection(context, EPOCH, predicates, TaskType, indicates):
     print("midduration", start1-end)
     print("endduration", end1-start1)
     print("EMBEDDINGLEN", len(embedding_2d))
-    return embedding_2d.tolist(), grid, b_fig, label_name_dict, label_color_list, label_list, max_iter, training_data_index, testing_data_index, eval_new, prediction_list, selected_points, properties,error_message
+    return embedding_2d.tolist(), grid, b_fig, label_name_dict, label_color_list, label_list, max_iter, training_data_index, testing_data_index, eval_new, prediction_list, selected_points, properties,error_message, color_list, confidence_list
 
 def highlight_epoch_projection(context, EPOCH, predicates, TaskType,indicates):
     # TODO consider active learning setting

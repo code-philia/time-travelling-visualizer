@@ -43,10 +43,13 @@ function updateProjection(content_path, iteration, taskType) {
         window.vueApp.prediction_list = res.prediction_list
         window.vueApp.label_list = res.label_list
         window.vueApp.label_name_dict = res.label_name_dict
+        window.vueApp.color_list = res.color_list
         window.vueApp.evaluation = res.evaluation
         window.vueApp.currEpoch = iteration
         window.vueApp.test_index = res.testing_data
         window.vueApp.train_index = res.training_data
+        window.vueApp.confidence_list = res.confidence_list
+        labelColor();
     })
     .catch(error => {
         console.error('Error fetching data:', error);
@@ -143,6 +146,8 @@ function updateContraProjection(content_path, iteration, taskType, flag) {
         let specifiedPredictionlist = makeSpecifiedVariableName('prediction_list', flag)
         let specifiedLabelList = makeSpecifiedVariableName('label_list', flag)
         let specifiedLabelNameDict = makeSpecifiedVariableName('label_name_dict', flag)
+        let specifiedColorList = makeSpecifiedVariableName('color_list', flag)
+        let specifiedConfidenceList = makeSpecifiedVariableName('confidence_list', flag)
         let specifiedEvaluation = makeSpecifiedVariableName('evaluation', flag)
         let specifiedCurrEpoch = makeSpecifiedVariableName('currEpoch', flag)
         let specifiedTrainingIndex = makeSpecifiedVariableName('train_index', flag)
@@ -151,10 +156,14 @@ function updateContraProjection(content_path, iteration, taskType, flag) {
         window.vueApp[specifiedPredictionlist] = res.prediction_list
         window.vueApp[specifiedLabelList] = res.label_list
         window.vueApp[specifiedLabelNameDict] = res.label_name_dict
+        window.vueApp[specifiedColorList] = res.color_list
         window.vueApp[specifiedEvaluation] = res.evaluation
         window.vueApp[specifiedCurrEpoch] = iteration
         window.vueApp[specifiedTestingIndex] = res.testing_data
         window.vueApp[specifiedTrainingIndex] = res.training_data
+        window.vueApp[specifiedConfidenceList] = res.confidence_list
+        labelColorRef();
+        labelColorTar();
     })
     .catch(error => {
         console.error('Error fetching data:', error);
