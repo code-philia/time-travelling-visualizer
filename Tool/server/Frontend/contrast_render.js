@@ -802,3 +802,61 @@ function contrast_show_query_text() {
     resultContainer = document.getElementById("resultContainer");
     resultContainer.setAttribute("style", "display:block;")
 }
+
+function labelColorRef(){
+    const labels = window.vueApp.label_name_dictRef;
+    const colors = window.vueApp.color_listRef;
+
+    const tableBody = document.querySelector('#labelColorRef tbody');
+    tableBody.innerHTML = '';
+
+    Object.keys(labels).forEach((key, index) => {
+        const row = document.createElement('tr');
+
+        // 创建标签名单元格
+        const labelCell = document.createElement('td');
+        labelCell.textContent = labels[key];
+        row.appendChild(labelCell);
+
+        // 创建颜色单元格
+        const colorCell = document.createElement('td');
+        const colorDiv = document.createElement('div');
+        colorDiv.style.width = '30px';
+        colorDiv.style.height = '20px';
+        colorDiv.style.backgroundColor = `rgb(${colors[index]})`;
+        colorCell.appendChild(colorDiv);
+        row.appendChild(colorCell);
+
+        // 将行添加到表格中
+        tableBody.appendChild(row);
+    });
+}
+
+function labelColorTar(){
+    const labels = window.vueApp.label_name_dictTar;
+    const colors = window.vueApp.color_listTar;
+
+    const tableBody = document.querySelector('#labelColorTar tbody');
+    tableBody.innerHTML = '';
+
+    Object.keys(labels).forEach((key, index) => {
+        const row = document.createElement('tr');
+
+        // 创建标签名单元格
+        const labelCell = document.createElement('td');
+        labelCell.textContent = labels[key];
+        row.appendChild(labelCell);
+
+        // 创建颜色单元格
+        const colorCell = document.createElement('td');
+        const colorDiv = document.createElement('div');
+        colorDiv.style.width = '30px';
+        colorDiv.style.height = '20px';
+        colorDiv.style.backgroundColor = `rgb(${colors[index]})`;
+        colorCell.appendChild(colorDiv);
+        row.appendChild(colorCell);
+
+        // 将行添加到表格中
+        tableBody.appendChild(row);
+    });
+}

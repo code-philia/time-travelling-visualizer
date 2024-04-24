@@ -123,6 +123,18 @@
                     </tr>
                 </table>
                 <el-divider></el-divider>
+                <table id="labelColor">
+                    <thead>
+                        <tr>
+                            <th>Label</th>
+                            <th>Color</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                    </tbody>
+                </table>
+                <el-divider></el-divider>
             </div>
             <!-- <div class="mid_container">
                 <div id="container"></div>
@@ -217,6 +229,7 @@
             HoverIndex: {{lastHoveredIndex}}<br />
             Prediction: {{curr_pred}}<br />
             Label: {{curr_label}}<br />
+            Confidence: {{confidence_dict}}<br />
             <div v-if="dataType === 'Image' && lastHoveredIndex != null">
                 <img :src="imageSrc" alt="Image Description" height="100px" />
             </div>
@@ -244,8 +257,7 @@
                 lastHoveredIndex: null,
                 curIndex:null,
                 nnIndices: [],
-                // contentPath: '/home/yiming/cophi/projects/mtpnet/Text-code/NL-code-search-Adv/training_dynamic/code',
-                contentPath: '/home/yiming/cophi/training_dynamic/code_training_dynamic/saved_models/ruby_fine_tine_5',
+                contentPath: '/home/yiming/cophi/projects/time-travelling-visualizer/training_dynamic/case_study_mnist_backdoor',
                 customContentPath: '',
                 visMethod: 'Trustvis',
                 taskType: 'Classification',
@@ -259,6 +271,9 @@
                 curr_label: '',
                 label_list: [],
                 label_name_dict: {},
+                color_list: [],
+                confidence_list: [],
+                confidence_dict: [],
                 evaluation: { test_acc: 0, train_acc: 0 },
                 currEpoch: 1,
                 totalEpoch: null,
@@ -495,6 +510,9 @@
                 curr_label: '',
                 label_list: [],
                 label_name_dict: {},
+                color_list: [],
+                confidence_list: [],
+                confidence_dict: [],
                 evaluation: { test_acc: 0, train_acc: 0 },
                 currEpoch: 1,
                 totalEpoch: null,
@@ -588,7 +606,8 @@
                 immediate: true,
                 handler(newVal, oldVal) {
                     this.curr_pred = this.prediction_list[newVal];
-                    this.curr_label = this.label_name_dict[this.label_list[newVal]]
+                    this.curr_label = this.label_name_dict[this.label_list[newVal]];
+                    this.confidence_dict = this.confidence_list[newVal]
                 }
             },
 

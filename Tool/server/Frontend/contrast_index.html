@@ -107,6 +107,31 @@
                                 style="background-color: #571792; color: #fff; width: 100%; margin-top: 0px;"
                                 @click="update">Load
                                 Visualization Result</el-button>
+                            <el-divider></el-divider>
+                            <table id="labelColorRef">
+                                <thead>
+                                    <tr>
+                                        <th>Label Ref</th>
+                                        <th>Color Ref</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+            
+                                </tbody>
+                            </table>
+                            <el-divider></el-divider>
+                            <table id="labelColorTar">
+                                <thead>
+                                    <tr>
+                                        <th>Label Tar</th>
+                                        <th>Color Tar</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+            
+                                </tbody>
+                            </table>
+                            <el-divider></el-divider>
                         </el-tab-pane>
                         <el-tab-pane name="normalQuery" label="Normal Query">
                             Filter Index for Left Projection: 
@@ -303,6 +328,7 @@
             CurrHoverIndex: {{lastHoveredIndexRef}}<br />
             prediction: {{curr_predRef}}<br />
             label: {{curr_labelRef}}<br />
+            Confidence: {{confidence_dictRef}}<br />
 
             <div v-if="dataType === 'Image'">
                 <img :src="imageSrcRef" alt="Image Description" height="100px" />
@@ -317,6 +343,7 @@
             CurrHoverIndex: {{lastHoveredIndexTar}}<br />
             prediction: {{curr_predTar}}<br />
             label: {{curr_labelTar}}<br />
+            Confidence: {{confidence_dictTar}}<br />
 
             <div v-if="dataType === 'Image'">
                 <img :src="imageSrcTar" alt="Image Description" height="100px" />
@@ -368,7 +395,7 @@
                 curIndexTar:null,
                 nnIndices: [],
                 // contentPathRef: '/home/timeTravelling/guorui/git_space/TestFrontend/time-travelling-visualizer/Backdoor',
-                contentPathRef: '/home/yiming/cophi/training_dynamic/NL-code-search-Adv/TD/code',
+                contentPathRef: '/home/yiming/cophi/projects/time-travelling-visualizer/training_dynamic/case_study_mnist_backdoor',
                 contentPathTar: '/home/yiming/cophi/training_dynamic/NL-code-search-Adv/TD/nl',
                 customContentPath: '',
                 // contentPathTar: '/home/timeTravelling/guorui/git_space/TestFrontend/time-travelling-visualizer/Backdoor',
@@ -388,6 +415,12 @@
                 label_listTar: [],
                 label_name_dictRef: {},
                 label_name_dictTar: {},
+                color_listRef: [],
+                color_listTar: [],
+                confidence_listRef: [],
+                confidence_listTar: [],
+                confidence_dictRef: [],
+                confidence_dictTar: [],
                 evaluation: { test_acc: 0, train_acc: 0 },
                 currEpochRef: 1,
                 currEpochTar: 1,
@@ -1048,6 +1081,7 @@
                 handler(newVal, oldVal) {
                     this.curr_predRef = this.prediction_listRef[newVal];
                     this.curr_labelRef = this.label_name_dictRef[this.label_listRef[newVal]]
+                    this.confidence_dictRef = this.confidence_listRef[newVal]
                     if (newVal != null) {
                         getOriginalData(this.contentPathRef, newVal, this.dataType, 'ref', this.customContentPath)
                         const updatedQuery = {
@@ -1075,6 +1109,7 @@
                 handler(newVal, oldVal) {
                     this.curr_predTar = this.prediction_listTar[newVal];
                     this.curr_labelTar = this.label_name_dictTar[this.label_listTar[newVal]]
+                    this.confidence_dictTar = this.confidence_listTar[newVal]
                     if (newVal != null) {
                         getOriginalData(this.contentPathTar, newVal, this.dataType, 'tar', this.customContentPath)
                         const updatedQuery = {
