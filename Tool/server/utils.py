@@ -306,6 +306,7 @@ def update_epoch_projection(context, EPOCH, predicates, TaskType, indicates):
     
     embedding_2d = get_embedding(context, all_data, EPOCH)
     if len(indicates):
+        indicates = [i for i in indicates if i < len(embedding_2d)]
         embedding_2d = embedding_2d[indicates]
     print('all_data',all_data.shape,'embedding_2d',embedding_2d.shape)
     print('indicates', indicates)
@@ -328,7 +329,8 @@ def update_epoch_projection(context, EPOCH, predicates, TaskType, indicates):
     print("midquestion1", start2-end)
     # coloring method    
     label_color_list, color_list = get_coloring(context, EPOCH, "noColoring")
-    
+    if len(indicates):
+        label_color_list = [label_color_list[i] for i in indicates]
 
     start1 =time.time()
     print("midquestion2",start1-start2)
@@ -769,7 +771,10 @@ def getVisError(context, EPOCH, TaskType):
 
         inv_high_dim_data = context.strategy.projector.batch_inverse(EPOCH, embedding_2d)
         inv_high_pred = context.strategy.data_provider.get_pred(EPOCH, inv_high_dim_data).argmax(1)
-        highlightedPointIndices = np.where(high_pred != inv_high_pred)[0]
+        # highlightedPointIndices = np.where(high_pred != inv_high_pred)[0]
+        for index, (item1, item2) in enumerate(zip(inv_high_pred, high_pred)):
+            if item1 != item2:
+                highlightedPointIndices.append(index)
         # print(len(inv_high_dim_data))
         # print("invhighshape", inv_high_dim_data.shape)
         # print("embeddiffer", embed_difference)
@@ -780,16 +785,18 @@ def getVisError(context, EPOCH, TaskType):
         print(high_pred)
         print(inv_high_pred)
         print(np.where(high_pred != inv_high_pred))
+        print(highlightedPointIndices)
     elif (TaskType == 'Non-Classification'):
         inv_high_dim_data = context.strategy.projector.batch_inverse(EPOCH, embedding_2d)
         # todo, change train data to all data
         squared_distances = np.sum((all_data - inv_high_dim_data) ** 2, axis=1)
         squared_threshold = 1 ** 2
         highlightedPointIndices = np.where(squared_distances > squared_threshold)[0]
+        highlightedPointIndices = highlightedPointIndices.tolist()
     else:
         return
 
-    return highlightedPointIndices.tolist()
+    return highlightedPointIndices
 
 	
 def getContraVisChangeIndices(context_left,context_right, iterationLeft, iterationRight, method):

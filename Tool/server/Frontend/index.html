@@ -616,6 +616,9 @@
                 handler(newVal, oldVal) {
                     if (newVal) {
                         getHighlightedPoints('visError', '')
+                        setTimeout(() => {
+                            updateProjection(this.contentPath, this.currEpoch, this.taskType)
+                        }, 1000);
                     } else {
                         if (this.highlightAttributes.visualizationError) {
                             this.highlightAttributes.visualizationError.clear()
@@ -630,6 +633,9 @@
                     console.log("newVal", newVal, this.currEpoch,  this.totalEpoch)
                     if (newVal && this.currEpoch < this.totalEpoch) {
                         getPredictionFlipIndices('')
+                        setTimeout(() => {
+                            updateProjection(this.contentPath, this.currEpoch, this.taskType)
+                        }, 1000);
                     } else {
                         console.log("else branch")
                         this.predictionFlipIndices = null

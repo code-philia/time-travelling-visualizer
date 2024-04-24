@@ -108,6 +108,7 @@ function updateProjection(content_path, iteration, taskType) {
 function updateContraProjection(content_path, iteration, taskType, flag) {
     console.log('contrast',content_path,iteration)
     let specifiedVisMethod = makeSpecifiedVariableName('visMethod', flag)
+    let specifiedFilterIndex = makeSpecifiedVariableName('filter_index', flag)
     fetch(`${window.location.href}/updateProjection`, {
         method: 'POST',
         body: JSON.stringify({
@@ -119,7 +120,7 @@ function updateContraProjection(content_path, iteration, taskType, flag) {
             "content_path": content_path,
             "predicates": {},
             "TaskType": taskType,
-            "selectedPoints":window.vueApp.filter_index
+            "selectedPoints":window.vueApp[specifiedFilterIndex]
         }),
         headers: headers,
         mode: 'cors'
@@ -389,12 +390,15 @@ function getHighlightedPoints(task, flag) {
         return response.json();
       })
       .then(data => {
-          var specifiedHighlightAttributes = makeSpecifiedVariableName('highlightAttributes', flag)
-          if (window.vueApp[specifiedHighlightAttributes].visualizationError) {
-            window.vueApp[specifiedHighlightAttributes].visualizationError.clear()
-          }
-          window.vueApp[specifiedHighlightAttributes].visualizationError = new Set(data.visualizationError)
-          console.log("viserror",  window.vueApp[specifiedHighlightAttributes].visualizationError)
+          // var specifiedHighlightAttributes = makeSpecifiedVariableName('highlightAttributes', flag)
+          // if (window.vueApp[specifiedHighlightAttributes].visualizationError) {
+          //   window.vueApp[specifiedHighlightAttributes].visualizationError.clear()
+          // }
+          // window.vueApp[specifiedHighlightAttributes].visualizationError = new Set(data.visualizationError)
+          // console.log("viserror",  window.vueApp[specifiedHighlightAttributes].visualizationError)
+          var indicesString = data.visualizationError.join(',');
+          var specifiedFilterIndex = makeSpecifiedVariableName('filter_index', flag)
+          window.vueApp[specifiedFilterIndex] = indicesString
       })
       .catch(error => {
         console.error('Error during highlightCriticalChange fetch:', error);
@@ -430,12 +434,15 @@ function getPredictionFlipIndices(flag) {
     return response.json();
   })
   .then(data => {
-      var specifiedPredictionFlipIndices = makeSpecifiedVariableName('predictionFlipIndices', flag)
-      if (window.vueApp[specifiedPredictionFlipIndices]) {
-        window.vueApp[specifiedPredictionFlipIndices].clear()
-      }
-      window.vueApp[specifiedPredictionFlipIndices] = new Set(data.predChangeIndices)
-      console.log("predChanges",   window.vueApp[specifiedPredictionFlipIndices])
+      // var specifiedPredictionFlipIndices = makeSpecifiedVariableName('predictionFlipIndices', flag)
+      // if (window.vueApp[specifiedPredictionFlipIndices]) {
+      //   window.vueApp[specifiedPredictionFlipIndices].clear()
+      // }
+      // window.vueApp[specifiedPredictionFlipIndices] = new Set(data.predChangeIndices)
+      // console.log("predChanges",   window.vueApp[specifiedPredictionFlipIndices])
+      var indicesString = data.predChangeIndices.join(',');
+      var specifiedFilterIndex = makeSpecifiedVariableName('filter_index', flag)
+      window.vueApp[specifiedFilterIndex] = indicesString
   })
   .catch(error => {
     console.error('Error during highlightCriticalChange fetch:', error);
