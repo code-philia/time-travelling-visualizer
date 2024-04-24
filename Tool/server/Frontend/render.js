@@ -246,7 +246,6 @@ var previousMousePosition = {
     // raycaster.params.Points.threshold = threshold;
 
     function updateLastHoverIndexSize(lastHoveredIndex,  selectedIndex, visualizationError, nnIndices) {
-    function updateLastHoverIndexSize(lastHoveredIndex,  selectedIndex, visualizationError, nnIndices) {
         if (lastHoveredIndex != null) {
             var isNormalSize = true;
             if (selectedIndex != null) {
