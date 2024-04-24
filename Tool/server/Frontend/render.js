@@ -40,16 +40,17 @@ var previousMousePosition = {
     // create new Three.js scene
     window.vueApp.scene = new THREE.Scene();
     // get the boundary of the scene
-    var x_min = res.grid_index[0]
-    var y_min = res.grid_index[1]
-    var x_max = res.grid_index[2]
-    var y_max = res.grid_index[3]
+    window.vueApp.sceneBoundary.x_min = res.grid_index[0]
+    window.vueApp.sceneBoundary.y_min =res.grid_index[1]
+    window.vueApp.sceneBoundary.x_max = res.grid_index[2]
+    window.vueApp.sceneBoundary.y_max =res.grid_index[3]
+
 
     const cameraBounds = {
-        minX: x_min,
-        maxX: x_max,
-        minY: y_min,
-        maxY: y_max
+        minX: window.vueApp.sceneBoundary.x_min,
+        maxX: window.vueApp.sceneBoundary.x_max,
+        minY: window.vueApp.sceneBoundary.y_min,
+        maxY: window.vueApp.sceneBoundary.y_max
     };
     var aspect = 1
     const rect = container.getBoundingClientRect();
@@ -59,12 +60,19 @@ var previousMousePosition = {
     // based on screen size set the camera view 
     var aspectRatio = rect.width / rect.height;
 
-    window.vueApp.camera = new THREE.OrthographicCamera(x_min * aspect, x_max * aspect, y_max, y_min, 1, 1000);
-    window.vueApp.camera.position.set(0, 0, 100);
-    window.vueApp.camera.left = x_min * aspectRatio;
-    window.vueApp.camera.right = x_max * aspectRatio;
-    window.vueApp.camera.top = y_max;
-    window.vueApp.camera.bottom = y_min;
+    window.vueApp.camera = new THREE.OrthographicCamera(
+        window.vueApp.sceneBoundary.x_min * aspect,
+         window.vueApp.sceneBoundary.x_max * aspect,
+          window.vueApp.sceneBoundary.y_max,
+          window.vueApp.sceneBoundary.y_min,
+          1, 1000);
+
+    // set current camera position, and sceneBoundary is used to restore the camera position later.
+    window.vueApp.camera.position.set(0, 0, 100); // This will set 3d position of camera, it is important to ensure camera's angle of view will not distort 
+    window.vueApp.camera.left = window.vueApp.sceneBoundary.x_min * aspectRatio;
+    window.vueApp.camera.right =  window.vueApp.sceneBoundary.x_max * aspectRatio;
+    window.vueApp.camera.top = window.vueApp.sceneBoundary.y_max;
+    window.vueApp.camera.bottom = window.vueApp.sceneBoundary.y_min;
     window.vueApp.camera.fov = MAX_FOV
 
     window.vueApp.camera.updateProjectionMatrix();
@@ -95,10 +103,10 @@ var previousMousePosition = {
 
     container.appendChild(window.vueApp.renderer.domElement);
     // calculate the size and the center position
-    var width = x_max - x_min;
-    var height = y_max - y_min;
-    var centerX = x_min + width / 2;
-    var centerY = y_min + height / 2;
+    var width = window.vueApp.sceneBoundary.x_max - window.vueApp.sceneBoundary.x_min;
+    var height = window.vueApp.sceneBoundary.y_max - window.vueApp.sceneBoundary.y_min;
+    var centerX = window.vueApp.sceneBoundary.x_min+ width / 2;
+    var centerY = window.vueApp.sceneBoundary.y_min + height / 2;
 
     let canvas = document.createElement('canvas');
     canvas.width = 128;
@@ -127,7 +135,7 @@ var previousMousePosition = {
 
     dataPoints.push()
     var color = res.label_color_list
-
+    // console.log("originalColorsDraw",color )
     // var geometry = new THREE.BufferGeometry();
     var position = [];
     var colors = [];
@@ -140,13 +148,13 @@ var previousMousePosition = {
         sizes.push(NORMAL_SIZE);
         alphas.push(1.0)
     });
+    console.log("datapoints", dataPoints.length)
 
     var geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(position, 3));
     geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
     geometry.setAttribute('size', new THREE.Float32BufferAttribute(sizes, 1));
     geometry.setAttribute('alpha', new THREE.Float32BufferAttribute(alphas, 1));
-
 
     // reset data points
     position = []
@@ -238,6 +246,7 @@ var previousMousePosition = {
     // raycaster.params.Points.threshold = threshold;
 
     function updateLastHoverIndexSize(lastHoveredIndex,  selectedIndex, visualizationError, nnIndices) {
+    function updateLastHoverIndexSize(lastHoveredIndex,  selectedIndex, visualizationError, nnIndices) {
         if (lastHoveredIndex != null) {
             var isNormalSize = true;
             if (selectedIndex != null) {
@@ -279,6 +288,7 @@ var previousMousePosition = {
         let specifiedSelectedIndex = makeSpecifiedVariableName('selectedIndex', '')
 
         if (intersects.length > 0 && checkVisibility(window.vueApp.pointsMesh.geometry.attributes.alpha.array, intersects[0].index)) {
+
             // 获取最接近的交点
             var intersect = intersects[0];
 
@@ -321,10 +331,12 @@ var previousMousePosition = {
     var specifiedShowTesting = makeSpecifiedVariableName('showTesting', '')
     var specifiedShowTraining = makeSpecifiedVariableName('showTraining', '')
     var specifiedPredictionFlipIndices = makeSpecifiedVariableName('predictionFlipIndices', '')
-  
+    // var specifiedOriginalSettings = makeSpecifiedVariableName('originalSettings', '')
+
     window.vueApp.$watch(specifiedShowTesting, updateCurrentDisplay);
     window.vueApp.$watch(specifiedShowTraining, updateCurrentDisplay);
     window.vueApp.$watch(specifiedPredictionFlipIndices, updateCurrentDisplay);  
+    // window.vueApp.$watch(specifiedOriginalSettings, resetToOriginalColorSize, { deep: true });
 
     function updateCurrentDisplay() {
         console.log("currDisplay")
@@ -334,6 +346,14 @@ var previousMousePosition = {
         window.vueApp.pointsMesh.geometry.attributes.alpha.array = updateShowingIndices(window.vueApp.pointsMesh.geometry.attributes.alpha.array, window.vueApp[specifiedShowTraining], window.vueApp[specifiedTrainIndex], window.vueApp[specifiedPredictionFlipIndices])
         window.vueApp.pointsMesh.geometry.attributes.alpha.array = updateShowingIndices(window.vueApp.pointsMesh.geometry.attributes.alpha.array, window.vueApp[specifiedShowTesting], window.vueApp[specifiedTestIndex], window.vueApp[specifiedPredictionFlipIndices])
 
+        // update position z index to allow currDisplay indices show above 
+        for (let i = 0; i < window.vueApp.pointsMesh.geometry.attributes.alpha.array.length; i++) {
+            var zIndex = i * 3 + 2; 
+            window.vueApp.pointsMesh.geometry.attributes.position.array[zIndex] = window.vueApp.pointsMesh.geometry.attributes.alpha.array[i] === 1 ? 0 : -1;
+        }
+        
+  
+        window.vueApp.pointsMesh.geometry.attributes.position.needsUpdate = true;
         window.vueApp.pointsMesh.geometry.attributes.alpha.needsUpdate = true;
     }
   
@@ -354,45 +374,42 @@ var previousMousePosition = {
             visualizationError = Array.from(visualizationError)
         }
         resetToOriginalColorSize()
+
         updateColorSizeForHighlights(visualizationError)
+        visualizationError = []
+    }
+
+    function updateColorSizeForHighlights(visualizationError) {
+        visualizationError.forEach(index => {
+            window.vueApp.pointsMesh.geometry.getAttribute('size').array[index] = HOVER_SIZE;
+        });
+        window.vueApp.pointsMesh.geometry.getAttribute('size').needsUpdate = true; 
+
+        // yellow indices are triggered by right selected index
+        visualizationError.forEach(index => {
+            window.vueApp.pointsMesh.geometry.getAttribute('color').array[index * 3] = GRAY[0]; // R
+            window.vueApp.pointsMesh.geometry.getAttribute('color').array[index * 3 + 1] = GRAY[1]; // G
+            window.vueApp.pointsMesh.geometry.getAttribute('color').array[index * 3 + 2] = GRAY[2]; // B
+        });
+
+        window.vueApp.pointsMesh.geometry.getAttribute('color').needsUpdate = true; 
     }
 
     function resetToOriginalColorSize() {
         var specifiedSelectedIndex = makeSpecifiedVariableName('selectedIndex', '')
-        var sizesAttribute = window.vueApp.pointsMesh.geometry.getAttribute('size');
-        var colorsAttribute = window.vueApp.pointsMesh.geometry.getAttribute('color');
-        sizesAttribute.array.set(window.vueApp.originalSettings.originalSizes);
-        colorsAttribute.array.set(window.vueApp.originalSettings.originalColors);
+        window.vueApp.pointsMesh.geometry.getAttribute('size').array.set(window.vueApp.originalSettings.originalSizes);
+        window.vueApp.pointsMesh.geometry.getAttribute('color').array.set(window.vueApp.originalSettings.originalColors);
         // not reset selectedIndex
         if ( window.vueApp[specifiedSelectedIndex]) {
-            sizesAttribute.array[window.vueApp[specifiedSelectedIndex]] = HOVER_SIZE
+            window.vueApp.pointsMesh.geometry.getAttribute('size').array[window.vueApp[specifiedSelectedIndex]] = HOVER_SIZE
         }
-
+    
         // Mark as needing update
-        sizesAttribute.needsUpdate = true;
-        colorsAttribute.needsUpdate = true;
-    }
-
-    function updateColorSizeForHighlights(visualizationError) {
+        window.vueApp.pointsMesh.geometry.getAttribute('size').needsUpdate = true;
+        window.vueApp.pointsMesh.geometry.getAttribute('color').needsUpdate = true;
+        // console.log("resetColor", window.vueApp.originalSettings.originalColors)
         
-        var sizesAttribute = window.vueApp.pointsMesh.geometry.getAttribute('size');
-        visualizationError.forEach(index => {
-            sizesAttribute.array[index] = HOVER_SIZE;
-        });
-        sizesAttribute.needsUpdate = true; 
-
-        // yellow indices are triggered by right selected index
-        var colorsAttribute = window.vueApp.pointsMesh.geometry.getAttribute('color');
-        visualizationError.forEach(index => {
-            colorsAttribute.array[index * 3] = GRAY[0]; // R
-            colorsAttribute.array[index * 3 + 1] = GRAY[1]; // G
-            colorsAttribute.array[index * 3 + 2] = GRAY[2]; // B
-        });
-
-        colorsAttribute.needsUpdate = true; 
     }
-
-
 
     container.addEventListener('mousemove', onMouseMove, false);
 
@@ -511,6 +528,8 @@ var previousMousePosition = {
     window.vueApp.isCanvasLoading = false
 }
 
+
+
 window.onload = function() {
     const currHover = document.getElementById('currHover');
     makeDraggable(currHover, currHover);
@@ -526,6 +545,7 @@ function updateSizes() {
     window.vueApp.nnIndices = []
     Object.values(window.vueApp.query_result).forEach(item => {
         if (typeof item === 'object' && item !== null) {
+            window.vueApp.nnIndices.push(item.id);
             window.vueApp.nnIndices.push(item.id);
         }
     });

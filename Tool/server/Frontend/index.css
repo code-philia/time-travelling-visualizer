@@ -11,14 +11,15 @@ body {
 
 .content_container {
     display: flex;
+    height: 85vh;
+    flex-direction: row; 
 }
 
 #subject_model_info_panel {
-    width: 260px;
+    width: 30vh;
     padding: 20px;
     background-color: rgb(244, 244, 244);
-    height: 80vh; /* Adjust based on content, could be fixed or auto */
-    overflow-y: auto; /* Allows scrolling within the panel if content overflows */
+    overflow-y: auto; 
 }
 #opration_bar{
     background-color: rgb(244, 244, 244);
@@ -27,18 +28,18 @@ body {
 }
 
 #advanced_panel {
-    width: 300px;
+    width: 30vh;
     padding: 20px;
     background-color: rgb(244, 244, 244);
 }
-.mid_container{
-    flex: 1
-}
+
 
 #container {
     width: 100%;
-    height: 80vh;
+    height: 100%;
     margin: 10px;
+    display: flex;
+    flex: 1;
 }
 
 .header {
@@ -134,8 +135,8 @@ body {
 }
 .advanced-query-row{
     display:flex;
-    height: 54px;
-    line-height: 54px;
+    height: 10vh;
+    line-height: 10vh;
 }
 .switch-container {
     position: relative;
@@ -177,3 +178,9 @@ body {
     border-color: #7d2dc8;
     background-color: #7d2dc8;
 }
+
+#resultContainer {
+    max-height: 20vh; 
+    overflow-y: auto;  
+  }
+  
