@@ -404,6 +404,8 @@
                 colorType: 'noColoring',
                 showColorSetting: false,
                 filter_index:'',
+                filter_indexRef:'',
+                filter_indexTar:'',
                 query_result: {},
                 prediction_listRef: [],
                 prediction_listTar: [],
@@ -1137,6 +1139,9 @@
                 handler(newVal, oldVal) {
                     if (newVal) {
                         getHighlightedPoints('visError', 'ref')
+                        setTimeout(() => {
+                            updateContraProjection(this.contentPathRef, this.currEpochRef, this.taskType, 'ref')
+                        }, 1000);
                     } else {
                         this.highlightAttributesRef.visualizationError = null
                     }
@@ -1147,6 +1152,9 @@
                 handler(newVal, oldVal) {
                     if (newVal) {
                         getHighlightedPoints('visError', 'tar')
+                        setTimeout(() => {
+                            updateContraProjection(this.contentPathRef, this.currEpochRef, this.taskType, 'tar')
+                        }, 1000);
                     } else {
                         this.highlightAttributesTar.visualizationError = null
                     }
@@ -1160,6 +1168,9 @@
                     if (newVal && this.currEpochRef < this.totalEpochRef) {
                         console.log("called")
                         getPredictionFlipIndices('ref')
+                        setTimeout(() => {
+                            updateContraProjection(this.contentPathRef, this.currEpochRef, this.taskType, 'ref')
+                        }, 1000);
                     } else {
                         this.predictionFlipIndicesRef = null
                     }
@@ -1170,6 +1181,9 @@
                     // prediction flip check for next epoch only
                     if (newVal && this.currEpochTar < this.totalEpochTar) {
                         getPredictionFlipIndices('tar')
+                        setTimeout(() => {
+                            updateContraProjection(this.contentPathRef, this.currEpochRef, this.taskType, 'tar')
+                        }, 1000);
                     } else {
                         this.predictionFlipIndicesTar = null
                     }
