@@ -96,6 +96,11 @@
                     <el-input v-model="visMethod"></el-input>
                 </div>
                 <el-divider></el-divider>
+                <div id="customContentPathInput">
+                    Custom Content Path:
+                    <el-input v-model="customContentPath"></el-input>
+                </div>
+                <el-divider></el-divider>
                 <el-button id="showVisResBtn"
                     style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;" @click="update">Load
                     Visualization Result</el-button>
@@ -116,6 +121,18 @@
                         <td>{{evaluation.train_acc}}</td>
                         <td>{{evaluation.test_acc}}</td>
                     </tr>
+                </table>
+                <el-divider></el-divider>
+                <table id="labelColor">
+                    <thead>
+                        <tr>
+                            <th>Label</th>
+                            <th>Color</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                    </tbody>
                 </table>
                 <el-divider></el-divider>
             </div>
@@ -212,11 +229,12 @@
             HoverIndex: {{lastHoveredIndex}}<br />
             Prediction: {{curr_pred}}<br />
             Label: {{curr_label}}<br />
+            Confidence: {{confidence_dict}}<br />
             <div v-if="dataType === 'Image' && lastHoveredIndex != null">
                 <img :src="imageSrc" alt="Image Description" height="100px" />
             </div>
             <div v-else>
-                <div style="overflow-y: auto;">
+                <div style="overflow-y: auto; white-space: pre;">
                     <p>{{ textContent }}</p>
                 </div>
             </div>
@@ -238,7 +256,9 @@
             return {
                 lastHoveredIndex: null,
                 curIndex:null,
-                contentPath: '/home/timeTravelling/guorui/git_space/DataDemo/case_study_mnist_backdoor',
+                nnIndices: [],
+                contentPath: '/home/yiming/cophi/projects/time-travelling-visualizer/training_dynamic/case_study_mnist_backdoor',
+                customContentPath: '',
                 visMethod: 'Trustvis',
                 taskType: 'Classification',
                 colorType: 'noColoring',
@@ -251,6 +271,9 @@
                 curr_label: '',
                 label_list: [],
                 label_name_dict: {},
+                color_list: [],
+                confidence_list: [],
+                confidence_dict: [],
                 evaluation: { test_acc: 0, train_acc: 0 },
                 currEpoch: 1,
                 totalEpoch: null,
@@ -444,7 +467,12 @@
             update() {
                 this.isCanvasLoading = true
                 console.log("taskType", this.taskType)
-                updateProjection(this.contentPath, this.currEpoch, this.taskType)
+                if (this.customContentPath != '') {
+                    updateCustomProjection(this.contentPath, this.customContentPath, this.currEpoch, this.taskType)
+                }
+                else{
+                    updateProjection(this.contentPath, this.currEpoch, this.taskType)
+                }
                 fetchTimelineData(this.contentPath, "")
 
             },
@@ -469,7 +497,8 @@
             },
             getInitialState() {
                 return {lastHoveredIndex: null,
-                contentPath: '/home/timeTravelling/guorui/git_space/DataDemo/case_study_mnist_backdoor',
+                contentPath: '/home/yifan/dataset/case_study_mnist_backdoor',
+                customContentPath: '',
                 visMethod: 'Trustvis',
                 taskType: 'Classification',
                 colorType: 'noColoring',
@@ -481,6 +510,9 @@
                 curr_label: '',
                 label_list: [],
                 label_name_dict: {},
+                color_list: [],
+                confidence_list: [],
+                confidence_dict: [],
                 evaluation: { test_acc: 0, train_acc: 0 },
                 currEpoch: 1,
                 totalEpoch: null,
@@ -557,7 +589,7 @@
                 immediate: true,
                 handler(newVal, oldVal) {
                     if (newVal != null) {
-                        getOriginalData(this.contentPath, newVal, this.dataType, "")
+                        getOriginalData(this.contentPath, newVal, this.dataType, "", this.customContentPath)
                         const updatedQuery = {
                             ...this.query,
                             key: 'index',
@@ -574,7 +606,8 @@
                 immediate: true,
                 handler(newVal, oldVal) {
                     this.curr_pred = this.prediction_list[newVal];
-                    this.curr_label = this.label_name_dict[this.label_list[newVal]]
+                    this.curr_label = this.label_name_dict[this.label_list[newVal]];
+                    this.confidence_dict = this.confidence_list[newVal]
                 }
             },
 
@@ -583,6 +616,9 @@
                 handler(newVal, oldVal) {
                     if (newVal) {
                         getHighlightedPoints('visError', '')
+                        setTimeout(() => {
+                            updateProjection(this.contentPath, this.currEpoch, this.taskType)
+                        }, 1000);
                     } else {
                         if (this.highlightAttributes.visualizationError) {
                             this.highlightAttributes.visualizationError.clear()
@@ -597,6 +633,9 @@
                     console.log("newVal", newVal, this.currEpoch,  this.totalEpoch)
                     if (newVal && this.currEpoch < this.totalEpoch) {
                         getPredictionFlipIndices('')
+                        setTimeout(() => {
+                            updateProjection(this.contentPath, this.currEpoch, this.taskType)
+                        }, 1000);
                     } else {
                         console.log("else branch")
                         this.predictionFlipIndices = null

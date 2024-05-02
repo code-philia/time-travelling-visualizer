@@ -11,7 +11,7 @@ import gc
 import shutil
 sys.path.append('..')
 sys.path.append('.')
-from utils import get_comparison_coloring, get_coloring, getVisError, update_epoch_projection, initialize_backend, add_line, getConfChangeIndices, getContraVisChangeIndices, getContraVisChangeIndicesSingle,getCriticalChangeIndices
+from utils import get_comparison_coloring, get_coloring, getVisError, update_epoch_projection, initialize_backend, add_line, getConfChangeIndices, getContraVisChangeIndices, getContraVisChangeIndicesSingle,getCriticalChangeIndices, update_custom_epoch_projection, highlight_epoch_projection
 
 import time
 # flask for API server
@@ -304,13 +304,14 @@ def update_projection():
     EPOCH = int(iteration)
     
     embedding_2d, grid, decision_view, label_name_dict, label_color_list, label_list, max_iter, training_data_index, \
-    testing_data_index, eval_new, prediction_list, selected_points, properties, error_message_projection = update_epoch_projection(context, EPOCH, predicates, TaskType,indicates)
+    testing_data_index, eval_new, prediction_list, selected_points, properties, error_message_projection, color_list, confidence_list = update_epoch_projection(context, EPOCH, predicates, TaskType,indicates)
     end = time.time()
     print("label_colorlenUpdate", len(label_color_list))
     print("duration", end-start)
     # sys.path.remove(CONTENT_PATH)
     # add_line(API_result_path,['TT',username])
     grid = np.array(grid)
+    color_list = color_list.tolist()
     return make_response(jsonify({'result': embedding_2d, 
                                   'grid_index': grid.tolist(), 
                                   'grid_color': 'data:image/png;base64,' + decision_view,
@@ -324,7 +325,9 @@ def update_projection():
                                   'prediction_list': prediction_list,
                                   "selectedPoints":selected_points.tolist(),
                                   "properties":properties.tolist(),
-                                  "errorMessage": error_message_context + error_message_projection
+                                  "errorMessage": error_message_context + error_message_projection,
+                                  "color_list": color_list,
+                                  "confidence_list": confidence_list
                                   }), 200)
 
 app.route('/contrast/updateProjection', methods=["POST", "GET"])(update_projection)
@@ -373,6 +376,113 @@ def get_comparison_colors():
     return make_response(jsonify({
                                   'label_color_list': label_color_list,        
                                   "errorMessage": error_message_context
+                                  }), 200)
+
+@app.route('/updateCustomProjection', methods=["POST", "GET"])
+@cross_origin()
+def update_custom_projection():
+    res = request.get_json()
+    CONTENT_PATH = os.path.normpath(res['path'])
+    CUSTOM_PATH = os.path.normpath(res['cus_path'])
+    VIS_METHOD = res['vis_method']
+    SETTING = res["setting"]
+    print(CONTENT_PATH,VIS_METHOD,SETTING)
+    start = time.time()
+    iteration = int(res['iteration'])
+    predicates = res["predicates"]
+    # username = res['username']
+    TaskType = res['TaskType']
+    s = res['selectedPoints']
+    if s == '':
+        indicates = []
+    else:
+        try:
+            indicates = [int(item) for item in s.split(",") if item.isdigit()]
+        except ValueError:
+            # 处理或记录错误
+            print("Some items in the string cannot be converted to integers.")
+            indicates = []  # 或者根据你的需要进行其他处理
+        
+    # sys.path.append(CONTENT_PATH)
+    context, error_message_context = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
+    # use the true one
+    # EPOCH = (iteration-1)*context.strategy.data_provider.p + context.strategy.data_provider.s
+    EPOCH = int(iteration)
+    
+    embedding_2d, grid, decision_view, label_name_dict, label_color_list, label_list, max_iter, training_data_index, \
+    testing_data_index, eval_new, prediction_list, selected_points, properties, error_message_projection = update_custom_epoch_projection(context, EPOCH, predicates, TaskType,indicates, CUSTOM_PATH)
+    end = time.time()
+    print("duration", end-start)
+    # sys.path.remove(CONTENT_PATH)
+    # add_line(API_result_path,['TT',username])
+    grid = np.array(grid)
+    return make_response(jsonify({'result': embedding_2d, 
+                                  'grid_index': grid.tolist(), 
+                                  'grid_color': 'data:image/png;base64,' + decision_view,
+                                  'label_name_dict':label_name_dict,
+                                  'label_color_list': label_color_list, 
+                                  'label_list': label_list,
+                                  'maximum_iteration': max_iter, 
+                                  'training_data': training_data_index,
+                                  'testing_data': testing_data_index, 
+                                  'evaluation': eval_new,
+                                  'prediction_list': prediction_list,
+                                  "selectedPoints":selected_points.tolist(),
+                                  "properties":properties.tolist(),
+                                  "errorMessage": error_message_context + error_message_projection
+                                  }), 200)
+
+@app.route('/highlightContraProjection', methods=["POST", "GET"])
+@cross_origin()
+def highlight_projection():
+    res = request.get_json()
+    CONTENT_PATH = os.path.normpath(res['path'])
+    VIS_METHOD = res['vis_method']
+    SETTING = res["setting"]
+    print(CONTENT_PATH,VIS_METHOD,SETTING)
+    start = time.time()
+    iteration = int(res['iteration'])
+    predicates = res["predicates"]
+    # username = res['username']
+    TaskType = res['TaskType']
+    s = res['selectedPoints']
+    if s == '':
+        indicates = []
+    else:
+        try:
+            indicates = [int(item) for item in s.split(",") if item.isdigit()]
+        except ValueError:
+            # 处理或记录错误
+            print("Some items in the string cannot be converted to integers.")
+            indicates = []  # 或者根据你的需要进行其他处理
+        
+    # sys.path.append(CONTENT_PATH)
+    context, error_message_context = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
+    # use the true one
+    # EPOCH = (iteration-1)*context.strategy.data_provider.p + context.strategy.data_provider.s
+    EPOCH = int(iteration)
+    
+    embedding_2d, grid, decision_view, label_name_dict, label_color_list, label_list, max_iter, training_data_index, \
+    testing_data_index, eval_new, prediction_list, selected_points, properties, error_message_projection = highlight_epoch_projection(context, EPOCH, predicates, TaskType,indicates)
+    end = time.time()
+    print("duration", end-start)
+    # sys.path.remove(CONTENT_PATH)
+    # add_line(API_result_path,['TT',username])
+    grid = np.array(grid)
+    return make_response(jsonify({'result': embedding_2d, 
+                                  'grid_index': grid.tolist(), 
+                                  'grid_color': 'data:image/png;base64,' + decision_view,
+                                  'label_name_dict':label_name_dict,
+                                  'label_color_list': label_color_list, 
+                                  'label_list': label_list,
+                                  'maximum_iteration': max_iter, 
+                                  'training_data': training_data_index,
+                                  'testing_data': testing_data_index, 
+                                  'evaluation': eval_new,
+                                  'prediction_list': prediction_list,
+                                  "selectedPoints":selected_points.tolist(),
+                                  "properties":properties.tolist(),
+                                  "errorMessage": error_message_context + error_message_projection
                                   }), 200)
 
 @app.route('/query', methods=["POST"])
@@ -426,7 +536,18 @@ def sprite_image():
     CONTENT_PATH = os.path.normpath(path)
     print('index', index)
     idx = int(index)
-    pic_save_dir_path = os.path.join(CONTENT_PATH, "sprites", "{}.png".format(idx))
+    abnorm_idx_list = []
+    abnorm_idx_path = os.path.join(CONTENT_PATH, "Model", "new_index.json")
+    if os.path.isfile(abnorm_idx_path):
+        with open(abnorm_idx_path, "r") as f:
+            idxs = json.load(f)
+
+        for index in idxs:
+            abnorm_idx_list.append(index)
+
+        pic_save_dir_path = os.path.join(CONTENT_PATH, "sprites", "{}.png".format(abnorm_idx_list[idx]))
+    else:
+        pic_save_dir_path = os.path.join(CONTENT_PATH, "sprites", "{}.png".format(idx))
     img_stream = ''
     with open(pic_save_dir_path, 'rb') as img_f:
         img_stream = img_f.read()
@@ -442,11 +563,23 @@ def sprite_text():
     path = request.args.get("path")
     index = request.args.get("index")
     iteration = request.args.get("iteration")
+    cus_path = request.args.get("cus_path")
+    # filter_indices = request.args.get("filter_index")
     
     CONTENT_PATH = os.path.normpath(path)
     idx = int(index)
     start = time.time()
-    text_save_dir_path = os.path.join(CONTENT_PATH, f"Model/Epoch_{iteration}/labels",  "text_{}.txt".format(idx))
+
+    # if filter_indices !='':
+    #     filter_index = filter_indices.split(',')
+    #     idx = filter_index[int(index)]
+    # else:
+    #     idx = int(index)
+    
+    if cus_path != '':
+        text_save_dir_path = os.path.join(CONTENT_PATH, f"Model/Epoch_{iteration}/custom_labels",  "text_{}.txt".format(idx))
+    else:
+        text_save_dir_path = os.path.join(CONTENT_PATH, f"Model/Epoch_{iteration}/labels",  "text_{}.txt".format(idx))
     sprite_texts = ''
     if os.path.exists(text_save_dir_path):
         with open(text_save_dir_path, 'r') as text_f:
@@ -942,6 +1075,8 @@ def index_search():
 def contrast_index_search():
     global code_entities
     global code_embeddings_collection
+    global nl_entities
+    global nl_embeddings_collection
     res = request.get_json()
 
     query = res["query"]
@@ -990,6 +1125,126 @@ def contrast_index_search():
 
     print(hit_list)
     return make_response(jsonify({'result': hit_list}), 200)
+
+@app.route('/queryMissSearch', methods=["POST", "GET"])
+@cross_origin()
+def query_miss_search():
+    global code_entities
+    global code_embeddings_collection
+    global nl_entities
+    global nl_embeddings_collection
+    res = request.get_json()
+
+    query = res["query"]
+
+    search_params = {
+        "metric_type": "L2",
+        "params": {"nprobe": 10},
+    }
+
+    DEFAULT_LIMIT = 5
+    k_num = int(query["k"]) if query.get("k") is not None else DEFAULT_LIMIT
+    mis_query_indices = ''
+
+    refpath = res["refpath"]
+    refiteration = res["refiteration"]
+    # tarpath = res["tarpath"]
+    # tariteration = res["tariteration"]
+
+    ref_model_path = os.path.join(refpath, "Model")
+    ref_iter_path = os.path.join(ref_model_path, 'Epoch_{}'.format(refiteration))
+    ref_mis_query_path = os.path.join(ref_iter_path, 'custom_pred.json')
+    print("ref_mis_query_path", ref_mis_query_path)
+    if os.path.exists(ref_mis_query_path):
+        with open(ref_mis_query_path, 'r') as file:
+            ref_mis_query_list = json.load(file)
+
+        mis_query_indices = ','.join(str(index) for index, item in enumerate(ref_mis_query_list) if int(item) != 0)
+    else:
+        print("len", nl_embeddings_collection.num_entities)
+        for i in range(nl_embeddings_collection.num_entities):
+            miss_query_flag = True
+            vectors_to_search = [nl_entities[-1][i]]
+            search_result = code_embeddings_collection.search(vectors_to_search, "code_embeddings", search_params, limit=k_num)
+
+            for hits in search_result:
+                for hit in hits:
+                    if int(hit.id) == i:
+                        miss_query_flag = False
+                        break
+            if miss_query_flag: 
+                if mis_query_indices == '':
+                    mis_query_indices += str(i)
+                else:
+                    mis_query_indices += ',' + str(i)
+            if i % 1000 == 0:
+                print(i, mis_query_indices)
+
+    return make_response(jsonify({'result': mis_query_indices}), 200)
+
+
+@app.route('/addNewLbel', methods=["POST", "GET"])
+@cross_origin()
+def add_new_label():
+    res = request.get_json()
+
+    labeling = res["labeling"]
+    index = int(labeling["value"])
+    label = labeling["label"]
+
+    refpath = res["refpath"]
+    refiteration = res["refiteration"]
+    tarpath = res["tarpath"]
+    tariteration = res["tariteration"]
+
+    ref_label_text_path = os.path.join(refpath, 'Model', 'Epoch_{}'.format(refiteration), 'labels')
+    tar_label_text_path = os.path.join(tarpath, 'Model', 'Epoch_{}'.format(tariteration), 'labels')
+
+    ref_label_path = os.path.join(refpath, 'python', 'train.jsonl')
+    # tar_label_path = os.path.join(tarpath, 'python', 'train.jsonl')
+    # print("tar_label_path", tar_label_path)
+    output_file_path = os.path.join(refpath, 'python', 'new_train.jsonl')
+
+    # if os.path.exists(ref_label_path) and os.path.exists(tar_label_path):
+    if os.path.exists(ref_label_path):
+        with open(ref_label_path, 'r') as input_file:
+            lines = input_file.readlines()
+
+        target_item = json.loads(lines[index])
+        original_code = target_item['code']
+        original_code_tokens = target_item['code_tokens']
+        original_docstring = target_item['docstring']
+        original_docstring_tokens = target_item['docstring_tokens']
+
+        target_item['code'] = f"{label}\n{original_code}"
+        original_code_tokens.insert(0, label)
+        target_item['code_tokens'] = original_code_tokens
+
+        target_item['docstring'] = f"{label}\n{original_docstring}"
+        original_docstring_tokens.insert(0, label)
+        target_item['docstring_tokens'] = original_docstring_tokens
+
+        modified_line = json.dumps(target_item)
+        lines[index] = modified_line + '\n'
+
+        with open(output_file_path, 'w') as file:
+            file.writelines(lines)
+
+        ref_output_file = os.path.join(ref_label_text_path, 'text_{}.txt'.format(index))
+        tar_output_file = os.path.join(tar_label_text_path, 'text_{}.txt'.format(index))
+        print("ref_output_file", ref_output_file)
+        print("tar_output_file", tar_output_file)
+        
+        with open(ref_output_file, "w") as output:
+            output.write(target_item['code'])
+
+        with open(tar_output_file, "w") as output:
+            output.write(target_item['docstring'])
+
+        success = True
+    else:
+        success = False
+    return make_response(jsonify({'success': success}), 200)
 
 def check_port_inuse(port, host):
     try:

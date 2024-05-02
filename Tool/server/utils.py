@@ -26,6 +26,7 @@ def initialize_strategy(CONTENT_PATH, VIS_METHOD, SETTING, dense=False):
     # VIS_METHOD = "DVI" 
     config = conf["DVI"]
     error_message = ""
+    strategy = Trustvis(CONTENT_PATH, config)
     try:
         if SETTING == "normal" or SETTING == "abnormal":
             if VIS_METHOD == "Trustvis":
@@ -102,6 +103,13 @@ def get_embedding(context, all_data, EPOCH):
     else:
         embedding_2d = context.strategy.projector.batch_project(EPOCH, all_data)
         np.save(embedding_path, embedding_2d)
+    return embedding_2d
+
+
+def get_custom_embedding(context, all_data, EPOCH):
+
+    embedding_2d = context.strategy.projector.batch_project(EPOCH, all_data)
+
     return embedding_2d
 
 def get_embedding_path(context, EPOCH):
@@ -208,6 +216,7 @@ def get_coloring(context, EPOCH, ColorType):
         color = color.astype(int)      
         label_color_list = color[labels].tolist()
         # print("alldata", all_data.shape, EPOCH)
+        color_list = color
        
     elif ColorType == "singleColoring":
         n_clusters = 20
@@ -233,11 +242,12 @@ def get_coloring(context, EPOCH, ColorType):
         label_color_list_test = [colors_rgb[label].tolist() for label in labels_kmeans_test]
         
         label_color_list = np.concatenate((label_color_list_train, label_color_list_test), axis=0).tolist()
+        color_list = colors_rgb
 
     else:
         return         
 
-    return label_color_list
+    return label_color_list, color_list
 
 def get_comparison_coloring(context_left, context_right, EPOCH_LEFT, EPOCH_RIGHT):
     train_data_left = context_left.train_representation_data(EPOCH_LEFT)
@@ -296,6 +306,7 @@ def update_epoch_projection(context, EPOCH, predicates, TaskType, indicates):
     
     embedding_2d = get_embedding(context, all_data, EPOCH)
     if len(indicates):
+        indicates = [i for i in indicates if i < len(embedding_2d)]
         embedding_2d = embedding_2d[indicates]
     print('all_data',all_data.shape,'embedding_2d',embedding_2d.shape)
     print('indicates', indicates)
@@ -317,8 +328,9 @@ def update_epoch_projection(context, EPOCH, predicates, TaskType, indicates):
     start2 = time.time()
     print("midquestion1", start2-end)
     # coloring method    
-    label_color_list = get_coloring(context, EPOCH, "noColoring")
-    
+    label_color_list, color_list = get_coloring(context, EPOCH, "noColoring")
+    if len(indicates):
+        label_color_list = [label_color_list[i] for i in indicates]
 
     start1 =time.time()
     print("midquestion2",start1-start2)
@@ -327,6 +339,7 @@ def update_epoch_projection(context, EPOCH, predicates, TaskType, indicates):
     label_name_dict = dict(enumerate(CLASSES))
 
     prediction_list = []
+    confidence_list = []
     # print("all_data",all_data.shape)
     all_data = all_data.reshape(all_data.shape[0],all_data.shape[1])
     if (TaskType == 'Classification'):
@@ -339,10 +352,17 @@ def update_epoch_projection(context, EPOCH, predicates, TaskType, indicates):
             for prediction in predictions:
                 prediction_list.append(prediction)
         else:
-            prediction = context.strategy.data_provider.get_pred(EPOCH, all_data).argmax(1)
+            prediction_origin = context.strategy.data_provider.get_pred(EPOCH, all_data)
+            prediction = prediction_origin.argmax(1)
 
             for i in range(len(prediction)):
                 prediction_list.append(CLASSES[prediction[i]])
+                top_three_indices = np.argsort(prediction_origin[i])[-3:][::-1]
+                conf_list = [(label_name_dict[top_three_indices[j]], round(float(prediction_origin[i][top_three_indices[j]]), 2)) for j in range(len(top_three_indices))]
+                confidence_list.append(conf_list)
+    else:
+        for i in range(len(all_data)):
+            prediction_list.append(0)
     
     EPOCH_START = context.strategy.config["EPOCH_START"]
     EPOCH_PERIOD = context.strategy.config["EPOCH_PERIOD"]
@@ -376,6 +396,364 @@ def update_epoch_projection(context, EPOCH, predicates, TaskType, indicates):
     print("midduration", start1-end)
     print("endduration", end1-start1)
     print("EMBEDDINGLEN", len(embedding_2d))
+    return embedding_2d.tolist(), grid, b_fig, label_name_dict, label_color_list, label_list, max_iter, training_data_index, testing_data_index, eval_new, prediction_list, selected_points, properties,error_message, color_list, confidence_list
+
+def highlight_epoch_projection(context, EPOCH, predicates, TaskType,indicates):
+    # TODO consider active learning setting
+    error_message = ""
+    start = time.time()
+    all_data = get_train_test_data(context, EPOCH)
+    
+    labels = get_train_test_label(context, EPOCH, all_data)
+    if len(indicates):
+        all_data = all_data[indicates]
+        labels = labels[indicates]
+        
+    
+    # print('labels',labels)
+    prediction_list = []
+    # print("all_data",all_data.shape)
+    all_data = all_data.reshape(all_data.shape[0],all_data.shape[1])
+    if (TaskType == 'Classification'):
+        # check if there is stored prediction and load
+        prediction_path = os.path.join(context.strategy.data_provider.checkpoint_path(EPOCH), "custom_pred.json")
+        if os.path.isfile(prediction_path):
+            with open(prediction_path, "r") as f:
+                predictions = json.load(f)
+
+            for prediction in predictions:
+                prediction_list.append(prediction)
+                
+        else:
+            prediction = context.strategy.data_provider.get_pred(EPOCH, all_data).argmax(1)
+
+            for i in range(len(prediction)):
+                prediction_list.append(CLASSES[prediction[i]])
+    else:
+        for i in range(len(all_data)):
+            prediction_list.append(0)
+    n = len(prediction_list)
+    labels[:n] = prediction_list
+    error_message = check_labels_match_alldata(labels, all_data, error_message)
+    
+    embedding_2d = get_embedding(context, all_data, EPOCH)
+    if len(indicates):
+        embedding_2d = embedding_2d[indicates]
+    print('all_data',all_data.shape,'embedding_2d',embedding_2d.shape)
+    error_message = check_embedding_match_alldata(embedding_2d, all_data, error_message)
+    
+    training_data_number = context.strategy.config["TRAINING"]["train_num"]
+    testing_data_number = context.strategy.config["TRAINING"]["test_num"]
+    training_data_index = list(range(training_data_number))
+    testing_data_index = list(range(training_data_number, training_data_number + testing_data_number))
+    error_message = check_config_match_embedding(training_data_number, testing_data_number, embedding_2d, error_message)
+    end = time.time()
+    print("beforeduataion", end- start)
+    # return the image of background
+    # read cache if exists
+   
+    grid, b_fig = get_grid_bfig(context, EPOCH,embedding_2d)
+    # TODO fix its structure
+    eval_new = get_eval_new(context, EPOCH)
+    start2 = time.time()
+    print("midquestion1", start2-end)
+    if TaskType == "Classification":
+        print('here',labels)
+        color = context.strategy.vis.get_standard_classes_color() * 255
+        start3 = time.time()
+        print(start3-start2)
+        color = color.astype(int)
+
+        
+        label_color_list = color[labels].tolist()
+       
+    else:
+        n_clusters = 10
+        kmeans = KMeans(n_clusters=n_clusters, random_state=0).fit(all_data)
+        labels_kmeans = kmeans.labels_
+        colormap = plt.cm.get_cmap('tab10', n_clusters)
+    
+        colors_rgb = (colormap(np.arange(n_clusters))[:, :3] * 255).astype(int)  
+        label_color_list = [colors_rgb[label].tolist() for label in labels_kmeans]
+    
+
+    start1 =time.time()
+    print("midquestion2",start1-start2)
+    CLASSES = np.array(context.strategy.config["CLASSES"])
+    label_list = CLASSES[labels].tolist()
+    label_name_dict = dict(enumerate(CLASSES))
+    
+    EPOCH_START = context.strategy.config["EPOCH_START"]
+    EPOCH_PERIOD = context.strategy.config["EPOCH_PERIOD"]
+    EPOCH_END = context.strategy.config["EPOCH_END"]
+    max_iter = (EPOCH_END - EPOCH_START) // EPOCH_PERIOD + 1
+    
+    selected_points = get_selected_points(context, predicates, EPOCH, training_data_number, testing_data_number)
+    
+    properties = get_properties(context, training_data_number, testing_data_number, training_data_index, EPOCH)
+
+    end1 = time.time()
+    print("midduration", start1-end)
+    print("endduration", end1-start1)
+    print("EMBEDDINGLEN", len(embedding_2d))
+    return embedding_2d.tolist(), grid, b_fig, label_name_dict, label_color_list, label_list, max_iter, training_data_index, testing_data_index, eval_new, prediction_list, selected_points, properties,error_message
+
+
+from transformers import (WEIGHTS_NAME, AdamW, get_linear_schedule_with_warmup,
+                          BertConfig, BertForMaskedLM, BertTokenizer,
+                          GPT2Config, GPT2LMHeadModel, GPT2Tokenizer,
+                          OpenAIGPTConfig, OpenAIGPTLMHeadModel, OpenAIGPTTokenizer,
+                          RobertaConfig, RobertaModel, RobertaTokenizer,
+                          DistilBertConfig, DistilBertForMaskedLM, DistilBertTokenizer)
+
+MODEL_CLASSES = {
+    'gpt2': (GPT2Config, GPT2LMHeadModel, GPT2Tokenizer),
+    'openai-gpt': (OpenAIGPTConfig, OpenAIGPTLMHeadModel, OpenAIGPTTokenizer),
+    'bert': (BertConfig, BertForMaskedLM, BertTokenizer),
+    'roberta': (RobertaConfig, RobertaModel, RobertaTokenizer),
+    'distilbert': (DistilBertConfig, DistilBertForMaskedLM, DistilBertTokenizer)
+}
+
+import logging
+import torch
+from torch.utils.data import DataLoader, Dataset, SequentialSampler, RandomSampler, TensorDataset
+from torch.utils.data.distributed import DistributedSampler
+from tqdm import tqdm, trange
+logger = logging.getLogger(__name__)
+
+class InputFeatures(object):
+    """A single training/test features for a example."""
+
+    def __init__(self,
+                 code_tokens,
+                 code_ids,
+                 nl_tokens,
+                 nl_ids,
+                 url,
+                 idx,
+
+                 ):
+        self.code_tokens = code_tokens
+        self.code_ids = code_ids
+        self.nl_tokens = nl_tokens
+        self.nl_ids = nl_ids
+        self.url = url
+        self.idx = idx
+
+def convert_examples_to_features(js, tokenizer, block_size):
+    # code
+    if 'code_tokens' in js:
+        code = ' '.join(js['code_tokens'])
+    else:
+        code = ' '.join(js['function_tokens'])
+    code_tokens = tokenizer.tokenize(code)[:block_size - 2]
+    code_tokens = [tokenizer.cls_token] + code_tokens + [tokenizer.sep_token]
+    code_ids = tokenizer.convert_tokens_to_ids(code_tokens)
+    padding_length = block_size - len(code_ids)
+    code_ids += [tokenizer.pad_token_id] * padding_length
+
+    nl = ' '.join(js['docstring_tokens'])
+    nl_tokens = tokenizer.tokenize(nl)[:block_size - 2]
+    nl_tokens = [tokenizer.cls_token] + nl_tokens + [tokenizer.sep_token]
+    nl_ids = tokenizer.convert_tokens_to_ids(nl_tokens)
+    padding_length = block_size - len(nl_ids)
+    nl_ids += [tokenizer.pad_token_id] * padding_length
+
+    return InputFeatures(code_tokens, code_ids, nl_tokens, nl_ids, js['url'], js['idx'])
+
+class TextDataset(Dataset):
+    def __init__(self, tokenizer, block_size, file_path=None):
+        self.examples = []
+        data = []
+        with open(file_path) as f:
+            for i, line in enumerate(f):
+                # if i>200:
+                #     break
+                line = line.strip()
+                js = json.loads(line)
+                data.append(js)
+        for js in data:
+            self.examples.append(convert_examples_to_features(js, tokenizer, block_size))
+        if 'train' in file_path:
+            for idx, example in enumerate(self.examples[:1]):
+                logger.info("*** Example ***")
+                logger.info("idx: {}".format(idx))
+                logger.info("code_tokens: {}".format([x.replace('\u0120', '_') for x in example.code_tokens]))
+                logger.info("code_ids: {}".format(' '.join(map(str, example.code_ids))))
+                logger.info("nl_tokens: {}".format([x.replace('\u0120', '_') for x in example.nl_tokens]))
+                logger.info("nl_ids: {}".format(' '.join(map(str, example.nl_ids))))
+
+    def __len__(self):
+        return len(self.examples)
+
+    def __getitem__(self, i):
+        return (torch.tensor(self.examples[i].code_ids), torch.tensor(self.examples[i].nl_ids))
+
+def update_custom_epoch_projection(context, EPOCH, predicates, TaskType,indicates, CUSTOM_PATH):
+    GPU_ID = 1
+    DEVICE = torch.device("cuda:{}".format(GPU_ID) if torch.cuda.is_available() else "cpu")
+    print("device", DEVICE)
+
+    # args
+    model_type = "roberta" #    parser.add_argument("--model_type", default="roberta", type=str, help="The model architecture to be fine-tuned.")
+    config_name = "/home/yiming/cophi/projects/codebert-base"    # parser.add_argument("--config_name", default="", type=str, help="Optional pretrained config name or path if not the same as model_name_or_path")
+    model_name_or_path =  None   # parser.add_argument("--model_name_or_path", default=None, type=str, help="The model checkpoint for weights initialization.")
+    cache_dir =  "/home/yiming/cophi/projects/codebert-base"   # parser.add_argument("--cache_dir", default="/home/yiming/cophi/projects/codebert-base", type=str, help="Optional directory to store the pre-trained models downloaded from s3 (instread of the default one)")
+    tokenizer_name = "/home/yiming/cophi/projects/codebert-base"    # parser.add_argument("--tokenizer_name", default="/home/yiming/cophi/projects/codebert-base", type=str, help="Optional pretrained tokenizer name or path if not the same as model_name_or_path")
+    do_lower_case = True   # parser.add_argument("--do_lower_case", action='store_true', help="Set this flag if you are using an uncased model.")
+    config_class, model_class, tokenizer_class = MODEL_CLASSES[model_type]
+    block_size = 256
+    train_batch_size = 32 
+    output_dir = "/home/yiming/cophi/projects/mtpnet/Text-code/NL-code-search-Adv/python/model"    
+    train_batch_size = 32
+    local_rank = -1
+    
+    
+    config = config_class.from_pretrained(config_name if config_name else model_name_or_path,
+                                            cache_dir=cache_dir if cache_dir else None)
+    config.num_labels = 1
+    tokenizer = tokenizer_class.from_pretrained(tokenizer_name,
+                                                do_lower_case=do_lower_case,
+                                                cache_dir=cache_dir if cache_dir else None)
+    if block_size <= 0:
+        block_size = tokenizer.max_len_single_sentence  # Our input block size will be the max possible for the model
+    block_size = min(block_size, tokenizer.max_len_single_sentence)
+    if model_name_or_path:
+        model = model_class.from_pretrained(model_name_or_path,
+                                            config=config,
+                                            cache_dir=cache_dir if cache_dir else None)
+    else:
+        model = model_class(config)
+
+    from Model.Model import Model
+    model = Model(model, config, tokenizer)
+
+    train_dataset = TextDataset(tokenizer, block_size, CUSTOM_PATH)
+    """ Train the model """
+    per_gpu_train_batch_size = train_batch_size
+    train_sampler = RandomSampler(train_dataset) if local_rank == -1 else DistributedSampler(train_dataset)
+
+    if local_rank != -1:
+        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank],
+                                                            output_device=local_rank,
+                                                            find_unused_parameters=True)
+
+    output_dir = os.path.join(output_dir, 'Epoch_{}'.format(EPOCH))
+    model_to_save = model.module if hasattr(model, 'module') else model
+    ckpt_output_path = os.path.join(output_dir, 'subject_model.pth')
+    # model.load_state_dict(torch.load(ckpt_output_path, map_location=torch.device('cpu')),strict=False) 
+    model.load_state_dict(torch.load(ckpt_output_path),strict=False) 
+    model.to(DEVICE)
+    logger.info("Saving training feature")
+    train_dataloader_bs1 = DataLoader(train_dataset, sampler=train_sampler, batch_size=train_batch_size,num_workers=4,pin_memory=True)
+    code_feature, nl_feature = [], []
+    for batch in tqdm(train_dataloader_bs1):
+        code_inputs = batch[0].to(DEVICE)
+        nl_inputs = batch[1].to(DEVICE)
+        model.eval()
+        with torch.no_grad():
+            lm_loss, code_vec, nl_vec = model(code_inputs, nl_inputs)
+            # cf, nf = model.feature(code_inputs=code_inputs, nl_inputs=nl_inputs)
+            code_feature.append(code_vec.cpu().detach().numpy())
+            nl_feature.append(nl_vec.cpu().detach().numpy())
+    code_feature = np.concatenate(code_feature, 0)
+    nl_feature = np.concatenate(nl_feature, 0)
+    print(code_feature.shape, nl_feature.shape)
+
+    # TODO consider active learning setting
+    error_message = ""
+    start = time.time()
+    all_data = code_feature
+    labels = []
+    prediction_list = []
+    for i in range(len(all_data)):
+        labels.append(0)
+        prediction_list.append(0)
+    if len(indicates):
+        all_data = all_data[indicates]
+        labels = labels[indicates]
+        
+    
+    # print('labels',labels)
+    error_message = check_labels_match_alldata(labels, all_data, error_message)
+    
+    embedding_2d = get_custom_embedding(context, all_data, EPOCH)
+    if len(indicates):
+        embedding_2d = embedding_2d[indicates]
+    print('all_data',all_data.shape,'embedding_2d',embedding_2d.shape)
+    error_message = check_embedding_match_alldata(embedding_2d, all_data, error_message)
+    
+    training_data_number = context.strategy.config["TRAINING"]["train_num"]
+    testing_data_number = context.strategy.config["TRAINING"]["test_num"]
+    training_data_index = list(range(training_data_number))
+    testing_data_index = list(range(training_data_number, training_data_number + testing_data_number))
+
+    end = time.time()
+    print("beforeduataion", end- start)
+   
+    grid, b_fig = get_grid_bfig(context, EPOCH,embedding_2d)
+    # TODO fix its structure
+    eval_new = get_eval_new(context, EPOCH)
+    start2 = time.time()
+    print("midquestion1", start2-end)
+    if TaskType == "Classification":
+        print('here',labels)
+        color = context.strategy.vis.get_standard_classes_color() * 255
+        start3 = time.time()
+        print(start3-start2)
+        color = color.astype(int)
+
+        
+        label_color_list = color[labels].tolist()
+       
+    else:
+        n_clusters = 10
+        kmeans = KMeans(n_clusters=n_clusters, random_state=0).fit(all_data)
+        labels_kmeans = kmeans.labels_
+        colormap = plt.cm.get_cmap('tab10', n_clusters)
+    
+        colors_rgb = (colormap(np.arange(n_clusters))[:, :3] * 255).astype(int)  
+        label_color_list = [colors_rgb[label].tolist() for label in labels_kmeans]
+    
+
+    start1 =time.time()
+    print("midquestion2",start1-start2)
+    CLASSES = np.array(context.strategy.config["CLASSES"])
+    label_list = CLASSES[labels].tolist()
+    label_name_dict = dict(enumerate(CLASSES))
+
+    # prediction_list = []
+    # # print("all_data",all_data.shape)
+    # all_data = all_data.reshape(all_data.shape[0],all_data.shape[1])
+    # if (TaskType == 'Classification'):
+    #     # check if there is stored prediction and load
+    #     prediction_path = os.path.join(context.strategy.data_provider.checkpoint_path(EPOCH), "modified_ranks.json")
+    #     if os.path.isfile(prediction_path):
+    #         with open(prediction_path, "r") as f:
+    #             predictions = json.load(f)
+
+    #         for prediction in predictions:
+    #             prediction_list.append(prediction)
+    #     else:
+    #         prediction = context.strategy.data_provider.get_pred(EPOCH, all_data).argmax(1)
+
+    #         for i in range(len(prediction)):
+    #             prediction_list.append(CLASSES[prediction[i]])
+    
+    EPOCH_START = context.strategy.config["EPOCH_START"]
+    EPOCH_PERIOD = context.strategy.config["EPOCH_PERIOD"]
+    EPOCH_END = context.strategy.config["EPOCH_END"]
+    max_iter = (EPOCH_END - EPOCH_START) // EPOCH_PERIOD + 1
+
+    selected_points = get_selected_points(context, predicates, EPOCH, training_data_number, testing_data_number)
+    
+    properties = get_properties(context, training_data_number, testing_data_number, training_data_index, EPOCH)
+
+
+    end1 = time.time()
+    print("midduration", start1-end)
+    print("endduration", end1-start1)
+    print("EMBEDDINGLEN", len(embedding_2d))
     return embedding_2d.tolist(), grid, b_fig, label_name_dict, label_color_list, label_list, max_iter, training_data_index, testing_data_index, eval_new, prediction_list, selected_points, properties,error_message
 
 
@@ -393,7 +771,10 @@ def getVisError(context, EPOCH, TaskType):
 
         inv_high_dim_data = context.strategy.projector.batch_inverse(EPOCH, embedding_2d)
         inv_high_pred = context.strategy.data_provider.get_pred(EPOCH, inv_high_dim_data).argmax(1)
-        highlightedPointIndices = np.where(high_pred != inv_high_pred)[0]
+        # highlightedPointIndices = np.where(high_pred != inv_high_pred)[0]
+        for index, (item1, item2) in enumerate(zip(inv_high_pred, high_pred)):
+            if item1 != item2:
+                highlightedPointIndices.append(index)
         # print(len(inv_high_dim_data))
         # print("invhighshape", inv_high_dim_data.shape)
         # print("embeddiffer", embed_difference)
@@ -404,16 +785,18 @@ def getVisError(context, EPOCH, TaskType):
         print(high_pred)
         print(inv_high_pred)
         print(np.where(high_pred != inv_high_pred))
+        print(highlightedPointIndices)
     elif (TaskType == 'Non-Classification'):
         inv_high_dim_data = context.strategy.projector.batch_inverse(EPOCH, embedding_2d)
         # todo, change train data to all data
         squared_distances = np.sum((all_data - inv_high_dim_data) ** 2, axis=1)
         squared_threshold = 1 ** 2
         highlightedPointIndices = np.where(squared_distances > squared_threshold)[0]
+        highlightedPointIndices = highlightedPointIndices.tolist()
     else:
         return
 
-    return highlightedPointIndices.tolist()
+    return highlightedPointIndices
 
 	
 def getContraVisChangeIndices(context_left,context_right, iterationLeft, iterationRight, method):
