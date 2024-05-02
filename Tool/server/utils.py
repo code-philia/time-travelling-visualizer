@@ -358,7 +358,7 @@ def update_epoch_projection(context, EPOCH, predicates, TaskType, indicates):
             for i in range(len(prediction)):
                 prediction_list.append(CLASSES[prediction[i]])
                 top_three_indices = np.argsort(prediction_origin[i])[-3:][::-1]
-                conf_list = [(label_name_dict[top_three_indices[j]], round(float(prediction_origin[i][top_three_indices[j]]), 2)) for j in range(len(top_three_indices))]
+                conf_list = [(label_name_dict[top_three_indices[j]], round(float(prediction_origin[i][top_three_indices[j]]), 1)) for j in range(len(top_three_indices))]
                 confidence_list.append(conf_list)
     else:
         for i in range(len(all_data)):
@@ -499,20 +499,20 @@ def highlight_epoch_projection(context, EPOCH, predicates, TaskType,indicates):
     return embedding_2d.tolist(), grid, b_fig, label_name_dict, label_color_list, label_list, max_iter, training_data_index, testing_data_index, eval_new, prediction_list, selected_points, properties,error_message
 
 
-from transformers import (WEIGHTS_NAME, AdamW, get_linear_schedule_with_warmup,
-                          BertConfig, BertForMaskedLM, BertTokenizer,
-                          GPT2Config, GPT2LMHeadModel, GPT2Tokenizer,
-                          OpenAIGPTConfig, OpenAIGPTLMHeadModel, OpenAIGPTTokenizer,
-                          RobertaConfig, RobertaModel, RobertaTokenizer,
-                          DistilBertConfig, DistilBertForMaskedLM, DistilBertTokenizer)
+# from transformers import (WEIGHTS_NAME, AdamW, get_linear_schedule_with_warmup,
+#                           BertConfig, BertForMaskedLM, BertTokenizer,
+#                           GPT2Config, GPT2LMHeadModel, GPT2Tokenizer,
+#                           OpenAIGPTConfig, OpenAIGPTLMHeadModel, OpenAIGPTTokenizer,
+#                           RobertaConfig, RobertaModel, RobertaTokenizer,
+#                           DistilBertConfig, DistilBertForMaskedLM, DistilBertTokenizer)
 
-MODEL_CLASSES = {
-    'gpt2': (GPT2Config, GPT2LMHeadModel, GPT2Tokenizer),
-    'openai-gpt': (OpenAIGPTConfig, OpenAIGPTLMHeadModel, OpenAIGPTTokenizer),
-    'bert': (BertConfig, BertForMaskedLM, BertTokenizer),
-    'roberta': (RobertaConfig, RobertaModel, RobertaTokenizer),
-    'distilbert': (DistilBertConfig, DistilBertForMaskedLM, DistilBertTokenizer)
-}
+# MODEL_CLASSES = {
+#     'gpt2': (GPT2Config, GPT2LMHeadModel, GPT2Tokenizer),
+#     'openai-gpt': (OpenAIGPTConfig, OpenAIGPTLMHeadModel, OpenAIGPTTokenizer),
+#     'bert': (BertConfig, BertForMaskedLM, BertTokenizer),
+#     'roberta': (RobertaConfig, RobertaModel, RobertaTokenizer),
+#     'distilbert': (DistilBertConfig, DistilBertForMaskedLM, DistilBertTokenizer)
+# }
 
 import logging
 import torch
