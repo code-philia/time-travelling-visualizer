@@ -14,6 +14,10 @@ data(input path)
 │   │   model.py
 │   │
 │   └───Epoch_1
+│       │   └───labels (for non-classification task)
+|       │       │ text_0.txt
+|       │       │ text_1.txt
+|       │       │ ...
 │       │   index.json
 │       │   subject_model.pth
 |       |   (train_data.npy)     [after preprocess]
