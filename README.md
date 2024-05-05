@@ -100,7 +100,7 @@ $ (visualizer) pip install docker-compose==1.29.2
 ## Training Process Dataset (the training process of a model)
 
 
-You can train your classification model and save the training dynamics. For information on the structure of the training dynamics directory and the config file format, refer to the the [dataset's readme document](./training_dynamic/README.md).
+You can train your classification model and save the training dynamics. For information on the structure of the training dynamics directory and the config file format, refer to the the [dataset's readme document](./training_dynamic/README.md). For details about training visualization model on training dynamics, refer to the [Vis Model's readme document](./Vis/README.md)
 
 🍃 Training dynamics examples are also available on [Hugging Face](https://huggingface.co/datasets/code-philia/mtpnet) for you to download. 
 
