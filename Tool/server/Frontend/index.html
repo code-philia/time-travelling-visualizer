@@ -95,11 +95,11 @@
                     Visualization Method:
                     <el-input v-model="visMethod"></el-input>
                 </div>
-                <el-divider></el-divider>
+                <!-- <el-divider></el-divider>
                 <div id="customContentPathInput">
                     Custom Content Path:
                     <el-input v-model="customContentPath"></el-input>
-                </div>
+                </div> -->
                 <el-divider></el-divider>
                 <el-button id="showVisResBtn"
                     style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;" @click="update">Load
@@ -175,16 +175,12 @@
                     </el-tab-pane>
                    
                     <el-tab-pane label="Advanced Query">
+                        <div style="display: flex;"></el-input><el-input v-model="filter_index">
+                        </el-input><el-button style="background-color: #571792; color: #fff;" @click="NlSearch">Search</el-button></div>
+                        <el-divider></el-divider>
                         <div class="switch-container">
                             <el-switch v-model="isSwitchOn" active-text="Open KNN" inactive-text="Close KNN">
                             </el-switch>
-                            <!-- <input type="checkbox" class="switch-input" v-model="isSwitchOn">
-                            <label class="switch-label" for="switch" @click="toggleSwitch">Use Advanced
-                                <el-tooltip class="item" effect="dark" content="Open to on-the-fly search KNN"
-                                    placement="top-end">
-                                    <i class="el-icon-question"></i>
-                                </el-tooltip>
-                            </label> -->
                         </div>
                         <div class="advanced-query-row">
                             <el-select v-model="query.key">
@@ -368,6 +364,8 @@
             },
             filterByIndex(){
                 updateProjection(this.contentPath, this.currEpoch, this.taskType)
+            },
+            NlSearch(){
             },
             guide() {
                 const steps = [
