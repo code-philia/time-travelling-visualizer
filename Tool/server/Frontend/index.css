@@ -67,9 +67,9 @@ body {
     border-color: #571792;
 }
 .tutorial_btn{
-    position:fixed;
+    position:absolute;
     top: 80px;
-    right:340px;
+    right:330px;
     font-size: 20px;
 }
 .el-radio__input.is-checked+.el-radio__label {

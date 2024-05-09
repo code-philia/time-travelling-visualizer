@@ -10,9 +10,12 @@
     <link rel="stylesheet" href="Frontend/driver.min.css">
     <link rel="stylesheet" href="Frontend/index.css">
     <!-- <script src="https://unpkg.com/element-ui/lib/index.js"></script>   -->
-    <script src="https://cdn.bootcss.com/vue/2.5.16/vue.min.js"></script>
-    <script src="https://d3js.org/d3.v5.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.126.1/build/three.min.js"></script>
+    <!-- <script src="https://cdn.bootcss.com/vue/2.5.16/vue.min.js"></script> -->
+    <script src="Frontend/thirdParty/vue.min.js"></script>
+    <!-- <script src="https://d3js.org/d3.v5.min.js"></script> -->
+    <script src="Frontend/thirdParty/d3.v5.min.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/three@0.126.1/build/three.min.js"></script> -->
+    <script src="Frontend/thirdParty/three.min.js"></script>
     <script src="Frontend/request.js"></script>
     <script src="Frontend/render.js"></script>
     <script src="Frontend/utils.js"></script>
@@ -44,7 +47,7 @@
                     <el-button size="mini" @click="resetCamera">Reset Camera</el-button>
                 </div>
             </div>
-            <el-button style="position: fixed; top: 130px; right:340px; font-size: 20px;" size="mini" type="warning"
+            <el-button style="position: absolute; top: 130px; right:330px; font-size: 20px;" size="mini" type="warning"
                 slot="reference" icon="el-icon-setting"></el-button>
         </el-popover>
 
@@ -56,7 +59,7 @@
                     {{ errorMessage }}
                 </div>
             </div>
-            <el-button style="position: fixed; top: 180px; right:340px; font-size: 20px;" size="mini" type="danger"
+            <el-button style="position: absolute; top: 180px; right:330px; font-size: 20px;" size="mini" type="danger"
                 slot="reference" icon="el-icon-warning"></el-button>
         </el-popover>
 
