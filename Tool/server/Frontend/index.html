@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
     <link rel="stylesheet" href="Frontend/driver.min.css">
     <link rel="stylesheet" href="Frontend/index.css">
+    <script src="https://cdn.jsdelivr.net/npm/js-cookie@3/dist/js.cookie.min.js"></script>
     <!-- <script src="https://unpkg.com/element-ui/lib/index.js"></script>   -->
     <!-- <script src="https://cdn.bootcss.com/vue/2.5.16/vue.min.js"></script> -->
     <script src="Frontend/thirdParty/vue.min.js"></script>
@@ -256,7 +257,7 @@
                 lastHoveredIndex: null,
                 curIndex:null,
                 nnIndices: [],
-                contentPath: '/home/yiming/cophi/projects/time-travelling-visualizer/training_dynamic/case_study_mnist_backdoor',
+                contentPath: ' ',
                 customContentPath: '',
                 visMethod: 'Trustvis',
                 taskType: 'Classification',
@@ -329,7 +330,16 @@
                 }
             }
         },
+        created(){
+            this.loadCookies()
+        },
         methods: {
+            loadCookies(){
+                this.contentPath = Cookies.get('contentPath') || '';
+            },
+            saveContentPath(){
+                Cookies.set('contentPath', this.contentPath, { expires: 7 }); // Expires in 7 days
+            },
             filterInput(key, event) {
                 console.log(key, event)
                 let value = event
@@ -586,6 +596,9 @@
             }
         },
         watch: {
+            contentPath(newVal) {
+                this.saveContentPath();
+              },
             lastHoveredIndex: {
                 immediate: true,
                 handler(newVal, oldVal) {
