@@ -34,7 +34,7 @@
                 style="color: #fff; position:fixed; right: 20px;top:4px;"><i class="el-icon-message"
                     style="font-size: 24px;"></i></a>
         </div>
-        <!-- <el-button class="tutorial_btn" type="success" icon="el-icon-question" size="mini"
+        <el-button class="tutorial_btn" type="success" icon="el-icon-question" size="mini"
             @click.prevent.stop="guide"></el-button>
         <el-popover placement="left" width="200" trigger="click">
             <div>
@@ -62,7 +62,7 @@
             </div>
             <el-button style="position: absolute; top: 160px; right:0; font-size: 20px;" size="mini" type="danger"
                 slot="reference" icon="el-icon-warning"></el-button>
-        </el-popover> -->
+        </el-popover>
 
         <div class="content_container">
             
@@ -145,35 +145,7 @@
                 <div id="container"></div>
             </div> -->
             <div id="container">
-                <el-button class="tutorial_btn" type="success" icon="el-icon-question" size="mini"
-                @click.prevent.stop="guide"></el-button>
-            <el-popover placement="left" width="200" trigger="click">
-                <div>
-                    <span style="line-height: 40px; font-weight: 800;">Canvas Intereaction</span>
-                    <br />
-                    <div class="setting-item">
-                        <span>Zoom Speed:</span> <el-input @input="filterInput('zoomSpeed', $event)" style="width: 100px;"
-                            size="mini" v-model="canvasSetting.zoomSpeed"></el-input>
-                    </div>
-                    <div class="setting-item">
-                        <el-button size="mini" @click="resetCamera">Reset Camera</el-button>
-                    </div>
-                </div>
-                <el-button style="position: absolute; top: 60px; right:0; font-size: 20px;" size="mini" type="warning"
-                    slot="reference" icon="el-icon-setting"></el-button>
-            </el-popover>
-    
-            <el-popover placement="left" width="200" trigger="click">
-                <div>
-                    <span style="line-height: 40px; font-weight: 800;">Error Message</span>
-                    <br />
-                    <div class="error-message-content" style="margin: 10px 0;">
-                        {{ errorMessage }}
-                    </div>
-                </div>
-                <el-button style="position: absolute; top: 100px; right:0; font-size: 20px;" size="mini" type="danger"
-                    slot="reference" icon="el-icon-warning"></el-button>
-            </el-popover>
+                
             </div>
 
             <div id="advanced_panel">
