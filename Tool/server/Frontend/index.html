@@ -34,7 +34,7 @@
                 style="color: #fff; position:fixed; right: 20px;top:4px;"><i class="el-icon-message"
                     style="font-size: 24px;"></i></a>
         </div>
-        <el-button class="tutorial_btn" type="success" icon="el-icon-question" size="mini"
+        <!-- <el-button class="tutorial_btn" type="success" icon="el-icon-question" size="mini"
             @click.prevent.stop="guide"></el-button>
         <el-popover placement="left" width="200" trigger="click">
             <div>
@@ -48,7 +48,7 @@
                     <el-button size="mini" @click="resetCamera">Reset Camera</el-button>
                 </div>
             </div>
-            <el-button style="position: absolute; top: 130px; right:330px; font-size: 20px;" size="mini" type="warning"
+            <el-button style="position: absolute; top: 120px; right:0; font-size: 20px;" size="mini" type="warning"
                 slot="reference" icon="el-icon-setting"></el-button>
         </el-popover>
 
@@ -60,11 +60,12 @@
                     {{ errorMessage }}
                 </div>
             </div>
-            <el-button style="position: absolute; top: 180px; right:330px; font-size: 20px;" size="mini" type="danger"
+            <el-button style="position: absolute; top: 160px; right:0; font-size: 20px;" size="mini" type="danger"
                 slot="reference" icon="el-icon-warning"></el-button>
-        </el-popover>
+        </el-popover> -->
 
         <div class="content_container">
+            
             <div id="subject_model_info_panel">
                 <span style="display: inline-block; margin-right: 20px;">Data Type:</span>
                 <div id="contentSettingData">
@@ -143,7 +144,37 @@
             <!-- <div class="mid_container">
                 <div id="container"></div>
             </div> -->
-            <div id="container"></div>
+            <div id="container">
+                <el-button class="tutorial_btn" type="success" icon="el-icon-question" size="mini"
+                @click.prevent.stop="guide"></el-button>
+            <el-popover placement="left" width="200" trigger="click">
+                <div>
+                    <span style="line-height: 40px; font-weight: 800;">Canvas Intereaction</span>
+                    <br />
+                    <div class="setting-item">
+                        <span>Zoom Speed:</span> <el-input @input="filterInput('zoomSpeed', $event)" style="width: 100px;"
+                            size="mini" v-model="canvasSetting.zoomSpeed"></el-input>
+                    </div>
+                    <div class="setting-item">
+                        <el-button size="mini" @click="resetCamera">Reset Camera</el-button>
+                    </div>
+                </div>
+                <el-button style="position: absolute; top: 60px; right:0; font-size: 20px;" size="mini" type="warning"
+                    slot="reference" icon="el-icon-setting"></el-button>
+            </el-popover>
+    
+            <el-popover placement="left" width="200" trigger="click">
+                <div>
+                    <span style="line-height: 40px; font-weight: 800;">Error Message</span>
+                    <br />
+                    <div class="error-message-content" style="margin: 10px 0;">
+                        {{ errorMessage }}
+                    </div>
+                </div>
+                <el-button style="position: absolute; top: 100px; right:0; font-size: 20px;" size="mini" type="danger"
+                    slot="reference" icon="el-icon-warning"></el-button>
+            </el-popover>
+            </div>
 
             <div id="advanced_panel">
                 <el-checkbox v-model="showTraining">Training</el-checkbox>
