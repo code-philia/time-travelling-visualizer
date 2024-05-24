@@ -184,3 +184,33 @@ body {
     overflow-y: auto;  
   }
   
+.modal-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    padding: 20px;
+}
+
+.modal-column {
+    width: 38%;
+    background-color: #f9f9f9;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+pre {
+    background-color: #e8e8e8;
+    padding: 10px;
+    border-radius: 5px;
+    overflow-x: auto;
+}
+pre.highlight {
+    background-color: #f0f0f0;
+    border-radius: 5px;
+    white-space: pre-wrap; /* 保留空白字符并换行 */
+}
+.highlight span {
+    display: inline; /* 使 span 元素按行内元素显示 */
+}

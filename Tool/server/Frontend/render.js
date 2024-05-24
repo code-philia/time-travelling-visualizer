@@ -9,6 +9,7 @@ const MIN_ZOOM_SCALE = 0.8
 const MAX_ZOOM_SCALE = 30
 const NORMAL_SIZE = 5
 const HOVER_SIZE = 10
+const SELECTED_SIZE = 15
 const MAX_FOV = 70;
 const MIN_FOV = 1
 const GRAY = [0.8,0.8,0.8]
@@ -90,8 +91,8 @@ var previousMousePosition = {
         window.vueApp.camera.zoom = newZoom;
         window.vueApp.camera.updateProjectionMatrix();
         // Call function to update current hover index or any other updates needed after zoom
-        updateCurrHoverIndex(event, null, true, '');
-        updateLabelPosition('', window.vueApp.selectedPointPosition, window.vueApp.selectedIndex, selectedLabel, true)
+        // updateCurrHoverIndex(event, null, true, '');
+        // updateLabelPosition('', window.vueApp.selectedPointPosition, window.vueApp.selectedIndex, selectedLabel, true)
     }
 
 
@@ -233,7 +234,7 @@ var previousMousePosition = {
         pointPosition.fromBufferAttribute(window.vueApp.pointsMesh.geometry.attributes.position, window.vueApp.selectedIndex);
         window.vueApp.selectedPointPosition = pointPosition;
         window.vueApp.pointsMesh.geometry.attributes.size.needsUpdate = true
-        updateLabelPosition('', window.vueApp.selectedPointPosition, window.vueApp.selectedIndex, selectedLabel, true)
+        // updateLabelPosition('', window.vueApp.selectedPointPosition, window.vueApp.selectedIndex, selectedLabel, true)
     }
 
     window.vueApp.scene.add(window.vueApp.pointsMesh);
@@ -272,6 +273,12 @@ var previousMousePosition = {
       
     //  =========================  hover  start =========================================== //
     function onMouseMove(event) {
+        window.vueApp.pointsMesh.geometry.attributes.size.array.fill(NORMAL_SIZE);
+
+        window.vueApp.selectedIndex.forEach(index => {
+            window.vueApp.pointsMesh.geometry.getAttribute('size').array[index] = SELECTED_SIZE;
+        });
+        window.vueApp.pointsMesh.geometry.getAttribute('size').needsUpdate = true; 
         raycaster.params.Points.threshold = 0.2 / window.vueApp.camera.zoom; // 根据点的屏幕大小调整
         // 转换鼠标位置到归一化设备坐标 (NDC)
         var rect = window.vueApp.renderer.domElement.getBoundingClientRect();
@@ -300,6 +307,10 @@ var previousMousePosition = {
                 index = filter_index[ind]
             }else{
                 index = ind
+            }
+
+            if(window.vueApp.selectedIndex.includes(index)) {
+                return
             }
            
             // 在这里处理悬停事件
@@ -416,12 +427,12 @@ var previousMousePosition = {
     container.addEventListener('dblclick', onDoubleClick);
 
     function onDoubleClick(event) {
+        
         // Raycasting to find the intersected point
         var rect = window.vueApp.renderer.domElement.getBoundingClientRect();
         mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
         raycaster.setFromCamera(mouse, window.vueApp.camera);
-      
         var intersects = raycaster.intersectObject(window.vueApp.pointsMesh);
         
         if (intersects.length > 0 && checkVisibility(window.vueApp.pointsMesh.geometry.attributes.alpha.array, intersects[0].index)) {
@@ -431,19 +442,51 @@ var previousMousePosition = {
             }
           // Get the index and position of the double-clicked point
           var intersect = intersects[0];
-          window.vueApp.selectedIndex = intersect.index;
-          window.vueApp.selectedPointPosition = intersect.point;
+          if(window.vueApp.selectedIndex.includes(intersect.index)){
+            return
+          }
+          console.log("window.vueApp.selectedIndex",window.vueApp.selectedIndex)
+          window.vueApp.selectedIndex.push(intersect.index);
+          console.log("window.vueApp.selectedIndex after push",window.vueApp.selectedIndex)
 
-          updateLabelPosition('', window.vueApp.selectedPointPosition, window.vueApp.selectedIndex, selectedLabel, true)
+          let camera = window.vueApp.camera
+          let canvas = window.vueApp.renderer.domElement;
+          console.log("window.vueApp.selectedInde",window.vueApp.selectedPointPos)
+
+          let vector = intersect.point.clone().project(camera);
+
+    
+          vector.x =  Math.round((vector.x * 0.5 + 0.5) * canvas.clientWidth);
+          vector.y = - Math.round((vector.y * 0.5 - 0.5) * canvas.clientHeight);
+  
+         let rect = canvas.getBoundingClientRect();
+         vector.x += rect.left;
+         vector.y += rect.top;
+
+          window.vueApp.selectedPointPos.push({'x':vector.x,'y':vector.y})
+          console.log("window.vueApp.selectedIndex after push",window.vueApp.selectedPointPos)
+        //   window.vueApp.pointsMesh.geometry.attributes.size.array[window.vueApp.selectedIndex] = HOVER_SIZE; 
+          window.vueApp.selectedIndex.forEach(index => {
+            window.vueApp.pointsMesh.geometry.getAttribute('size').array[index] = SELECTED_SIZE;
+        });
+        window.vueApp.pointsMesh.geometry.getAttribute('size').needsUpdate = true; 
+        //   for(i=0;i<window.vueApp.selectedPointPos;i++){
+        //     let pos = window.vueApp.selectedPointPos[i]
+
+        //     updateFixedHoverLabel(pos.x,pos.y,window.vueApp.selectedIndex[i], selectedLabel,true )
+        //   }
+
+
+        // updateLabelPosition('', window.vueApp.selectedPointPosition, window.vueApp.selectedIndex, selectedLabel, true)
 
         } else {
         // reset previous selected point to normal size 
-          window.vueApp.pointsMesh.geometry.attributes.size.array[window.vueApp.selectedIndex] = NORMAL_SIZE; 
-          window.vueApp.pointsMesh.geometry.attributes.size.needsUpdate = true;
-          // If the canvas was double-clicked without hitting a point, hide the label and reset
-          window.vueApp.selectedIndex = null;
-          window.vueApp.selectedPointPosition = null;
-          updateFixedHoverLabel(null, null, null, '', null, selectedLabel, false)
+        //   window.vueApp.pointsMesh.geometry.attributes.size.array[window.vueApp.selectedIndex] = NORMAL_SIZE; 
+        //   window.vueApp.pointsMesh.geometry.attributes.size.needsUpdate = true;
+        //   // If the canvas was double-clicked without hitting a point, hide the label and reset
+        //   window.vueApp.selectedIndex = [];
+        //   window.vueApp.selectedPointPosition = [];
+        //   updateFixedHoverLabel(null, null, null, '', null, selectedLabel, false)
         }
       }
 
@@ -495,7 +538,7 @@ var previousMousePosition = {
                 x: e.clientX,
                 y: e.clientY
             };
-            updateLabelPosition('', window.vueApp.selectedPointPosition, window.vueApp.selectedIndex, selectedLabel, true)
+            // updateLabelPosition('', window.vueApp.selectedPointPosition, window.vueApp.selectedIndex, selectedLabel, true)
             updateCurrHoverIndex(e, null, true, '')
         }
     });

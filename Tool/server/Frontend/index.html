@@ -20,6 +20,7 @@
     <script src="Frontend/request.js"></script>
     <script src="Frontend/render.js"></script>
     <script src="Frontend/utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
 </head>
 
 <body>
@@ -222,6 +223,39 @@
                         </span>
                     </el-tab-pane>
                 </el-tabs>
+                <el-divider></el-divider>
+                <div class="Selection Pool">
+                    <h3>Selection Pool</h3>
+                    <div v-for="item in selectedIndex" style="display: flex; line-height: 20px; justify-content: space-between;">
+                            Index: {{item}} <i class="el-icon-delete" @click="deleteItemfromSel(item)"></i>
+                    </div>
+                    <el-button style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;"
+                            @click="openModal">
+                            Representation Editing
+                    </el-button>
+                </div>
+                <!-- Modal -->
+                <el-dialog :visible.sync="showModal" width="80%">
+                    <span slot="title">Representation Editing</span>
+                    <div class="modal-container">
+                        <div class="modal-column" v-for="item in selectedIndex">
+                            <h4>Index: {{item}}</h4>
+                            <h4>Code:</h4>
+                            <pre>{{"SAMPLE"}}</pre>
+                            <pre id="highlight" class="highlight">
+<span style="background-color:rgb(255,150,150)">&lt;code_window&gt;</span>
+    <span style="background-color:rgb(255,255,255)">&lt;mask&gt;</span><span style="background-color:rgb(167,255,167)">       </span><span style="background-color:rgb(222,222,255)"> super</span><span style="background-color:rgb(255,255,159)">().</span><span style="background-color:rgb(255,255,255)">__</span><span style="background-color:rgb(255,255,255)">init</span><span style="background-color:rgb(255,255,255)">__</span><span style="background-color:rgb(255,255,255)">(</span><span style="background-color:rgb(255,255,255)">address</span><span style="background-color:rgb(255,255,255)">_</span><span style="background-color:rgb(255,212,255)">or</span><span style="background-color:rgb(255,255,255)">_</span><span style="background-color:rgb(255,255,255)">ble</span><span style="background-color:rgb(255,255,255)">_</span><span style="background-color:rgb(149,255,255)">device</span><span style="background-color:rgb(255,255,255)">,</span><span style="background-color:rgb(255,255,255)"> *</span><span style="background-color:rgb(255,141,141)">args</span><span style="background-color:rgb(255,255,255)">,</span><span style="background-color:rgb(185,255,185)"> **</span><span style="background-color:rgb(172,172,255)">kwargs</span><span style="background-color:rgb(255,255,139)">)</span>
+    <span style="background-color:rgb(255,255,255)">&lt;mask&gt;</span><span style="background-color:rgb(255,255,255)">       </span><span style="background-color:rgb(255,174,255)"> self</span><span style="background-color:rgb(255,255,255)">._</span><span style="background-color:rgb(255,255,255)">ble</span><span style="background-color:rgb(255,255,255)">_</span><span style="background-color:rgb(179,255,255)">device</span><span style="background-color:rgb(255,118,118)"> =</span><span style="background-color:rgb(173,255,173)"> address</span><span style="background-color:rgb(183,183,255)">_</span><span style="background-color:rgb(255,255,179)">or</span><span style="background-color:rgb(255,255,255)">_</span><span style="background-color:rgb(255,255,255)">ble</span><span style="background-color:rgb(255,255,255)">_</span><span style="background-color:rgb(255,255,255)">device</span>
+    <span style="background-color:rgb(255,255,255)">&lt;mask&gt;</span><span style="background-color:rgb(255,255,255)">       </span><span style="background-color:rgb(255,186,255)"> self</span><span style="background-color:rgb(255,255,255)">._</span><span style="background-color:rgb(255,255,255)">address</span><span style="background-color:rgb(255,255,255)">_</span><span style="background-color:rgb(188,255,255)">as</span><span style="background-color:rgb(255,255,255)">_</span><span style="background-color:rgb(255,195,195)">int</span><span style="background-color:rgb(255,255,255)"> =</span><span style="background-color:rgb(255,255,255)"> mac</span><span style="background-color:rgb(255,255,255)">_</span><span style="background-color:rgb(255,255,255)">to</span><span style="background-color:rgb(139,255,139)">_</span><span style="background-color:rgb(255,255,255)">int</span><span style="background-color:rgb(255,255,255)">(</span><span style="background-color:rgb(255,255,255)">self</span><span style="background-color:rgb(255,255,255)">._</span><span style="background-color:rgb(255,255,255)">ble</span><span style="background-color:rgb(255,255,255)">_</span><span style="background-color:rgb(173,173,255)">device</span><span style="background-color:rgb(255,255,255)">.</span><span style="background-color:rgb(255,255,255)">address</span><span style="background-color:rgb(255,255,255)">)</span>
+
+                            </pre>
+                        </div>
+                    </div>
+                    <span slot="footer" class="dialog-footer">
+                        <el-button @click="showModal = false">Cancel</el-button>
+                        <el-button type="primary" @click="saveChanges">Save</el-button>
+                    </span>
+                </el-dialog>
             </div>
         </div>
         <div id="footer">
@@ -257,6 +291,11 @@
         el: '#app',
         data() {
             return {
+                selectedList:[{'index':22},{'index':77}],
+                selectedIndex: [],
+                selectedPointPos:[],
+                selectedPointPos: [],
+                showModal: false,
                 lastHoveredIndex: null,
                 curIndex:null,
                 nnIndices: [],
@@ -295,8 +334,8 @@
                 imageSrc: "",
                 textContent: "",
                 dataType: "Image",
-                selectedIndex: null,
-                selectedPointPosition: null,
+
+
                 visibilityMap: null,
                 highlightAttributes: {
                     visualizationError: null,
@@ -340,6 +379,12 @@
             loadCookies(){
                 this.contentPath = Cookies.get('contentPath') || '';
             },
+            deleteItemfromSel(item) {
+                const index = this.selectedIndex.indexOf(item);
+                if (index !== -1) {
+                  this.selectedIndex.splice(index, 1);
+                }
+              },
             saveContentPath(){
                 Cookies.set('contentPath', this.contentPath, { expires: 7 }); // Expires in 7 days
             },
@@ -509,6 +554,13 @@
                 this.isSwitchOn = !this.isSwitchOn; // 切换开关状态
                 console.log(this.isSwitchOn)
             },
+            openModal() {
+                this.showModal = true;
+            },
+            saveChanges() {
+                console.log('保存更改:', this.selectedIndex);
+                this.showModal = false;
+            },
             getInitialState() {
                 return {lastHoveredIndex: null,
                 contentPath: '/home/yifan/dataset/case_study_mnist_backdoor',
@@ -545,8 +597,6 @@
                 imageSrc: "",
                 textContent: "",
                 dataType: "Image",
-                selectedIndex: null,
-                selectedPointPosition: null,
                 visibilityMap: null,
                 highlightAttributes: {
                     visualizationError: null,
