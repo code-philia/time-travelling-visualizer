@@ -52,7 +52,7 @@ time-travelling-visualizer
 1. create conda environment
 ```
 $ conda create -n visualizer python=3.7
-$ (visualizer) conda activate visualizer
+$ (visualizer) ~/time-travelling-visualizer$ conda activate visualizer
 ```
 
 2. install pyTorch and CUDA
@@ -62,11 +62,11 @@ For setting up PyTorch on that conda environment, use the guidelines provided at
 
 For linux developers, you can use the following command to install the required packages.
 ```
-$ (visualizer) pip install -r requirements.txt
+$ (visualizer) ~/time-travelling-visualizer$ pip install -r requirements.txt
 ```
 For windows developers, you can use the following command instead.
 ```
-$ (visualizer) pip install -r win-requirements.txt
+$ (visualizer) ~/time-travelling-visualizer$ pip install -r win-requirements.txt
 ```
 
 Note that, if you are using VPN or other proxy, please specify `--proxy` parameter to install the packages.
@@ -78,8 +78,8 @@ Please note that the **versions** of Docker and Docker Compose are important! Yo
 
 For linux developers, you can use the following command to install Docker and Docker Compose.
 ```
-$ (visualizer) pip install docker==6.1.3
-$ (visualizer) pip install docker-compose==1.29.2
+$ (visualizer) ~/time-travelling-visualizer$ pip install docker==6.1.3
+$ (visualizer) ~/time-travelling-visualizer$ pip install docker-compose==1.29.2
 ```
 
 For windows developers, Windows with WSL 2 enabled and Docker Desktop are needed.
@@ -94,7 +94,7 @@ And if you want to open your WSL distribution in VS Code, refer to the documenta
 
 After completing the above steps, you should install Docker Compose by:
 ```
-$ (visualizer) pip install docker-compose==1.29.2
+$ (visualizer) ~/time-travelling-visualizer$ pip install docker-compose==1.29.2
 ```
 
 ## Training Process Dataset (the training process of a model)
@@ -106,19 +106,19 @@ You can train your classification model and save the training dynamics. For info
 
 1. download training dynamics example from huggingface
 ```
-$ cd training_dynamic
-$ git lfs clone https://huggingface.co/datasets/code-philia/mtpnet.git
-$ unzip mtpnet/case_study_mnist_backdoor.zip
+~/time-travelling-visualizer$ cd training_dynamic
+~/time-travelling-visualizer/training_dynamic$ git lfs clone https://huggingface.co/datasets/code-philia/mtpnet.git
+~/time-travelling-visualizer/training_dynamic$ unzip mtpnet/case_study_mnist_backdoor.zip
 ```
 2. unzip the dataset file
 
 For linux user, you can unzip the example dataset into training_dynamic directory using the command
 ```
-$ unzip mtpnet/case_study_mnist_backdoor.zip
+~/time-travelling-visualizer/training_dynamic$ unzip mtpnet/case_study_mnist_backdoor.zip
 ```
 For windows user, you can unzip the example dataset into training_dynamic directory using the command
 ```
-$ Expand-Archive mtpnet/case_study_mnist_backdoor.zip -DestinationPath .
+~/time-travelling-visualizer/training_dynamic$ Expand-Archive mtpnet/case_study_mnist_backdoor.zip -DestinationPath .
 ```
 
 With this provided example, you can directly experience our tool.
@@ -127,16 +127,16 @@ If you want to train your own visualization model, refer to the the [visualizati
 
 # Run interactive Visualizer Tool
 ```
-$ cd /Tool/server
-$ conda activate visualizer
+~/time-travelling-visualizer$ cd /Tool/server
+~/time-travelling-visualizer/Tool/server$ conda activate visualizer
 ```
 For linux and WSL users, you can use this command to start the tool with vector database (It will take a few minutes to start the docker container in the first time)
 ```
-$ (visualizer) ./start_server.sh 
+~/time-travelling-visualizer/Tool/server$ (visualizer) ./start_server.sh 
 ```
 Windows users can use the following command instead to run the tool
 ```
-$ (visualizer) python server.py
+~/time-travelling-visualizer/Tool/server$ (visualizer) python server.py
 ```
 you will see: 
 ```
