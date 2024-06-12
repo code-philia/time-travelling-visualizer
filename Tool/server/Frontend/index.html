@@ -672,7 +672,14 @@
             curIndex:{
                 immediate: true,
                 handler(newVal, oldVal) {
-                    this.curr_pred = this.prediction_list[newVal];
+                    if (this.filter_index !== null && this.filter_index !== "" && (!Array.isArray(this.filter_index) || this.filter_index.length !== 0)) {
+                        let filter_index = window.vueApp.filter_index.split(',');
+                        console.log("filter_index[newVal]", filter_index[newVal])
+                        this.curr_pred = this.prediction_list[filter_index[newVal]];
+                    } else {
+                        console.log("newVal", newVal)
+                        this.curr_pred = this.prediction_list[newVal];
+                    }
                     this.curr_label = this.label_name_dict[this.label_list[newVal]];
                     this.confidence_dict = this.confidence_list[newVal]
                 }
