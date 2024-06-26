@@ -52,3 +52,10 @@ Tool/singleVis/eval/__pycache__/evaluate.cpython-37.pyc
 Tool/singleVis/eval/__pycache__/evaluate.cpython-39.pyc
 Tool/singleVis/eval/__pycache__/evaluator.cpython-37.pyc
 Tool/singleVis/eval/__pycache__/evaluator.cpython-39.pyc
+
+# VS Code extension related
+out
+dist
+node_modules
+.vscode-test/
+*.vsix
