@@ -1,0 +1,79 @@
+{
+  "name": "time-travelling-visualizer",
+  "displayName": "time-travelling-visualizer",
+  "description": "",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "*"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "myExtension.start",
+        "title": "Call an Editor"
+      },
+      {
+        "command": "myExtension.dialog",
+        "title": "Open a Dialog"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "myViewContainer",
+          "title": "My View Container",
+          "icon": "resources/home_24dp_FILL0_wght400_GRAD0_opsz24.svg"
+        }
+      ],
+      "panel": [
+        {
+          "id": "myPanelViewContainer",
+          "title": "My Panel View Container",
+          "icon": "resources/home_24dp_FILL0_wght400_GRAD0_opsz24.svg"
+        }
+      ]
+    },
+    "views": {
+      "myViewContainer": [
+        {
+          "type": "webview",
+          "id": "myView",
+          "name": "My Custom View"
+        }
+      ],
+      "myPanelViewContainer": [
+        {
+          "type": "webview",
+          "id": "myPanelView",
+          "name": "My Custom Panel View"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "pnpm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "pnpm run compile && pnpm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.90.0",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "20.x",
+    "@typescript-eslint/eslint-plugin": "^7.11.0",
+    "@typescript-eslint/parser": "^7.11.0",
+    "eslint": "^8.57.0",
+    "typescript": "^5.4.5",
+    "@vscode/test-cli": "^0.0.9",
+    "@vscode/test-electron": "^2.4.0"
+  }
+}
