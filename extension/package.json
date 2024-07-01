@@ -1,5 +1,10 @@
 {
   "name": "time-travelling-visualizer",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/code-philia/time-travelling-visualizer",
+    "directory": "extension"
+  },
   "displayName": "time-travelling-visualizer",
   "description": "",
   "version": "0.0.1",
