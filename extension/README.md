@@ -39,7 +39,7 @@ git clone https://github.com/code-philia/time-travelling-visualizer.git
 
 ### Open it using VS Code
 
-Open this project **as the workspace folder** in VS Code. Three ways to do this:
+Open the project folder `time-travelling-visualizer` **as the workspace folder** in VS Code. Three ways to do this:
 
 + Open VS Code, drag the project folder into the window or choose `File -> Open Folder...` in the menu
 + Open the terminal, `cd` to the project folder, and run `code .`
