@@ -1,0 +1,216 @@
+body {
+    margin: 0;
+    overflow: hidden;
+    height: 100%;
+    color:#5f5b55;
+    font-family: -apple-system, SF UI Text, Arial, PingFang SC, Hiragino Sans GB, Microsoft YaHei, WenQuanYi Micro Hei, sans-serif;
+}
+#app {
+    font-family: -apple-system, SF UI Text, Arial, PingFang SC, Hiragino Sans GB, Microsoft YaHei, WenQuanYi Micro Hei, sans-serif;
+}
+
+.content_container {
+    display: flex;
+    height: 85vh;
+    flex-direction: row; 
+}
+
+#subject_model_info_panel {
+    width: 30vh;
+    padding: 20px;
+    background-color: rgb(244, 244, 244);
+    overflow-y: auto; 
+}
+#opration_bar{
+    background-color: rgb(244, 244, 244);
+    width: 100%;
+    height: 50px;
+}
+
+#advanced_panel {
+    width: 30vh;
+    padding: 20px;
+    background-color: rgb(244, 244, 244);
+}
+
+
+#container {
+    width: 100%;
+    height: 100%;
+    margin: 10px;
+    display: flex;
+    flex: 1;
+}
+
+.header {
+    width: 100%;
+    height: 50px;
+    line-height: 50px;
+    padding: 0 20px;
+    background-color: #571792;
+    color: #fff;
+}
+
+#footer {
+    height: 10vh;
+    width: 100%;
+    position: relative;
+    bottom: 0;
+    background-color: rgb(244, 244, 244);
+    overflow: auto;
+}
+.el-checkbox__input.is-checked+.el-checkbox__label{
+    color: #571792;
+}
+.el-checkbox__input.is-checked .el-checkbox__inner, .el-checkbox__input.is-indeterminate .el-checkbox__inner{
+    background-color: #571792;
+    border-color: #571792;
+}
+.tutorial_btn{
+    position:fixed;
+    top: 80px;
+    right:0px;
+    font-size: 20px;
+}
+.el-radio__input.is-checked+.el-radio__label {
+    color: #571792;
+}
+
+.el-radio__input.is-checked .el-radio__inner{
+    border-color: #571792;
+    background: #571792;
+}
+.setting-item{
+    display:flex;
+    height: 30px;
+    line-height: 30px;
+    justify-content: space-between;
+}
+.el-tabs__item.is-active{
+    color: #571792;
+}
+.el-tabs__active-bar{
+    background-color:  #571792;
+}
+.el-tabs__item:hover{
+    color: #7d2dc8;
+}
+.query-row{
+    display:flex;
+    height: 54px;
+    line-height: 54px;
+}
+#currHover {
+    position: fixed; 
+    z-index: 1000;
+    font-size: 14px;
+    background-color: white; 
+    border: 1px solid #571792; 
+    padding: 10px;
+    cursor: move;
+    top: 70px; 
+    left: 320px; 
+    max-width: 300px;
+    border-radius: 20px;
+  }
+#hoverLabel {
+    position: absolute;
+    display: none;
+    pointer-events: none;
+    transform: translate(5px, -5px);
+    font-size: 20px;
+    color:black;
+}
+#fixedHoverLabel {
+    position: absolute;
+    display: none;
+    color: green; 
+    font-size: 20px; 
+    pointer-events: none;
+    font-weight: bold;
+}
+#visMethodInput {
+    position: relative;
+    top:2vh;
+}
+.advanced-query-row{
+    display:flex;
+    height: 10vh;
+    line-height: 10vh;
+}
+.switch-container {
+    position: relative;
+    height: 30px;
+}
+.el-switch__core{
+    width: 50px;
+}
+
+.switch-input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.switch-label {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 120px;
+    height: 30px;
+    line-height: 30px;
+    text-align:center;
+    font-size: 14px;
+    background-color: #ccc;
+    border-radius: 15px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.switch-input:checked + .switch-label {
+    background-color: #5cb85c;
+}
+
+.el-switch__label.is-active{
+    color: #7d2dc8;
+}
+.el-switch.is-checked .el-switch__core {
+    border-color: #7d2dc8;
+    background-color: #7d2dc8;
+}
+
+#resultContainer {
+    max-height: 20vh; 
+    overflow-y: auto;  
+  }
+  
+.modal-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    padding: 20px;
+}
+
+.modal-column {
+    width: 38%;
+    background-color: #f9f9f9;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+pre {
+    background-color: #e8e8e8;
+    padding: 10px;
+    border-radius: 5px;
+    overflow-x: auto;
+}
+pre.highlight {
+    background-color: #f0f0f0;
+    border-radius: 5px;
+    white-space: pre-wrap; /* 保留空白字符并换行 */
+}
+.highlight span {
+    display: inline; /* 使 span 元素按行内元素显示 */
+}

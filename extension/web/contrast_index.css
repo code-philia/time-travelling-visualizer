@@ -1,0 +1,292 @@
+body {
+    margin: 0;
+    overflow: hidden;
+    height: 100%;
+    color:#5f5b55;
+    font-family: -apple-system, SF UI Text, Arial, PingFang SC, Hiragino Sans GB, Microsoft YaHei, WenQuanYi Micro Hei, sans-serif;
+}
+#app {
+    font-family: -apple-system, SF UI Text, Arial, PingFang SC, Hiragino Sans GB, Microsoft YaHei, WenQuanYi Micro Hei, sans-serif;
+}
+
+.content_container {
+    display: flex;
+    height: 82vh;
+    flex-direction: row; 
+}
+.projectionAnalysis_container {
+    display: flex;
+    flex-direction: column; 
+    overflow: auto;
+}
+#subject_model_info_panel {
+    width: 30vh;
+    padding: 20px;
+    height: 78vh;
+    background-color: rgb(244, 244, 244);
+}
+
+#opration_bar{
+    background-color: rgb(244, 244, 244);
+    width: 100%;
+    height: 50px;
+}
+
+#advanced_panel {
+    width: 300px;
+    padding: 20px;
+    background-color: rgb(244, 244, 244);
+}
+.mid_container{
+    flex: 1;
+    display: flex;
+}
+
+#container_ref,#container_tar {
+    width: 50%;
+    height: 100%;
+    margin: 10px;
+}
+.wrapout_ontainer {
+    display: flex;
+    flex-direction: column; 
+}
+
+.control-group {
+    display: flex;
+    align-items: center;
+    margin-top: 3vh; 
+}
+
+
+.header {
+    width: 100%;
+    height: 50px;
+    line-height: 50px;
+    padding: 0 20px;
+    background-color: #571792;
+    color: #fff;
+}
+.el-tabs__item.is-active{
+    color: #571792;
+}
+.el-tabs__active-bar{
+    background-color:  #571792;
+}
+.el-tabs__item:hover{
+    color: #7d2dc8;
+}
+.el-tabs__header {
+    height: 5vh;
+    display: flex;
+    align-items: center;
+}
+.el-tabs__content {
+    display: flex;
+    max-height: 72vh; /*subject model's height is 77vh, deduct eltab header height(5vh), to get 72vh*/
+    overflow: auto; 
+}
+
+#footerRef {
+    height: 6vh;
+    width: 100%;
+    position: relative;
+    bottom: 0;
+    background-color: rgb(244, 244, 244);
+    overflow: auto;
+
+}
+#footerTar {
+    height: 6vh;
+    width: 100%;
+    position: relative;
+    bottom: 0;
+    background-color: rgb(244, 244, 244);
+    overflow: auto;
+}
+
+#iterationContainer {
+    height: 12vh;
+    width: 100%;
+    position: relative;
+    background-color: rgb(244, 244, 244);
+    overflow: auto;
+}
+
+
+.el-checkbox__input.is-checked+.el-checkbox__label{
+    color: #571792;
+}
+.el-checkbox__input.is-checked .el-checkbox__inner, .el-checkbox__input.is-indeterminate .el-checkbox__inner{
+    background-color: #571792;
+    border-color: #571792;
+}
+.tutorial_btn{
+    position:fixed;
+    top: 80px;
+    right:0px;
+    font-size: 20px;
+}
+.el-radio__input.is-checked+.el-radio__label {
+    color: #571792;
+}
+
+.el-radio__input.is-checked .el-radio__inner{
+    border-color: #571792;
+    background: #571792;
+}
+#currHoverRef {
+    position: fixed; 
+    z-index: 1000; 
+    background-color: white;
+    border: 1px solid #0a0909;
+    padding: 10px;
+    cursor: move;
+    top: 50px;
+    left: 300px;
+    max-width: 300px;
+  }
+  
+  #currHoverTar {
+    position: fixed; 
+    z-index: 1000; 
+    background-color: white; 
+    border: 1px solid #a02626; 
+    padding: 10px; 
+    cursor: move; 
+    top: 50px;
+    left: 900px; 
+    max-width: 300px;
+  }
+
+  #hoverLabelRef {
+    position: absolute;
+    display: none;
+    pointer-events: none;
+    transform: translate(5px, -5px);
+    font-size: 20px;
+    color:black;
+}
+#fixedHoverLabelRef {
+    position: absolute;
+    display: none;
+    color: green; 
+    font-size: 20px; 
+    pointer-events: none;
+    font-weight: bold;
+}
+
+#fixedBoldLabel0Ref {
+    position: absolute;
+    display: none;
+    color: yellow; 
+    font-size: 20px; 
+    pointer-events: none;
+    font-weight: bold;
+}
+#fixedBoldLabel1Ref {
+    position: absolute;
+    display: none;
+    color: yellow; 
+    font-size: 20px; 
+    pointer-events: none;
+    font-weight: bold;
+}
+#hoverLabelTar {
+    position: absolute;
+    display: none;
+    pointer-events: none;
+    transform: translate(5px, -5px);
+    font-size: 20px;
+    color:black;
+}
+#fixedHoverLabelTar {
+    position: absolute;
+    display: none;
+    color: green; 
+    font-size: 20px; 
+    pointer-events: none;
+    font-weight: bold;
+}
+ 
+#fixedBoldLabel0Tar {
+    position: absolute;
+    display: none;
+    color: yellow; 
+    font-size: 20px; 
+    pointer-events: none;
+    font-weight: bold;
+}
+#fixedBoldLabel1Tar {
+    position: absolute;
+    display: none;
+    color: yellow; 
+    font-size: 20px; 
+    pointer-events: none;
+    font-weight: bold;
+}
+
+#checkbox-container {
+    width: 100%;
+    align-items: flex-start;
+    position:relative;
+  }
+  
+  #ref-checkbox-container, #tar-checkbox-container {
+    position: relative;
+    margin-left: 20px;
+    margin-bottom: 0px;
+  }
+  #select-container {
+    width: 100%;
+    align-items: flex-start;
+    position:relative;
+  }
+  
+  .setting-item{
+    display:flex;
+    height: 30px;
+    line-height: 30px;
+    justify-content: space-between;
+}
+#visMethodInputRef {
+    position: relative;
+    top:2vh;
+}
+
+#visMethodInputTar {
+    position: relative;
+    top:2vh;
+}
+.advanced-query-row{
+    display:flex;
+    height: 54px;
+    line-height: 54px;
+}
+.switch-container {
+    position: relative;
+    width: 60px;
+    height: 30px;
+}
+
+.switch-input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.switch-label {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #ccc;
+    border-radius: 15px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.switch-input:checked + .switch-label {
+    background-color: #5cb85c;
+}
