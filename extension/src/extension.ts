@@ -52,14 +52,18 @@ export function activate(context: vscode.ExtensionContext) {
 	);
 	context.subscriptions.push(
 		vscode.window.registerWebviewViewProvider(
-			'myView',
-			new MySideBarWebviewViewProvider(context, isDev ? sideBarWebviewPort : undefined, isDev ? '/basic_view.html' : undefined)
+			'basic-view',
+			new SidebarWebviewViewProvider(context, isDev ? sideBarWebviewPort : undefined, isDev ? '/basic_view.html' : undefined)
+		),
+		vscode.window.registerWebviewViewProvider(
+			'advanced-view',
+			new SidebarWebviewViewProvider(context, isDev ? sideBarWebviewPort : undefined, isDev ? '/basic_view.html' : undefined)
 		)
 	);
 	context.subscriptions.push(
 		vscode.window.registerWebviewViewProvider(
-			'myPanelView',
-			new MySideBarWebviewViewProvider(context, isDev ? panelWebviewPort : undefined, isDev ? '/quick_panel.html' : undefined)
+			'panel-view',
+			new SidebarWebviewViewProvider(context, isDev ? panelWebviewPort : undefined, isDev ? '/quick_panel.html' : undefined)
 		)
 	);
 }
@@ -144,6 +148,7 @@ function getForwardWebviewContent(webview: vscode.Webview, localPort: number = 5
 			<style>
 				body, html {
 					height: 100%;
+					padding: 0;
 					margin: 0;
 				}
 				iframe {
@@ -161,7 +166,7 @@ function getForwardWebviewContent(webview: vscode.Webview, localPort: number = 5
     `;
 }
 
-class MySideBarWebviewViewProvider implements vscode.WebviewViewProvider {
+class SidebarWebviewViewProvider implements vscode.WebviewViewProvider {
 	private readonly context: vscode.ExtensionContext;
 	private readonly port?: number;
 	private readonly path?: string;

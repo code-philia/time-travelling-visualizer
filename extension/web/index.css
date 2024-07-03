@@ -11,12 +11,12 @@ body {
 
 .content_container {
     display: flex;
-    height: 85vh;
+    height: 100vh;
     flex-direction: row; 
 }
 
 #subject_model_info_panel {
-    width: 30vh;
+    /* width: 30vh; */
     padding: 20px;
     background-color: rgb(244, 244, 244);
     overflow-y: auto; 
@@ -28,7 +28,7 @@ body {
 }
 
 #advanced_panel {
-    width: 30vh;
+    /* width: 30vh; */
     padding: 20px;
     background-color: rgb(244, 244, 244);
 }
