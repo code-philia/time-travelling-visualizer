@@ -161,12 +161,15 @@ class MySideBarWebviewViewProvider implements vscode.WebviewViewProvider {
 		context: vscode.WebviewViewResolveContext,
 		token: vscode.CancellationToken
 	) {
+		webviewView.webview.options = getDefaultWebviewOptions();
+
 		if (this.port) {
 			webviewView.webview.html = getForwardWebviewContent(webviewView.webview, this.port);
+			webviewView.webview.options = {
+				enableScripts: true
+			};
 			return;
 		}
-
-		webviewView.webview.options = getDefaultWebviewOptions();
 
 		webviewView.webview.html = this.getHtmlForWebview(webviewView.webview);
 
