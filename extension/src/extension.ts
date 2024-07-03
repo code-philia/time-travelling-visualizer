@@ -4,7 +4,7 @@ import * as vscode from 'vscode';
 import { LiveServerParams, start as startServer } from 'live-server';
 import * as fs from 'fs';
 
-var isDev = false;
+var isDev = true;
 const relativeRoot = 'web/';
 const editorWebviewPort = 5001;
 const sideBarWebviewPort = 5002;
@@ -141,9 +141,21 @@ function getForwardWebviewContent(webview: vscode.Webview, localPort: number = 5
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Localhost</title>
+			<style>
+				body, html {
+					height: 100%;
+					margin: 0;
+				}
+				iframe {
+					width: 100%;
+					height: 100%;
+					border: none;
+					display: block;
+				}
+			</style>
         </head>
         <body>
-            <iframe src="http://localhost:${localPort}" width="100%" style="border:none; overflow-y: scroll;"></iframe>
+            <iframe id="debug-iframe" src="http://localhost:${localPort}"></iframe>
         </body>
         </html>
     `;
