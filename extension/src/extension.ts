@@ -53,13 +53,13 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.window.registerWebviewViewProvider(
 			'myView',
-			new MySideBarWebviewViewProvider(context, isDev ? sideBarWebviewPort : undefined)
+			new MySideBarWebviewViewProvider(context, isDev ? sideBarWebviewPort : undefined, isDev ? '/basic_view.html' : undefined)
 		)
 	);
 	context.subscriptions.push(
 		vscode.window.registerWebviewViewProvider(
 			'myPanelView',
-			new MySideBarWebviewViewProvider(context, isDev ? panelWebviewPort : undefined)
+			new MySideBarWebviewViewProvider(context, isDev ? panelWebviewPort : undefined, isDev ? '/quick_panel.html' : undefined)
 		)
 	);
 }
@@ -133,7 +133,7 @@ function getDemoWebviewContent() {
 	</html>`;
 }
 
-function getForwardWebviewContent(webview: vscode.Webview, localPort: number = 5000) {
+function getForwardWebviewContent(webview: vscode.Webview, localPort: number = 5000, path: string = '/') {
 	return `
         <!DOCTYPE html>
         <html lang="en">
@@ -155,7 +155,7 @@ function getForwardWebviewContent(webview: vscode.Webview, localPort: number = 5
 			</style>
         </head>
         <body>
-            <iframe id="debug-iframe" src="http://localhost:${localPort}"></iframe>
+            <iframe id="debug-iframe" src="http://localhost:${localPort}${path}"></iframe>
         </body>
         </html>
     `;
@@ -164,10 +164,12 @@ function getForwardWebviewContent(webview: vscode.Webview, localPort: number = 5
 class MySideBarWebviewViewProvider implements vscode.WebviewViewProvider {
 	private readonly context: vscode.ExtensionContext;
 	private readonly port?: number;
+	private readonly path?: string;
 
-	constructor(context: vscode.ExtensionContext, port?: number) {
+	constructor(context: vscode.ExtensionContext, port?: number, path?: string) {
 		this.context = context;
 		this.port = port;
+		this.path = path;
 	}
 
 	public resolveWebviewView(
@@ -178,7 +180,7 @@ class MySideBarWebviewViewProvider implements vscode.WebviewViewProvider {
 		webviewView.webview.options = getDefaultWebviewOptions();
 
 		if (this.port) {
-			webviewView.webview.html = getForwardWebviewContent(webviewView.webview, this.port);
+			webviewView.webview.html = getForwardWebviewContent(webviewView.webview, this.port, this.path);
 			webviewView.webview.options = {
 				enableScripts: true
 			};
