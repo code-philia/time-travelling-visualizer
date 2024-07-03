@@ -103,147 +103,12 @@
 
                     </tbody>
                 </table>
-                <el-divider></el-divider>
-                <el-checkbox v-model="showTraining">Training</el-checkbox>
-                <el-checkbox v-model="showTesting">Testing</el-checkbox>
-                <el-divider></el-divider>
-                <el-checkbox v-model="showVisError">Visualization Error</el-checkbox>
-                <el-checkbox v-model="showPredictionFlips">Prediction Flip</el-checkbox>
-                <br />
-                <el-checkbox v-model="SelectionMode">Selection Mode</el-checkbox>
-                <el-divider></el-divider>
-                <el-tabs>
-                    <el-tab-pane label="Normal Query">
-                        Filter Index:
-                        <div style="display: flex;"></el-input><el-input v-model="filter_index">
-                            </el-input><el-button style="background-color: #571792; color: #fff;"
-                                @click="filterByIndex">Filter</el-button></div>
-                        <div class="query-row">
-                            <el-select v-model="predicates.key">
-                                <el-option value="label" label="label">
-                                </el-option>
-                                <el-option value="prediction" label="prediction">
-                                </el-option>
-                            </el-select>
-                            <el-input style="margin-left:20px;" v-model="predicates.value"></el-input>
-                        </div>
-                        <div class="query-row">
-                            Confidence: <el-input style="margin-left:20px; margin-right:10px;" v-model="confidence[0]">
-                            </el-input> - <el-input style="margin-left:10px;" v-model="confidence[1]"></el-input>
-                        </div>
-                        <el-button style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;">
-                            Start Query
-                        </el-button>
-
-                    </el-tab-pane>
-
-                    <el-tab-pane label="Advanced Query">
-                        <div style="display: flex;"></el-input><el-input v-model="filter_index">
-                            </el-input><el-button style="background-color: #571792; color: #fff;"
-                                @click="NlSearch">Search</el-button></div>
-                        <el-divider></el-divider>
-                        <div class="switch-container">
-                            <el-switch v-model="isSwitchOn" active-text="Open KNN" inactive-text="Close KNN">
-                            </el-switch>
-                        </div>
-                        <div class="advanced-query-row">
-                            <el-select v-model="query.key">
-                                <el-option value="index" label="index">
-                                </el-option>
-                                <el-option value="nl" label="nl">
-                                </el-option>
-                                <el-option value="vector" label="vector">
-                                </el-option>
-                            </el-select>
-                            <el-input style="margin-left:20px;" v-model="query.value"></el-input>
-                        </div>
-                        <div class="advanced-query-row">
-                            K: <el-input style="margin-left:20px;" v-model="query.k"></el-input>
-                        </div>
-                        <el-button style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;"
-                            @click="indexSearchHandler">
-                            Start Query
-                        </el-button>
-                        <el-button
-                            style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px; margin-left:0px;"
-                            @click="clearSearchHandler">
-                            Clear Query
-                        </el-button>
-
-                        <!-- 显示查询结果 -->
-                        <span id="resultContainer">
-                            <ul>
-                                <li v-for="result in query_result" :key="result.id">
-                                    Distance: {{ result.distance }}, ID: {{ result.id }}
-                                </li>
-                            </ul>
-                        </span>
-                    </el-tab-pane>
-                </el-tabs>
-                <el-divider></el-divider>
-                <div class="Selection Pool">
-                    <h3>Selection Pool</h3>
-                    <div v-for="item in selectedIndex"
-                        style="display: flex; line-height: 20px; justify-content: space-between;">
-                        Index: {{item}} <i class="el-icon-delete" @click="deleteItemfromSel(item)"></i>
-                    </div>
-                    <el-button style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;"
-                        @click="openModal">
-                        Representation Editing
-                    </el-button>
-                </div>
-                <!-- Modal -->
-                <el-dialog :visible.sync="showModal" width="80%">
-                    <span slot="title">Representation Editing</span>
-                    <div class="modal-container">
-                        <div class="modal-column" v-for="item in selectedIndex">
-                            <h4>Index: {{item}}</h4>
-                            <h4>Code:</h4>
-                            <pre>{{"SAMPLE"}}</pre>
-                            <pre id="highlight" class="highlight">
-<span style="background-color:rgb(255,150,150)">&lt;code_window&gt;</span>
-    <span style="background-color:rgb(255,255,255)">&lt;mask&gt;</span><span style="background-color:rgb(167,255,167)">       </span><span style="background-color:rgb(222,222,255)"> super</span><span style="background-color:rgb(255,255,159)">().</span><span style="background-color:rgb(255,255,255)">__</span><span style="background-color:rgb(255,255,255)">init</span><span style="background-color:rgb(255,255,255)">__</span><span style="background-color:rgb(255,255,255)">(</span><span style="background-color:rgb(255,255,255)">address</span><span style="background-color:rgb(255,255,255)">_</span><span style="background-color:rgb(255,212,255)">or</span><span style="background-color:rgb(255,255,255)">_</span><span style="background-color:rgb(255,255,255)">ble</span><span style="background-color:rgb(255,255,255)">_</span><span style="background-color:rgb(149,255,255)">device</span><span style="background-color:rgb(255,255,255)">,</span><span style="background-color:rgb(255,255,255)"> *</span><span style="background-color:rgb(255,141,141)">args</span><span style="background-color:rgb(255,255,255)">,</span><span style="background-color:rgb(185,255,185)"> **</span><span style="background-color:rgb(172,172,255)">kwargs</span><span style="background-color:rgb(255,255,139)">)</span>
-    <span style="background-color:rgb(255,255,255)">&lt;mask&gt;</span><span style="background-color:rgb(255,255,255)">       </span><span style="background-color:rgb(255,174,255)"> self</span><span style="background-color:rgb(255,255,255)">._</span><span style="background-color:rgb(255,255,255)">ble</span><span style="background-color:rgb(255,255,255)">_</span><span style="background-color:rgb(179,255,255)">device</span><span style="background-color:rgb(255,118,118)"> =</span><span style="background-color:rgb(173,255,173)"> address</span><span style="background-color:rgb(183,183,255)">_</span><span style="background-color:rgb(255,255,179)">or</span><span style="background-color:rgb(255,255,255)">_</span><span style="background-color:rgb(255,255,255)">ble</span><span style="background-color:rgb(255,255,255)">_</span><span style="background-color:rgb(255,255,255)">device</span>
-    <span style="background-color:rgb(255,255,255)">&lt;mask&gt;</span><span style="background-color:rgb(255,255,255)">       </span><span style="background-color:rgb(255,186,255)"> self</span><span style="background-color:rgb(255,255,255)">._</span><span style="background-color:rgb(255,255,255)">address</span><span style="background-color:rgb(255,255,255)">_</span><span style="background-color:rgb(188,255,255)">as</span><span style="background-color:rgb(255,255,255)">_</span><span style="background-color:rgb(255,195,195)">int</span><span style="background-color:rgb(255,255,255)"> =</span><span style="background-color:rgb(255,255,255)"> mac</span><span style="background-color:rgb(255,255,255)">_</span><span style="background-color:rgb(255,255,255)">to</span><span style="background-color:rgb(139,255,139)">_</span><span style="background-color:rgb(255,255,255)">int</span><span style="background-color:rgb(255,255,255)">(</span><span style="background-color:rgb(255,255,255)">self</span><span style="background-color:rgb(255,255,255)">._</span><span style="background-color:rgb(255,255,255)">ble</span><span style="background-color:rgb(255,255,255)">_</span><span style="background-color:rgb(173,173,255)">device</span><span style="background-color:rgb(255,255,255)">.</span><span style="background-color:rgb(255,255,255)">address</span><span style="background-color:rgb(255,255,255)">)</span>
-
-                            </pre>
-                        </div>
-                    </div>
-                    <span slot="footer" class="dialog-footer">
-                        <el-button @click="showModal = false">Cancel</el-button>
-                        <el-button type="primary" @click="saveChanges">Save</el-button>
-                    </span>
-                </el-dialog>
-            </div>
-
-
-        </div>
-        <div id="currHover">
-            <h3>MetaData Card</h3>
-            HoverIndex: {{lastHoveredIndex}}<br />
-            Prediction: {{curr_pred}}<br />
-            Label: {{curr_label}}<br />
-            Confidence: {{confidence_dict}}<br />
-            <div v-if="dataType === 'Image' && lastHoveredIndex != null">
-                <img :src="imageSrc" alt="Image Description" height="100px" />
-            </div>
-            <div v-else>
-                <div style="overflow-y: auto; white-space: pre;">
-                    <p>{{ textContent }}</p>
-                </div>
-            </div>
-        </div>
-        <div id="hoverLabel">
-            <!-- Label content -->
-        </div>
-        <div id="fixedHoverLabel">
 
         </div>
     </div>
 </body>
 
 <script>
-
     window.vueApp = new Vue({
         el: '#app',
         data() {
@@ -481,15 +346,22 @@
                 this.driver.start()
             },
             update() {
-                this.isCanvasLoading = true
-                console.log("taskType", this.taskType)
-                if (this.customContentPath != '') {
-                    updateCustomProjection(this.contentPath, this.customContentPath, this.currEpoch, this.taskType)
-                }
-                else {
-                    updateProjection(this.contentPath, this.currEpoch, this.taskType)
-                }
-                fetchTimelineData(this.contentPath, "")
+                console.log("notify: update");
+                sendMessage({
+                    command: 'update',
+                    contentPath: this.contentPath,
+                    customContentPath: this.customContentPath,
+                    taskType: this.taskType
+                });
+                // this.isCanvasLoading = true
+                // console.log("taskType", this.taskType)
+                // if (this.customContentPath != '') {
+                //     updateCustomProjection(this.contentPath, this.customContentPath, this.currEpoch, this.taskType)
+                // }
+                // else {
+                //     updateProjection(this.contentPath, this.currEpoch, this.taskType)
+                // }
+                // fetchTimelineData(this.contentPath, "")
 
             },
             VDBHandler() {

@@ -1050,3 +1050,20 @@ function addNewLbel(labeling,contentPathRef,currEpochRef,contentPathTar,currEpoc
         });
   });
 }
+
+const canConnectToVsCode = (window.acquireVsCodeApi !== undefined);
+if (canConnectToVsCode) {
+  window.vscode = acquireVsCodeApi();
+}
+
+function sendMessage(msg) {
+  if (canConnectToVsCode) {
+    window.vscode.postMessage(msg);
+  } else {
+    parent.postMessage(msg, '*');
+  }
+}
+
+window.addEventListener('message', msg => {
+  console.log('A message is received and to be processed with vue', msg);
+});
