@@ -32,32 +32,37 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "myViewContainer",
-          "title": "My View Container",
+          "id": "visualizer-sidebar",
+          "title": "Time Travelling Visualizer",
           "icon": "resources/home_24dp_FILL0_wght400_GRAD0_opsz24.svg"
         }
       ],
       "panel": [
         {
-          "id": "myPanelViewContainer",
-          "title": "My Panel View Container",
+          "id": "visualizer-panel",
+          "title": "Time Travelling Visualizer",
           "icon": "resources/home_24dp_FILL0_wght400_GRAD0_opsz24.svg"
         }
       ]
     },
     "views": {
-      "myViewContainer": [
+      "visualizer-sidebar": [
         {
           "type": "webview",
-          "id": "myView",
-          "name": "My Custom View"
+          "id": "basic-view",
+          "name": "Load Visualization"
+        },
+        {
+          "type": "webview",
+          "id": "advanced-view",
+          "name": "Advanced Options"
         }
       ],
-      "myPanelViewContainer": [
+      "visualizer-panel": [
         {
           "type": "webview",
-          "id": "myPanelView",
-          "name": "My Custom Panel View"
+          "id": "panel-view",
+          "name": "Peek Visualizer"
         }
       ]
     }
