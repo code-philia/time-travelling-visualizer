@@ -7,12 +7,16 @@ let headers = new Headers();
 headers.append('Content-Type', 'application/json');
 headers.append('Accept', 'application/json');
 
+if (backendUri === undefined) {
+  var backendUri = "http://127.0.0.1:5000";
+}
+
 // updateProjection
 
 function updateProjection(content_path, iteration, taskType) {
 
     console.log(content_path,iteration)
-    fetch(`${window.location.href}updateProjection`, {
+    fetch(`${backendUri}/updateProjection`, {
         method: 'POST',
         body: JSON.stringify({
             "path": content_path, 
@@ -61,7 +65,7 @@ function updateProjection(content_path, iteration, taskType) {
     });
 }
   function fetchTimelineData(content_path, flag){
-    fetch(`${window.location.href}/get_itertaion_structure?path=${content_path}&method=Trustvis&setting=normal`, {
+    fetch(`${backendUri}/get_itertaion_structure?path=${content_path}&method=Trustvis&setting=normal`, {
         method: 'POST',
         headers: headers,
         mode: 'cors'
@@ -77,7 +81,7 @@ function updateProjection(content_path, iteration, taskType) {
   function getOriginalData(content_path,index, dataType, flag, custom_path){
     if(index != null){
         let specifiedCurrEpoch = makeSpecifiedVariableName('currEpoch', flag)
-        fetch(`${window.location.href}/sprite${dataType}?index=${index}&path=${content_path}&cus_path=${custom_path}&username=admin&iteration=${window.vueApp[specifiedCurrEpoch]}&`, {
+        fetch(`${backendUri}/sprite${dataType}?index=${index}&path=${content_path}&cus_path=${custom_path}&username=admin&iteration=${window.vueApp[specifiedCurrEpoch]}&`, {
             method: 'GET',
             mode: 'cors'
           }).then(response => response.json()).then(data => {
@@ -109,7 +113,7 @@ function updateContraProjection(content_path, iteration, taskType, flag) {
     console.log('contrast',content_path,iteration)
     let specifiedVisMethod = makeSpecifiedVariableName('visMethod', flag)
     let specifiedFilterIndex = makeSpecifiedVariableName('filter_index', flag)
-    fetch(`${window.location.href}/updateProjection`, {
+    fetch(`${backendUri}/updateProjection`, {
         method: 'POST',
         body: JSON.stringify({
             "path": content_path, 
@@ -201,7 +205,7 @@ function getHighlightedPoints(task, flag) {
               }),
             };
         
-            fetch(`${window.location.href}/contraVisHighlightSingle`, requestOptions)
+            fetch(`${backendUri}/contraVisHighlightSingle`, requestOptions)
             .then(responses => {
 
               if (!responses.ok) {
@@ -336,7 +340,7 @@ function getHighlightedPoints(task, flag) {
               }),
             };
         
-            fetch(`${window.location.href}/contraVisHighlight`, requestOptions)
+            fetch(`${backendUri}/contraVisHighlight`, requestOptions)
             .then(response => {
               if (!response.ok) {
                 throw new Error(`Server responded with status: ${response.status}`);
@@ -382,7 +386,7 @@ function getHighlightedPoints(task, flag) {
         }),
       };
   
-      fetch(`${window.location.href}/getVisualizationError`, requestOptions)
+      fetch(`${backendUri}/getVisualizationError`, requestOptions)
       .then(response => {
         if (!response.ok) {
           throw new Error(`Server responded with status: ${response.status}`);
@@ -426,7 +430,7 @@ function getPredictionFlipIndices(flag) {
     }),
   };
 
-  fetch(`${window.location.href}/getPredictionFlipIndices`, requestOptions)
+  fetch(`${backendUri}/getPredictionFlipIndices`, requestOptions)
   .then(response => {
     if (!response.ok) {
       throw new Error(`Server responded with status: ${response.status}`);
@@ -452,7 +456,7 @@ function getPredictionFlipIndices(flag) {
 
 // index search
 function indexSearch(query, switchOn) {
-  fetch(`${window.location.href}indexSearch`, {
+  fetch(`${backendUri}/indexSearch`, {
       method: 'POST',
       body: JSON.stringify({
 
@@ -507,7 +511,7 @@ function reloadColor(flag) {
     }),
   };
 
-  fetch(`${window.location.href}/getOriginalColors`, requestOptions)
+  fetch(`${backendUri}/getOriginalColors`, requestOptions)
   .then(response => {
     if (!response.ok) {
       throw new Error(`Server responded with status: ${response.status}`);
@@ -565,7 +569,7 @@ function contrastLoadColor(flag) {
     }),
   };
 
-  fetch(`${window.location.href}/getComparisonColors`, requestOptions)
+  fetch(`${backendUri}/getComparisonColors`, requestOptions)
   .then(response => {
     if (!response.ok) {
       throw new Error(`Server responded with status: ${response.status}`);
@@ -672,7 +676,7 @@ function queryMissSearch(query,contentPathRef,currEpochRef,contentPathTar,currEp
 // loadVectorDB
 function loadVectorDB(content_path, iteration) {
     console.log(content_path,iteration)
-    fetch(`${window.location.href}loadVectorDB`, {
+    fetch(`${backendUri}/loadVectorDB`, {
         method: 'POST',
         body: JSON.stringify({
             "path": content_path, 
@@ -698,7 +702,7 @@ function loadVectorDB(content_path, iteration) {
 // loadVectorDB
 function contrastloadVectorDBCode(content_path, iteration) {
   console.log(content_path,iteration)
-  fetch(`${window.location.href}loadVectorDBCode`, {
+  fetch(`${backendUri}/loadVectorDBCode`, {
       method: 'POST',
       body: JSON.stringify({
           "path": content_path, 
@@ -724,7 +728,7 @@ function contrastloadVectorDBCode(content_path, iteration) {
 // loadVectorDB
 function contrastloadVectorDBNl(content_path, iteration) {
   console.log(content_path,iteration)
-  fetch(`${window.location.href}loadVectorDBNl`, {
+  fetch(`${backendUri}/loadVectorDBNl`, {
       method: 'POST',
       body: JSON.stringify({
           "path": content_path, 
@@ -750,7 +754,7 @@ function contrastloadVectorDBNl(content_path, iteration) {
 function updateCustomProjection(content_path, custom_path, iteration, taskType) {
 
   console.log(content_path,iteration)
-  fetch(`${window.location.href}updateCustomProjection`, {
+  fetch(`${backendUri}/updateCustomProjection`, {
       method: 'POST',
       body: JSON.stringify({
           "path": content_path, 
@@ -900,7 +904,7 @@ function addNewLbel(labeling,contentPathRef,currEpochRef,contentPathTar,currEpoc
 function updateCustomProjection(content_path, custom_path, iteration, taskType) {
 
   console.log(content_path,iteration)
-  fetch(`${window.location.href}updateCustomProjection`, {
+  fetch(`${backendUri}/updateCustomProjection`, {
       method: 'POST',
       body: JSON.stringify({
           "path": content_path, 
