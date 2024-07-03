@@ -5,7 +5,7 @@
     <title>TIME-TRAVELLING</title>
     <meta charset="UTF-8" name="viewport"
         content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-        
+
     <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
     <link rel="stylesheet" href="driver.min.css">
     <link rel="stylesheet" href="index.css">
@@ -26,10 +26,12 @@
 <body>
     <script src="https://unpkg.com/element-ui/lib/index.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/driver.js/dist/driver.min.js"></script>
-    <div id="app" v-loading="isCanvasLoading" element-loading-text="loading..." element-loading-background="rgba(255, 255, 255, 0.4)">
+    <div id="app" v-loading="isCanvasLoading" element-loading-text="loading..."
+        element-loading-background="rgba(255, 255, 255, 0.4)">
         <div class="header">
             Time Travelling Visualizer
-            <a href="/contrast" @click="clearStorageNavigate(event,'/contrast')"style="color: #fff; position:fixed; right: 60px;top:4px;"><i class="el-icon-open"
+            <a href="/contrast" @click="clearStorageNavigate(event,'/contrast')"
+                style="color: #fff; position:fixed; right: 60px;top:4px;"><i class="el-icon-open"
                     style="font-size: 24px;"></i></a>
             <a id="connectUs" href="mailto:zyifan828@gmail.com?subject=Time Travelling visualizer Bug&body=Hi"
                 style="color: #fff; position:fixed; right: 20px;top:4px;"><i class="el-icon-message"
@@ -66,8 +68,194 @@
         </el-popover>
 
         <div class="content_container">
-            
-            <div id="container">            
+
+            <div id="subject_model_info_panel">
+                <span style="display: inline-block; margin-right: 20px;">Data Type:</span>
+                <div id="contentSettingData">
+                    <el-radio v-model="dataType" label="Image">Image</el-radio>
+                    <el-radio v-model="dataType" label="Text">Text</el-radio>
+                </div>
+                <el-divider></el-divider>
+                <span style="display: inline-block; margin-right: 20px;">Task Type:</span><br />
+                <div id="contentSettingTask">
+                    <el-radio v-model="taskType" label="Classification">Classification</el-radio>
+                    <el-radio v-model="taskType" label="Non-Classification">Non-Classification</el-radio>
+                </div>
+
+                <el-divider></el-divider>
+
+                <span style="display: inline-block; margin-right: 20px;" v-if="showColorSetting">Color Points?</span>
+                <div id="colorSettingTask" v-if="showColorSetting">
+                    <el-radio v-model="colorType" label="noColoring">No Need</el-radio>
+                    <el-radio v-model="colorType" label="singleColoring">Classification Coloring</el-radio>
+                </div>
+                <el-button id="loadColorButton"
+                    style="background-color: #571792; color: #fff; width: 100%; margin-top: 0px;" @click="ColorHandler"
+                    v-if="showColorSetting">Load
+                    Color</el-button>
+                <el-divider v-if="showColorSetting"></el-divider>
+
+                <div id="contentPathInput">
+                    Content Path:
+                    <el-input v-model="contentPath"></el-input>
+                </div>
+                <div id="visMethodInput">
+                    Visualization Method:
+                    <el-input v-model="visMethod"></el-input>
+                </div>
+                <!-- <el-divider></el-divider>
+                <div id="customContentPathInput">
+                    Custom Content Path:
+                    <el-input v-model="customContentPath"></el-input>
+                </div> -->
+                <el-divider></el-divider>
+                <el-button id="showVisResBtn"
+                    style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;" @click="update">Load
+                    Visualization Result</el-button>
+                <el-divider></el-divider>
+                <el-button id="loadVDBBtn" style="background-color: #571792; color: #fff; width: 100%; margin-top: 0px;"
+                    @click="VDBHandler">Load
+                    Vector Database</el-button>
+                <el-divider></el-divider>
+                <table id="subjectModeEvalRes">
+                    <caption style="margin-bottom: 10px 0;">Model Evaluation</caption>
+                    <tr>
+                        <td></td>
+                        <td>training acc</td>
+                        <td>Testing acc</td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td>{{evaluation.train_acc}}</td>
+                        <td>{{evaluation.test_acc}}</td>
+                    </tr>
+                </table>
+                <el-divider></el-divider>
+                <table id="labelColor">
+                    <thead>
+                        <tr>
+                            <th>Label</th>
+                            <th>Color</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                    </tbody>
+                </table>
+                <el-divider></el-divider>
+            </div>
+
+            <div id="advanced_panel">
+                <el-checkbox v-model="showTraining">Training</el-checkbox>
+                <el-checkbox v-model="showTesting">Testing</el-checkbox>
+                <el-divider></el-divider>
+                <el-checkbox v-model="showVisError">Visualization Error</el-checkbox>
+                <el-checkbox v-model="showPredictionFlips">Prediction Flip</el-checkbox>
+                <br />
+                <el-checkbox v-model="SelectionMode">Selection Mode</el-checkbox>
+                <el-divider></el-divider>
+                <el-tabs>
+                    <el-tab-pane label="Normal Query">
+                        Filter Index:
+                        <div style="display: flex;"></el-input><el-input v-model="filter_index">
+                            </el-input><el-button style="background-color: #571792; color: #fff;"
+                                @click="filterByIndex">Filter</el-button></div>
+                        <div class="query-row">
+                            <el-select v-model="predicates.key">
+                                <el-option value="label" label="label">
+                                </el-option>
+                                <el-option value="prediction" label="prediction">
+                                </el-option>
+                            </el-select>
+                            <el-input style="margin-left:20px;" v-model="predicates.value"></el-input>
+                        </div>
+                        <div class="query-row">
+                            Confidence: <el-input style="margin-left:20px; margin-right:10px;" v-model="confidence[0]">
+                            </el-input> - <el-input style="margin-left:10px;" v-model="confidence[1]"></el-input>
+                        </div>
+                        <el-button style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;">
+                            Start Query
+                        </el-button>
+
+                    </el-tab-pane>
+
+                    <el-tab-pane label="Advanced Query">
+                        <div style="display: flex;"></el-input><el-input v-model="filter_index">
+                            </el-input><el-button style="background-color: #571792; color: #fff;"
+                                @click="NlSearch">Search</el-button></div>
+                        <el-divider></el-divider>
+                        <div class="switch-container">
+                            <el-switch v-model="isSwitchOn" active-text="Open KNN" inactive-text="Close KNN">
+                            </el-switch>
+                        </div>
+                        <div class="advanced-query-row">
+                            <el-select v-model="query.key">
+                                <el-option value="index" label="index">
+                                </el-option>
+                                <el-option value="nl" label="nl">
+                                </el-option>
+                                <el-option value="vector" label="vector">
+                                </el-option>
+                            </el-select>
+                            <el-input style="margin-left:20px;" v-model="query.value"></el-input>
+                        </div>
+                        <div class="advanced-query-row">
+                            K: <el-input style="margin-left:20px;" v-model="query.k"></el-input>
+                        </div>
+                        <el-button style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;"
+                            @click="indexSearchHandler">
+                            Start Query
+                        </el-button>
+                        <el-button
+                            style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px; margin-left:0px;"
+                            @click="clearSearchHandler">
+                            Clear Query
+                        </el-button>
+
+                        <!-- 显示查询结果 -->
+                        <span id="resultContainer">
+                            <ul>
+                                <li v-for="result in query_result" :key="result.id">
+                                    Distance: {{ result.distance }}, ID: {{ result.id }}
+                                </li>
+                            </ul>
+                        </span>
+                    </el-tab-pane>
+                </el-tabs>
+                <el-divider></el-divider>
+                <div class="Selection Pool">
+                    <h3>Selection Pool</h3>
+                    <div v-for="item in selectedIndex"
+                        style="display: flex; line-height: 20px; justify-content: space-between;">
+                        Index: {{item}} <i class="el-icon-delete" @click="deleteItemfromSel(item)"></i>
+                    </div>
+                    <el-button style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;"
+                        @click="openModal">
+                        Representation Editing
+                    </el-button>
+                </div>
+                <!-- Modal -->
+                <el-dialog :visible.sync="showModal" width="80%">
+                    <span slot="title">Representation Editing</span>
+                    <div class="modal-container">
+                        <div class="modal-column" v-for="item in selectedIndex">
+                            <h4>Index: {{item}}</h4>
+                            <h4>Code:</h4>
+                            <pre>{{"SAMPLE"}}</pre>
+                            <pre id="highlight" class="highlight">
+<span style="background-color:rgb(255,150,150)">&lt;code_window&gt;</span>
+    <span style="background-color:rgb(255,255,255)">&lt;mask&gt;</span><span style="background-color:rgb(167,255,167)">       </span><span style="background-color:rgb(222,222,255)"> super</span><span style="background-color:rgb(255,255,159)">().</span><span style="background-color:rgb(255,255,255)">__</span><span style="background-color:rgb(255,255,255)">init</span><span style="background-color:rgb(255,255,255)">__</span><span style="background-color:rgb(255,255,255)">(</span><span style="background-color:rgb(255,255,255)">address</span><span style="background-color:rgb(255,255,255)">_</span><span style="background-color:rgb(255,212,255)">or</span><span style="background-color:rgb(255,255,255)">_</span><span style="background-color:rgb(255,255,255)">ble</span><span style="background-color:rgb(255,255,255)">_</span><span style="background-color:rgb(149,255,255)">device</span><span style="background-color:rgb(255,255,255)">,</span><span style="background-color:rgb(255,255,255)"> *</span><span style="background-color:rgb(255,141,141)">args</span><span style="background-color:rgb(255,255,255)">,</span><span style="background-color:rgb(185,255,185)"> **</span><span style="background-color:rgb(172,172,255)">kwargs</span><span style="background-color:rgb(255,255,139)">)</span>
+    <span style="background-color:rgb(255,255,255)">&lt;mask&gt;</span><span style="background-color:rgb(255,255,255)">       </span><span style="background-color:rgb(255,174,255)"> self</span><span style="background-color:rgb(255,255,255)">._</span><span style="background-color:rgb(255,255,255)">ble</span><span style="background-color:rgb(255,255,255)">_</span><span style="background-color:rgb(179,255,255)">device</span><span style="background-color:rgb(255,118,118)"> =</span><span style="background-color:rgb(173,255,173)"> address</span><span style="background-color:rgb(183,183,255)">_</span><span style="background-color:rgb(255,255,179)">or</span><span style="background-color:rgb(255,255,255)">_</span><span style="background-color:rgb(255,255,255)">ble</span><span style="background-color:rgb(255,255,255)">_</span><span style="background-color:rgb(255,255,255)">device</span>
+    <span style="background-color:rgb(255,255,255)">&lt;mask&gt;</span><span style="background-color:rgb(255,255,255)">       </span><span style="background-color:rgb(255,186,255)"> self</span><span style="background-color:rgb(255,255,255)">._</span><span style="background-color:rgb(255,255,255)">address</span><span style="background-color:rgb(255,255,255)">_</span><span style="background-color:rgb(188,255,255)">as</span><span style="background-color:rgb(255,255,255)">_</span><span style="background-color:rgb(255,195,195)">int</span><span style="background-color:rgb(255,255,255)"> =</span><span style="background-color:rgb(255,255,255)"> mac</span><span style="background-color:rgb(255,255,255)">_</span><span style="background-color:rgb(255,255,255)">to</span><span style="background-color:rgb(139,255,139)">_</span><span style="background-color:rgb(255,255,255)">int</span><span style="background-color:rgb(255,255,255)">(</span><span style="background-color:rgb(255,255,255)">self</span><span style="background-color:rgb(255,255,255)">._</span><span style="background-color:rgb(255,255,255)">ble</span><span style="background-color:rgb(255,255,255)">_</span><span style="background-color:rgb(173,173,255)">device</span><span style="background-color:rgb(255,255,255)">.</span><span style="background-color:rgb(255,255,255)">address</span><span style="background-color:rgb(255,255,255)">)</span>
+
+                            </pre>
+                        </div>
+                    </div>
+                    <span slot="footer" class="dialog-footer">
+                        <el-button @click="showModal = false">Cancel</el-button>
+                        <el-button type="primary" @click="saveChanges">Save</el-button>
+                    </span>
+                </el-dialog>
             </div>
 
         </div>
@@ -104,13 +292,13 @@
         el: '#app',
         data() {
             return {
-                selectedList:[{'index':22},{'index':77}],
+                selectedList: [{ 'index': 22 }, { 'index': 77 }],
                 selectedIndex: [],
-                selectedPointPos:[],
+                selectedPointPos: [],
                 selectedPointPos: [],
                 showModal: false,
                 lastHoveredIndex: null,
-                curIndex:null,
+                curIndex: null,
                 nnIndices: [],
                 contentPath: ' ',
                 customContentPath: '',
@@ -118,7 +306,7 @@
                 taskType: 'Classification',
                 colorType: 'noColoring',
                 showColorSetting: false,
-                filter_index:'',
+                filter_index: '',
                 isCanvasLoading: false,
                 query_result: {},
                 prediction_list: [],
@@ -181,24 +369,24 @@
                     x_min: null,
                     y_min: null,
                     x_max: null,
-                    y_max: null 
+                    y_max: null
                 }
             }
         },
-        created(){
+        created() {
             this.loadCookies()
         },
         methods: {
-            loadCookies(){
+            loadCookies() {
                 this.contentPath = Cookies.get('contentPath') || '';
             },
             deleteItemfromSel(item) {
                 const index = this.selectedIndex.indexOf(item);
                 if (index !== -1) {
-                  this.selectedIndex.splice(index, 1);
+                    this.selectedIndex.splice(index, 1);
                 }
-              },
-            saveContentPath(){
+            },
+            saveContentPath() {
                 Cookies.set('contentPath', this.contentPath, { expires: 7 }); // Expires in 7 days
             },
             filterInput(key, event) {
@@ -219,13 +407,13 @@
                 container = document.getElementById("container")
                 const rect = container.getBoundingClientRect();
                 var aspectRatio = rect.width / rect.height;
-              
+
                 this.camera.position.set(0, 0, 100);
                 this.camera.left = this.sceneBoundary.x_min * aspectRatio
                 this.camera.right = this.sceneBoundary.x_max * aspectRatio;
                 this.camera.top = this.sceneBoundary.y_max;
                 this.camera.bottom = this.sceneBoundary.y_min;
-  
+
                 this.renderer.setSize(rect.width, rect.height);
                 this.renderer.setClearColor(BACKGROUND_COLOR, 1);
 
@@ -236,10 +424,10 @@
                 this.camera.updateProjectionMatrix();
                 this.camera.lookAt(target);
             },
-            filterByIndex(){
+            filterByIndex() {
                 updateProjection(this.contentPath, this.currEpoch, this.taskType)
             },
-            NlSearch(){
+            NlSearch() {
             },
             guide() {
                 const steps = [
@@ -342,7 +530,7 @@
                 if (this.customContentPath != '') {
                     updateCustomProjection(this.contentPath, this.customContentPath, this.currEpoch, this.taskType)
                 }
-                else{
+                else {
                     updateProjection(this.contentPath, this.currEpoch, this.taskType)
                 }
                 fetchTimelineData(this.contentPath, "")
@@ -353,8 +541,8 @@
                 loadVectorDB(this.contentPath, this.currEpoch)
             },
             ColorHandler() {
-                this.isCanvasLoading = true  
-                reloadColor('')   
+                this.isCanvasLoading = true
+                reloadColor('')
             },
             indexSearchHandler() {
                 this.isCanvasLoading = true
@@ -375,76 +563,77 @@
                 this.showModal = false;
             },
             getInitialState() {
-                return {lastHoveredIndex: null,
-                contentPath: '/home/yifan/dataset/case_study_mnist_backdoor',
-                customContentPath: '',
-                visMethod: 'Trustvis',
-                taskType: 'Classification',
-                colorType: 'noColoring',
-                showColorSetting: false,
-                isCanvasLoading: false,
-                query_result: {},
-                prediction_list: [],
-                curr_pred: '',
-                curr_label: '',
-                label_list: [],
-                label_name_dict: {},
-                color_list: [],
-                confidence_list: [],
-                confidence_dict: [],
-                evaluation: { test_acc: 0, train_acc: 0 },
-                currEpoch: 1,
-                totalEpoch: null,
-                train_index: null,
-                test_index: null,
-                showTraining: true,
-                showTesting: true,
-                showVisError: false,
-                showPredictionFlips: false,
-                SelectionMode: false,
-                isShifting: false,
-                scene: null,
-                renderer: null,
-                camera: null,
-                curImg: null,
-                imageSrc: "",
-                textContent: "",
-                dataType: "Image",
-                visibilityMap: null,
-                highlightAttributes: {
-                    visualizationError: null,
-                },
-                predictionFlipIndices: null,
-                hoverIndex: null,
-                errorMessage: null,
-                originalSettings: {
-                    originalColors: null,
-                    originalSizes: null,
-                },
-                pointsMesh: null,
-                canvasSetting: {
-                    zoomSpeed: 0.01,
-                    dragSpeed: 0.1,
-                    panSpeed: 0.1,
-                },
-                predicates: {
-                    key: 'lable',
-                    value: null
-                },
-                query: {
-                    key: 'index',
-                    value: null,
-                    k: null
-                },
-                isSwitchOn: false,
-                confidence: [0, 1],
-                sceneBoundary: {
-                    x_min: null,
-                    y_min: null,
-                    x_max: null,
-                    y_max: null 
-                }
-            };
+                return {
+                    lastHoveredIndex: null,
+                    contentPath: '/home/yifan/dataset/case_study_mnist_backdoor',
+                    customContentPath: '',
+                    visMethod: 'Trustvis',
+                    taskType: 'Classification',
+                    colorType: 'noColoring',
+                    showColorSetting: false,
+                    isCanvasLoading: false,
+                    query_result: {},
+                    prediction_list: [],
+                    curr_pred: '',
+                    curr_label: '',
+                    label_list: [],
+                    label_name_dict: {},
+                    color_list: [],
+                    confidence_list: [],
+                    confidence_dict: [],
+                    evaluation: { test_acc: 0, train_acc: 0 },
+                    currEpoch: 1,
+                    totalEpoch: null,
+                    train_index: null,
+                    test_index: null,
+                    showTraining: true,
+                    showTesting: true,
+                    showVisError: false,
+                    showPredictionFlips: false,
+                    SelectionMode: false,
+                    isShifting: false,
+                    scene: null,
+                    renderer: null,
+                    camera: null,
+                    curImg: null,
+                    imageSrc: "",
+                    textContent: "",
+                    dataType: "Image",
+                    visibilityMap: null,
+                    highlightAttributes: {
+                        visualizationError: null,
+                    },
+                    predictionFlipIndices: null,
+                    hoverIndex: null,
+                    errorMessage: null,
+                    originalSettings: {
+                        originalColors: null,
+                        originalSizes: null,
+                    },
+                    pointsMesh: null,
+                    canvasSetting: {
+                        zoomSpeed: 0.01,
+                        dragSpeed: 0.1,
+                        panSpeed: 0.1,
+                    },
+                    predicates: {
+                        key: 'lable',
+                        value: null
+                    },
+                    query: {
+                        key: 'index',
+                        value: null,
+                        k: null
+                    },
+                    isSwitchOn: false,
+                    confidence: [0, 1],
+                    sceneBoundary: {
+                        x_min: null,
+                        y_min: null,
+                        x_max: null,
+                        y_max: null
+                    }
+                };
             },
 
             resetData() {
@@ -454,7 +643,7 @@
                 event.preventDefault();
 
                 localStorage.clear();
-                sessionStorage.clear(); 
+                sessionStorage.clear();
                 cleanForEpochChange('');
                 this.resetData();
 
@@ -464,7 +653,7 @@
         watch: {
             contentPath(newVal) {
                 this.saveContentPath();
-              },
+            },
             lastHoveredIndex: {
                 immediate: true,
                 handler(newVal, oldVal) {
@@ -482,7 +671,7 @@
                     }
                 }
             },
-            curIndex:{
+            curIndex: {
                 immediate: true,
                 handler(newVal, oldVal) {
                     if (this.filter_index !== null && this.filter_index !== "" && (!Array.isArray(this.filter_index) || this.filter_index.length !== 0)) {
@@ -517,7 +706,7 @@
             showPredictionFlips: {
                 handler(newVal, oldVal) {
                     // prediction flip check for next epoch only
-                    console.log("newVal", newVal, this.currEpoch,  this.totalEpoch)
+                    console.log("newVal", newVal, this.currEpoch, this.totalEpoch)
                     if (newVal && this.currEpoch < this.totalEpoch) {
                         getPredictionFlipIndices('')
                         setTimeout(() => {
