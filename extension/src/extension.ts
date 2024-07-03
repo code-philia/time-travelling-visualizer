@@ -11,6 +11,8 @@ const sideBarWebviewPort = 5002;
 const panelWebviewPort = 5003;
 var webRoot = path.join(__dirname, relativeRoot);
 
+const views: { [key: string]: vscode.Webview } = {};
+
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
@@ -43,6 +45,8 @@ export function activate(context: vscode.ExtensionContext) {
 					webRoot
 				);
 			}
+
+			views["mainView"] = panel.webview;
 		})
 	);
 	context.subscriptions.push(
@@ -57,7 +61,7 @@ export function activate(context: vscode.ExtensionContext) {
 		),
 		vscode.window.registerWebviewViewProvider(
 			'advanced-view',
-			new SidebarWebviewViewProvider(context, isDev ? sideBarWebviewPort : undefined, isDev ? '/basic_view.html' : undefined)
+			new SidebarWebviewViewProvider(context, isDev ? sideBarWebviewPort : undefined, isDev ? '/advanced_view.html' : undefined)
 		)
 	);
 	context.subscriptions.push(
@@ -163,6 +167,22 @@ function getForwardWebviewContent(webview: vscode.Webview, localPort: number = 5
             <iframe id="debug-iframe" src="http://localhost:${localPort}${path}"></iframe>
         </body>
         </html>
+		<script>
+			const vscode = acquireVsCodeApi();
+			window.addEventListener('message', e => {
+				console.log('Received message raw:', e);
+				const key = e.message ? 'message' : 'data';
+				const data = e[key];
+				console.log('Received message:', data);
+				if (!data.forward) {	// sent to vscode
+					console.log('Sending message to vscode');
+					data.forward = true;
+					vscode.postMessage(data);
+				} else {				// sent to iframe
+				 	document.getElementById('debug-iframe').contentWindow.postMessage(data, '*');
+				}
+			},false);
+		</script>
     `;
 }
 
@@ -170,11 +190,14 @@ class SidebarWebviewViewProvider implements vscode.WebviewViewProvider {
 	private readonly context: vscode.ExtensionContext;
 	private readonly port?: number;
 	private readonly path?: string;
+	private readonly id?: string;
 
-	constructor(context: vscode.ExtensionContext, port?: number, path?: string) {
+
+	constructor(context: vscode.ExtensionContext, port?: number, path?: string, id?: string) {
 		this.context = context;
 		this.port = port;
 		this.path = path;
+		this.id = id;
 	}
 
 	public resolveWebviewView(
@@ -182,24 +205,33 @@ class SidebarWebviewViewProvider implements vscode.WebviewViewProvider {
 		context: vscode.WebviewViewResolveContext,
 		token: vscode.CancellationToken
 	) {
+		if (this.id) {
+			views[this.id] = webviewView.webview;
+		}
+
 		webviewView.webview.options = getDefaultWebviewOptions();
 
-		if (this.port) {
-			webviewView.webview.html = getForwardWebviewContent(webviewView.webview, this.port, this.path);
-			webviewView.webview.options = {
-				enableScripts: true
-			};
+		if (!this.port) {
+			webviewView.webview.html = this.getHtmlForWebview(webviewView.webview);
 			return;
 		}
 
-		webviewView.webview.html = this.getHtmlForWebview(webviewView.webview);
+		webviewView.webview.html = getForwardWebviewContent(webviewView.webview, this.port, this.path);
+		webviewView.webview.options = {
+			enableScripts: true
+		};
 
-		// TODO: the webview in sidebar and panel cannot be auto updated according to live-server now
-		webviewView.webview.onDidReceiveMessage(data => {
-			switch (data.type) {
-				case 'colorSelected':
+		webviewView.webview.onDidReceiveMessage(msg => {
+			console.log("Msg Recv");
+			switch (msg.command) {
+				case 'update':
 					{
-						vscode.window.activeTextEditor?.insertSnippet(new vscode.SnippetString(`#${data.value}`));
+						console.log('message: update', msg);
+						if ("mainView" in views) {
+							views["mainView"].postMessage(msg);
+						} else {
+							console.log("Cannot find mainView. Message not passed...");
+						}
 						break;
 					}
 				default:

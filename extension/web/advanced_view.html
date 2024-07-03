@@ -31,79 +31,6 @@
         <div class="content_container">
 
             <div id="subject_model_info_panel">
-                <span style="display: inline-block; margin-right: 20px;">Data Type:</span>
-                <div id="contentSettingData">
-                    <el-radio v-model="dataType" label="Image">Image</el-radio>
-                    <el-radio v-model="dataType" label="Text">Text</el-radio>
-                </div>
-                <el-divider></el-divider>
-                <span style="display: inline-block; margin-right: 20px;">Task Type:</span><br />
-                <div id="contentSettingTask">
-                    <el-radio v-model="taskType" label="Classification">Classification</el-radio>
-                    <el-radio v-model="taskType" label="Non-Classification">Non-Classification</el-radio>
-                </div>
-
-                <el-divider></el-divider>
-
-                <span style="display: inline-block; margin-right: 20px;" v-if="showColorSetting">Color Points?</span>
-                <div id="colorSettingTask" v-if="showColorSetting">
-                    <el-radio v-model="colorType" label="noColoring">No Need</el-radio>
-                    <el-radio v-model="colorType" label="singleColoring">Classification Coloring</el-radio>
-                </div>
-                <el-button id="loadColorButton"
-                    style="background-color: #571792; color: #fff; width: 100%; margin-top: 0px;" @click="ColorHandler"
-                    v-if="showColorSetting">Load
-                    Color</el-button>
-                <el-divider v-if="showColorSetting"></el-divider>
-
-                <div id="contentPathInput">
-                    Content Path:
-                    <el-input v-model="contentPath"></el-input>
-                </div>
-                <div id="visMethodInput">
-                    Visualization Method:
-                    <el-input v-model="visMethod"></el-input>
-                </div>
-                <!-- <el-divider></el-divider>
-                <div id="customContentPathInput">
-                    Custom Content Path:
-                    <el-input v-model="customContentPath"></el-input>
-                </div> -->
-                <el-divider></el-divider>
-                <el-button id="showVisResBtn"
-                    style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;" @click="update">Load
-                    Visualization Result</el-button>
-                <el-divider></el-divider>
-                <el-button id="loadVDBBtn" style="background-color: #571792; color: #fff; width: 100%; margin-top: 0px;"
-                    @click="VDBHandler">Load
-                    Vector Database</el-button>
-                <el-divider></el-divider>
-                <table id="subjectModeEvalRes">
-                    <caption style="margin-bottom: 10px 0;">Model Evaluation</caption>
-                    <tr>
-                        <td></td>
-                        <td>training acc</td>
-                        <td>Testing acc</td>
-                    </tr>
-                    <tr>
-                        <td></td>
-                        <td>{{evaluation.train_acc}}</td>
-                        <td>{{evaluation.test_acc}}</td>
-                    </tr>
-                </table>
-                <el-divider></el-divider>
-                <table id="labelColor">
-                    <thead>
-                        <tr>
-                            <th>Label</th>
-                            <th>Color</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-
-                    </tbody>
-                </table>
-                <el-divider></el-divider>
                 <el-checkbox v-model="showTraining">Training</el-checkbox>
                 <el-checkbox v-model="showTesting">Testing</el-checkbox>
                 <el-divider></el-divider>
@@ -243,7 +170,6 @@
 </body>
 
 <script>
-
     window.vueApp = new Vue({
         el: '#app',
         data() {
