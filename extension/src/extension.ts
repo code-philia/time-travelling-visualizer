@@ -4,7 +4,7 @@ import * as vscode from 'vscode';
 import { LiveServerParams, start as startServer } from 'live-server';
 import * as fs from 'fs';
 
-var isDev = true;
+var isDev = false;
 const relativeRoot = 'web/';
 const editorWebviewPort = 5001;
 const sideBarWebviewPort = 5002;
@@ -39,7 +39,7 @@ export function activate(context: vscode.ExtensionContext) {
 				panel.webview.html = loadHomePage(
 					panel.webview,
 					path.join(webRoot, 'index.html'),
-					'Frontend',
+					'(?!http:\\/\\/|https:\\/\\/)([^"]*\\.[^"]+)',	// remember to double-back-slash here
 					webRoot
 				);
 			}
@@ -68,6 +68,7 @@ export function deactivate() { }
 
 function getDefaultWebviewOptions() {
 	const resourceUri = vscode.Uri.file(webRoot);
+	// console.log(`Resource URI: ${resourceUri}`);
 	return {
 		"enableScripts": true,
 		"localResourceRoots": [
@@ -90,7 +91,7 @@ function startSingleLiveServer(htmlPath: string, port: number) {
 		host: "127.0.0.1",
 		root: htmlPath,
 		open: false,
-		wait: 1000,
+		wait: 100,
 		logLevel: 2, // 0 = errors only, 1 = some, 2 = lots
 	};
 	startServer(params);
@@ -101,14 +102,15 @@ function loadHomePage(webview: vscode.Webview, root: string, mapSrc: string, map
 	return replaceUri(html, webview, mapSrc, mapDst);
 }
 
-function replaceUri(html: string, webview: vscode.Webview, src: string, dst: string) {
-	// replace all 'scr="Frontend/..."' URI using webview.asWebviewUri,
+function replaceUri(html: string, webview: vscode.Webview, srcPattern: string, dst: string) {
+	// replace all 'matched pattern' URI using webview.asWebviewUri,
 	// which is hosted by VS Code client,
 	// or it cannot be loaded
-	const cssFormattedHtml = html.replace(new RegExp(`(?<=href\="|src\=")(?:\/?${src}\/)([^"]*)(?=")`, 'g'), (match, p1) => {
+	// where the regex pattern should yield the first group as a correct relative path
+	const cssFormattedHtml = html.replace(new RegExp(`(?<=href\="|src\=")${srcPattern}(?=")`, 'g'), (match, ...args) => {
 		if (match) {
 			// console.log(`matched: ${match}`);
-			const formattedCss = webview.asWebviewUri(vscode.Uri.file(path.join(dst, p1)));
+			const formattedCss = webview.asWebviewUri(vscode.Uri.file(path.join(dst, args[0])));
 			return formattedCss.toString();
 		}
 		return "";
@@ -141,7 +143,7 @@ function getForwardWebviewContent(webview: vscode.Webview, localPort: number = 5
             <title>Localhost</title>
         </head>
         <body>
-            <iframe src="http://localhost:${localPort}" width="100%" height="100%" style="border:none;"></iframe>
+            <iframe src="http://localhost:${localPort}" width="100%" style="border:none; overflow-y: scroll;"></iframe>
         </body>
         </html>
     `;
