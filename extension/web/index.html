@@ -21,6 +21,11 @@
     <script src="render.js"></script>
     <script src="utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+    <style>
+        body, html {
+            height: 100%;
+        }
+    </style>
 </head>
 
 <body>
@@ -66,13 +71,26 @@
         </el-popover>
 
         <div class="content_container">
-            
+            <div id="subject_model_info_panel">
+                <table id="labelColor">
+                    <thead>
+                        <tr>
+                            <th>Label</th>
+                            <th>Color</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+    
+                    </tbody>
+                </table>
+    
+            </div>            
             <div id="container">            
             </div>
 
         </div>
         <div id="footer">
-            <svg id="timeLinesvg"></svg>
+            <svg id="timeLinesvg" height="0" width="0"></svg>
         </div>
         <div id="currHover">
             <h3>MetaData Card</h3>
@@ -343,6 +361,7 @@
                     updateCustomProjection(this.contentPath, this.customContentPath, this.currEpoch, this.taskType)
                 }
                 else{
+                    console.log(`content: ${this.contentPath}`)
                     updateProjection(this.contentPath, this.currEpoch, this.taskType)
                 }
                 fetchTimelineData(this.contentPath, "")
@@ -543,6 +562,24 @@
             this.driver = new Driver()
         }
     })
+
+    window.addEventListener('message', msg => {
+        console.log("Yeeeeeeeeeeeeeeeeeeeeeeee");
+        console.log(msg.data);
+        const data = msg.data;
+        if (!data) {
+            return;
+        }
+        if (data.command === 'update') {
+            window.vueApp.contentPath = data.contentPath;
+            window.vueApp.customContentPath = data.customContentPath;
+            window.vueApp.taskType = data.taskType;
+            if (data.dataType) {
+                window.vueApp.dataType = data.dataType;
+            }
+            window.vueApp.update();
+        }
+    });
 </script>
 
 </html>
