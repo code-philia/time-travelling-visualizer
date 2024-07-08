@@ -2,6 +2,7 @@ import { readFileSync } from 'fs';
 import path from 'path';
 import * as vscode from 'vscode';
 import { LiveServerParams, start as startServer } from 'live-server';
+import * as resources from './resources';
 import * as fs from 'fs';
 
 var isDev = true;
@@ -20,14 +21,17 @@ export function activate(context: vscode.ExtensionContext) {
 	// vscode using an extension host to manage extensions
 	// Setting isDev directly here
 	webRoot = path.join(context.extensionUri.fsPath, relativeRoot);
-	
+
 	if (isDev) {
 		console.log(`Enabling dev mode locally. Webviews are using live updated elements...`);
 		startDefaultDevLiveServers(context);
 	}
 
+	if (context.globalState.get('lastSuccess') === undefined) {
+		context.globalState.update('lastSuccess', false);
+	}
 	context.subscriptions.push(
-		vscode.commands.registerCommand('myExtension.start', () => {
+		vscode.commands.registerCommand('timeTravellingVisualizer.start', () => {
 			const panel = vscode.window.createWebviewPanel(
 				'customEditor',
 				'My Custom Editor',
@@ -49,11 +53,11 @@ export function activate(context: vscode.ExtensionContext) {
 			views["mainView"] = panel.webview;
 		})
 	);
-	context.subscriptions.push(
-		vscode.commands.registerCommand('myExtension.dialog', () => {
-			vscode.window.showOpenDialog();
-		})
-	);
+	// context.subscriptions.push(
+	// 	vscode.commands.registerCommand('timeTravellingVisualizer.dialog', () => {
+	// 		vscode.window.showOpenDialog();
+	// 	})
+	// );
 	context.subscriptions.push(
 		vscode.window.registerWebviewViewProvider(
 			'basic-view',
@@ -70,9 +74,200 @@ export function activate(context: vscode.ExtensionContext) {
 			new SidebarWebviewViewProvider(context, isDev ? panelWebviewPort : undefined, isDev ? '/quick_panel.html' : undefined)
 		)
 	);
+
+	// global state
+
+	const folderPathInputBoxOptions: vscode.InputBoxOptions = {
+		prompt: "Please enter the folder path where the visualization result is stored",
+		placeHolder: "Folder path",
+		value: vscode.workspace.workspaceFolders?.[0].uri.fsPath ?? "",
+	};
+
+
+	const loadVisualizationResultCommmand = vscode.commands.registerCommand('timeTravellingVisualizer.loadVisualizationResult', async () => {
+		const lastSuccess = context.globalState.get('lastSuccess') as boolean;
+
+		const thisSuccess = loadVisualization(context, lastSuccess);
+		context.globalState.update('lastSuccess', thisSuccess);
+	});
 }
 
 export function deactivate() { }
+
+async function repickConfig(
+	context: vscode.ExtensionContext,
+	configBase: vscode.WorkspaceConfiguration,
+	configSection: string,
+	configDescription: string,
+	items: (vscode.QuickPickItem & { iconId?: string })[],
+	lastSuccess: boolean,
+): Promise<string> {
+	if (lastSuccess) {
+		const defaultConfig = configBase.get(configSection);
+		if (defaultConfig && typeof defaultConfig === 'string' && items.some(item => item.label === defaultConfig)) {
+			return defaultConfig;
+		}
+	}
+	const quickPickitems: vscode.QuickPickItem[] = items.map(item => {
+		return {
+			...item,
+			iconPath: item.iconId ? resources.getIconUri(context, item.iconId) : undefined,
+		};
+	});
+	const picked = await vscode.window.showQuickPick(
+		quickPickitems,
+		{ placeHolder: configDescription }
+	);
+	if (!picked) {
+		return "";
+	}
+	return picked.label;
+}
+
+async function loadVisualization(context: vscode.ExtensionContext, lastSuccess: boolean): Promise<boolean> {
+	const config = vscode.workspace.getConfiguration('timeTravellingVisualizer');	// Should we call this each time?
+
+	const dataType = await repickConfig(
+		context,
+		config,
+		'loadVisualization.dataType',
+		"Select the type of your data",
+		[
+			{ iconId: "image-type", label: "Image" },
+			{ iconId: "text-type", label: "Text" },
+		],
+		lastSuccess
+	);
+	if (!dataType) {
+		return false;
+	}
+
+	const taskType = await repickConfig(
+		context,
+		config,
+		'loadVisualization.taskType',
+		"Select the type of your model task",
+		[
+			{ iconId: "classification-task", label: "Classification" },
+			{ iconId: "non-classification-task", label: "Non-Classification" },
+		],
+		lastSuccess
+	);
+	if (!taskType) {
+		return false;
+	}
+
+	const contentPathConfig = config.get('loadVisualization.contentPath');
+	var contentPath: string = "";
+	if (!(typeof contentPathConfig === 'string' && fs.existsSync(contentPathConfig))) {
+		contentPath = await new Promise((resolve, reject) => {
+			const inputBox: vscode.InputBox = vscode.window.createInputBox();
+			inputBox.prompt = "Please enter the folder path where the visualization should start from";
+			inputBox.title = "Data Folder";
+			inputBox.placeholder = "Enter the path";
+			inputBox.buttons = [
+				{ iconPath: vscode.ThemeIcon.Folder, tooltip: "Select folder" }
+			];
+			const workspacePath = vscode.workspace.workspaceFolders?.[0].uri.fsPath ?? "";
+			if (workspacePath) {
+				inputBox.value = fs.realpathSync.native(workspacePath);
+			}
+			inputBox.ignoreFocusOut = true;
+			inputBox.valueSelection = [inputBox.value.length, inputBox.value.length];
+			function validate(value: string): boolean {
+				if (fs.existsSync(value)) {
+					inputBox.validationMessage = "";
+					return true;
+				} else {
+					inputBox.validationMessage = "folder does not exist";
+					return false;
+				}
+			}
+			inputBox.onDidTriggerButton(async (button) => {
+				if (button.tooltip === "Select folder") {
+					const folderPath = await vscode.window.showOpenDialog({
+						canSelectFiles: false,
+						canSelectFolders: true,
+						canSelectMany: false,
+						openLabel: "Select folder",
+					});
+					if (folderPath) {
+						const pathResult = folderPath[0].fsPath;
+						if (validate(pathResult)) {
+							inputBox.value = fs.realpathSync.native(pathResult);	// deal with uppercase of c: on windows
+						}
+						inputBox.valueSelection = [inputBox.value.length, inputBox.value.length];
+					}
+				}
+			});
+			inputBox.onDidChangeValue((value) => {
+				validate(value);
+			});
+			inputBox.onDidAccept(() => {
+				if (validate(inputBox.value)) {
+					resolve(inputBox.value);
+					inputBox.hide();
+				} else {
+					inputBox.hide();
+					reject("invalid folder path");
+				}
+			});
+			inputBox.onDidHide(() => {
+				inputBox.dispose();
+			});
+			inputBox.show();
+		});
+
+		if (!fs.existsSync(contentPath)) {
+			return false;
+		}
+	} else {
+		contentPath = contentPathConfig;
+	}
+
+	const visualizationMethod = await repickConfig(
+		context,
+		config,
+		'loadVisualization.visualizationMethod',
+		"Select the visualization method",
+		[
+			{ label: "TrustVis", description: "(default)" }
+		],
+		lastSuccess
+	);
+	if (!visualizationMethod) {
+		return false;
+	}
+
+	if (await callVisualizationAPI(dataType, taskType, contentPath, visualizationMethod)) {
+		config.update('loadVisualization.dataType', dataType);
+		config.update('loadVisualization.taskType', taskType);
+		config.update('loadVisualization.contentPath', contentPath);
+		config.update('loadVisualization.visualizationMethod', visualizationMethod);
+		return true;
+	} else {
+		return false;
+	}
+}
+
+async function callVisualizationAPI(dataType: string, taskType: string, contentPath: string, visualizationMethod: string): Promise<boolean> {
+	// vscode.window.showInformationMessage(`Loading visualization for ${dataType} data, ${taskType} task, ${contentPath} content, and ${visualizationMethod} method...`);
+	// return true;
+	if ("mainView" in views) {
+		views["mainView"].postMessage({
+			command: 'update',
+			contentPath: contentPath,
+			customContentPath: '',
+			taskType: taskType,
+			dataType: dataType,
+			forward: true
+		});
+		return true;
+	} else {
+		console.log("Cannot find mainView. Message not passed...");
+		return false;
+	}
+}
 
 function getDefaultWebviewOptions() {
 	const resourceUri = vscode.Uri.file(webRoot);
@@ -125,20 +320,6 @@ function replaceUri(html: string, webview: vscode.Webview, srcPattern: string, d
 	});
 
 	return cssFormattedHtml;
-}
-
-function getDemoWebviewContent() {
-	return `<!DOCTYPE html>
-	<html lang="en">
-	<head>
-		<meta charset="UTF-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<title>Custom Editor</title>
-	</head>
-	<body>
-		<h1>Hello, Custom Editor!</h1>
-	</body>
-	</html>`;
 }
 
 function getForwardWebviewContent(webview: vscode.Webview, localPort: number = 5000, path: string = '/') {

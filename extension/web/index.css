@@ -7,12 +7,17 @@ body {
 }
 #app {
     font-family: -apple-system, SF UI Text, Arial, PingFang SC, Hiragino Sans GB, Microsoft YaHei, WenQuanYi Micro Hei, sans-serif;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }
 
 .content_container {
+    flex-grow: 1;
     display: flex;
-    height: 100vh;
-    flex-direction: row; 
+    flex-direction: row;
+    min-height: 0;
+    overflow-y: scroll;
 }
 
 #subject_model_info_panel {
@@ -52,8 +57,10 @@ body {
 }
 
 #footer {
-    height: 10vh;
+    /* height: 10vh; */
     width: 100%;
+    min-height: 90px;
+    box-sizing: border-box;
     position: relative;
     bottom: 0;
     background-color: rgb(244, 244, 244);

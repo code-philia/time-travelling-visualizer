@@ -19,14 +19,46 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "configuration": {
+      "title": "Time Travelling Visualizer",
+      "properties": {
+        "timeTravellingVisualizer.loadVisualization.dataType": {
+          "type": "string",
+          "default": "Image",
+          "enum": ["Image", "Text"],
+          "description": "The data type to show in visualization data points."
+        },
+        "timeTravellingVisualizer.loadVisualization.taskType": {
+          "type": "string",
+          "default": "Classification",
+          "enum": ["Classification", "Non-Classification"],
+          "description": "Task type to visualize."
+        },
+        "timeTravellingVisualizer.loadVisualization.contentPath": {
+          "type": "string",
+          "default": "${workspaceFolder}",
+          "description": "Folder to load data from."
+        },
+        "timeTravellingVisualizer.loadVisualization.visualizationMethod": {
+          "type": "string",
+          "default": "TrustVis",
+          "enum": ["TrustVis"],
+          "description": "The visualization method for model to use."
+        }
+      }
+    },
     "commands": [
       {
-        "command": "myExtension.start",
+        "command": "timeTravellingVisualizer.start",
         "title": "Call an Editor"
       },
       {
-        "command": "myExtension.dialog",
+        "command": "timeTravellingVisualizer.dialog",
         "title": "Open a Dialog"
+      },
+      {
+        "command": "timeTravellingVisualizer.loadVisualizationResult",
+        "title": "Load Visualization Result"
       }
     ],
     "viewsContainers": {
