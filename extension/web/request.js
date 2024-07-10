@@ -1062,8 +1062,35 @@ function sendMessage(msg) {
   } else {
     parent.postMessage(msg, '*');
   }
+  console.log("Yes this is the data");
+  console.log(window.vueApp.$data);
 }
 
 window.addEventListener('message', msg => {
   console.log('A message is received and to be processed with vue', msg);
 });
+
+const validCommands = [
+  'update', 'filterByIndex', 'indexSearchHandler',
+  'clearSearchHandler', 'deleteItemfromSel', 'openModal', 'setShowModalFalse', 'saveChanges'
+];
+const keyKeys = ['command', 'args'];
+const nonSyncKeys = [
+  'pointsMesh', 'renderer', 'originalSettings',
+  'scene', 'camera', 'predictionFlipIndices',
+  'label_name_dict', 'label_list', 'prediction_list', 'confidence_list'
+];
+const nonSyncKeyPrefixes = [
+  'train_index', 'test_index'
+];
+
+
+function getPackedData(obj) {
+  const data = {};
+  for (const key in obj) {
+    if (!(nonSyncKeys.includes(key) || nonSyncKeyPrefixes.some(prefix => key.startsWith(prefix)))) {
+      data[key] = obj[key];
+    }
+  }
+  return data;
+}

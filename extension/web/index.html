@@ -40,7 +40,7 @@
                 style="color: #fff; position:fixed; right: 20px;top:4px;"><i class="el-icon-message"
                     style="font-size: 24px;"></i></a>
         </div>
-        <el-button class="tutorial_btn" type="success" icon="el-icon-question" size="mini"
+        <!-- <el-button class="tutorial_btn" type="success" icon="el-icon-question" size="mini"
             @click.prevent.stop="guide"></el-button>
         <el-popover placement="left" width="200" trigger="click">
             <div>
@@ -68,7 +68,7 @@
             </div>
             <el-button style="position: absolute; top: 160px; right:0; font-size: 20px;" size="mini" type="danger"
                 slot="reference" icon="el-icon-warning"></el-button>
-        </el-popover>
+        </el-popover> -->
 
         <div class="content_container">
             <div id="subject_model_info_panel">
@@ -165,7 +165,7 @@
                 imageSrc: "",
                 textContent: "",
                 dataType: "Image",
-
+                timelineFirstLoaded: false,
 
                 visibilityMap: null,
                 highlightAttributes: {
@@ -255,7 +255,7 @@
                 this.camera.lookAt(target);
             },
             filterByIndex(){
-                updateProjection(this.contentPath, this.currEpoch, this.taskType)
+                this.updateProjectionHandler()
             },
             NlSearch(){
             },
@@ -355,6 +355,7 @@
                 this.driver.start()
             },
             update() {
+                this.timelineFirstLoaded = true
                 this.isCanvasLoading = true
                 console.log("taskType", this.taskType)
                 if (this.customContentPath != '') {
@@ -362,10 +363,17 @@
                 }
                 else{
                     console.log(`content: ${this.contentPath}`)
-                    updateProjection(this.contentPath, this.currEpoch, this.taskType)
+                    this.updateProjectionHandler()
                 }
                 fetchTimelineData(this.contentPath, "")
-
+            },
+            updateProjectionHandler() {
+                if (!this.timelineFirstLoaded) {
+                    this.update();
+                } else {
+                    this.isCanvasLoading = true;
+                    updateProjection(this.contentPath, this.currEpoch, this.taskType)
+                }
             },
             VDBHandler() {
                 this.isCanvasLoading = true
@@ -478,7 +486,10 @@
                 this.resetData();
 
                 window.location.href = url
-            }
+            },
+            setShowModalFalse() {
+                this.showModal = false;
+            },
         },
         watch: {
             contentPath(newVal) {
@@ -523,7 +534,7 @@
                     if (newVal) {
                         getHighlightedPoints('visError', '')
                         setTimeout(() => {
-                            updateProjection(this.contentPath, this.currEpoch, this.taskType)
+                            this.updateProjectionHandler()
                         }, 1000);
                     } else {
                         if (this.highlightAttributes.visualizationError) {
@@ -540,7 +551,7 @@
                     if (newVal && this.currEpoch < this.totalEpoch) {
                         getPredictionFlipIndices('')
                         setTimeout(() => {
-                            updateProjection(this.contentPath, this.currEpoch, this.taskType)
+                            this.updateProjectionHandler()
                         }, 1000);
                     } else {
                         console.log("else branch")
@@ -570,14 +581,22 @@
         if (!data) {
             return;
         }
-        if (data.command === 'update') {
-            window.vueApp.contentPath = data.contentPath;
-            window.vueApp.customContentPath = data.customContentPath;
-            window.vueApp.taskType = data.taskType;
-            if (data.dataType) {
-                window.vueApp.dataType = data.dataType;
+        if (validCommands.includes(data.command) || data.command == 'sync') {
+            for (const key in data) {
+                if (!(keyKeys.includes(key))) {
+                    window.vueApp[key] = data[key];
+                }
             }
-            window.vueApp.update();
+            if (data.command == 'sync') {
+                window.vueApp.$forceUpdate();
+                return;
+            }
+            if (data.args) {
+                window.vueApp[data.command](...data.args);
+            } else {
+                window.vueApp[data.command]();
+            }
+            console.log("Main view data:", window.vueApp.$data);
         }
     });
 </script>
