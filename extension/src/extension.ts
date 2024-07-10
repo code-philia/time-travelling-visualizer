@@ -27,7 +27,7 @@ export function activate(context: vscode.ExtensionContext) {
 		startDefaultDevLiveServers(context);
 	}
 
-	if (context.globalState.get('lastSuccess') === undefined) {
+	if (context.globalState.get('lastSuccess') === undefined) {		// FIXME: is checking "if last time access is ok" useful?
 		context.globalState.update('lastSuccess', false);
 	}
 	context.subscriptions.push(
@@ -124,7 +124,31 @@ async function repickConfig(
 	return picked.label;
 }
 
-async function loadVisualization(context: vscode.ExtensionContext, lastSuccess: boolean): Promise<boolean> {
+type BasicVisualizationConfig = {
+	dataType: string,
+	taskType: string,
+	contentPath: string,
+	visualizationMethod: string,
+};
+
+function checkDefaultVisualizationConfig(): BasicVisualizationConfig | undefined {
+	const config = vscode.workspace.getConfiguration('timeTravellingVisualizer');
+	const dataType = config.get('loadVisualization.dataType');
+	const taskType = config.get('loadVisualization.taskType');
+	const contentPath = config.get('loadVisualization.contentPath');
+	const visualizationMethod = config.get('loadVisualization.visualizationMethod');
+	if (typeof dataType === 'string' && typeof taskType === 'string' && typeof contentPath === 'string' && typeof visualizationMethod === 'string') {
+		return {
+			dataType: dataType,
+			taskType: taskType,
+			contentPath: contentPath,
+			visualizationMethod: visualizationMethod,
+		};
+	}
+	return undefined;
+}
+
+async function reconfigureVisualizationConfig(context: vscode.ExtensionContext, lastSuccess: boolean): Promise<BasicVisualizationConfig | undefined> {
 	const config = vscode.workspace.getConfiguration('timeTravellingVisualizer');	// Should we call this each time?
 
 	const dataType = await repickConfig(
@@ -139,7 +163,7 @@ async function loadVisualization(context: vscode.ExtensionContext, lastSuccess: 
 		lastSuccess
 	);
 	if (!dataType) {
-		return false;
+		return undefined;
 	}
 
 	const taskType = await repickConfig(
@@ -154,7 +178,7 @@ async function loadVisualization(context: vscode.ExtensionContext, lastSuccess: 
 		lastSuccess
 	);
 	if (!taskType) {
-		return false;
+		return undefined;
 	}
 
 	const contentPathConfig = config.get('loadVisualization.contentPath');
@@ -219,7 +243,7 @@ async function loadVisualization(context: vscode.ExtensionContext, lastSuccess: 
 		});
 
 		if (!fs.existsSync(contentPath)) {
-			return false;
+			return undefined;
 		}
 	} else {
 		contentPath = contentPathConfig;
@@ -236,18 +260,39 @@ async function loadVisualization(context: vscode.ExtensionContext, lastSuccess: 
 		lastSuccess
 	);
 	if (!visualizationMethod) {
+		return undefined;
+	}
+
+	config.update('loadVisualization.dataType', dataType);
+	config.update('loadVisualization.taskType', taskType);
+	config.update('loadVisualization.contentPath', contentPath);
+	config.update('loadVisualization.visualizationMethod', visualizationMethod);
+
+	return {
+		dataType: dataType,
+		taskType: taskType,
+		contentPath: contentPath,
+		visualizationMethod: visualizationMethod,
+	};
+}
+
+async function loadVisualization(context: vscode.ExtensionContext, lastSuccess: boolean): Promise<boolean> {
+	const result = checkDefaultVisualizationConfig();
+	if (result) {
+		if (await callVisualizationAPI(result.dataType, result.taskType, result.contentPath, result.visualizationMethod)) {
+			return true;
+		}
 		return false;
 	}
 
-	if (await callVisualizationAPI(dataType, taskType, contentPath, visualizationMethod)) {
-		config.update('loadVisualization.dataType', dataType);
-		config.update('loadVisualization.taskType', taskType);
-		config.update('loadVisualization.contentPath', contentPath);
-		config.update('loadVisualization.visualizationMethod', visualizationMethod);
-		return true;
-	} else {
-		return false;
+	const config = await reconfigureVisualizationConfig(context, lastSuccess);
+	if (config) {
+		const { dataType, taskType, contentPath, visualizationMethod } = config;
+		if (await callVisualizationAPI(dataType, taskType, contentPath, visualizationMethod)) {
+			return true;
+		} 
 	}
+	return false;
 }
 
 async function callVisualizationAPI(dataType: string, taskType: string, contentPath: string, visualizationMethod: string): Promise<boolean> {
@@ -260,7 +305,7 @@ async function callVisualizationAPI(dataType: string, taskType: string, contentP
 			customContentPath: '',
 			taskType: taskType,
 			dataType: dataType,
-			forward: true
+			forward: true		// recognized by live preview <iframe> (in dev) only
 		});
 		return true;
 	} else {
@@ -345,7 +390,8 @@ function getForwardWebviewContent(webview: vscode.Webview, localPort: number = 5
 			</style>
         </head>
         <body>
-            <iframe id="debug-iframe" src="http://localhost:${localPort}${path}"></iframe>
+            <iframe id="debug-iframe" sandbox="allow-modals allow-forms allow-popups allow-scripts allow-same-origin"
+				src="http://localhost:${localPort}${path}"></iframe>
         </body>
         </html>
 		<script>
@@ -355,11 +401,13 @@ function getForwardWebviewContent(webview: vscode.Webview, localPort: number = 5
 				const key = e.message ? 'message' : 'data';
 				const data = e[key];
 				console.log('Received message:', data);
-				if (!data.forward) {	// sent to vscode
+				if (!data.forward) {		// sent to vscode
 					console.log('Sending message to vscode');
-					data.forward = true;
+					data.forward = true;	// VS Code will forward it originally
+											// and this is only recognized by live preview <iframe>.
+											// In production environment, this field does not exist.
 					vscode.postMessage(data);
-				} else {				// sent to iframe
+				} else {					// sent to iframe
 				 	document.getElementById('debug-iframe').contentWindow.postMessage(data, '*');
 				}
 			},false);
@@ -393,7 +441,7 @@ class SidebarWebviewViewProvider implements vscode.WebviewViewProvider {
 		webviewView.webview.options = getDefaultWebviewOptions();
 
 		if (!this.port) {
-			webviewView.webview.html = this.getHtmlForWebview(webviewView.webview);
+			webviewView.webview.html = this.getHtmlForWebview(webviewView.webview);		// FIXME: the static version (for prod) is not updated																					// to be the same as live preview version (for dev) yet
 			return;
 		}
 
@@ -402,7 +450,7 @@ class SidebarWebviewViewProvider implements vscode.WebviewViewProvider {
 			enableScripts: true
 		};
 
-		webviewView.webview.onDidReceiveMessage(msg => {
+		webviewView.webview.onDidReceiveMessage(async (msg) => {
 			console.log("Msg Recv");
 			switch (msg.command) {
 				case 'update':
@@ -411,12 +459,32 @@ class SidebarWebviewViewProvider implements vscode.WebviewViewProvider {
 						if ("mainView" in views) {
 							views["mainView"].postMessage(msg);
 						} else {
-							console.log("Cannot find mainView. Message not passed...");
+							console.log("Cannot find mainView. Message: update not passed...");
 						}
 						break;
 					}
 				default:
 					{
+						// In early design, forward it as is
+						// with additional basic configuration fields
+						console.log('message: other type', msg);
+						if ("mainView" in views) {
+							let config = checkDefaultVisualizationConfig();
+							if (!config) {
+								vscode.window.showWarningMessage("No valid configuration found yet. Generating a new one...");
+								config = await reconfigureVisualizationConfig(this.context, false);
+								if (!config) {
+									break;
+								}
+							}
+							msg.contentPath = config.contentPath;
+							msg.customContentPath = '';
+							msg.taskType = config.taskType;
+							msg.dataType = config.dataType;
+							views["mainView"].postMessage(msg);
+						} else {
+							console.log("Cannot find mainView. Message: other type not passed...");
+						}
 						break;
 					}
 			}

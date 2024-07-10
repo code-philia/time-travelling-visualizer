@@ -58,7 +58,8 @@
                             Confidence: <el-input style="margin-left:20px; margin-right:10px;" v-model="confidence[0]">
                             </el-input> - <el-input style="margin-left:10px;" v-model="confidence[1]"></el-input>
                         </div>
-                        <el-button style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;">
+                        <el-button style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;"
+                            @click="indexSearchHandler">
                             Start Query
                         </el-button>
 
@@ -137,7 +138,7 @@
                         </div>
                     </div>
                     <span slot="footer" class="dialog-footer">
-                        <el-button @click="showModal = false">Cancel</el-button>
+                        <el-button @click="setShowModalFalse">Cancel</el-button>
                         <el-button type="primary" @click="saveChanges">Save</el-button>
                     </span>
                 </el-dialog>
@@ -145,21 +146,6 @@
 
 
             </div>
-        <div id="currHover">
-            <h3>MetaData Card</h3>
-            HoverIndex: {{lastHoveredIndex}}<br />
-            Prediction: {{curr_pred}}<br />
-            Label: {{curr_label}}<br />
-            Confidence: {{confidence_dict}}<br />
-            <div v-if="dataType === 'Image' && lastHoveredIndex != null">
-                <img :src="imageSrc" alt="Image Description" height="100px" />
-            </div>
-            <div v-else>
-                <div style="overflow-y: auto; white-space: pre;">
-                    <p>{{ textContent }}</p>
-                </div>
-            </div>
-        </div>
         <div id="hoverLabel">
             <!-- Label content -->
         </div>
@@ -263,10 +249,15 @@
                 this.contentPath = Cookies.get('contentPath') || '';
             },
             deleteItemfromSel(item) {
-                const index = this.selectedIndex.indexOf(item);
-                if (index !== -1) {
-                    this.selectedIndex.splice(index, 1);
-                }
+                // const index = this.selectedIndex.indexOf(item);
+                // if (index !== -1) {
+                //     this.selectedIndex.splice(index, 1);
+                // }
+                sendMessage({
+                    command: 'deleteItemfromSel',
+                    args: [item],
+                    ...(getPackedData(this.$data))
+                });
             },
             saveContentPath() {
                 Cookies.set('contentPath', this.contentPath, { expires: 7 }); // Expires in 7 days
@@ -307,7 +298,15 @@
                 this.camera.lookAt(target);
             },
             filterByIndex() {
-                updateProjection(this.contentPath, this.currEpoch, this.taskType)
+                // updateProjection(this.contentPath, this.currEpoch, this.taskType)
+                console.log("notify: filterByIndex");
+                sendMessage({
+                    command: 'filterByIndex',
+                    ...(getPackedData(this.$data)),
+                    contentPath: this.contentPath,
+                    customContentPath: this.currEpoch,
+                    taskType: this.taskType
+                });
             },
             NlSearch() {
             },
@@ -427,22 +426,48 @@
                 reloadColor('')
             },
             indexSearchHandler() {
-                this.isCanvasLoading = true
-                indexSearch(this.query, this.isSwitchOn);
+                // this.isCanvasLoading = true
+                // indexSearch(this.query, this.isSwitchOn);
+                sendMessage({
+                    command: 'indexSearchHandler',
+                    ...(getPackedData(this.$data)),
+                    contentPath: this.contentPath,
+                    customContentPath: this.customContentPath,
+                    taskType: this.taskType
+                });
             },
             clearSearchHandler() {
-                clear();
+                // clear();
+                sendMessage({
+                    command: 'clearSearchHandler',
+                    ...(getPackedData(this.$data))
+                });
             },
             toggleSwitch() {
                 this.isSwitchOn = !this.isSwitchOn; // 切换开关状态
                 console.log(this.isSwitchOn)
             },
             openModal() {
-                this.showModal = true;
+                // this.showModal = true;
+                sendMessage({
+                    command: 'openModal',
+                    ...(getPackedData(this.$data))
+                });
             },
             saveChanges() {
-                console.log('保存更改:', this.selectedIndex);
-                this.showModal = false;
+                // console.log('保存更改:', this.selectedIndex);
+                // this.showModal = false;
+                sendMessage({
+                    command: 'saveChanges',
+                    ...(getPackedData(this.$data))
+                });
+            },
+            setShowModalFalse() {
+                // this.showModal = false;
+                sendMessage({
+                    command: 'setShowModalFalse',
+                    ...(getPackedData(this.$data))
+                });
             },
             getInitialState() {
                 return {
@@ -518,6 +543,12 @@
                 };
             },
 
+            syncData() {
+                sendMessage({
+                    command: 'sync',
+                    ...(getPackedData(this.$data))
+                });
+            },
             resetData() {
                 Object.assign(this.$data, this.getInitialState());
             },
@@ -536,77 +567,102 @@
             contentPath(newVal) {
                 this.saveContentPath();
             },
+            showTraining: {
+                handler(newVal, oldVal) {
+                    this.syncData()
+                }
+            },
+            showTesting: {
+                handler(newVal, oldVal) {
+                    this.syncData()
+                }
+            },
             lastHoveredIndex: {
                 immediate: true,
                 handler(newVal, oldVal) {
-                    if (newVal != null) {
-                        getOriginalData(this.contentPath, newVal, this.dataType, "", this.customContentPath)
-                        const updatedQuery = {
-                            ...this.query,
-                            key: 'index',
-                            value: newVal
-                        };
-                        if (this.isSwitchOn) {
-                            indexSearch(updatedQuery, this.isSwitchOn);
-                        }
+                    // if (newVal != null) {
+                    //     getOriginalData(this.contentPath, newVal, this.dataType, "", this.customContentPath)
+                    //     const updatedQuery = {
+                    //         ...this.query,
+                    //         key: 'index',
+                    //         value: newVal
+                    //     };
+                    //     if (this.isSwitchOn) {
+                    //         indexSearch(updatedQuery, this.isSwitchOn);
+                    //     }
 
-                    }
+                    // }
+                    this.syncData()
                 }
             },
             curIndex: {
                 immediate: true,
                 handler(newVal, oldVal) {
-                    if (this.filter_index !== null && this.filter_index !== "" && (!Array.isArray(this.filter_index) || this.filter_index.length !== 0)) {
-                        let filter_index = window.vueApp.filter_index.split(',');
-                        console.log("filter_index[newVal]", filter_index[newVal])
-                        this.curr_pred = this.prediction_list[filter_index[newVal]];
-                    } else {
-                        console.log("newVal", newVal)
-                        this.curr_pred = this.prediction_list[newVal];
-                    }
-                    this.curr_label = this.label_name_dict[this.label_list[newVal]];
-                    this.confidence_dict = this.confidence_list[newVal]
+                    // if (this.filter_index !== null && this.filter_index !== "" && (!Array.isArray(this.filter_index) || this.filter_index.length !== 0)) {
+                    //     let filter_index = window.vueApp.filter_index.split(',');
+                    //     console.log("filter_index[newVal]", filter_index[newVal])
+                    //     this.curr_pred = this.prediction_list[filter_index[newVal]];
+                    // } else {
+                    //     console.log("newVal", newVal)
+                    //     this.curr_pred = this.prediction_list[newVal];
+                    // }
+                    // this.curr_label = this.label_name_dict[this.label_list[newVal]];
+                    // this.confidence_dict = this.confidence_list[newVal]
+                    this.syncData()
                 }
             },
 
             showVisError: {
                 immediate: true,
                 handler(newVal, oldVal) {
-                    if (newVal) {
-                        getHighlightedPoints('visError', '')
-                        setTimeout(() => {
-                            updateProjection(this.contentPath, this.currEpoch, this.taskType)
-                        }, 1000);
-                    } else {
-                        if (this.highlightAttributes.visualizationError) {
-                            this.highlightAttributes.visualizationError.clear()
-                        }
-                        this.highlightAttributes.visualizationError = null
-                    }
+                    // if (newVal) {
+                    //     getHighlightedPoints('visError', '')
+                    //     setTimeout(() => {
+                    //         updateProjection(this.contentPath, this.currEpoch, this.taskType)
+                    //     }, 1000);
+                    // } else {
+                    //     if (this.highlightAttributes.visualizationError) {
+                    //         this.highlightAttributes.visualizationError.clear()
+                    //     }
+                    //     this.highlightAttributes.visualizationError = null
+                    // }
+                    this.syncData()
+                }
+            },
+            showVisError: {
+                handler(newVal, oldVal) {
+                    this.syncData()
                 }
             },
             showPredictionFlips: {
                 handler(newVal, oldVal) {
                     // prediction flip check for next epoch only
-                    console.log("newVal", newVal, this.currEpoch, this.totalEpoch)
-                    if (newVal && this.currEpoch < this.totalEpoch) {
-                        getPredictionFlipIndices('')
-                        setTimeout(() => {
-                            updateProjection(this.contentPath, this.currEpoch, this.taskType)
-                        }, 1000);
-                    } else {
-                        console.log("else branch")
-                        this.predictionFlipIndices = null
-                    }
+                    // console.log("newVal", newVal, this.currEpoch, this.totalEpoch)
+                    // if (newVal && this.currEpoch < this.totalEpoch) {
+                    //     getPredictionFlipIndices('')
+                    //     setTimeout(() => {
+                    //         updateProjection(this.contentPath, this.currEpoch, this.taskType)
+                    //     }, 1000);
+                    // } else {
+                    //     console.log("else branch")
+                    //     this.predictionFlipIndices = null
+                    // }
+                    this.syncData()
+                }
+            },
+            SelectionMode: {
+                handler(newVal, oldVal) {
+                    
                 }
             },
             taskType: {
                 handler(newVal, oldVal) {
-                    if (newVal == "Non-Classification") {
-                        this.showColorSetting = true
-                    } else {
-                        this.showColorSetting = false
-                    }
+                    // if (newVal == "Non-Classification") {
+                    //     this.showColorSetting = true
+                    // } else {
+                    //     this.showColorSetting = false
+                    // }
+                    this.syncData()
                 }
             }
         },
@@ -614,6 +670,7 @@
             this.driver = new Driver()
         }
     })
+
 </script>
 
 </html>

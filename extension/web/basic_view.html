@@ -346,13 +346,6 @@
                 this.driver.start()
             },
             update() {
-                console.log("notify: update");
-                sendMessage({
-                    command: 'update',
-                    contentPath: this.contentPath,
-                    customContentPath: this.customContentPath,
-                    taskType: this.taskType
-                });
                 // this.isCanvasLoading = true
                 // console.log("taskType", this.taskType)
                 // if (this.customContentPath != '') {
@@ -362,7 +355,13 @@
                 //     updateProjection(this.contentPath, this.currEpoch, this.taskType)
                 // }
                 // fetchTimelineData(this.contentPath, "")
-
+                console.log("notify: update");
+                sendMessage({
+                    command: 'update',
+                    contentPath: this.contentPath,
+                    customContentPath: this.customContentPath,
+                    taskType: this.taskType
+                });
             },
             VDBHandler() {
                 this.isCanvasLoading = true
