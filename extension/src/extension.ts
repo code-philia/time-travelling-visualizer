@@ -450,17 +450,12 @@ function getForwardWebviewContent(webview: vscode.Webview, localPort: number = 5
 			const vscode = acquireVsCodeApi();
 			window.addEventListener('message', e => {
 				console.log('Received message raw:', e);
-				const key = e.message ? 'message' : 'data';
-				const data = e[key];
-				console.log('Received message:', data);
-				if (!data.forward) {		// sent to vscode
-					console.log('Sending message to vscode');
-					data.forward = true;	// VS Code will forward it originally
-											// and this is only recognized by live preview <iframe>.
-											// In production environment, this field does not exist.
+				const data = e['data'];
+				if (e.origin.startsWith('vscode-webview')) {		// from vscode, forwarded to iframe
+					const debugIframe = document.getElementById('debug-iframe');
+					debugIframe.contentWindow.postMessage(data, '*');
+				} else {											// from iframe, forwarded to vscode
 					vscode.postMessage(data);
-				} else {					// sent to iframe
-				 	document.getElementById('debug-iframe').contentWindow.postMessage(data, '*');
 				}
 			},false);
 			${notifyLoadScript}
