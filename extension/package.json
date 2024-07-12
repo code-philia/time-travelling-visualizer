@@ -19,6 +19,15 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "menus": {
+      "explorer/context": [
+        {
+          "when": "resourceScheme == file && explorerResourceIsFolder",
+          "command": "timeTravellingVisualizer.setAsDataFolderAndLoadVisualizationResult",
+          "group": "navigation"
+        }
+      ]
+    },
     "configuration": {
       "title": "Time Travelling Visualizer",
       "properties": {
@@ -59,6 +68,10 @@
       {
         "command": "timeTravellingVisualizer.loadVisualizationResult",
         "title": "Load Visualization Result"
+      },
+      {
+        "command": "timeTravellingVisualizer.setAsDataFolderAndLoadVisualizationResult",
+        "title": "Set as Data Folder and Load Visualization Result"
       }
     ],
     "viewsContainers": {

@@ -31,28 +31,16 @@ export function activate(context: vscode.ExtensionContext) {
 		context.globalState.update('lastSuccess', false);
 	}
 	context.subscriptions.push(
-		vscode.commands.registerCommand('timeTravellingVisualizer.start', () => {
-			const panel = vscode.window.createWebviewPanel(
-				'customEditor',
-				'My Custom Editor',
-				vscode.ViewColumn.One,
-				getDefaultWebviewOptions()
-			);
-
-			if (isDev) {
-				panel.webview.html = getForwardWebviewContent(panel.webview, editorWebviewPort);
-			} else {
-				panel.webview.html = loadHomePage(
-					panel.webview,
-					path.join(webRoot, 'index.html'),
-					'(?!http:\\/\\/|https:\\/\\/)([^"]*\\.[^"]+)',	// remember to double-back-slash here
-					webRoot
-				);
-			}
-
-			views["mainView"] = panel.webview;
+		vscode.commands.registerCommand('timeTravellingVisualizer.start', startMainView),
+		vscode.commands.registerCommand('timeTravellingVisualizer.setAsDataFolderAndLoadVisualizationResult', (file) => {
+			setDataFolder(context, file, true);
+		}),
+		vscode.commands.registerCommand('timeTravellingVisualizer.setAsDataFolder', (file) => {
+			setDataFolder(context, file, false);
 		})
 	);
+	
+	
 	// context.subscriptions.push(
 	// 	vscode.commands.registerCommand('timeTravellingVisualizer.dialog', () => {
 	// 		vscode.window.showOpenDialog();
@@ -71,7 +59,8 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.window.registerWebviewViewProvider(
 			'panel-view',
-			new SidebarWebviewViewProvider(context, isDev ? panelWebviewPort : undefined, isDev ? '/quick_panel.html' : undefined)
+			// new SidebarWebviewViewProvider(context, isDev ? panelWebviewPort : undefined, isDev ? '/quick_panel.html' : undefined)
+			new SidebarWebviewViewProvider(context)
 		)
 	);
 
@@ -93,6 +82,63 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 export function deactivate() { }
+
+async function startMainView() {
+	if (views["mainView"]) {
+		return;
+	}
+
+	const panel = vscode.window.createWebviewPanel(
+		'customEditor',
+		'My Custom Editor',
+		vscode.ViewColumn.One,
+		getDefaultWebviewOptions()
+	);
+
+	if (isDev) {
+		panel.webview.html = getForwardWebviewContent(panel.webview, editorWebviewPort, true);
+	} else {
+		panel.webview.html = loadHomePage(
+			panel.webview,
+			path.join(webRoot, 'index.html'),
+			'(?!http:\\/\\/|https:\\/\\/)([^"]*\\.[^"]+)',	// remember to double-back-slash here
+			webRoot
+		);
+	}
+	
+	panel.onDidChangeViewState((e) => {
+		console.log(`Panel view state changed: ${e.webviewPanel.active}`);
+	});
+	panel.onDidDispose((e) => {
+		delete views["mainView"];
+	});
+
+	const loaded = new Promise((resolve, reject) => {
+		panel.webview.onDidReceiveMessage((msg) => {		// this will add a listener, not overwriting
+			if (msg.state === 'load') {
+				views["mainView"] = panel.webview;
+				resolve(undefined);
+			}
+		});
+	});
+	await loaded;
+}
+
+function setDataFolder(context: vscode.ExtensionContext, file: any, loadVis: boolean = false) {
+	if (!file) {
+		return;
+	}
+	const fsPath = file.fsPath;
+	if (fs.existsSync(fsPath) && fs.statSync(fsPath).isDirectory()) {
+		const config = vscode.workspace.getConfiguration('timeTravellingVisualizer');
+		config.update('loadVisualization.contentPath', fsPath);
+		if (loadVis) {
+			loadVisualization(context, false);
+		}
+	} else {
+		vscode.window.showErrorMessage("Selected file is not a directory 😮");
+	}
+}
 
 async function repickConfig(
 	context: vscode.ExtensionContext,
@@ -277,17 +323,13 @@ async function reconfigureVisualizationConfig(context: vscode.ExtensionContext, 
 }
 
 async function loadVisualization(context: vscode.ExtensionContext, lastSuccess: boolean): Promise<boolean> {
-	const result = checkDefaultVisualizationConfig();
-	if (result) {
-		if (await callVisualizationAPI(result.dataType, result.taskType, result.contentPath, result.visualizationMethod)) {
-			return true;
-		}
-		return false;
+	var result = checkDefaultVisualizationConfig();
+	if (!result) {
+		result = await reconfigureVisualizationConfig(context, lastSuccess);
 	}
 
-	const config = await reconfigureVisualizationConfig(context, lastSuccess);
-	if (config) {
-		const { dataType, taskType, contentPath, visualizationMethod } = config;
+	if (result) {
+		const { dataType, taskType, contentPath, visualizationMethod } = result;
 		if (await callVisualizationAPI(dataType, taskType, contentPath, visualizationMethod)) {
 			return true;
 		} 
@@ -298,20 +340,23 @@ async function loadVisualization(context: vscode.ExtensionContext, lastSuccess: 
 async function callVisualizationAPI(dataType: string, taskType: string, contentPath: string, visualizationMethod: string): Promise<boolean> {
 	// vscode.window.showInformationMessage(`Loading visualization for ${dataType} data, ${taskType} task, ${contentPath} content, and ${visualizationMethod} method...`);
 	// return true;
-	if ("mainView" in views) {
-		views["mainView"].postMessage({
-			command: 'update',
-			contentPath: contentPath,
-			customContentPath: '',
-			taskType: taskType,
-			dataType: dataType,
-			forward: true		// recognized by live preview <iframe> (in dev) only
-		});
-		return true;
-	} else {
-		console.log("Cannot find mainView. Message not passed...");
-		return false;
+	if (!("mainView" in views)) {
+		try {
+			await startMainView();
+		} catch(e) {
+			vscode.window.showErrorMessage(`Cannot start main view: ${e}`);
+			return false;
+		}
 	}
+
+	return await views["mainView"].postMessage({
+		command: 'update',
+		contentPath: contentPath,
+		customContentPath: '',
+		taskType: taskType,
+		dataType: dataType,
+		forward: true		// recognized by live preview <iframe> (in dev) only
+	});
 }
 
 function getDefaultWebviewOptions() {
@@ -367,7 +412,14 @@ function replaceUri(html: string, webview: vscode.Webview, srcPattern: string, d
 	return cssFormattedHtml;
 }
 
-function getForwardWebviewContent(webview: vscode.Webview, localPort: number = 5000, path: string = '/') {
+function getForwardWebviewContent(webview: vscode.Webview, localPort: number = 5000, notifyLoad: boolean = false, path: string = '/') {
+	const notifyLoadScript = notifyLoad ? `
+			window.addEventListener('load', () => {
+				console.log('Webview loaded');
+				vscode.postMessage({ state: 'load', forward: true });	// add forward to avoid bounce-back
+			});
+	` : '';
+	
 	return `
         <!DOCTYPE html>
         <html lang="en">
@@ -411,6 +463,7 @@ function getForwardWebviewContent(webview: vscode.Webview, localPort: number = 5
 				 	document.getElementById('debug-iframe').contentWindow.postMessage(data, '*');
 				}
 			},false);
+			${notifyLoadScript}
 		</script>
     `;
 }
@@ -441,11 +494,11 @@ class SidebarWebviewViewProvider implements vscode.WebviewViewProvider {
 		webviewView.webview.options = getDefaultWebviewOptions();
 
 		if (!this.port) {
-			webviewView.webview.html = this.getHtmlForWebview(webviewView.webview);		// FIXME: the static version (for prod) is not updated																					// to be the same as live preview version (for dev) yet
+			webviewView.webview.html = this.getPlacehoderHtmlForWebview(webviewView.webview);		// FIXME: the static version (for prod) is not updated																					// to be the same as live preview version (for dev) yet
 			return;
 		}
 
-		webviewView.webview.html = getForwardWebviewContent(webviewView.webview, this.port, this.path);
+		webviewView.webview.html = getForwardWebviewContent(webviewView.webview, this.port, false, this.path);
 		webviewView.webview.options = {
 			enableScripts: true
 		};
@@ -491,7 +544,7 @@ class SidebarWebviewViewProvider implements vscode.WebviewViewProvider {
 		});
 	}
 
-	private getHtmlForWebview(webview: vscode.Webview): string {
+	private getPlacehoderHtmlForWebview(webview: vscode.Webview): string {
 		return `<!DOCTYPE html>
         <html lang="en">
         <head>
