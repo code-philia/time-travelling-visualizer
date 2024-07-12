@@ -12,7 +12,7 @@ This is still a demo, showing its feature in 2 ways:
 
 ## Development: How to run this extension from scratch?
 
-> We would have assumed experienced front-end developers with decent VS Code knowledge to join this project, but usally young contributor are invited.
+> We would have assumed experienced front-end developers with decent VS Code knowledge to join this project, but usally young contributors are invited.
 > Thus, a more comprehensive guide is written to lead junior developers before they could be pro.
 
 The following guide pre-assumes :
