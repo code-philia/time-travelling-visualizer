@@ -21,6 +21,14 @@
     <script src="render.js"></script>
     <script src="utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%
+        }
+    </style>
 </head>
 
 <body>
@@ -77,33 +85,6 @@
                 <el-button id="loadVDBBtn" style="background-color: #571792; color: #fff; width: 100%; margin-top: 0px;"
                     @click="VDBHandler">Load
                     Vector Database</el-button>
-                <el-divider></el-divider>
-                <table id="subjectModeEvalRes">
-                    <caption style="margin-bottom: 10px 0;">Model Evaluation</caption>
-                    <tr>
-                        <td></td>
-                        <td>training acc</td>
-                        <td>Testing acc</td>
-                    </tr>
-                    <tr>
-                        <td></td>
-                        <td>{{evaluation.train_acc}}</td>
-                        <td>{{evaluation.test_acc}}</td>
-                    </tr>
-                </table>
-                <el-divider></el-divider>
-                <table id="labelColor">
-                    <thead>
-                        <tr>
-                            <th>Label</th>
-                            <th>Color</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-
-                    </tbody>
-                </table>
-
         </div>
     </div>
 </body>
