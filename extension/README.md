@@ -68,7 +68,7 @@ Open the project folder `time-travelling-visualizer` **as the workspace folder**
 We suggest to use the terminal embedded in VS Code, which is launched from your workspace folder. `Ctrl+~` to open the terminal.
 
 ```shell
-git checkout extension
+git checkout feat/vscode-extension
 ```
 
 To confirm your success, make sure `<project-folder>/.vscode` contains `launch.json` and `tasks.json` files, and `<project-folder>/extension` contains a VS Code extension with `src` folder, `package.json` and other configuration files.
