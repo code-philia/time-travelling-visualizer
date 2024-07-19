@@ -4,6 +4,8 @@ import * as vscode from 'vscode';
 import { LiveServerParams, start as startServer } from 'live-server';
 import * as resources from './resources';
 import * as fs from 'fs';
+import { VisualizationContentPathConfigurationName, VisualizationDataType, VisualizationDataTypeConfigurationName, VisualizationMethod, VisualizationMethodConfigurationName, VisualizationTaskType, VisualizationTaskTypeConfigurationName, VisualizerConfigurationBaseName } from './api';
+import { isDirectory } from './io';
 
 var isDev = true;
 const relativeRoot = 'web/';
@@ -47,10 +49,7 @@ export function activate(context: vscode.ExtensionContext) {
 	// 	})
 	// );
 	context.subscriptions.push(
-		vscode.window.registerWebviewViewProvider(
-			'basic-view',
-			new SidebarWebviewViewProvider(context, isDev ? sideBarWebviewPort : undefined, isDev ? '/basic_view.html' : undefined)
-		),
+
 		vscode.window.registerWebviewViewProvider(
 			'advanced-view',
 			new SidebarWebviewViewProvider(context, isDev ? sideBarWebviewPort : undefined, isDev ? '/advanced_view.html' : undefined)
@@ -129,7 +128,7 @@ function setDataFolder(context: vscode.ExtensionContext, file: any, loadVis: boo
 		return;
 	}
 	const fsPath = file.fsPath;
-	if (fs.existsSync(fsPath) && fs.statSync(fsPath).isDirectory()) {
+	if (isDirectory(fsPath)) {
 		const config = vscode.workspace.getConfiguration('timeTravellingVisualizer');
 		config.update('loadVisualization.contentPath', fsPath);
 		if (loadVis) {
@@ -142,18 +141,10 @@ function setDataFolder(context: vscode.ExtensionContext, file: any, loadVis: boo
 
 async function repickConfig(
 	context: vscode.ExtensionContext,
-	configBase: vscode.WorkspaceConfiguration,
-	configSection: string,
 	configDescription: string,
 	items: (vscode.QuickPickItem & { iconId?: string })[],
 	lastSuccess: boolean,
 ): Promise<string> {
-	if (lastSuccess) {
-		const defaultConfig = configBase.get(configSection);
-		if (defaultConfig && typeof defaultConfig === 'string' && items.some(item => item.label === defaultConfig)) {
-			return defaultConfig;
-		}
-	}
 	const quickPickitems: vscode.QuickPickItem[] = items.map(item => {
 		return {
 			...item,
@@ -178,12 +169,15 @@ type BasicVisualizationConfig = {
 };
 
 function checkDefaultVisualizationConfig(): BasicVisualizationConfig | undefined {
-	const config = vscode.workspace.getConfiguration('timeTravellingVisualizer');
-	const dataType = config.get('loadVisualization.dataType');
-	const taskType = config.get('loadVisualization.taskType');
-	const contentPath = config.get('loadVisualization.contentPath');
-	const visualizationMethod = config.get('loadVisualization.visualizationMethod');
-	if (typeof dataType === 'string' && typeof taskType === 'string' && typeof contentPath === 'string' && typeof visualizationMethod === 'string') {
+	const config = vscode.workspace.getConfiguration(VisualizerConfigurationBaseName);
+	const dataType = config.get(VisualizationDataTypeConfigurationName);
+	const taskType = config.get(VisualizationTaskTypeConfigurationName);
+	const contentPath = config.get(VisualizationContentPathConfigurationName);
+	const visualizationMethod = config.get(VisualizationMethodConfigurationName);
+	if (VisualizationDataType.is(dataType) &&
+		VisualizationTaskType.is(taskType) &&
+		typeof contentPath === 'string' && isDirectory(contentPath) && 
+		VisualizationMethod.is(visualizationMethod)) {
 		return {
 			dataType: dataType,
 			taskType: taskType,
@@ -199,8 +193,6 @@ async function reconfigureVisualizationConfig(context: vscode.ExtensionContext, 
 
 	const dataType = await repickConfig(
 		context,
-		config,
-		'loadVisualization.dataType',
 		"Select the type of your data",
 		[
 			{ iconId: "image-type", label: "Image" },
@@ -214,8 +206,6 @@ async function reconfigureVisualizationConfig(context: vscode.ExtensionContext, 
 
 	const taskType = await repickConfig(
 		context,
-		config,
-		'loadVisualization.taskType',
 		"Select the type of your model task",
 		[
 			{ iconId: "classification-task", label: "Classification" },
@@ -229,7 +219,7 @@ async function reconfigureVisualizationConfig(context: vscode.ExtensionContext, 
 
 	const contentPathConfig = config.get('loadVisualization.contentPath');
 	var contentPath: string = "";
-	if (!(typeof contentPathConfig === 'string' && fs.existsSync(contentPathConfig))) {
+	if (!(typeof contentPathConfig === 'string' && isDirectory(contentPathConfig))) {
 		contentPath = await new Promise((resolve, reject) => {
 			const inputBox: vscode.InputBox = vscode.window.createInputBox();
 			inputBox.prompt = "Please enter the folder path where the visualization should start from";
@@ -245,7 +235,7 @@ async function reconfigureVisualizationConfig(context: vscode.ExtensionContext, 
 			inputBox.ignoreFocusOut = true;
 			inputBox.valueSelection = [inputBox.value.length, inputBox.value.length];
 			function validate(value: string): boolean {
-				if (fs.existsSync(value)) {
+				if (isDirectory(value)) {
 					inputBox.validationMessage = "";
 					return true;
 				} else {
@@ -288,7 +278,7 @@ async function reconfigureVisualizationConfig(context: vscode.ExtensionContext, 
 			inputBox.show();
 		});
 
-		if (!fs.existsSync(contentPath)) {
+		if (!isDirectory(contentPath)) {
 			return undefined;
 		}
 	} else {
@@ -297,8 +287,6 @@ async function reconfigureVisualizationConfig(context: vscode.ExtensionContext, 
 
 	const visualizationMethod = await repickConfig(
 		context,
-		config,
-		'loadVisualization.visualizationMethod',
 		"Select the visualization method",
 		[
 			{ label: "TrustVis", description: "(default)" }
@@ -443,7 +431,7 @@ function getForwardWebviewContent(webview: vscode.Webview, localPort: number = 5
         </head>
         <body>
             <iframe id="debug-iframe" sandbox="allow-modals allow-forms allow-popups allow-scripts allow-same-origin"
-				src="http://localhost:${localPort}${path}"></iframe>
+				src="http://127.0.0.1:${localPort}${path}"></iframe>
         </body>
         </html>
 		<script>
