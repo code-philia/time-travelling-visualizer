@@ -45,7 +45,7 @@
         },
         "timeTravellingVisualizer.loadVisualization.contentPath": {
           "type": "string",
-          "default": "${workspaceFolder}",
+          "default": ".",
           "description": "Folder to load data from."
         },
         "timeTravellingVisualizer.loadVisualization.visualizationMethod": {
@@ -92,11 +92,6 @@
     },
     "views": {
       "visualizer-sidebar": [
-        {
-          "type": "webview",
-          "id": "basic-view",
-          "name": "Load Visualization"
-        },
         {
           "type": "webview",
           "id": "advanced-view",
