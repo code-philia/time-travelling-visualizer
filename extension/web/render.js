@@ -307,8 +307,12 @@ var lockIndex = false;
 
             // 获取索引 - 这需要根据具体实现来确定如何获取
             var ind = intersect.index;
-            window.vueApp.curIndex = ind
-            if(window.vueApp.filter_index!=''){
+            if (window.vueApp.curIndex != ind && !lockIndex) {
+                window.vueApp.curIndex = ind    // curIndex is the one among what is filtered, but lastHoveredIndex is the real index among all
+            }
+            
+            
+            if (window.vueApp.filter_index != '') {
                 console.log("window.vueApp.filter_index",window.vueApp.filter_index)
                 filter_index = window.vueApp.filter_index.split(',')
                 index = filter_index[ind]
