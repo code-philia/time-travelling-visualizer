@@ -78,33 +78,31 @@ function updateProjection(content_path, iteration, taskType) {
         })
 }
 
-  function getOriginalData(content_path,index, dataType, flag, custom_path){
+  async function getOriginalData(content_path,index, dataType, flag, custom_path){
     if(index != null){
         let specifiedCurrEpoch = makeSpecifiedVariableName('currEpoch', flag)
-        fetch(`${backendUri}/sprite${dataType}?index=${index}&path=${content_path}&cus_path=${custom_path}&username=admin&iteration=${window.vueApp[specifiedCurrEpoch]}&`, {
+        response = await fetch(`${backendUri}/sprite${dataType}?index=${index}&path=${content_path}&cus_path=${custom_path}&username=admin&iteration=${window.vueApp[specifiedCurrEpoch]}&`, {
             method: 'GET',
             mode: 'cors'
-          }).then(response => response.json()).then(data => {
-            if (dataType == "Image") {
-                src = data.imgUrl
-                let specifiedImageSrc = makeSpecifiedVariableName('imageSrc', flag)
-                if (src && src.length) {
-                    window.vueApp[specifiedImageSrc] = src
-                } else {
-                    window.vueApp[specifiedImageSrc] = ""
-                }
-            } else if (dataType == "Text") {
-                text = data.texts
-                let specifiedTextContent = makeSpecifiedVariableName('textContent', flag)
-                if (text?.length) {
-                    window.vueApp[specifiedTextContent] = text
-                  } else {
-                    window.vueApp[specifiedTextContent] = ""
-                }
+        })
+        const data = await response.json()
+        if (dataType == "Image") {
+            src = data.imgUrl
+            let specifiedImageSrc = makeSpecifiedVariableName('imageSrc', flag)
+            if (src && src.length) {
+                window.vueApp[specifiedImageSrc] = src
+            } else if (!window.vueApp[specifiedImageSrc]) {
+                window.vueApp[specifiedImageSrc] = ""
             }
-          }).catch(error => {
-            console.log("error", error);
-          });
+        } else if (dataType == "Text") {
+            text = data.texts
+            let specifiedTextContent = makeSpecifiedVariableName('textContent', flag)
+            if (text?.length) {
+                window.vueApp[specifiedTextContent] = text
+              } else {
+                window.vueApp[specifiedTextContent] = ""
+            }
+        }
     }
    
 }
@@ -1049,48 +1047,4 @@ function addNewLbel(labeling,contentPathRef,currEpochRef,contentPathTar,currEpoc
           message: `Backend error`
         });
   });
-}
-
-const canConnectToVsCode = (window.acquireVsCodeApi !== undefined);
-if (canConnectToVsCode) {
-  window.vscode = acquireVsCodeApi();
-}
-
-function sendMessage(msg) {
-  if (canConnectToVsCode) {
-    window.vscode.postMessage(msg);
-  } else {
-    parent.postMessage(msg, '*');
-  }
-  console.log("Yes this is the data");
-  console.log(window.vueApp.$data);
-}
-
-window.addEventListener('message', msg => {
-  console.log('A message is received and to be processed with vue', msg);
-});
-
-const validCommands = [
-  'update', 'filterByIndex', 'indexSearchHandler',
-  'clearSearchHandler', 'deleteItemfromSel', 'openModal', 'setShowModalFalse', 'saveChanges'
-];
-const keyKeys = ['command', 'args'];
-const nonSyncKeys = [
-  'pointsMesh', 'renderer', 'originalSettings',
-  'scene', 'camera', 'predictionFlipIndices',
-  'label_name_dict', 'label_list', 'prediction_list', 'confidence_list'
-];
-const nonSyncKeyPrefixes = [
-  'train_index', 'test_index'
-];
-
-
-function getPackedData(obj) {
-  const data = {};
-  for (const key in obj) {
-    if (!(nonSyncKeys.includes(key) || nonSyncKeyPrefixes.some(prefix => key.startsWith(prefix)))) {
-      data[key] = obj[key];
-    }
-  }
-  return data;
 }

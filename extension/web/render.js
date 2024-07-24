@@ -20,7 +20,7 @@ var previousMousePosition = {
     x: 0,
     y: 0
 };
-
+var lockIndex = false;
   function drawCanvas(res) {
     // clean storage
     cleanForEpochChange('')
@@ -272,7 +272,7 @@ var previousMousePosition = {
       }
       
     //  =========================  hover  start =========================================== //
-    function onMouseMove(event) {
+    function onMouseMove(event, isDown = false) {
         window.vueApp.pointsMesh.geometry.attributes.size.array.fill(NORMAL_SIZE);
 
         window.vueApp.selectedIndex.forEach(index => {
@@ -292,6 +292,13 @@ var previousMousePosition = {
         let specifiedLastHoveredIndex = makeSpecifiedVariableName('lastHoveredIndex', '')
         let specifiedImageSrc = makeSpecifiedVariableName('imageSrc', '')
         let specifiedSelectedIndex = makeSpecifiedVariableName('selectedIndex', '')
+        
+        let lockedBefore = true;
+        if (isDown) {
+            lockedBefore = lockIndex;
+            lockIndex = false;  // unlock index, then continue mouse hover handling to lock another index
+                                // note that if lockedBefore and the same point is clicked again, we will not lock it again
+        }
 
         if (intersects.length > 0 && checkVisibility(window.vueApp.pointsMesh.geometry.attributes.alpha.array, intersects[0].index)) {
 
@@ -314,7 +321,7 @@ var previousMousePosition = {
             }
            
             // 在这里处理悬停事件
-            if (window.vueApp.lastHoveredIndex != index) {
+            if (window.vueApp.lastHoveredIndex != index && !lockIndex) {
                 updateLastHoverIndexSize(window.vueApp[specifiedLastHoveredIndex],  window.vueApp[specifiedSelectedIndex], 
                     window.vueApp[specifiedHighlightAttributes].visualizationError, window.vueApp.nnIndices)
                 container.style.cursor = 'pointer';
@@ -322,16 +329,18 @@ var previousMousePosition = {
                 window.vueApp.pointsMesh.geometry.attributes.size.needsUpdate = true;
                 window.vueApp[specifiedLastHoveredIndex] = index;
                 updateCurrHoverIndex(event, index, false, '')
+            } else if (!lockedBefore) {
+                lockIndex = true;
             }
         } else {
             container.style.cursor = 'default';
             // 如果没有悬停在任何点上，也重置上一个点的大小
-            if (window.vueApp.lastHoveredIndex !== null) {
+            if (window.vueApp.lastHoveredIndex !== null && !lockIndex) {
                 updateLastHoverIndexSize(window.vueApp[specifiedLastHoveredIndex],  window.vueApp[specifiedSelectedIndex], 
                     window.vueApp[specifiedHighlightAttributes].visualizationError, window.vueApp.nnIndices)
                 window.vueApp.pointsMesh.geometry.attributes.size.needsUpdate = true;
-                window.vueApp[specifiedLastHoveredIndex] = null;
                 window.vueApp.nnIndices = []
+                window.vueApp[specifiedLastHoveredIndex] = null;
                 window.vueApp[specifiedImageSrc] = ""
                 updateCurrHoverIndex(event, null, false, '')
             }
@@ -422,6 +431,7 @@ var previousMousePosition = {
     }
 
     container.addEventListener('mousemove', onMouseMove, false);
+    container.addEventListener('click', (e) => onMouseMove(e, true), false);
 
      //  =========================  db click start =========================================== //
     container.addEventListener('dblclick', onDoubleClick);
@@ -569,14 +579,6 @@ var previousMousePosition = {
     animate();
     window.vueApp.isCanvasLoading = false
 }
-
-
-
-window.onload = function() {
-    const currHover = document.getElementById('currHover');
-    makeDraggable(currHover, currHover);
-  };
-
 
 function updateSizes() {
     // const nn = []; // 创建一个空的 sizes 列表

@@ -17,9 +17,10 @@
     <script src="thirdParty/d3.v5.min.js"></script>
     <!-- <script src="https://cdn.jsdelivr.net/npm/three@0.126.1/build/three.min.js"></script> -->
     <script src="thirdParty/three.min.js"></script>
-    <script src="request.js"></script>
+    <!-- <script src="request.js"></script>
     <script src="render.js"></script>
-    <script src="utils.js"></script>
+    <script src="utils.js"></script> -->
+    <script src="message.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
     <style>
         html, body {
@@ -551,12 +552,7 @@
                 };
             },
 
-            syncData() {
-                sendMessage({
-                    command: 'sync',
-                    ...(getPackedData(this.$data))
-                });
-            },
+            
             resetData() {
                 Object.assign(this.$data, this.getInitialState());
             },
@@ -577,12 +573,12 @@
             },
             showTraining: {
                 handler(newVal, oldVal) {
-                    this.syncData()
+                    syncData(this.$data)
                 }
             },
             showTesting: {
                 handler(newVal, oldVal) {
-                    this.syncData()
+                    syncData(this.$data)
                 }
             },
             lastHoveredIndex: {
@@ -600,7 +596,7 @@
                     //     }
 
                     // }
-                    this.syncData()
+                    syncData(this.$data)
                 }
             },
             curIndex: {
@@ -616,7 +612,7 @@
                     // }
                     // this.curr_label = this.label_name_dict[this.label_list[newVal]];
                     // this.confidence_dict = this.confidence_list[newVal]
-                    this.syncData()
+                    syncData(this.$data)
                 }
             },
 
@@ -634,12 +630,12 @@
                     //     }
                     //     this.highlightAttributes.visualizationError = null
                     // }
-                    this.syncData()
+                    syncData(this.$data)
                 }
             },
             showVisError: {
                 handler(newVal, oldVal) {
-                    this.syncData()
+                    syncData(this.$data)
                 }
             },
             showPredictionFlips: {
@@ -655,7 +651,7 @@
                     //     console.log("else branch")
                     //     this.predictionFlipIndices = null
                     // }
-                    this.syncData()
+                    syncData(this.$data)
                 }
             },
             SelectionMode: {
@@ -670,7 +666,7 @@
                     // } else {
                     //     this.showColorSetting = false
                     // }
-                    this.syncData()
+                    syncData(this.$data)
                 }
             }
         },
