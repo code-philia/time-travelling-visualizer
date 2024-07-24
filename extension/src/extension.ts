@@ -48,11 +48,13 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.window.registerWebviewViewProvider(
 			'advanced-view',
-			new SidebarWebviewViewProvider(context, isDev ? sideBarWebviewPort : undefined, isDev ? '/advanced_view.html' : undefined, 'advanced_view')
+			new SidebarWebviewViewProvider(context, isDev ? sideBarWebviewPort : undefined, isDev ? '/advanced_view.html' : undefined, 'advanced_view'),
+			{ webviewOptions: { retainContextWhenHidden: true } }
 		),
 		vscode.window.registerWebviewViewProvider(
 			'metadata-view',
-			new SidebarWebviewViewProvider(context, isDev ? panelWebviewPort : undefined, isDev ? '/metadata_view.html' : undefined, 'metadata_view')
+			new SidebarWebviewViewProvider(context, isDev ? panelWebviewPort : undefined, isDev ? '/metadata_view.html' : undefined, 'metadata_view'),
+			{ webviewOptions: { retainContextWhenHidden: true } }
 		)
 	);
 
@@ -84,7 +86,7 @@ async function startMainView() {
 		'customEditor',
 		'My Custom Editor',
 		vscode.ViewColumn.One,
-		getDefaultWebviewOptions()
+		{ retainContextWhenHidden: true, ...getDefaultWebviewOptions() }
 	);
 
 	if (isDev) {
@@ -334,7 +336,7 @@ async function callVisualizationAPI(dataType: string, taskType: string, contentP
 	});
 }
 
-function getDefaultWebviewOptions() {
+function getDefaultWebviewOptions(): vscode.WebviewOptions {
 	const resourceUri = vscode.Uri.file(webRoot);
 	// console.log(`Resource URI: ${resourceUri}`);
 	return {
@@ -470,7 +472,7 @@ class SidebarWebviewViewProvider implements vscode.WebviewViewProvider {
 
 		webviewView.webview.html = getForwardWebviewContent(webviewView.webview, this.port, false, this.path);
 		webviewView.webview.options = {
-			enableScripts: true
+			enableScripts: true,
 		};
 
 		webviewView.webview.onDidReceiveMessage(handleGlobalMessage);
