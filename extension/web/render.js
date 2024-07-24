@@ -279,7 +279,8 @@ var lockIndex = false;
             window.vueApp.pointsMesh.geometry.getAttribute('size').array[index] = SELECTED_SIZE;
         });
         window.vueApp.pointsMesh.geometry.getAttribute('size').needsUpdate = true; 
-        raycaster.params.Points.threshold = 0.2 / window.vueApp.camera.zoom; // 根据点的屏幕大小调整
+        // TODO consider adjusting the threshold according to monitor size and resolution
+        raycaster.params.Points.threshold = 0.4 / window.vueApp.camera.zoom; // 根据点的屏幕大小调整
         // 转换鼠标位置到归一化设备坐标 (NDC)
         var rect = window.vueApp.renderer.domElement.getBoundingClientRect();
         mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
