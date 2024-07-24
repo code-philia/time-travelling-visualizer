@@ -20,6 +20,7 @@
     <script src="request.js"></script>
     <script src="render.js"></script>
     <script src="utils.js"></script>
+    <script src="message.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
     <style>
         body, html {
@@ -71,6 +72,8 @@
         </el-popover> -->
 
         <div class="content_container">
+            <div id="container">            
+            </div>
             <div id="subject_model_info_panel">
                 <table id="labelColor">
                     <thead>
@@ -83,29 +86,10 @@
     
                     </tbody>
                 </table>
-    
             </div>            
-            <div id="container">            
-            </div>
-
         </div>
         <div id="footer">
             <svg id="timeLinesvg" height="0" width="0"></svg>
-        </div>
-        <div id="currHover">
-            <h3>MetaData Card</h3>
-            HoverIndex: {{lastHoveredIndex}}<br />
-            Prediction: {{curr_pred}}<br />
-            Label: {{curr_label}}<br />
-            Confidence: {{confidence_dict}}<br />
-            <div v-if="dataType === 'Image' && lastHoveredIndex != null">
-                <img :src="imageSrc" alt="Image Description" height="100px" />
-            </div>
-            <div v-else>
-                <div style="overflow-y: auto; white-space: pre;">
-                    <p>{{ textContent }}</p>
-                </div>
-            </div>
         </div>
         <div id="hoverLabel">
             <!-- Label content -->
@@ -200,7 +184,8 @@
                     y_min: null,
                     x_max: null,
                     y_max: null 
-                }
+                },
+                indexUpdateLock: undefined
             }
         },
         created(){
@@ -495,11 +480,15 @@
             contentPath(newVal) {
                 this.saveContentPath();
               },
+            // TODO Why are lastHoveredIndex and curIndex separated?
             lastHoveredIndex: {
                 immediate: true,
                 handler(newVal, oldVal) {
                     if (newVal != null) {
-                        getOriginalData(this.contentPath, newVal, this.dataType, "", this.customContentPath)
+                        // TODO Must this be resolved only when awaited?
+                        this.indexUpdateLock = new Promise((resolve, reject) => {
+                            getOriginalData(this.contentPath, newVal, this.dataType, "", this.customContentPath).then(resolve);
+                        });
                         const updatedQuery = {
                             ...this.query,
                             key: 'index',
@@ -514,7 +503,11 @@
             },
             curIndex:{
                 immediate: true,
-                handler(newVal, oldVal) {
+                async handler(newVal, oldVal) {
+                    if (this.indexUpdateLock) {
+                        await this.indexUpdateLock;
+                        this.indexUpdateLock = undefined;
+                    }
                     if (this.filter_index !== null && this.filter_index !== "" && (!Array.isArray(this.filter_index) || this.filter_index.length !== 0)) {
                         let filter_index = window.vueApp.filter_index.split(',');
                         console.log("filter_index[newVal]", filter_index[newVal])
@@ -525,6 +518,14 @@
                     }
                     this.curr_label = this.label_name_dict[this.label_list[newVal]];
                     this.confidence_dict = this.confidence_list[newVal]
+
+                    const data_point_data = getKeysData(this, [
+                        'lastHoveredIndex', 'curr_pred', 'curr_label', 'confidence_dict', 'dataType', 'imageSrc', 'textContent'
+                    ]);
+                    sendMessage({
+                        command: 'updateDataPoint',
+                        ...data_point_data
+                    });
                 }
             },
 
@@ -573,32 +574,6 @@
             this.driver = new Driver()
         }
     })
-
-    window.addEventListener('message', msg => {
-        console.log("Yeeeeeeeeeeeeeeeeeeeeeeee");
-        console.log(msg.data);
-        const data = msg.data;
-        if (!data) {
-            return;
-        }
-        if (validCommands.includes(data.command) || data.command == 'sync') {
-            for (const key in data) {
-                if (!(keyKeys.includes(key))) {
-                    window.vueApp[key] = data[key];
-                }
-            }
-            if (data.command == 'sync') {
-                window.vueApp.$forceUpdate();
-                return;
-            }
-            if (data.args) {
-                window.vueApp[data.command](...data.args);
-            } else {
-                window.vueApp[data.command]();
-            }
-            console.log("Main view data:", window.vueApp.$data);
-        }
-    });
 </script>
 
 </html>
