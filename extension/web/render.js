@@ -302,6 +302,8 @@ var lockIndex = false;
 
         if (intersects.length > 0 && checkVisibility(window.vueApp.pointsMesh.geometry.attributes.alpha.array, intersects[0].index)) {
 
+            container.style.cursor = 'pointer';
+
             // 获取最接近的交点
             var intersect = intersects[0];
 
@@ -328,7 +330,6 @@ var lockIndex = false;
             if (window.vueApp.lastHoveredIndex != index && !lockIndex) {
                 updateLastHoverIndexSize(window.vueApp[specifiedLastHoveredIndex],  window.vueApp[specifiedSelectedIndex], 
                     window.vueApp[specifiedHighlightAttributes].visualizationError, window.vueApp.nnIndices)
-                container.style.cursor = 'pointer';
                 window.vueApp.pointsMesh.geometry.attributes.size.array[index] = HOVER_SIZE
                 window.vueApp.pointsMesh.geometry.attributes.size.needsUpdate = true;
                 window.vueApp[specifiedLastHoveredIndex] = index;
@@ -513,7 +514,9 @@ var lockIndex = false;
         } else {
             isDragging = true;
             console.log(isDragging)
-            container.style.cursor = 'move';
+            if (container.style.cursor != 'pointer') {
+                container.style.cursor = 'move';
+            }
             previousMousePosition.x = e.clientX;
             previousMousePosition.y = e.clientY;
         }

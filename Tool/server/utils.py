@@ -19,6 +19,8 @@ import time
 import torch
 """Interface align"""
 
+print("---> Device is", torch.device("cuda:0" if torch.cuda.is_available() else "cpu"))
+
 def initialize_strategy(CONTENT_PATH, VIS_METHOD, SETTING, dense=False):
     # initailize strategy (visualization method)
     with open(os.path.join(CONTENT_PATH, "config.json"), "r") as f:
