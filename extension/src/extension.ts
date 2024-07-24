@@ -32,6 +32,9 @@ export function activate(context: vscode.ExtensionContext) {
 	if (context.globalState.get('lastSuccess') === undefined) {		// FIXME: is checking "if last time access is ok" useful?
 		context.globalState.update('lastSuccess', false);
 	}
+
+	resources.setResourceUri(context.extensionUri);
+
 	context.subscriptions.push(
 		vscode.commands.registerCommand('timeTravellingVisualizer.start', startMainView),
 		vscode.commands.registerCommand('timeTravellingVisualizer.setAsDataFolderAndLoadVisualizationResult', (file) => {
@@ -42,24 +45,14 @@ export function activate(context: vscode.ExtensionContext) {
 		})
 	);
 	
-	
-	// context.subscriptions.push(
-	// 	vscode.commands.registerCommand('timeTravellingVisualizer.dialog', () => {
-	// 		vscode.window.showOpenDialog();
-	// 	})
-	// );
 	context.subscriptions.push(
-
 		vscode.window.registerWebviewViewProvider(
 			'advanced-view',
-			new SidebarWebviewViewProvider(context, isDev ? sideBarWebviewPort : undefined, isDev ? '/advanced_view.html' : undefined)
-		)
-	);
-	context.subscriptions.push(
+			new SidebarWebviewViewProvider(context, isDev ? sideBarWebviewPort : undefined, isDev ? '/advanced_view.html' : undefined, 'advanced_view')
+		),
 		vscode.window.registerWebviewViewProvider(
-			'panel-view',
-			// new SidebarWebviewViewProvider(context, isDev ? panelWebviewPort : undefined, isDev ? '/quick_panel.html' : undefined)
-			new SidebarWebviewViewProvider(context)
+			'metadata-view',
+			new SidebarWebviewViewProvider(context, isDev ? panelWebviewPort : undefined, isDev ? '/metadata_view.html' : undefined, 'metadata_view')
 		)
 	);
 
@@ -112,6 +105,8 @@ async function startMainView() {
 		delete views["mainView"];
 	});
 
+	panel.webview.onDidReceiveMessage(handleGlobalMessage);
+
 	const loaded = new Promise((resolve, reject) => {
 		panel.webview.onDidReceiveMessage((msg) => {		// this will add a listener, not overwriting
 			if (msg.state === 'load') {
@@ -140,15 +135,13 @@ function setDataFolder(context: vscode.ExtensionContext, file: any, loadVis: boo
 }
 
 async function repickConfig(
-	context: vscode.ExtensionContext,
 	configDescription: string,
-	items: (vscode.QuickPickItem & { iconId?: string })[],
-	lastSuccess: boolean,
+	items: (vscode.QuickPickItem & { iconId?: string })[]
 ): Promise<string> {
 	const quickPickitems: vscode.QuickPickItem[] = items.map(item => {
 		return {
 			...item,
-			iconPath: item.iconId ? resources.getIconUri(context, item.iconId) : undefined,
+			iconPath: item.iconId ? resources.getIconUri(item.iconId) : undefined,
 		};
 	});
 	const picked = await vscode.window.showQuickPick(
@@ -188,30 +181,26 @@ function checkDefaultVisualizationConfig(): BasicVisualizationConfig | undefined
 	return undefined;
 }
 
-async function reconfigureVisualizationConfig(context: vscode.ExtensionContext, lastSuccess: boolean): Promise<BasicVisualizationConfig | undefined> {
+async function reconfigureVisualizationConfig(): Promise<BasicVisualizationConfig | undefined> {
 	const config = vscode.workspace.getConfiguration('timeTravellingVisualizer');	// Should we call this each time?
 
 	const dataType = await repickConfig(
-		context,
 		"Select the type of your data",
 		[
 			{ iconId: "image-type", label: "Image" },
 			{ iconId: "text-type", label: "Text" },
-		],
-		lastSuccess
+		]
 	);
 	if (!dataType) {
 		return undefined;
 	}
 
 	const taskType = await repickConfig(
-		context,
 		"Select the type of your model task",
 		[
 			{ iconId: "classification-task", label: "Classification" },
 			{ iconId: "non-classification-task", label: "Non-Classification" },
-		],
-		lastSuccess
+		]
 	);
 	if (!taskType) {
 		return undefined;
@@ -286,12 +275,10 @@ async function reconfigureVisualizationConfig(context: vscode.ExtensionContext, 
 	}
 
 	const visualizationMethod = await repickConfig(
-		context,
 		"Select the visualization method",
 		[
 			{ label: "TrustVis", description: "(default)" }
-		],
-		lastSuccess
+		]
 	);
 	if (!visualizationMethod) {
 		return undefined;
@@ -313,7 +300,7 @@ async function reconfigureVisualizationConfig(context: vscode.ExtensionContext, 
 async function loadVisualization(context: vscode.ExtensionContext, lastSuccess: boolean): Promise<boolean> {
 	var result = checkDefaultVisualizationConfig();
 	if (!result) {
-		result = await reconfigureVisualizationConfig(context, lastSuccess);
+		result = await reconfigureVisualizationConfig();
 	}
 
 	if (result) {
@@ -486,45 +473,7 @@ class SidebarWebviewViewProvider implements vscode.WebviewViewProvider {
 			enableScripts: true
 		};
 
-		webviewView.webview.onDidReceiveMessage(async (msg) => {
-			console.log("Msg Recv");
-			switch (msg.command) {
-				case 'update':
-					{
-						console.log('message: update', msg);
-						if ("mainView" in views) {
-							views["mainView"].postMessage(msg);
-						} else {
-							console.log("Cannot find mainView. Message: update not passed...");
-						}
-						break;
-					}
-				default:
-					{
-						// In early design, forward it as is
-						// with additional basic configuration fields
-						console.log('message: other type', msg);
-						if ("mainView" in views) {
-							let config = checkDefaultVisualizationConfig();
-							if (!config) {
-								vscode.window.showWarningMessage("No valid configuration found yet. Generating a new one...");
-								config = await reconfigureVisualizationConfig(this.context, false);
-								if (!config) {
-									break;
-								}
-							}
-							msg.contentPath = config.contentPath;
-							msg.customContentPath = '';
-							msg.taskType = config.taskType;
-							msg.dataType = config.dataType;
-							views["mainView"].postMessage(msg);
-						} else {
-							console.log("Cannot find mainView. Message: other type not passed...");
-						}
-						break;
-					}
-			}
-		});
+		webviewView.webview.onDidReceiveMessage(handleGlobalMessage);
 	}
 
 	private getPlacehoderHtmlForWebview(webview: vscode.Webview): string {
@@ -539,5 +488,56 @@ class SidebarWebviewViewProvider implements vscode.WebviewViewProvider {
             <h1>Hello from My Custom View!</h1>
         </body>
         </html>`;
+	}
+}
+
+async function handleGlobalMessage(msg: any) {
+	console.log("Msg Recv");
+	switch (msg.command) {
+		case 'update':
+			{
+				console.log('message: update', msg);
+				if ("mainView" in views) {
+					views["mainView"].postMessage(msg);
+				} else {
+					console.log("Cannot find mainView. Message: update not passed...");
+				}
+				break;
+			}
+		case 'updateDataPoint':
+			{
+				console.log('message: updateDataPoint', msg);
+				if ("metadata_view" in views) {
+					msg.command = 'sync';
+					views["metadata_view"].postMessage(msg);
+				} else {
+					console.log("Cannot find metadata_view");
+				}
+				break;
+			}
+		default:
+			{
+				// In early design, forward it as is
+				// with additional basic configuration fields
+				console.log('message: other type', msg);
+				if ("mainView" in views) {
+					let config = checkDefaultVisualizationConfig();
+					if (!config) {
+						vscode.window.showWarningMessage("No valid configuration found yet. Generating a new one...");
+						config = await reconfigureVisualizationConfig();
+						if (!config) {
+							break;
+						}
+					}
+					msg.contentPath = config.contentPath;
+					msg.customContentPath = '';
+					msg.taskType = config.taskType;
+					msg.dataType = config.dataType;
+					views["mainView"].postMessage(msg);
+				} else {
+					console.log("Cannot find mainView. Message: other type not passed...");
+				}
+				break;
+			}
 	}
 }

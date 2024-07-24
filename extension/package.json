@@ -81,13 +81,6 @@
           "title": "Time Travelling Visualizer",
           "icon": "resources/home_24dp_FILL0_wght400_GRAD0_opsz24.svg"
         }
-      ],
-      "panel": [
-        {
-          "id": "visualizer-panel",
-          "title": "Time Travelling Visualizer",
-          "icon": "resources/home_24dp_FILL0_wght400_GRAD0_opsz24.svg"
-        }
       ]
     },
     "views": {
@@ -96,13 +89,11 @@
           "type": "webview",
           "id": "advanced-view",
           "name": "Advanced Options"
-        }
-      ],
-      "visualizer-panel": [
+        },
         {
           "type": "webview",
-          "id": "panel-view",
-          "name": "Peek Visualizer"
+          "id": "metadata-view",
+          "name": "Data Point Info"
         }
       ]
     }
