@@ -297,7 +297,7 @@ var lockIndex = false;
         let lockedBefore = true;
         if (isDown) {
             lockedBefore = lockIndex;
-            lockIndex = false;  // unlock index, then continue mouse hover handling to lock another index
+            lockIndex = false;  // unlock index, then continue mouse hover handling to lock another index unconditionally
                                 // note that if lockedBefore and the same point is clicked again, we will not lock it again
         }
 
@@ -335,6 +335,9 @@ var lockIndex = false;
                 window.vueApp.pointsMesh.geometry.attributes.size.needsUpdate = true;
                 window.vueApp[specifiedLastHoveredIndex] = index;
                 updateCurrHoverIndex(event, index, false, '')
+                if (isDown) {
+                    lockIndex = true;
+                }
             } else if (!lockedBefore) {
                 lockIndex = true;
             }
