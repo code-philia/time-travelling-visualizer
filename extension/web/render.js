@@ -5,8 +5,8 @@ const PERSP_CAMERA_FOV_VERTICAL = 70;
 const PERSP_CAMERA_NEAR_CLIP_PLANE = 0.01;
 const PERSP_CAMERA_FAR_CLIP_PLANE = 100;
 const ORTHO_CAMERA_FRUSTUM_HALF_EXTENT = 1.2;
-const MIN_ZOOM_SCALE = 0.8
-const MAX_ZOOM_SCALE = 30
+const MIN_ZOOM_SCALE = 1
+const MAX_ZOOM_SCALE = 60
 const NORMAL_SIZE = 5
 const HOVER_SIZE = 10
 const SELECTED_SIZE = 15
@@ -78,17 +78,28 @@ var lockIndex = false;
 
     window.vueApp.camera.updateProjectionMatrix();
     window.vueApp.camera.lookAt(target);
+    // NOTE the renderer element is added here
     window.vueApp.renderer = new THREE.WebGLRenderer();
     window.vueApp.renderer.setSize(rect.width, rect.height);
+    //   const l = Math.max(screen.width, screen.height);  
+    //   window.vueApp.renderer.setSize(l, l); // setting a too large renderer size will crash the graphics memory    
     window.vueApp.renderer.setClearColor(BACKGROUND_COLOR, 1);
 
     function onDocumentMouseWheel(event) {
         const currentZoom = window.vueApp.camera.zoom;
         var zoomSpeed = calculateZoomSpeed(currentZoom, baseZoomSpeed, MAX_ZOOM_SCALE); 
         // Apply the zoom speed to calculate the new zoom level
-        var newZoom = currentZoom + event.deltaY * -zoomSpeed;
+        // Assume newZoom = a * b^(times + x0), then a * b^x0 = MIN_ZOOM_SCALE
+        const a = 1.0;
+        const b = 1.1;
+        const x = Math.log(currentZoom / a) / Math.log(b);
+        const g = 100;
+        const new_x = x - event.deltaY / g;  // wheels down, deltaY is positive, but scaling going down
+        var newZoom = a * Math.pow(b, new_x);
+        // var newZoom = currentZoom + event.deltaY * -zoomSpeed;
         newZoom = Math.max(MIN_ZOOM_SCALE, Math.min(newZoom, MAX_ZOOM_SCALE)); 
         window.vueApp.camera.zoom = newZoom;
+        console.log(`newZoom: ${newZoom}`);
         window.vueApp.camera.updateProjectionMatrix();
         // Call function to update current hover index or any other updates needed after zoom
         // updateCurrHoverIndex(event, null, true, '');
@@ -108,13 +119,15 @@ var lockIndex = false;
     var height = window.vueApp.sceneBoundary.y_max - window.vueApp.sceneBoundary.y_min;
     var centerX = window.vueApp.sceneBoundary.x_min+ width / 2;
     var centerY = window.vueApp.sceneBoundary.y_min + height / 2;
+    // var centerX = window.vueApp.sceneBoundary.x_min;
+    // var centerY = window.vueApp.sceneBoundary.y_min;
 
     let canvas = document.createElement('canvas');
     canvas.width = 128;
     canvas.height = 128;
     var ctx = canvas.getContext("2d");
     var img = new Image();
-    img.src = res.grid_color;
+    img.src = res.grid_color;   // NOTE this seems to be all black returned from backend
     img.crossOrigin = "anonymous";
     img.onload = () => {
         ctx.drawImage(img, 0, 0, 128, 128);
@@ -272,8 +285,9 @@ var lockIndex = false;
       }
       
     //  =========================  hover  start =========================================== //
-    function onMouseMove(event, isDown = false) {
-        window.vueApp.pointsMesh.geometry.attributes.size.array.fill(NORMAL_SIZE);
+      function onMouseMove(event, isDown = false) {
+        // This will cause an already hovered point to shrink to normal size on move!
+        // window.vueApp.pointsMesh.geometry.attributes.size.array.fill(NORMAL_SIZE);
 
         window.vueApp.selectedIndex.forEach(index => {
             window.vueApp.pointsMesh.geometry.getAttribute('size').array[index] = SELECTED_SIZE;
@@ -568,16 +582,18 @@ var lockIndex = false;
     container.addEventListener('mouseup', function (e) {
         isDragging = false;
         container.style.cursor = 'default';
+        console.log(`Camera: (${window.vueApp.camera.position.x}, ${window.vueApp.camera.position.y})`);
     });
 
     //  =========================  Drag  end =========================================== //
       
+    // The gradient color is due to the point light, since I search `scene.add`
     // create light
     var light = new THREE.PointLight(0xffffff, 1, 500);
     light.position.set(50, 50, 50);
-    var ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // The second parameter is the light intensity
+    var ambientLight = new THREE.AmbientLight(0xffffff, 0.95); // The second parameter is the light intensity
     window.vueApp.scene.add(ambientLight);
-    window.vueApp.scene.add(light);
+    // window.vueApp.scene.add(light);
 
     // set the camera position
     window.vueApp.camera.position.z = 30;
