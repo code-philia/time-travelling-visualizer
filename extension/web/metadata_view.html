@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
     <title>TIME-TRAVELLING</title>
@@ -21,6 +21,8 @@
     <script src="render.js"></script>
     <script src="utils.js"></script> -->
     <script src="message.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.10.0/build/styles/default.min.css">
+    <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@latest/build/highlight.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
     <style>
         body, html {
@@ -31,17 +33,18 @@
 
 <body>
     <div id="app" v-loading="isCanvasLoading" element-loading-text="loading..." element-loading-background="rgba(255, 255, 255, 0.4)">
-    <div id="Metadata" style="padding: 1em; line-height: 1.5em;">
-        <b>Hovered Index: </b>{{lastHoveredIndex}}<br />
-        <b>Prediction: </b>{{curr_pred}}<br />
-        <b>Label: </b>{{curr_label}}<br />
-        <b>Confidence: </b>{{confidence_dict}}<br />
-        <div v-if="dataType === 'Image' && lastHoveredIndex != null" style="align-content: center;">
-            <img :src="imageSrc" alt="Image Description" height="100px" />
-        </div>
-        <div v-else>
-            <div style="overflow-y: auto; white-space: pre;">
-                <p>{{ textContent }}</p>
+        <div id="Metadata" style="padding: 1em; line-height: 1.2em; height: 90vh; display: flex; flex-direction: column; font-size: small;">
+            <div><b>Hovered Index: </b>{{lastHoveredIndex}}</div>
+            <div><b>Prediction: </b>{{curr_pred}}</div>
+            <div><b>Label: </b>{{curr_label}}</div>
+            <div><b>Confidence: </b>{{confidence_dict}}</div>
+            <div v-if="dataType === 'Image' && lastHoveredIndex != null" style="align-content: center;">
+                <img :src="imageSrc" alt="Image Description" height="100px" />
+            </div>
+            <div v-else-if="dataType === 'Text' && textContent" style="overflow: hidden auto; display: flex;">
+                <pre style="font-size: small; font-family: 'Consolas'; display: flex;">
+                    <code style="overflow: hidden auto;" ref="codeElement" v-html="textContent"></code>
+                </pre>
             </div>
         </div>
     </div>
@@ -60,6 +63,27 @@
                 textContent: '',
                 imageSrc: '',
                 isCanvasLoading: false,
+            }
+        },
+        computed: {
+            formattedCode() {
+                return this.textContent ? hljs.highlightAuto(this.textContent).value : '';
+            }
+        },
+        watch: {
+            textContent() {
+                this.highlightCode();
+            }
+        },
+        mounted() {
+            this.highlightCode();
+        },
+        updated() {
+            this.highlightCode();
+        },
+        methods: {
+            highlightCode() {
+                this.$refs.codeElement.innerHTML = this.formattedCode;
             }
         }
     })
