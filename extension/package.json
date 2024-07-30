@@ -72,6 +72,10 @@
       {
         "command": "timeTravellingVisualizer.setAsDataFolderAndLoadVisualizationResult",
         "title": "Set as Data Folder and Load Visualization Result"
+      },
+      {
+        "command": "timeTravellingVisualizer.configureAndLoadVisualization",
+        "title": "Configure and Load Visualization"
       }
     ],
     "viewsContainers": {

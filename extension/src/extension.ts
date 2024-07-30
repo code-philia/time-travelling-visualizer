@@ -4,7 +4,7 @@ import * as vscode from 'vscode';
 import { LiveServerParams, start as startServer } from 'live-server';
 import * as resources from './resources';
 import * as fs from 'fs';
-import { VisualizationContentPathConfigurationName, VisualizationDataType, VisualizationDataTypeConfigurationName, VisualizationMethod, VisualizationMethodConfigurationName, VisualizationTaskType, VisualizationTaskTypeConfigurationName, VisualizerConfigurationBaseName } from './api';
+import { CommandNames, VisualizationContentPathConfigurationName, VisualizationDataType, VisualizationDataTypeConfigurationName, VisualizationMethod, VisualizationMethodConfigurationName, VisualizationTaskType, VisualizationTaskTypeConfigurationName, VisualizerConfigurationBaseName } from './api';
 import { isDirectory } from './io';
 
 var isDev = true;
@@ -27,10 +27,6 @@ export function activate(context: vscode.ExtensionContext) {
 	if (isDev) {
 		console.log(`Enabling dev mode locally. Webviews are using live updated elements...`);
 		startDefaultDevLiveServers(context);
-	}
-
-	if (context.globalState.get('lastSuccess') === undefined) {		// FIXME: is checking "if last time access is ok" useful?
-		context.globalState.update('lastSuccess', false);
 	}
 
 	resources.setResourceUri(context.extensionUri);
@@ -58,21 +54,16 @@ export function activate(context: vscode.ExtensionContext) {
 		)
 	);
 
-	// global state
+	const name = CommandNames.configureAndLoadVisualization;
 
-	const folderPathInputBoxOptions: vscode.InputBoxOptions = {
-		prompt: "Please enter the folder path where the visualization result is stored",
-		placeHolder: "Folder path",
-		value: vscode.workspace.workspaceFolders?.[0].uri.fsPath ?? "",
-	};
-
-
-	const loadVisualizationResultCommmand = vscode.commands.registerCommand('timeTravellingVisualizer.loadVisualizationResult', async () => {
-		const lastSuccess = context.globalState.get('lastSuccess') as boolean;
-
-		const thisSuccess = loadVisualization(context, lastSuccess);
-		context.globalState.update('lastSuccess', thisSuccess);
-	});
+	context.subscriptions.push(
+		vscode.commands.registerCommand(CommandNames.loadVisualization, async () => {
+			await loadVisualization();
+		}),
+		vscode.commands.registerCommand(CommandNames.configureAndLoadVisualization, async () => {
+			await loadVisualization(true);
+		})
+	);
 }
 
 export function deactivate() { }
@@ -107,6 +98,8 @@ async function startMainView() {
 		delete views["mainView"];
 	});
 
+	// TODO the iframe would not be refreshed for not receiving "update" message, which is a handicap for live preview in development
+	// reload the data when the iframe is refreshed, maybe by posting a message to vscode to ask for several major arguments
 	panel.webview.onDidReceiveMessage(handleGlobalMessage);
 
 	const loaded = new Promise((resolve, reject) => {
@@ -129,7 +122,7 @@ function setDataFolder(context: vscode.ExtensionContext, file: any, loadVis: boo
 		const config = vscode.workspace.getConfiguration('timeTravellingVisualizer');
 		config.update('loadVisualization.contentPath', fsPath);
 		if (loadVis) {
-			loadVisualization(context, false);
+			loadVisualization();
 		}
 	} else {
 		vscode.window.showErrorMessage("Selected file is not a directory 😮");
@@ -208,7 +201,8 @@ async function reconfigureVisualizationConfig(): Promise<BasicVisualizationConfi
 		return undefined;
 	}
 
-	const contentPathConfig = config.get('loadVisualization.contentPath');
+	// const contentPathConfig = config.get('loadVisualization.contentPath');
+	const contentPathConfig = "";
 	var contentPath: string = "";
 	if (!(typeof contentPathConfig === 'string' && isDirectory(contentPathConfig))) {
 		contentPath = await new Promise((resolve, reject) => {
@@ -299,14 +293,23 @@ async function reconfigureVisualizationConfig(): Promise<BasicVisualizationConfi
 	};
 }
 
-async function loadVisualization(context: vscode.ExtensionContext, lastSuccess: boolean): Promise<boolean> {
-	var result = checkDefaultVisualizationConfig();
-	if (!result) {
-		result = await reconfigureVisualizationConfig();
+async function getConfig(forceReconfig: boolean = false): Promise<BasicVisualizationConfig | undefined> {
+	var config: BasicVisualizationConfig | undefined;
+	if (!forceReconfig) {
+		config = checkDefaultVisualizationConfig();
+		if (config) {
+			return config;
+		}
 	}
+	config = await reconfigureVisualizationConfig();
+	return config;
+}
 
-	if (result) {
-		const { dataType, taskType, contentPath, visualizationMethod } = result;
+async function loadVisualization(forceReconfig: boolean = false): Promise<boolean> {
+	const config = await getConfig(forceReconfig);
+
+	if (config) {
+		const { dataType, taskType, contentPath, visualizationMethod } = config;
 		if (await callVisualizationAPI(dataType, taskType, contentPath, visualizationMethod)) {
 			return true;
 		} 
@@ -389,6 +392,7 @@ function replaceUri(html: string, webview: vscode.Webview, srcPattern: string, d
 	return cssFormattedHtml;
 }
 
+// TODO split the views into different folders, otherwise updating resource of one view will refresh all
 function getForwardWebviewContent(webview: vscode.Webview, localPort: number = 5000, notifyLoad: boolean = false, path: string = '/') {
 	const notifyLoadScript = notifyLoad ? `
 			window.addEventListener('load', () => {

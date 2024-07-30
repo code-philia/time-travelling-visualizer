@@ -4,6 +4,18 @@ export const VisualizationTaskTypeConfigurationName: string = 'loadVisualization
 export const VisualizationContentPathConfigurationName: string = 'loadVisualization.contentPath';
 export const VisualizationMethodConfigurationName: string = 'loadVisualization.visualizationMethod';
 
+// Commands
+export const CommandNames: { [key: string]: string } = {
+    loadVisualization: 'loadVisualizationResult',
+    openStartView: 'start',
+    setAsDataFolderAndLoadVisualizationResult: 'setAsDataFolderAndLoadVisualizationResult',
+    setAsDataFolder: 'setAsDataFolder',
+    configureAndLoadVisualization: 'configureAndLoadVisualization',
+};
+for (const k in CommandNames) {
+    CommandNames[k] = VisualizerConfigurationBaseName + '.' + CommandNames[k];    // FIXME a better way to construct this
+}
+
 export class StringSelection {
     readonly selections: Set<string> = new Set<string>();
     constructor (...args: string[]) {
