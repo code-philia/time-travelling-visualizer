@@ -65,17 +65,26 @@ function updateProjection(content_path, iteration, taskType) {
     });
 }
   function fetchTimelineData(content_path, flag){
-    fetch(`${backendUri}/get_itertaion_structure?path=${content_path}&method=Trustvis&setting=normal`, {
-        method: 'POST',
-        headers: headers,
-        mode: 'cors'
+    return fetch(`${backendUri}/get_itertaion_structure?path=${content_path}&method=Trustvis&setting=normal`, {
+      method: 'POST',
+      headers: headers,
+      mode: 'cors'
+    })
+    .then(response => response.json())
+    .then(res => {
+        console.log(`fetchTimelineData`, res)
+        var specifiedTotalEpoch = makeSpecifiedVariableName('totalEpoch', flag)
+        const app = window.vueApp
+        app[specifiedTotalEpoch] = res.structure.length
+        app.iterationStructure = res.structure.sort((a, b) => a.value - b.value)
+        // FIXME This currEpoch could be different from specifiedCurrEpoch
+        if ((app.iterationStructure instanceof Array)
+          && app.iterationStructure.length
+          && !(app.iterationStructure.find(item => item.value === app.currEpoch))) {
+          app.currEpoch = app.iterationStructure[0].value
+        }
+        drawTimeline(res, flag)
       })
-      .then(response => response.json())
-        .then(res => {
-            var specifiedTotalEpoch = makeSpecifiedVariableName('totalEpoch', flag)
-            window.vueApp[specifiedTotalEpoch] = res.structure.length
-            drawTimeline(res, flag)
-        })
 }
 
   async function getOriginalData(content_path,index, dataType, flag, custom_path){

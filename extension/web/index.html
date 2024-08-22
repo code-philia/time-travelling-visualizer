@@ -345,14 +345,19 @@
                 this.timelineFirstLoaded = true
                 this.isCanvasLoading = true
                 console.log("taskType", this.taskType)
-                if (this.customContentPath != '') {
-                    updateCustomProjection(this.contentPath, this.customContentPath, this.currEpoch, this.taskType)
-                }
-                else{
-                    console.log(`content: ${this.contentPath}`)
-                    this.updateProjectionHandler()
-                }
                 fetchTimelineData(this.contentPath, "")
+                    .catch(error => {
+                        console.log(error);
+                    })
+                    .then(res => {
+                        if (this.customContentPath != '') {
+                            updateCustomProjection(this.contentPath, this.customContentPath, this.currEpoch, this.taskType)
+                        }
+                        else{
+                            console.log(`content: ${this.contentPath}`)
+                            this.updateProjectionHandler()
+                        }
+                    })
             },
             updateProjectionHandler() {
                 if (!this.timelineFirstLoaded) {
