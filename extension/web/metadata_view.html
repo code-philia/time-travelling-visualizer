@@ -43,7 +43,7 @@
             </div>
             <div v-else-if="dataType === 'Text' && textContent" style="overflow: hidden auto; display: flex;">
                 <pre style="font-size: small; font-family: 'Consolas'; display: flex;">
-                    <code style="overflow: hidden auto;" ref="codeElement" v-html="textContent"></code>
+                    <code style="overflow: auto;" ref="codeElement" v-html="textContent"></code>
                 </pre>
             </div>
         </div>
