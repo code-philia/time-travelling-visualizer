@@ -216,15 +216,16 @@ body {
 
 pre {
     background-color: #e8e8e8;
-    padding: 10px;
+    padding: 0.5em;
+    margin: 0.67em 0;
     border-radius: 5px;
     overflow-x: auto;
 }
 pre.highlight {
     background-color: #f0f0f0;
     border-radius: 5px;
-    white-space: pre-wrap; /* 保留空白字符并换行 */
+    white-space: pre-wrap;
 }
 .highlight span {
-    display: inline; /* 使 span 元素按行内元素显示 */
+    display: inline;
 }
