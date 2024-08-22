@@ -347,6 +347,8 @@ function drawTimeline(res, flag) {
   let specifiedContentPath = makeSpecifiedVariableName('contentPath', flag)
   let specifiedCurrEpoch = makeSpecifiedVariableName('currEpoch', flag)
 
+  let currEpoch = window.vueApp[specifiedCurrEpoch] ?? window.vueApp.currEpoch
+
   let svgDom = document.getElementById(specifiedTimeLinesvg)
 
 
@@ -444,6 +446,7 @@ function drawTimeline(res, flag) {
       });
 
 
+  const purple = '#452d8a'
   //path
   g.append('g')
       .selectAll('path')
@@ -464,7 +467,7 @@ function drawTimeline(res, flag) {
               target: end
           });
       })
-      .attr('stroke', '#452d8a')
+      .attr('stroke', purple)
       .attr('stroke-width', 1)
       .attr('fill', 'none');
 
@@ -484,21 +487,24 @@ function drawTimeline(res, flag) {
       .attr('r', 8)
       .attr('fill', function (d, i) {
           // console.log("1111",d.data.value, window.iteration, d.data.value == window.iteration )
-          return d.data.value == window.vueApp[specifiedCurrEpoch] ? 'orange' : '#452d8a'
+          return d.data.value == currEpoch ? 'orange' : purple
       })
       .attr('stroke-width', 1)
       .attr('stroke', function (d, i) {
-          return d.data.value == window.vueApp[specifiedCurrEpoch] ? 'orange' : '#452d8a'
+          return d.data.value == currEpoch ? 'orange' : purple
       })
 
   gs.append('text')
       .attr('x', function (d, i) {
-          return 5;
+          return -8;
       })
       .attr('y', function (d, i) {
-          return -20;
+          return -14;
       })
-      .attr('dy', 10)
+    .attr('dy', 0)
+    .style('fill', function (d, i) {
+      return d.data.value == currEpoch ? 'orange' : purple
+    })
       .text(function (d, i) {
           if (window.sessionStorage.taskType === 'active learning') {
               return `${d.data.value}|${d.data.name}`;
