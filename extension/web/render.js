@@ -349,6 +349,31 @@ var lockIndex = false;
                 window.vueApp.pointsMesh.geometry.attributes.size.needsUpdate = true;
                 window.vueApp[specifiedLastHoveredIndex] = index;
                 updateCurrHoverIndex(event, index, false, '')
+
+                // link the pair
+                const selectPoint = (idx) => {
+                    var positionAttribute = window.vueApp.pointsMesh.geometry.attributes.position;
+                    var x = positionAttribute.getX(idx);
+                    var y = positionAttribute.getY(idx);
+                    var z = positionAttribute.getZ(idx);
+                    return { x: x, y: y, z: z };
+                };
+                const selectMappingIndex = (idx) => (idx + res.result.length / 2) % res.result.length;
+                originalPoint = selectPoint(index);
+                pairedPoint = selectPoint(selectMappingIndex(index));
+                var points = [];
+                points.push(new THREE.Vector3(originalPoint.x, originalPoint.y, originalPoint.z));
+                points.push(new THREE.Vector3(pairedPoint.x, pairedPoint.y, pairedPoint.z)); // Adjust the end point as needed
+                // bound to scene, or the line will disappear on switching epoch
+                if (!window.vueApp.scene.hoverLine) {
+                    var material = new THREE.LineBasicMaterial({ color: 0xaaaaaa });
+                    var geometry = new THREE.BufferGeometry().setFromPoints(points);
+                    window.vueApp.scene.hoverLine = new THREE.Line(geometry, material);
+                    window.vueApp.scene.add(window.vueApp.scene.hoverLine); 
+                } else {
+                    window.vueApp.scene.hoverLine.geometry.setFromPoints(points);
+                }
+                
                 if (isDown) {
                     lockIndex = true;
                 }
@@ -366,6 +391,12 @@ var lockIndex = false;
                 window.vueApp[specifiedLastHoveredIndex] = null;
                 window.vueApp[specifiedImageSrc] = ""
                 updateCurrHoverIndex(event, null, false, '')
+                if (window.vueApp.scene.hoverLine) {
+                    window.vueApp.scene.remove(window.vueApp.scene.hoverLine);
+                    window.vueApp.scene.hoverLine.geometry?.dispose();
+                    window.vueApp.scene.hoverLine.material?.dispose();
+                    window.vueApp.scene.hoverLine = undefined;
+                }
             }
         }
     }
@@ -591,7 +622,7 @@ var lockIndex = false;
     // create light
     var light = new THREE.PointLight(0xffffff, 1, 500);
     light.position.set(50, 50, 50);
-    var ambientLight = new THREE.AmbientLight(0xffffff, 0.95); // The second parameter is the light intensity
+    var ambientLight = new THREE.AmbientLight(0xffffff, 1.0); // The second parameter is the light intensity
     window.vueApp.scene.add(ambientLight);
     // window.vueApp.scene.add(light);
 
