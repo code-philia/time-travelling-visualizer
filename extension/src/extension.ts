@@ -43,12 +43,7 @@ export function activate(context: vscode.ExtensionContext) {
 	
 	context.subscriptions.push(
 		vscode.window.registerWebviewViewProvider(
-			'advanced-view',
-			new SidebarWebviewViewProvider(context, isDev ? sideBarWebviewPort : undefined, isDev ? '/advanced_view.html' : undefined, 'advanced_view'),
-			{ webviewOptions: { retainContextWhenHidden: true } }
-		),
-		vscode.window.registerWebviewViewProvider(
-			'metadata-view',
+			'visualizer-metadata-view',
 			new SidebarWebviewViewProvider(context, isDev ? panelWebviewPort : undefined, isDev ? '/metadata_view.html' : undefined, 'metadata_view'),
 			{ webviewOptions: { retainContextWhenHidden: true } }
 		)
@@ -75,7 +70,7 @@ async function startMainView() {
 
 	const panel = vscode.window.createWebviewPanel(
 		'customEditor',
-		'My Custom Editor',
+		'Visualizer',
 		vscode.ViewColumn.One,
 		{ retainContextWhenHidden: true, ...getDefaultWebviewOptions() }
 	);
@@ -310,25 +305,20 @@ async function loadVisualization(forceReconfig: boolean = false): Promise<boolea
 
 	if (config) {
 		const { dataType, taskType, contentPath, visualizationMethod } = config;
-		if (await callVisualizationAPI(dataType, taskType, contentPath, visualizationMethod)) {
-			return true;
-		} 
+		if (!("mainView" in views)) {
+			try {
+				await startMainView();
+			} catch(e) {
+				vscode.window.showErrorMessage(`Cannot start main view: ${e}`);
+				return false;
+			}
+		}
+		return await notifyVisualizationUpdate(dataType, taskType, contentPath, visualizationMethod);
 	}
 	return false;
 }
 
-async function callVisualizationAPI(dataType: string, taskType: string, contentPath: string, visualizationMethod: string): Promise<boolean> {
-	// vscode.window.showInformationMessage(`Loading visualization for ${dataType} data, ${taskType} task, ${contentPath} content, and ${visualizationMethod} method...`);
-	// return true;
-	if (!("mainView" in views)) {
-		try {
-			await startMainView();
-		} catch(e) {
-			vscode.window.showErrorMessage(`Cannot start main view: ${e}`);
-			return false;
-		}
-	}
-
+async function notifyVisualizationUpdate(dataType: string, taskType: string, contentPath: string, visualizationMethod: string): Promise<boolean> {
 	return await views["mainView"].postMessage({
 		command: 'update',
 		contentPath: contentPath,

@@ -91,12 +91,7 @@
       "visualizer-sidebar": [
         {
           "type": "webview",
-          "id": "advanced-view",
-          "name": "Advanced Options"
-        },
-        {
-          "type": "webview",
-          "id": "metadata-view",
+          "id": "visualizer-metadata-view",
           "name": "Data Point Info"
         }
       ]
