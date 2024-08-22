@@ -405,7 +405,8 @@ function drawTimeline(res, flag) {
       });
 
   //create tree
-  let len = total
+  // The number of links is 1 less than number of nodes
+  let len = total - 1
 
   let svgWidth = len * 40
   if (window.sessionStorage.taskType === 'active learning') {
@@ -419,7 +420,7 @@ function drawTimeline(res, flag) {
       // svgDom.style.width = 2000
   }
 
-
+  // TODO Why we need to draw the tree manually although its size is determined here?
   var tree = d3.tree()
       .size([100, svgWidth])
       .separation(function (a, b) {
@@ -475,7 +476,7 @@ function drawTimeline(res, flag) {
       .enter()
       .append('g')
       .attr('transform', function (d, i) {
-          return 'translate(' + d.data.pid * 40 + ',' + d.x + ')';
+          return 'translate(' + d.y + ',' + d.x + ')';
       });
 
   //绘制文字和节点
@@ -492,10 +493,10 @@ function drawTimeline(res, flag) {
 
   gs.append('text')
       .attr('x', function (d, i) {
-          return d.children ? 5 : 10;
+          return 5;
       })
       .attr('y', function (d, i) {
-          return d.children ? -20 : -5;
+          return -20;
       })
       .attr('dy', 10)
       .text(function (d, i) {
