@@ -447,6 +447,9 @@ function drawTimeline(res, flag) {
 
 
   const purple = '#452d8a'
+  const blue = 'rgb(26,80, 188)'
+  const w_blue = 'rgb(131, 150, 188)'
+
   //path
   g.append('g')
       .selectAll('path')
@@ -467,7 +470,7 @@ function drawTimeline(res, flag) {
               target: end
           });
       })
-      .attr('stroke', purple)
+      .attr('stroke', w_blue)
       .attr('stroke-width', 1)
       .attr('fill', 'none');
 
@@ -487,23 +490,22 @@ function drawTimeline(res, flag) {
       .attr('r', 8)
       .attr('fill', function (d, i) {
           // console.log("1111",d.data.value, window.iteration, d.data.value == window.iteration )
-          return d.data.value == currEpoch ? 'orange' : purple
+          return d.data.value == currEpoch ? blue : w_blue
       })
       .attr('stroke-width', 1)
       .attr('stroke', function (d, i) {
-          return d.data.value == currEpoch ? 'orange' : purple
+          return d.data.value == currEpoch ? blue : w_blue
       })
 
   gs.append('text')
-      .attr('x', function (d, i) {
-          return -8;
-      })
+      .attr('x', 0)
       .attr('y', function (d, i) {
           return -14;
       })
     .attr('dy', 0)
+    .attr('text-anchor', 'middle')
     .style('fill', function (d, i) {
-      return d.data.value == currEpoch ? 'orange' : purple
+      return d.data.value == currEpoch ? blue : w_blue
     })
       .text(function (d, i) {
           if (window.sessionStorage.taskType === 'active learning') {
