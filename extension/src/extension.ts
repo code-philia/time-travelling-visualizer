@@ -75,6 +75,8 @@ async function startMainView() {
 		{ retainContextWhenHidden: true, ...getDefaultWebviewOptions() }
 	);
 
+	panel.iconPath = vscode.Uri.file(path.join(webRoot, '..', 'resources/eye_tracking_24dp_5F6368_FILL0_wght300_GRAD0_opsz24.svg'));
+
 	if (isDev) {
 		panel.webview.html = getForwardWebviewContent(panel.webview, editorWebviewPort, true);
 	} else {
