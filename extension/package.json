@@ -58,24 +58,16 @@
     },
     "commands": [
       {
-        "command": "timeTravellingVisualizer.start",
-        "title": "Call an Editor"
-      },
-      {
-        "command": "timeTravellingVisualizer.dialog",
-        "title": "Open a Dialog"
-      },
-      {
         "command": "timeTravellingVisualizer.loadVisualizationResult",
-        "title": "Load Visualization Result"
+        "title": "Visualize Training Process"
       },
       {
         "command": "timeTravellingVisualizer.setAsDataFolderAndLoadVisualizationResult",
-        "title": "Set as Data Folder and Load Visualization Result"
+        "title": "Set as Data Folder and Visualize Training Process"
       },
       {
-        "command": "timeTravellingVisualizer.configureAndLoadVisualization",
-        "title": "Configure and Load Visualization"
+        "command": "timeTravellingVisualizer.configureAndLoadVisualizationResult",
+        "title": "Configure and Visualize Training Process"
       }
     ],
     "viewsContainers": {

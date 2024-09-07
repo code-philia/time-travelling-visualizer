@@ -1,20 +1,18 @@
-export const VisualizerConfigurationBaseName: string = 'timeTravellingVisualizer';
-export const VisualizationDataTypeConfigurationName: string = 'loadVisualization.dataType';
-export const VisualizationTaskTypeConfigurationName: string = 'loadVisualization.taskType';
-export const VisualizationContentPathConfigurationName: string = 'loadVisualization.contentPath';
-export const VisualizationMethodConfigurationName: string = 'loadVisualization.visualizationMethod';
+// serve as visualiation API and config
+// for engineering config use config.ts
 
-// Commands
-export const CommandNames: { [key: string]: string } = {
-    loadVisualization: 'loadVisualizationResult',
-    openStartView: 'start',
-    setAsDataFolderAndLoadVisualizationResult: 'setAsDataFolderAndLoadVisualizationResult',
-    setAsDataFolder: 'setAsDataFolder',
-    configureAndLoadVisualization: 'configureAndLoadVisualization',
+// NOTE only and always import this ES module and api.ts as an entire namespace:
+// `import * as config from './config';`
+// and always import other modules by each symbol:
+// `import {xxx} from './yyy';`
+
+// TODO change this type name to 'params' or not?
+export type BasicVisualizationConfig = {
+    dataType: string,
+	taskType: string,
+	contentPath: string,
+	visualizationMethod: string,
 };
-for (const k in CommandNames) {
-    CommandNames[k] = VisualizerConfigurationBaseName + '.' + CommandNames[k];    // FIXME a better way to construct this
-}
 
 export class StringSelection {
     readonly selections: Set<string> = new Set<string>();
@@ -23,11 +21,13 @@ export class StringSelection {
             this.selections.add(arg);
         });
     }
-    is(arg: any): arg is string {
+    has(arg: any): arg is string {
         return this.selections.has(arg);
     }
 }
 
-export const VisualizationDataType: StringSelection = new StringSelection('Image', 'Text');
-export const VisualizationTaskType: StringSelection = new StringSelection('Classification', 'Non-Classification');
-export const VisualizationMethod: StringSelection = new StringSelection('TrustVis');
+export class Types {
+    static readonly VisualizationDataType: StringSelection = new StringSelection('Image', 'Text');
+    static readonly VisualizationTaskType: StringSelection = new StringSelection('Classification', 'Non-Classification');
+    static readonly VisualizationMethod: StringSelection = new StringSelection('TrustVis');
+}
