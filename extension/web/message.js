@@ -15,9 +15,9 @@ function sendMessage(msg) {
   }
 }
 
-window.addEventListener('message', msg => {
-  console.log('A message is received and to be processed with vue', msg);
-});
+// window.addEventListener('message', msg => {
+//   console.log('A message is received and to be processed with vue', msg);
+// });
 
 const validCommands = [
   'update', 'filterByIndex', 'indexSearchHandler',
@@ -81,6 +81,10 @@ window.addEventListener('message', msg => {
         } else {
             window.vueApp[data.command]();
         }
+    } else if (data.command == 'updateCssVariable') {
+      for (const key in data.cssVars) {
+        document.documentElement.style.setProperty(key, data.cssVars[key]);
+      }
     }
 });
 
