@@ -14,9 +14,7 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [
-    "*"
-  ],
+  "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
     "menus": {
@@ -58,24 +56,16 @@
     },
     "commands": [
       {
-        "command": "timeTravellingVisualizer.start",
-        "title": "Call an Editor"
-      },
-      {
-        "command": "timeTravellingVisualizer.dialog",
-        "title": "Open a Dialog"
-      },
-      {
         "command": "timeTravellingVisualizer.loadVisualizationResult",
-        "title": "Load Visualization Result"
+        "title": "Visualize Training Process"
       },
       {
         "command": "timeTravellingVisualizer.setAsDataFolderAndLoadVisualizationResult",
-        "title": "Set as Data Folder and Load Visualization Result"
+        "title": "Set as Data Folder and Visualize Training Process"
       },
       {
-        "command": "timeTravellingVisualizer.configureAndLoadVisualization",
-        "title": "Configure and Load Visualization"
+        "command": "timeTravellingVisualizer.configureAndLoadVisualizationResult",
+        "title": "Configure and Visualize Training Process"
       }
     ],
     "viewsContainers": {
@@ -83,7 +73,7 @@
         {
           "id": "visualizer-sidebar",
           "title": "Time Travelling Visualizer",
-          "icon": "resources/home_24dp_FILL0_wght400_GRAD0_opsz24.svg"
+          "icon": "resources/eye_tracking_24dp_5F6368_FILL0_wght300_GRAD0_opsz24.svg"
         }
       ]
     },

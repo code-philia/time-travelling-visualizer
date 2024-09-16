@@ -16,15 +16,16 @@
                 "format": [ "camelCase", "PascalCase" ]
             }
         ],
-        "@typescript-eslint/semi": "warn",
-        "curly": "warn",
-        "eqeqeq": "warn",
-        "no-throw-literal": "warn",
-        "semi": "off"
+        "semi": ["error", "always"],
+        "space-before-blocks": ["error", "always"],
+        "curly": "off",
+        "eqeqeq": ["error", "always"],
+        "no-throw-literal": "warn"
     },
     "ignorePatterns": [
         "out",
         "dist",
-        "**/*.d.ts"
+        "**/*.d.ts",
+        "web"
     ]
 }
