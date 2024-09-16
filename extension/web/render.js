@@ -711,7 +711,27 @@ function labelColor() {
 
     const tableBody = document.querySelector('#labelColor tbody');
     tableBody.innerHTML = '';
-
+    const hexToRgbArray = (hex) => {
+        hex = hex.replace(/^#/, '');
+        let bigint = parseInt(hex, 16);
+        let r = (bigint >> 16) & 255;
+        let g = (bigint >> 8) & 255;
+        let b = bigint & 255;
+        return [r, g, b];
+    };
+    
+    function changeLabelColor(label2Change, newColor) {
+        const pointLabels = window.vueApp.label_list;
+        for (let i = 0; i < pointLabels.length; i++) {
+            if (pointLabels[i] === label2Change) {
+                window.vueApp.res.label_color_list[i][0] = newColor[0];
+                window.vueApp.res.label_color_list[i][1] = newColor[1];
+                window.vueApp.res.label_color_list[i][2] = newColor[2];
+            }
+        }
+        drawCanvas(window.vueApp.res)
+    }
+    
     Object.keys(labels).forEach((key, index) => {
         const row = document.createElement('tr');
 
@@ -722,13 +742,16 @@ function labelColor() {
 
         // 创建颜色单元格
         const colorCell = document.createElement('td');
-        const colorDiv = document.createElement('div');
-        colorDiv.style.width = '30px';
-        colorDiv.style.height = '20px';
-        colorDiv.style.backgroundColor = `rgb(${colors[index]})`;
-        colorCell.appendChild(colorDiv);
+        const colorInput = document.createElement('input');
+        colorInput.type = 'color';
+        colorInput.value = `#${colors[index].map(c => c.toString(16).padStart(2, '0')).join('')}`;
+        colorInput.addEventListener('input', (event) => {
+                const newColor = event.target.value;
+                changeLabelColor(key, hexToRgbArray(newColor));
+            }
+        );
+        colorCell.appendChild(colorInput);
         row.appendChild(colorCell);
-
         // 将行添加到表格中
         tableBody.appendChild(row);
     });
