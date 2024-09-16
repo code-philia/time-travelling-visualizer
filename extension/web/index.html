@@ -494,7 +494,9 @@
                     if (newVal != null) {
                         // TODO Must this be resolved only when awaited?
                         this.indexUpdateLock = new Promise((resolve, reject) => {
-                            getOriginalData(this.contentPath, newVal, this.dataType, "", this.customContentPath).then(resolve);
+                            // FIXME this is not good to filter the index of that type. Use global type, also changing the backend!
+                            const idx = this.typeIndexList[newVal]; 
+                            getOriginalData(this.contentPath, idx, this.dataType, "", this.customContentPath, this.curr_label).then(resolve);
                         });
                         const updatedQuery = {
                             ...this.query,
@@ -504,7 +506,6 @@
                         if (this.isSwitchOn) {
                             indexSearch(updatedQuery, this.isSwitchOn);
                         }
-
                     }
                 }
             },
@@ -578,7 +579,8 @@
             }
         },
         mounted() {
-            this.driver = new Driver()
+            this.driver = new Driver();
+            sendMessage({ state: 'load', forward: true });
         }
     })
 </script>

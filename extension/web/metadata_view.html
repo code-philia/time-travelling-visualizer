@@ -33,7 +33,7 @@
 
 <body>
     <div id="app" v-loading="isCanvasLoading" element-loading-text="loading..." element-loading-background="rgba(255, 255, 255, 0.4)">
-        <div id="Metadata" style="padding: 1em; line-height: 1.2em; height: 90vh; display: flex; flex-direction: column; font-size: small;">
+        <div id="metadata">
             <div><b>Hovered Index: </b>{{lastHoveredIndex}}</div>
             <div><b>Prediction: </b>{{curr_pred}}</div>
             <div><b>Label: </b>{{curr_label}}</div>
@@ -77,13 +77,16 @@
         },
         mounted() {
             this.highlightCode();
+            sendMessage({ state: 'load', forward: true });
         },
         updated() {
             this.highlightCode();
         },
         methods: {
             highlightCode() {
-                this.$refs.codeElement.innerHTML = this.formattedCode;
+                if (this.$refs.codeElement && this.formattedCode){
+                    this.$refs.codeElement.innerHTML = this.formattedCode;
+                }
             }
         }
     })
