@@ -78,6 +78,16 @@
                 <div id="contentSettingTask">
                     <el-radio v-model="taskType" label="Classification">Classification</el-radio>
                     <el-radio v-model="taskType" label="Non-Classification">Non-Classification</el-radio>
+                    <el-radio v-model="taskType" label="Umap-Neighborhood">Umap-Neighborhood</el-radio>
+                </div>
+
+                <el-divider></el-divider>
+
+                <span style="display: inline-block; margin-right: 20px;">Reveal Neighborhood:</span><br/>
+                <div id="neighborhoodSetting">
+                    <el-radio v-model="neighborhoodRevealType" label="None" :disabled="!neighborhoodAvailable">None</el-radio>
+                    <el-radio v-model="neighborhoodRevealType" label="Intra-Type" :disabled="!neighborhoodAvailable">Intra-Type</el-radio>
+                    <el-radio v-model="neighborhoodRevealType" label="Inter-Type" :disabled="!neighborhoodAvailable">Inter-Type</el-radio>
                 </div>
 
                 <el-divider></el-divider>
@@ -335,6 +345,7 @@
                 textContent: "",
                 dataType: "Image",
 
+                neighborhoodRevealType: "None",
 
                 visibilityMap: null,
                 highlightAttributes: {
@@ -375,9 +386,17 @@
         created(){
             this.loadCookies()
         },
+        computed: {
+            neighborhoodAvailable() {
+                return this.taskType === 'Umap-Neighborhood';
+            }
+        },
         methods: {
             loadCookies(){
                 this.contentPath = Cookies.get('contentPath') || '';
+                this.dataType = Cookies.get('dataType') || 'Image';
+                this.taskType = Cookies.get('taskType') || 'Classification';
+                this.neighborhoodRevealType = Cookies.get('neighborhoodRevealType') || 'None';
             },
             deleteItemfromSel(item) {
                 const index = this.selectedIndex.indexOf(item);
@@ -385,8 +404,12 @@
                   this.selectedIndex.splice(index, 1);
                 }
               },
-            saveContentPath(){
-                Cookies.set('contentPath', this.contentPath, { expires: 7 }); // Expires in 7 days
+            saveCookies(){
+                const options = { expires: 7 };
+                Cookies.set('contentPath', this.contentPath, options);
+                Cookies.set('dataType', this.dataType, options);
+                Cookies.set('taskType', this.taskType, options);
+                Cookies.set('neighborhoodRevealType', this.neighborhoodRevealType, options);
             },
             filterInput(key, event) {
                 console.log(key, event)
@@ -526,6 +549,7 @@
             update() {
                 this.isCanvasLoading = true
                 console.log("taskType", this.taskType)
+                this.saveCookies();
                 if (this.customContentPath != '') {
                     updateCustomProjection(this.contentPath, this.customContentPath, this.currEpoch, this.taskType)
                 }
@@ -650,13 +674,21 @@
         },
         watch: {
             contentPath(newVal) {
-                this.saveContentPath();
-              },
+                this.saveCookies();
+            },
+            neighborhoodRevealType(newVal) {
+                this.plotCanvas?.lastDoUpdateRevealing?.();
+            },
             lastHoveredIndex: {
                 immediate: true,
                 handler(newVal, oldVal) {
                     if (newVal != null) {
-                        getOriginalData(this.contentPath, newVal, this.dataType, "", this.customContentPath)
+                        if (this.taskType === 'Umap-Neighborhood') {
+                            let specifiedTextContent = makeSpecifiedVariableName('textContent', "");
+                            this[specifiedTextContent] = this.epochData.tokens[newVal];
+                        } else {
+                            getOriginalData(this.contentPath, newVal, this.dataType, "", this.customContentPath);
+                        }
                         const updatedQuery = {
                             ...this.query,
                             key: 'index',

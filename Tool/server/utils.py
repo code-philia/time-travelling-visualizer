@@ -1,5 +1,6 @@
 import os
 import json
+from secrets import token_urlsafe
 import time
 import csv
 import numpy as np
@@ -165,9 +166,14 @@ def get_eval_new(context, EPOCH):
 def get_train_test_data(context, EPOCH):
     train_data = context.train_representation_data(EPOCH)
     test_data = context.test_representation_data(EPOCH)
-    all_data = np.concatenate((train_data, test_data), axis=0)
-    print(len(test_data))
-    print(len(train_data))
+    if train_data is None:
+        all_data = test_data
+    elif test_data is None:
+        all_data = train_data
+    else:
+        all_data = np.concatenate((train_data, test_data), axis=0)
+    # print(len(test_data))
+    # print(len(train_data))
     return all_data
 
 def get_train_test_label(context, EPOCH):
@@ -176,9 +182,9 @@ def get_train_test_label(context, EPOCH):
     train_data = context.train_representation_data(EPOCH) 
     test_data = context.test_representation_data(EPOCH)
     if train_labels is None:
-        train_labels = np.zeros(len(train_data), dtype=int)
+        train_labels = np.zeros(len(train_data) if train_data is not None else 0, dtype=int)
     if test_labels is None:
-        test_labels = np.zeros(len(test_data), dtype=int)
+        test_labels = np.zeros(len(test_data) if test_data is not None else 0, dtype=int)
     print("errorlabels", train_labels, test_labels)
     labels = np.concatenate((train_labels, test_labels), axis=0).astype(int)
         
@@ -498,6 +504,81 @@ def highlight_epoch_projection(context, EPOCH, predicates, TaskType,indicates):
     print("EMBEDDINGLEN", len(embedding_2d))
     return embedding_2d.tolist(), grid, b_fig, label_name_dict, label_color_list, label_list, max_iter, training_data_index, testing_data_index, eval_new, prediction_list, selected_points, properties,error_message
 
+def read_tokens_by_file(dir_path: str, n: int):
+    '''Read labels from text_0.txt to text_n.txt. Only the first line is recognized as a label.'''
+    labels = []
+    for i in range(n):
+        try:
+            with open(os.path.join(dir_path, "text_{}.txt".format(i)), 'r', encoding='utf-8') as f:
+                labels += [next(line for line in f).strip()]
+        except Exception:
+            break
+    return labels
+
+def read_file_as_json(file_path: str):
+    with open(file_path, "r") as f:
+        return json.load(f)
+
+# FIXME add cache when the content_path doesn't change
+def get_umap_neighborhood_epoch_projection(content_path: str, epoch: int, predicates: list[int], indicates: list[int]):
+    data_folder = os.path.join(content_path, 'Model')
+    epoch_folder = os.path.join(data_folder, f'Epoch_{epoch}')
+
+    # Read number of indices of all, comment and code
+    # We only read the number of comment, then the rest are code
+    # FIXME this is not a good specification of how to split comment and code
+    all_indices_file = os.path.join(epoch_folder, 'index.json')
+    comment_indices_file = os.path.join(epoch_folder, 'comment_index.json')
+    all_idx_num = len(read_file_as_json(all_indices_file))
+    cmt_idx_num = len(read_file_as_json(comment_indices_file))
+    code_idx_num = all_idx_num - cmt_idx_num
+    
+    label_text_list = ['comment', 'code']
+    labels = [0] * cmt_idx_num + [1] * code_idx_num
+
+    # Assume there are `code_labels` and `comment_labels` folder: Read code tokens and comment tokens
+    code_labels_folder = os.path.join(data_folder, 'code_labels')
+    comment_labels_folder = os.path.join(data_folder, 'comment_labels')
+
+    code_tokens = read_tokens_by_file(code_labels_folder, code_idx_num)
+    comment_tokens = read_tokens_by_file(comment_labels_folder, cmt_idx_num)
+
+    assert (len(code_tokens) == code_idx_num)
+    assert (len(comment_tokens) == cmt_idx_num)
+
+    # Read and return projections
+    proj_file = os.path.join(epoch_folder, 'embedding.npy')
+
+    proj = np.load(proj_file).tolist()
+
+    # Read and return similarities, inter-type and intra-type
+    inter_sim_file = os.path.join(epoch_folder, 'inter_similarity.npy')
+    intra_sim_file = os.path.join(epoch_folder, 'intra_similarity.npy')
+    
+    inter_sim_top_k = np.load(inter_sim_file).tolist()
+    intra_sim_top_k = np.load(intra_sim_file).tolist()
+    
+    # Read the bounding box (TODO necessary?)
+    bounding_file = os.path.join(epoch_folder, 'scale.npy')
+    bounding_np_array = np.load(bounding_file)
+    x_min, y_min, x_max, y_max = bounding_np_array.tolist()
+
+    result = {
+        'proj': proj,
+        'labels': labels,
+        'label_text_list': label_text_list,
+        'tokens': comment_tokens + code_tokens,
+        'inter_sim_top_k': inter_sim_top_k,
+        'intra_sim_top_k': intra_sim_top_k,
+        'bounding': {
+            'x_min': x_min,
+            'y_min': y_min,
+            'x_max': x_max,
+            'y_max': y_max
+        }
+    }
+
+    return result
 
 # from transformers import (WEIGHTS_NAME, AdamW, get_linear_schedule_with_warmup,
 #                           BertConfig, BertForMaskedLM, BertTokenizer,
@@ -625,7 +706,7 @@ def update_custom_epoch_projection(context, EPOCH, predicates, TaskType,indicate
     else:
         model = model_class(config)
 
-    from Model.Model import Model
+    # from Model.Model import Model
     model = Model(model, config, tokenizer)
 
     train_dataset = TextDataset(tokenizer, block_size, CUSTOM_PATH)
