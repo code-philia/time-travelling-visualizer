@@ -337,7 +337,7 @@ def update_epoch_projection(context, EPOCH, predicates, TaskType, indicates):
     start1 =time.time()
     print("midquestion2",start1-start2)
     CLASSES = np.array(context.strategy.config["CLASSES"])
-    label_list = CLASSES[labels].tolist()
+    label_list = labels.tolist()
     label_name_dict = dict(enumerate(CLASSES))
 
     prediction_list = []
