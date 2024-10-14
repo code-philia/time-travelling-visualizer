@@ -5,10 +5,10 @@ const PERSP_CAMERA_FOV_VERTICAL = 70;
 const PERSP_CAMERA_NEAR_CLIP_PLANE = 0.01;
 const PERSP_CAMERA_FAR_CLIP_PLANE = 100;
 const ORTHO_CAMERA_FRUSTUM_HALF_EXTENT = 1.2;
-const MIN_ZOOM_SCALE = 1;
+const MIN_ZOOM_SCALE = 0.2;
 const MAX_ZOOM_SCALE = 60;
-const NORMAL_SIZE = 5;
-const HOVER_SIZE = 10;
+const NORMAL_SIZE = 10;
+const HOVER_SIZE = 20;
 const SELECTED_SIZE = 15;
 const GRAY = [0.8, 0.8, 0.8];
 const selectedLabel = 'fixedHoverLabel';
@@ -19,6 +19,30 @@ let previousMousePosition = {
     y: 0
 };
 let lockIndex = false;
+
+
+// <https://threejs.org/manual/#en/responsive>
+function __resizeRendererToDisplaySize(renderer) {
+    const canvas = renderer.domElement;
+    const pixelRatio = window.devicePixelRatio;
+    const width  = Math.floor( canvas.clientWidth / 2  * pixelRatio );
+    const height = Math.floor( canvas.clientHeight / 2 * pixelRatio );
+    const needResize = canvas.width !== width || canvas.height !== height;
+    if (needResize) {
+        renderer.setSize(width, height, false);
+    }
+    return needResize;
+}
+
+function __resizeViewport(renderer) {
+    if (__resizeRendererToDisplaySize(renderer)) {
+        // keep a square viewport in the middle
+        const sizeV2 = new THREE.Vector2();
+        renderer.getSize(sizeV2);
+        const viewportSize = Math.min(sizeV2.x, sizeV2.y);
+        renderer.setViewport((sizeV2.x - viewportSize) / 2, (sizeV2.y - viewportSize) / 2, viewportSize, viewportSize);
+    }
+}
 
 class PlotCanvas {
     constructor(vueApp) {
@@ -33,15 +57,19 @@ class PlotCanvas {
         this.container = container;
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
-        const rect = container.getBoundingClientRect();
-        renderer.setSize(rect.width, rect.height);
         renderer.setClearColor(BACKGROUND_COLOR, 1);
         this.renderer = renderer;
-
+        
         container.appendChild(renderer.domElement);
+        __resizeViewport(renderer);
+        window.addEventListener('resize', () => {
+            __resizeViewport(renderer);
+        });
     }
 
     plotDataPoints(visData) {
+        window.vueApp.res = visData;
+
         const boundary = {
             x_min: visData.grid_index[0],
             y_min: visData.grid_index[1],
@@ -192,7 +220,7 @@ class PlotCanvas {
     }
 
     __registerContainerEventListener(type, listener) {
-        this.container.addEventListener(type, listener.bind(this));
+        this.renderer.domElement.addEventListener(type, listener.bind(this));
         this.eventListeners.push([type, listener]);
     }
 
@@ -349,6 +377,8 @@ class PlotCanvas {
 
     __addHoverRevealing() {
         let raycaster = new THREE.Raycaster();
+        raycaster.params.Points.threshold = 0.1 / this.camera.zoom;
+
         let mouse = new THREE.Vector2();
         
         const updateLastHoverIndexSize = (lastHoveredIndex, selectedIndex, visualizationError, nnIndices) => {
@@ -382,10 +412,21 @@ class PlotCanvas {
             });
             this.pointsMesh.geometry.getAttribute('size').needsUpdate = true;
             // TODO consider adjusting the threshold according to monitor size and resolution
-            raycaster.params.Points.threshold = 0.4 / this.camera.zoom; // 根据点的屏幕大小调整
-            let rect = this.renderer.domElement.getBoundingClientRect();
-            mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-            mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+            
+            let { left: canvasLeft, top: canvasTop } = this.renderer.domElement.getBoundingClientRect();
+            let { x: offsetX, y: offsetY, z: viewportWidth, w: viewportHeight } = this.renderer.getViewport(new THREE.Vector4());
+            
+            const mouseX = event.clientX - canvasLeft;
+            const mouseY = event.clientY - canvasTop;
+
+            const canvasHeight = this.renderer.domElement.clientHeight;
+            const viewportTopY = canvasHeight - offsetY - viewportHeight;
+
+            const viewportMouseX = mouseX - offsetX;
+            const viewportMouseY = mouseY - viewportTopY;
+    
+            mouse.x = (viewportMouseX / viewportWidth) * 2 - 1;
+            mouse.y = - (viewportMouseY / viewportHeight) * 2 + 1;
 
             raycaster.setFromCamera(mouse, this.camera);
             let intersects = raycaster.intersectObject(this.pointsMesh);
@@ -436,30 +477,30 @@ class PlotCanvas {
                     this.vueApp[specifiedLastHoveredIndex] = index;
                     updateCurrHoverIndex(event, index, false, '');
 
-                    // TODO this is for experiment only, find another way to link code and comment pair as soon as possible
-                    // link the pair
-                    const selectPoint = (idx) => {
-                        let positionAttribute = this.pointsMesh.geometry.attributes.position;
-                        let x = positionAttribute.getX(idx);
-                        let y = positionAttribute.getY(idx);
-                        let z = positionAttribute.getZ(idx);
-                        return { x: x, y: y, z: z };
-                    };
-                    const selectMappingIndex = (idx) => (idx + this.geoData.length / 2) % this.geoData.length;
-                    const originalPoint = selectPoint(index);
-                    const pairedPoint = selectPoint(selectMappingIndex(index));
-                    let points = [];
-                    points.push(new THREE.Vector3(originalPoint.x, originalPoint.y, originalPoint.z));
-                    points.push(new THREE.Vector3(pairedPoint.x, pairedPoint.y, pairedPoint.z)); // Adjust the end point as needed
-                    // bound to scene, or the line will disappear on switching epoch
-                    if (!this.scene.hoverLine) {
-                        let material = new THREE.LineBasicMaterial({ color: 0xaaaaaa });
-                        let geometry = new THREE.BufferGeometry().setFromPoints(points);
-                        this.scene.hoverLine = new THREE.Line(geometry, material);
-                        this.scene.add(this.scene.hoverLine);
-                    } else {
-                        this.scene.hoverLine.geometry.setFromPoints(points);
-                    }
+                    // // TODO this is for experiment only, find another way to link code and comment pair as soon as possible
+                    // // link the pair
+                    // const selectPoint = (idx) => {
+                    //     let positionAttribute = this.pointsMesh.geometry.attributes.position;
+                    //     let x = positionAttribute.getX(idx);
+                    //     let y = positionAttribute.getY(idx);
+                    //     let z = positionAttribute.getZ(idx);
+                    //     return { x: x, y: y, z: z };
+                    // };
+                    // const selectMappingIndex = (idx) => (idx + this.geoData.length / 2) % this.geoData.length;
+                    // const originalPoint = selectPoint(index);
+                    // const pairedPoint = selectPoint(selectMappingIndex(index));
+                    // let points = [];
+                    // points.push(new THREE.Vector3(originalPoint.x, originalPoint.y, originalPoint.z));
+                    // points.push(new THREE.Vector3(pairedPoint.x, pairedPoint.y, pairedPoint.z)); // Adjust the end point as needed
+                    // // bound to scene, or the line will disappear on switching epoch
+                    // if (!this.scene.hoverLine) {
+                    //     let material = new THREE.LineBasicMaterial({ color: 0xaaaaaa });
+                    //     let geometry = new THREE.BufferGeometry().setFromPoints(points);
+                    //     this.scene.hoverLine = new THREE.Line(geometry, material);
+                    //     this.scene.add(this.scene.hoverLine);
+                    // } else {
+                    //     this.scene.hoverLine.geometry.setFromPoints(points);
+                    // }
 
                     if (isDown) {
                         lockIndex = true;
@@ -635,23 +676,42 @@ class PlotCanvas {
             newPosY = camera.position.y;
         }
 
-        const currentZoom = camera.zoom;
+        // const currentZoom = camera.zoom;
 
-        // left bound: minX <= x - w / 2 / scale,
-        // right bound: maxX >= x + w / 2 / scale
-        // so does y
+        // // left bound: minX <= x - w / 2 / scale,
+        // // right bound: maxX >= x + w / 2 / scale
+        // // so does y
 
-        const minX = this.boundary.x_min + (camera.right - camera.left) / 2 / currentZoom;
-        const maxX = this.boundary.x_max - (camera.right - camera.left) / 2 / currentZoom;
-        const minY = this.boundary.y_min + (camera.top - camera.bottom) / 2 / currentZoom;
-        const maxY = this.boundary.y_max - (camera.top - camera.bottom) / 2 / currentZoom;
+        // const minX = this.boundary.x_min + (camera.right - camera.left) / 2 / currentZoom;
+        // const maxX = this.boundary.x_max - (camera.right - camera.left) / 2 / currentZoom;
+        // const minY = this.boundary.y_min + (camera.top - camera.bottom) / 2 / currentZoom;
+        // const maxY = this.boundary.y_max - (camera.top - camera.bottom) / 2 / currentZoom;
 
-        newPosX = Math.max(minX, Math.min(newPosX, maxX));
-        newPosY = Math.max(minY, Math.min(newPosY, maxY));
+        // newPosX = Math.max(minX, Math.min(newPosX, maxX));
+        // newPosY = Math.max(minY, Math.min(newPosY, maxY));
 
         // update camera position
         camera.position.x = newPosX;
         camera.position.y = newPosY;
+    }
+
+    updateColor() {
+        if (!this.pointsMesh) return;
+
+        // FIXME label_color_list is used in rendering, so color_list does not work anymore. Should accord to which?
+        const visData = window.vueApp.res;
+        const geoData = visData.result;
+
+        let color = visData.label_list.map((x) => visData.color_list[parseInt(x)]);
+        let colors = [];
+
+        geoData.forEach(function (point, i) {
+            colors.push(color[i][0] / 255, color[i][1] / 255, color[i][2] / 255);
+        });
+
+        const buffer = new THREE.Float32BufferAttribute(colors, 3);
+        this.pointsMesh.geometry.setAttribute('color', buffer);
+        this.pointsMesh.geometry.attributes.color.needsUpdate = true;
     }
 }
 
@@ -662,6 +722,7 @@ function drawCanvas(res) {
     let container = document.getElementById("container");
 
     const plotCanvas = new PlotCanvas(window.vueApp);
+    window.vueApp.plotCanvas = plotCanvas;
     plotCanvas.bindTo(container);
     plotCanvas.plotDataPoints(res);
     plotCanvas.render();
@@ -703,56 +764,4 @@ function clear() {
 function show_query_text() {
     resultContainer = document.getElementById("resultContainer");
     resultContainer.setAttribute("style", "display:block;");
-}
-
-function labelColor() {
-    const labels = window.vueApp.label_name_dict;
-    const colors = window.vueApp.color_list;
-
-    const tableBody = document.querySelector('#labelColor tbody');
-    tableBody.innerHTML = '';
-    const hexToRgbArray = (hex) => {
-        hex = hex.replace(/^#/, '');
-        let bigint = parseInt(hex, 16);
-        let r = (bigint >> 16) & 255;
-        let g = (bigint >> 8) & 255;
-        let b = bigint & 255;
-        return [r, g, b];
-    };
-    
-    function changeLabelColor(label2Change, newColor) {
-        const pointLabels = window.vueApp.label_list;
-        for (let i = 0; i < pointLabels.length; i++) {
-            if (pointLabels[i] === label2Change) {
-                window.vueApp.res.label_color_list[i][0] = newColor[0];
-                window.vueApp.res.label_color_list[i][1] = newColor[1];
-                window.vueApp.res.label_color_list[i][2] = newColor[2];
-            }
-        }
-        drawCanvas(window.vueApp.res)
-    }
-    
-    Object.keys(labels).forEach((key, index) => {
-        const row = document.createElement('tr');
-
-        // 创建标签名单元格
-        const labelCell = document.createElement('td');
-        labelCell.textContent = labels[key];
-        row.appendChild(labelCell);
-
-        // 创建颜色单元格
-        const colorCell = document.createElement('td');
-        const colorInput = document.createElement('input');
-        colorInput.type = 'color';
-        colorInput.value = `#${colors[index].map(c => c.toString(16).padStart(2, '0')).join('')}`;
-        colorInput.addEventListener('input', (event) => {
-                const newColor = event.target.value;
-                changeLabelColor(key, hexToRgbArray(newColor));
-            }
-        );
-        colorCell.appendChild(colorInput);
-        row.appendChild(colorCell);
-        // 将行添加到表格中
-        tableBody.appendChild(row);
-    });
 }
