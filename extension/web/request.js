@@ -45,6 +45,20 @@ function updateProjection(content_path, iteration, taskType) {
                 }
             }
 
+            const label_names = Object.values(res.label_name_dict);
+            if (label_names.includes('code') && label_names.includes('comment')) {
+                res.label_list.length = res.result.length;
+                // comment at the first half, code at the second
+                const fullLength = res.result.length;
+                const halfLength = Math.floor(fullLength / 2);
+                for (let i = 0; i < halfLength; i++) {
+                    res.label_list[i] = 1;
+                }
+                for (let i = halfLength; i < fullLength; i++) {
+                    res.label_list[i] = 0;
+                }
+            }
+
             drawCanvas(res);
             window.vueApp.prediction_list = res.prediction_list;
             window.vueApp.label_list = res.label_list;
@@ -55,7 +69,6 @@ function updateProjection(content_path, iteration, taskType) {
             window.vueApp.test_index = res.testing_data;
             window.vueApp.train_index = res.training_data;
             window.vueApp.confidence_list = res.confidence_list;
-            labelColor();
         })
         .catch(error => {
             console.error('Error fetching data:', error);
