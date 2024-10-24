@@ -101,7 +101,7 @@ function updateProjection(content_path, iteration, taskType) {
 }
 
   function getOriginalData(content_path,index, dataType, flag, custom_path){
-    if(index != null){
+    if (index != null) {
         let specifiedCurrEpoch = makeSpecifiedVariableName('currEpoch', flag)
         fetch(`${window.location.href}/sprite${dataType}?index=${index}&path=${content_path}&cus_path=${custom_path}&username=admin&iteration=${window.vueApp[specifiedCurrEpoch]}&`, {
             method: 'GET',
