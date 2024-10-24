@@ -347,6 +347,8 @@ function drawTimeline(res, flag) {
   let specifiedContentPath = makeSpecifiedVariableName('contentPath', flag)
   let specifiedCurrEpoch = makeSpecifiedVariableName('currEpoch', flag)
 
+  let currEpoch = window.vueApp[specifiedCurrEpoch] ?? window.vueApp.currEpoch
+
   let svgDom = document.getElementById(specifiedTimeLinesvg)
 
 
@@ -405,7 +407,8 @@ function drawTimeline(res, flag) {
       });
 
   //create tree
-  let len = total
+  // The number of links is 1 less than number of nodes
+  let len = total - 1
 
   let svgWidth = len * 40
   if (window.sessionStorage.taskType === 'active learning') {
@@ -419,7 +422,7 @@ function drawTimeline(res, flag) {
       // svgDom.style.width = 2000
   }
 
-
+  // TODO Why we need to draw the tree manually although its size is determined here?
   var tree = d3.tree()
       .size([100, svgWidth])
       .separation(function (a, b) {
@@ -443,6 +446,10 @@ function drawTimeline(res, flag) {
       });
 
 
+  const purple = '#452d8a'
+  const blue = '#3278F0'
+  const w_blue = '#5298F0'
+
   //path
   g.append('g')
       .selectAll('path')
@@ -463,7 +470,7 @@ function drawTimeline(res, flag) {
               target: end
           });
       })
-      .attr('stroke', '#452d8a')
+      .attr('stroke', w_blue)
       .attr('stroke-width', 1)
       .attr('fill', 'none');
 
@@ -475,7 +482,7 @@ function drawTimeline(res, flag) {
       .enter()
       .append('g')
       .attr('transform', function (d, i) {
-          return 'translate(' + d.data.pid * 40 + ',' + d.x + ')';
+          return 'translate(' + d.y + ',' + d.x + ')';
       });
 
   //绘制文字和节点
@@ -483,21 +490,23 @@ function drawTimeline(res, flag) {
       .attr('r', 8)
       .attr('fill', function (d, i) {
           // console.log("1111",d.data.value, window.iteration, d.data.value == window.iteration )
-          return d.data.value == window.vueApp[specifiedCurrEpoch] ? 'orange' : '#452d8a'
+          return d.data.value == currEpoch ? blue : w_blue
       })
       .attr('stroke-width', 1)
       .attr('stroke', function (d, i) {
-          return d.data.value == window.vueApp[specifiedCurrEpoch] ? 'orange' : '#452d8a'
+          return d.data.value == currEpoch ? blue : w_blue
       })
 
   gs.append('text')
-      .attr('x', function (d, i) {
-          return d.children ? 5 : 10;
-      })
+      .attr('x', 0)
       .attr('y', function (d, i) {
-          return d.children ? -20 : -5;
+          return -14;
       })
-      .attr('dy', 10)
+    .attr('dy', 0)
+    .attr('text-anchor', 'middle')
+    .style('fill', function (d, i) {
+      return d.data.value == currEpoch ? blue : w_blue
+    })
       .text(function (d, i) {
           if (window.sessionStorage.taskType === 'active learning') {
               return `${d.data.value}|${d.data.name}`;

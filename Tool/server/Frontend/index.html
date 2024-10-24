@@ -29,13 +29,10 @@
     <div id="app" v-loading="isCanvasLoading" element-loading-text="loading..." element-loading-background="rgba(255, 255, 255, 0.4)">
         <div class="header">
             Time Travelling Visualizer
-            <a href="/contrast" @click="clearStorageNavigate(event,'/contrast')"style="color: #fff; position:fixed; right: 60px;top:4px;"><i class="el-icon-open"
-                    style="font-size: 24px;"></i></a>
-            <a id="connectUs" href="mailto:zyifan828@gmail.com?subject=Time Travelling visualizer Bug&body=Hi"
-                style="color: #fff; position:fixed; right: 20px;top:4px;"><i class="el-icon-message"
+            <a href="/contrast" @click="clearStorageNavigate(event,'/contrast')"style="color: #fff; position: absolute; right: 60px;top:4px;"><i class="el-icon-open"
                     style="font-size: 24px;"></i></a>
         </div>
-        <el-button class="tutorial_btn" type="success" icon="el-icon-question" size="mini"
+        <!-- <el-button class="tutorial_btn" type="success" icon="el-icon-question" size="mini"
             @click.prevent.stop="guide"></el-button>
         <el-popover placement="left" width="200" trigger="click">
             <div>
@@ -63,7 +60,7 @@
             </div>
             <el-button style="position: absolute; top: 160px; right:0; font-size: 20px;" size="mini" type="danger"
                 slot="reference" icon="el-icon-warning"></el-button>
-        </el-popover>
+        </el-popover> -->
 
         <div class="content_container">
             
@@ -91,6 +88,19 @@
                 </div>
 
                 <el-divider></el-divider>
+
+                <span style="display: inline-block; margin-right: 20px;">Display Settings:</span><br/>
+                <div>
+                    <el-checkbox v-model="showMetadataCard">Show Metadata Card</el-checkbox>
+                </div>
+                <div>
+                    <el-checkbox v-model="showAllText">Show All Text</el-checkbox>
+                </div>
+                <div>
+                    <el-checkbox v-model="showNumberBeforeText">Show Number Before Text</el-checkbox>
+                </div>
+
+                <el-divider></el-divider>
         
                 <span style="display: inline-block; margin-right: 20px;" v-if="showColorSetting">Color Points?</span>
                 <div id="colorSettingTask" v-if="showColorSetting">
@@ -98,7 +108,7 @@
                     <el-radio v-model="colorType" label="singleColoring">Classification Coloring</el-radio>
                 </div>
                 <el-button id="loadColorButton"
-                style="background-color: #571792; color: #fff; width: 100%; margin-top: 0px;"
+                style="width: 100%; margin-top: 0px;"
                 @click="ColorHandler" v-if="showColorSetting">Load
                 Color</el-button>
                 <el-divider v-if="showColorSetting"></el-divider>
@@ -116,14 +126,16 @@
                     Custom Content Path:
                     <el-input v-model="customContentPath"></el-input>
                 </div> -->
-                <el-divider></el-divider>
-                <el-button id="showVisResBtn"
-                    style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;" @click="update">Load
-                    Visualization Result</el-button>
-                <el-divider></el-divider>
-                <el-button id="loadVDBBtn" style="background-color: #571792; color: #fff; width: 100%; margin-top: 0px;"
-                    @click="VDBHandler">Load
-                    Vector Database</el-button>
+                <div style="margin-top: 1em;">
+                    <el-button id="showVisResBtn"
+                        style="width: 100%; margin-top: 10px;" @click="update">Load
+                        Visualization Result</el-button>
+                </div>
+                <div style="margin-top: 1em;">
+                    <el-button id="loadVDBBtn" style="width: 100%; margin-top: 0px;"
+                        @click="VDBHandler">Load
+                        Vector Database</el-button>
+                </div>
                 <el-divider></el-divider>
                 <table id="subjectModeEvalRes">
                     <caption style="margin-bottom: 10px 0;">Model Evaluation</caption>
@@ -155,8 +167,21 @@
             <!-- <div class="mid_container">
                 <div id="container"></div>
             </div> -->
-            <div id="container">
-                
+            <div id="canvas-container-wrapper">
+                <div id="container">
+                    
+                </div>
+                <!-- hard code showNumberBeforeText in code to improve performance  -->
+                <div v-if="showAllText && showNumberBeforeText" v-for="(label, idx) in displayedTextLabels" 
+                class="text-tip"
+                :style="{ left: label.coord[0] + 5 + 'px', top: label.coord[1] + 'px' }">
+                    <span class="number-of-sample">{{ '(' + idx + ') '}}</span> {{ label.text }}
+                </div>
+                <div v-if="showAllText && !showNumberBeforeText" v-for="(label, idx) in displayedTextLabels" 
+                class="text-tip"
+                :style="{ left: label.coord[0] + 5 + 'px', top: label.coord[1] + 'px' }">
+                    {{ label.text }}
+                </div>
             </div>
 
             <div id="advanced_panel">
@@ -172,7 +197,7 @@
                     <el-tab-pane label="Normal Query">
                         Filter Index: 
                         <div style="display: flex;"></el-input><el-input v-model="filter_index">
-                        </el-input><el-button style="background-color: #571792; color: #fff;" @click="filterByIndex">Filter</el-button></div>
+                        </el-input><el-button style="margin: 0 0.2em;" @click="filterByIndex">Filter</el-button></div>
                         <div class="query-row">
                             <el-select v-model="predicates.key">
                                 <el-option value="label" label="label">
@@ -186,7 +211,7 @@
                             Confidence: <el-input style="margin-left:20px; margin-right:10px;" v-model="confidence[0]">
                             </el-input> - <el-input style="margin-left:10px;" v-model="confidence[1]"></el-input>
                         </div>
-                        <el-button style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;">
+                        <el-button style="width: 100%; margin-top: 10px;">
                             Start Query
                         </el-button>
 
@@ -194,7 +219,7 @@
                    
                     <el-tab-pane label="Advanced Query">
                         <div style="display: flex;"></el-input><el-input v-model="filter_index">
-                        </el-input><el-button style="background-color: #571792; color: #fff;" @click="NlSearch">Search</el-button></div>
+                        </el-input><el-button style="margin: 0 0.3em;" @click="NlSearch">Search</el-button></div>
                         <el-divider></el-divider>
                         <div class="switch-container">
                             <el-switch v-model="isSwitchOn" active-text="Open KNN" inactive-text="Close KNN">
@@ -214,11 +239,11 @@
                         <div class="advanced-query-row">
                             K: <el-input style="margin-left:20px;" v-model="query.k"></el-input>
                         </div>
-                        <el-button style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;"
+                        <el-button style="width: 100%; margin-top: 10px;"
                             @click="indexSearchHandler">
                             Start Query
                         </el-button>
-                        <el-button style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px; margin-left:0px;"
+                        <el-button style="width: 100%; margin-top: 10px; margin-left:0px;"
                             @click="clearSearchHandler">
                             Clear Query
                         </el-button>
@@ -235,11 +260,11 @@
                 </el-tabs>
                 <el-divider></el-divider>
                 <div class="Selection Pool">
-                    <h3>Selection Pool</h3>
+                    Selection Pool
                     <div v-for="item in selectedIndex" style="display: flex; line-height: 20px; justify-content: space-between;">
                             Index: {{item}} <i class="el-icon-delete" @click="deleteItemfromSel(item)"></i>
                     </div>
-                    <el-button style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;"
+                    <el-button style="width: 100%; margin-top: 10px;"
                             @click="openModal">
                             Representation Editing
                     </el-button>
@@ -271,7 +296,7 @@
         <div id="footer">
             <svg id="timeLinesvg"></svg>
         </div>
-        <div id="currHover">
+        <div v-if="showMetadataCard" id="currHover">
             <h3>MetaData Card</h3>
             HoverIndex: {{lastHoveredIndex}}<br />
             Prediction: {{curr_pred}}<br />
@@ -326,6 +351,7 @@
                 color_list: [],
                 confidence_list: [],
                 confidence_dict: [],
+                text_list: [],
                 evaluation: { test_acc: 0, train_acc: 0 },
                 currEpoch: 1,
                 totalEpoch: null,
@@ -346,6 +372,11 @@
                 dataType: "Image",
 
                 neighborhoodRevealType: "None",
+                showAllText: false,
+                showMetadataCard: false,
+                showNumberBeforeText: false,
+                pointCoords: [],
+                displayedTextLabels: [],
 
                 visibilityMap: null,
                 highlightAttributes: {
@@ -397,6 +428,9 @@
                 this.dataType = Cookies.get('dataType') || 'Image';
                 this.taskType = Cookies.get('taskType') || 'Classification';
                 this.neighborhoodRevealType = Cookies.get('neighborhoodRevealType') || 'None';
+                this.showAllText = Cookies.get('showAllText') == 'true';
+                this.showMetadataCard = Cookies.get('showMetadataCard') == 'true';
+                this.showNumberBeforeText = Cookies.get('showNumberBeforeText') == 'true';
             },
             deleteItemfromSel(item) {
                 const index = this.selectedIndex.indexOf(item);
@@ -410,6 +444,9 @@
                 Cookies.set('dataType', this.dataType, options);
                 Cookies.set('taskType', this.taskType, options);
                 Cookies.set('neighborhoodRevealType', this.neighborhoodRevealType, options);
+                Cookies.set('showAllText', this.showAllText, options);
+                Cookies.set('showMetadataCard', this.showMetadataCard, options);
+                Cookies.set('showNumberBeforeText', this.showNumberBeforeText, options);
             },
             filterInput(key, event) {
                 console.log(key, event)
@@ -673,6 +710,18 @@
             }
         },
         watch: {
+            pointCoords(newVal) {
+                const text_list = this.epochData?.tokens;
+                if (text_list) {
+                    this.displayedTextLabels = newVal.slice(0, text_list.length)
+                        .map((h, i) => {
+                            return {
+                                coord: h,
+                                text: text_list[i]
+                            }
+                        });
+                }
+            },
             contentPath(newVal) {
                 this.saveCookies();
             },

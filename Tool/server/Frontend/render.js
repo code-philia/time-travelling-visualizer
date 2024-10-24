@@ -41,6 +41,7 @@ class PlotCanvas {
         renderer.setPixelRatio(window.devicePixelRatio);
         this.renderer = renderer;
 
+        this.canvas = renderer.domElement;
         container.appendChild(renderer.domElement);
     }
 
@@ -68,10 +69,38 @@ class PlotCanvas {
         this.vueApp.pointsMesh = this.pointsMesh;
     }
 
+    __getObjectPositionInWindow(pointMesh, i) {
+        const vector = new THREE.Vector3().fromBufferAttribute(pointMesh.geometry.attributes.position, i);
+
+        vector.project(this.camera); // `camera` is a THREE.PerspectiveCamera
+
+        // https://stackoverflow.com/a/73028232/17760236, should use browser-computed width and height
+        const { width, height } = this.canvas.getBoundingClientRect();
+        const x = Math.round((0.5 + vector.x / 2) * width);
+        const y = Math.round((0.5 - vector.y / 2) * height);
+        return [x, y];
+    }
+
+    __syncPointMeshPositions() {
+        const positionAttribute = this.pointsMesh.geometry.getAttribute('position');
+        const size = positionAttribute.count;
+
+        const result = [];
+        for (let i = 0; i < size; ++i) {
+            const coord = this.__getObjectPositionInWindow(this.pointsMesh, i);
+            result.push(coord);
+        }
+
+        this.vueApp.pointCoords = result;
+    }
+
     render() {
         const animate = () => {
-            this.vueApp.animationFrameId = requestAnimationFrame(animate);
-            this.renderer.render(this.scene, this.camera);
+            setTimeout(() => {
+                this.vueApp.animationFrameId = requestAnimationFrame(animate);
+                this.renderer.render(this.scene, this.camera);
+                this.__syncPointMeshPositions();
+            }, 1000 / 30);
         }
         animate();
     }
@@ -377,6 +406,7 @@ class PlotCanvas {
                 this.scene.remove(line);
                 line.geometry.dispose();
             });
+            lines.length = 0;
         }
 
         const setSizeAndAlpha = (index, sizeArr, alphaArr, isEmphasize = false) => {
@@ -396,7 +426,9 @@ class PlotCanvas {
         const revealPoint = (index, relArr, sizeArr, alphaArr, posArr, isEmphasize = false) => {
             if (index !== null && index !== undefined) {
                 setSizeAndAlpha(index, sizeArr, alphaArr, isEmphasize);
-                revealNeighborPoints(index, relArr, sizeArr, alphaArr, posArr, isEmphasize);
+                if (relArr) {
+                    revealNeighborPoints(index, relArr, sizeArr, alphaArr, posArr, isEmphasize);
+                }
             }
         }
 
