@@ -96,7 +96,7 @@ class PlotCanvas {
 
     render() {
         const animate = () => {
-            setTimeout(() => {
+            this.renderTimeout = setTimeout(() => {
                 this.vueApp.animationFrameId = requestAnimationFrame(animate);
                 this.renderer.render(this.scene, this.camera);
                 this.__syncPointMeshPositions();
@@ -105,12 +105,48 @@ class PlotCanvas {
         animate();
     }
 
-    clear() {
+    disposeResources() {
         this.eventListeners.forEach((e) => {
             const [type, listener] = e;
             this.container?.removeEventListener(type, listener);
         })
         this.eventListeners.length = 0;
+
+        clearTimeout(this.renderTimeout);
+        if (this.vueApp.animationFrameId) {
+            cancelAnimationFrame(this.vueApp.animationFrameId);
+            this.vueApp.animationFrameId = undefined;
+        }
+
+        if (this.scene) {
+            this.scene.traverse((object) => {
+                if (!object.isMesh) return;
+
+                object.geometry.dispose();
+
+                if (object.material.isMaterial) {
+                    cleanMaterial(object.material);
+                } else {
+                    // an array of materials
+                    for (const material of object.material) cleanMaterial(material);
+                }
+            });
+
+            function cleanMaterial(material) {
+                material.dispose();
+
+                // dispose textures
+                for (const key in material) {
+                    if (material[key] && material[key].isTexture) {
+                        material[key].dispose();
+                    }
+                }
+            }
+
+            this.scene.dispose?.();
+        }
+
+        this.renderer?.dispose?.();
     }
 
     __updatePlotBoundary(boundary) {
@@ -222,8 +258,9 @@ class PlotCanvas {
     }
 
     __registerContainerEventListener(type, listener) {
-        this.container.addEventListener(type, listener.bind(this));
-        this.eventListeners.push([type, listener]);
+        const targetListener = listener.bind(this);
+        this.container.addEventListener(type, targetListener);
+        this.eventListeners.push([type, targetListener]);
     }
 
     __addClassicMapNavigationControls() {
@@ -716,15 +753,20 @@ class PlotCanvas {
 }
 
 function drawCanvas(res) {
-    // clean storage
-    cleanForEpochChange('');
-
     let container = document.getElementById("container");
+    while (container.firstChild) {
+        container.removeChild(container.firstChild);
+    }
+    
+    if (window.vueApp.plotCanvas) {
+        window.vueApp.plotCanvas.disposeResources();
+    }
 
     const plotCanvas = new PlotCanvas(window.vueApp);
     plotCanvas.bindTo(container);
     plotCanvas.plotDataPoints(res);
     plotCanvas.render();
+
     window.vueApp.plotCanvas = plotCanvas;
     window.vueApp.isCanvasLoading = false;
 }
