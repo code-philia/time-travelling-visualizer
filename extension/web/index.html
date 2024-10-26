@@ -69,7 +69,8 @@
 
 <script>
 
-    window.vueApp = new Vue({
+    window.vueApp = new Vue(
+        {
         el: '#app',
         data() {
             return {
@@ -203,140 +204,8 @@
             saveContentPath(){
                 Cookies.set('contentPath', this.contentPath, { expires: 7 }); // Expires in 7 days
             },
-            filterInput(key, event) {
-                console.log(key, event)
-                let value = event
-
-                value = value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1');
-
-                if ((value.match(/\./g) || []).length > 1) {
-                    value = value.replace(/\.$/, '');
-                }
-                this.canvasSetting[key] = value;
-            },
-            resetCamera() {
-                const target = new THREE.Vector3(
-                    0, 0, 0
-                );
-                container = document.getElementById("container")
-                const rect = container.getBoundingClientRect();
-                var aspectRatio = rect.width / rect.height;
-              
-                this.camera.position.set(0, 0, 100);
-                this.camera.left = this.sceneBoundary.x_min * aspectRatio
-                this.camera.right = this.sceneBoundary.x_max * aspectRatio;
-                this.camera.top = this.sceneBoundary.y_max;
-                this.camera.bottom = this.sceneBoundary.y_min;
-  
-                this.renderer.setSize(rect.width, rect.height);
-                this.renderer.setClearColor(BACKGROUND_COLOR, 1);
-
-                const viewportWidth = this.renderer.domElement.clientWidth;
-                const viewportHeight = this.renderer.domElement.clientHeight;
-
-                this.camera.zoom = 1;
-                this.camera.updateProjectionMatrix();
-                this.camera.lookAt(target);
-            },
             filterByIndex(){
                 this.updateProjectionHandler()
-            },
-            NlSearch(){
-            },
-            guide() {
-                const steps = [
-                    // {
-                    //     element: '#connectUs',
-                    //     popover: {
-                    //         title: 'Connect Us',
-                    //         description: '**************',
-                    //         position: 'left'
-                    //     },
-                    // },
-                    {
-                        element: '#contentSettingData',
-                        popover: {
-                            title: 'Data Type Selection',
-                            description: 'Please choose the data type used by the subject model',
-                            position: 'right'
-                        },
-                    },
-                    {
-                        element: '#contentSettingTask',
-                        popover: {
-                            title: 'Task Type Selection',
-                            description: 'Please choose whether your subject model is used for classification or not',
-                            position: 'right'
-                        },
-                    },
-                    {
-                        element: '#taskType',
-                        popover: {
-                            title: 'Content Path',
-                            description: 'Please input the absolute path of the training/testing dynamics',
-                            position: 'right'
-                        },
-                    },
-                    {
-                        element: '#contentPathInput',
-                        popover: {
-                            title: 'Content Path',
-                            description: 'Please input the absolute path of the training/testing dynamics',
-                            position: 'right'
-                        },
-                    },
-                    {
-                        element: '#showVisResBtn',
-                        popover: {
-                            title: 'Load Visualization Results',
-                            description: 'After input the content path, you can click this to load the visulization results(default start from epoch 1)',
-                            position: 'right'
-                        },
-                    },
-                    {
-                        element: '#footer',
-                        popover: {
-                            title: 'Time Line',
-                            description: 'It shows the total number of epochs of loaded training/testing dynamics',
-                            position: 'top',
-                        },
-                    },
-                    {
-                        element: '#subjectModeEvalRes',
-                        popover: {
-                            title: 'Subject Model Eval Result',
-                            description: 'After load the visualization result, the corresponding training and testing accuracies wiil be shown here',
-                            position: 'right'
-                        },
-                    },
-                    {
-                        element: '#currHover',
-                        popover: {
-                            title: 'Hover Information',
-                            description: 'The detail of the current hover sample will be shown here',
-                            position: 'right'
-                        },
-                    },
-                    {
-                        element: '#container',
-                        popover: {
-                            title: 'Visualization Canvas',
-                            description: 'It shows the interactable 2D embedding space generated by your previously used visualization techniques',
-                            position: 'right'
-                        },
-                    },
-                    {
-                        element: '#advanced_panel',
-                        popover: {
-                            title: 'Advanced panel',
-                            description: 'You can input proper value to query data points you interested in',
-                            position: 'left'
-                        },
-                    }
-
-                ]
-                this.driver.defineSteps(steps)
-                this.driver.start()
             },
             update() {
                 this.timelineFirstLoaded = true
@@ -364,14 +233,6 @@
                     updateProjection(this.contentPath, this.currEpoch, this.taskType)
                 }
             },
-            VDBHandler() {
-                this.isCanvasLoading = true
-                loadVectorDB(this.contentPath, this.currEpoch)
-            },
-            ColorHandler() {
-                this.isCanvasLoading = true  
-                reloadColor('')   
-            },
             indexSearchHandler() {
                 this.isCanvasLoading = true
                 indexSearch(this.query, this.isSwitchOn);
@@ -379,102 +240,12 @@
             clearSearchHandler() {
                 clear();
             },
-            toggleSwitch() {
-                this.isSwitchOn = !this.isSwitchOn; // 切换开关状态
-                console.log(this.isSwitchOn)
-            },
             openModal() {
                 this.showModal = true;
             },
             saveChanges() {
                 console.log('保存更改:', this.selectedIndex);
                 this.showModal = false;
-            },
-            getInitialState() {
-                return {lastHoveredIndex: null,
-                contentPath: '/home/yifan/dataset/case_study_mnist_backdoor',
-                customContentPath: '',
-                visMethod: 'Trustvis',
-                taskType: 'Classification',
-                colorType: 'noColoring',
-                showColorSetting: false,
-                isCanvasLoading: false,
-                query_result: {},
-                prediction_list: [],
-                curr_pred: '',
-                curr_label: '',
-                label_list: [],
-                label_name_dict: {},
-                color_list: [],
-                confidence_list: [],
-                confidence_dict: [],
-                evaluation: { test_acc: 0, train_acc: 0 },
-                currEpoch: 1,
-                totalEpoch: null,
-                train_index: null,
-                test_index: null,
-                showTraining: true,
-                showTesting: true,
-                showVisError: false,
-                showPredictionFlips: false,
-                SelectionMode: false,
-                isShifting: false,
-                scene: null,
-                renderer: null,
-                camera: null,
-                curImg: null,
-                imageSrc: "",
-                textContent: "",
-                dataType: "Image",
-                visibilityMap: null,
-                highlightAttributes: {
-                    visualizationError: null,
-                },
-                predictionFlipIndices: null,
-                hoverIndex: null,
-                errorMessage: null,
-                originalSettings: {
-                    originalColors: null,
-                    originalSizes: null,
-                },
-                pointsMesh: null,
-                canvasSetting: {
-                    zoomSpeed: 0.01,
-                    dragSpeed: 0.1,
-                    panSpeed: 0.1,
-                },
-                predicates: {
-                    key: 'lable',
-                    value: null
-                },
-                query: {
-                    key: 'index',
-                    value: null,
-                    k: null
-                },
-                isSwitchOn: false,
-                confidence: [0, 1],
-                sceneBoundary: {
-                    x_min: null,
-                    y_min: null,
-                    x_max: null,
-                    y_max: null 
-                }
-            };
-            },
-
-            resetData() {
-                Object.assign(this.$data, this.getInitialState());
-            },
-            clearStorageNavigate(event, url) {
-                event.preventDefault();
-
-                localStorage.clear();
-                sessionStorage.clear(); 
-                cleanForEpochChange('');
-                this.resetData();
-
-                window.location.href = url
             },
             setShowModalFalse() {
                 this.showModal = false;
