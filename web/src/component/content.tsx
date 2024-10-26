@@ -1,5 +1,6 @@
-export function contentContainer() {
+import './index.css'
 
+export function ContentContainer() {
     return (
         <div className="content_container">
             <div id="container_range">
