@@ -7,149 +7,6 @@ const RGB_NUM_ELEMENTS = 3;
 const INDEX_NUM_ELEMENTS = 1;
 const XYZ_NUM_ELEMENTS = 3;
 
-
-function createUniforms() {
-    return {
-        texture: { type: 't' },
-        spritesPerRow: { type: 'f' },
-        spritesPerColumn: { type: 'f' },
-        fogColor: { type: 'c' },
-        fogNear: { type: 'f' },
-        fogFar: { type: 'f' },
-        isImage: { type: 'bool' },
-        sizeAttenuation: { type: 'bool' },
-        pointSize: { type: 'f' },
-    };
-}
-
-function createVertexShader() {
-    return `
-  // Index of the specific vertex (passed in as bufferAttribute), and the
-  // variable that will be used to pass it to the fragment shader.
-  attribute float spriteIndex;
-  attribute vec3 color;
-  attribute float scaleFactor;
-
-  varying vec2 xyIndex;
-  varying vec3 vColor;
-
-  uniform bool sizeAttenuation;
-  uniform float pointSize;
-  uniform float spritesPerRow;
-  uniform float spritesPerColumn;
-
-  ${THREE.ShaderChunk['fog_pars_vertex']}
-
-  void main() {
-    // Pass index and color values to fragment shader.
-    vColor = color;
-    xyIndex = vec2(mod(spriteIndex, spritesPerRow),
-              floor(spriteIndex / spritesPerColumn));
-
-    // Transform current vertex by modelViewMatrix (model world position and
-    // camera world position matrix).
-    vec4 cameraSpacePos = modelViewMatrix * vec4(position, 1.0);
-
-    // Project vertex in camera-space to screen coordinates using the camera's
-    // projection matrix.
-    gl_Position = projectionMatrix * cameraSpacePos;
-
-    // Create size attenuation (if we're in 3D mode) by making the size of
-    // each point inversly proportional to its distance to the camera.
-    float outputPointSize = pointSize;
-    if (sizeAttenuation) {
-      outputPointSize = -pointSize / cameraSpacePos.z;
-    } else {  // Create size attenuation (if we're in 2D mode)
-      const float PI = 3.1415926535897932384626433832795;
-      const float minScale = 0.1;  // minimum scaling factor
-      const float outSpeed = 2.0;  // shrink speed when zooming out
-      const float outNorm = (1. - minScale) / atan(outSpeed);
-      const float maxScale = 15.0;  // maximum scaling factor
-      const float inSpeed = 0.02;  // enlarge speed when zooming in
-      const float zoomOffset = 0.3;  // offset zoom pivot
-      float zoom = projectionMatrix[0][0] + zoomOffset;  // zoom pivot
-      float scale = zoom < 1. ? 1. + outNorm * atan(outSpeed * (zoom - 1.)) :
-                    1. + 2. / PI * (maxScale - 1.) * atan(inSpeed * (zoom - 1.));
-      outputPointSize = pointSize * scale;
-    }
-
-    gl_PointSize =
-      max(outputPointSize * scaleFactor, ${MIN_POINT_SIZE.toFixed(1)});
-  }`;
-}
-
-const FRAGMENT_SHADER_POINT_TEST_CHUNK = `
-  bool point_in_unit_circle(vec2 spriteCoord) {
-    vec2 centerToP = spriteCoord - vec2(0.5, 0.5);
-    return dot(centerToP, centerToP) < (0.5 * 0.5);
-  }
-
-  bool point_in_unit_equilateral_triangle(vec2 spriteCoord) {
-    vec3 v0 = vec3(0, 1, 0);
-    vec3 v1 = vec3(0.5, 0, 0);
-    vec3 v2 = vec3(1, 1, 0);
-    vec3 p = vec3(spriteCoord, 0);
-    float p_in_v0_v1 = cross(v1 - v0, p - v0).z;
-    float p_in_v1_v2 = cross(v2 - v1, p - v1).z;
-    return (p_in_v0_v1 > 0.0) && (p_in_v1_v2 > 0.0);
-  }
-
-  bool point_in_unit_square(vec2 spriteCoord) {
-    return true;
-  }
-`;
-
-function createFragmentShader() {
-    return `
-  varying vec2 xyIndex;
-  varying vec3 vColor;
-
-  uniform sampler2D texture;
-  uniform float spritesPerRow;
-  uniform float spritesPerColumn;
-  uniform bool isImage;
-
-  ${THREE.ShaderChunk['common']}
-  ${THREE.ShaderChunk['fog_pars_fragment']}
-  ${FRAGMENT_SHADER_POINT_TEST_CHUNK}
-
-  void main() {
-    if (isImage) {
-      // Coordinates of the vertex within the entire sprite image.
-      vec2 coords =
-        (gl_PointCoord + xyIndex) / vec2(spritesPerRow, spritesPerColumn);
-      gl_FragColor = vec4(vColor, 1.0) * texture2D(texture, coords);
-    } else {
-      bool inside = point_in_unit_circle(gl_PointCoord);
-      if (!inside) {
-        discard;
-      }
-      gl_FragColor = vec4(vColor, 1);
-    }
-    ${THREE.ShaderChunk['fog_fragment']}
-  }`;
-}
-
-const FRAGMENT_SHADER_PICKING = `
-  varying vec2 xyIndex;
-  varying vec3 vColor;
-  uniform bool isImage;
-
-  ${FRAGMENT_SHADER_POINT_TEST_CHUNK}
-
-  void main() {
-    xyIndex; // Silence 'unused variable' warning.
-    if (isImage) {
-      gl_FragColor = vec4(vColor, 1);
-    } else {
-      bool inside = point_in_unit_circle(gl_PointCoord);
-      if (!inside) {
-        discard;
-      }
-      gl_FragColor = vec4(vColor, 1);
-    }
-  }`;
-
 function cleanMaterial(material) {
 
 
@@ -163,39 +20,6 @@ function cleanMaterial(material) {
 
     material.dispose();
     // ...处理其他类型的纹理
-}
-
-
-// make general elements draggable, not canvas draggable
-function makeDraggable(dragHandle, draggableElement) {
-    var dragOffsetX, dragOffsetY;
-
-    dragHandle.onmousedown = dragMouseDown;
-
-    function dragMouseDown(e) {
-        e = e || window.event;
-        e.preventDefault();
-
-        dragOffsetX = e.clientX - draggableElement.offsetLeft;
-        dragOffsetY = e.clientY - draggableElement.offsetTop;
-        document.onmouseup = closeDragElement;
-
-        document.onmousemove = elementDrag;
-    }
-
-    function elementDrag(e) {
-        e = e || window.event;
-        e.preventDefault();
-
-        draggableElement.style.left = (e.clientX - dragOffsetX) + "px";
-        draggableElement.style.top = (e.clientY - dragOffsetY) + "px";
-    }
-
-    function closeDragElement() {
-
-        document.onmouseup = null;
-        document.onmousemove = null;
-    }
 }
 
 function updateFixedHoverLabel(x, y, index, flag, canvas, labelType, isDisplay) {
@@ -220,30 +44,6 @@ function updateFixedHoverLabel(x, y, index, flag, canvas, labelType, isDisplay) 
     }
 }
 
-function updateLabelPosition(flag, pointPosition, pointIndex, labelType, isDisplay) {
-
-    if (pointPosition) {
-        let camera = window.vueApp.camera;
-        let canvas = window.vueApp.renderer.domElement;
-        if (flag != '') {
-            camera = window.vueApp.camera[flag];
-            canvas = window.vueApp.renderer[flag].domElement;
-        }
-
-        var vector = pointPosition.clone().project(camera);
-
-
-        vector.x = Math.round((vector.x * 0.5 + 0.5) * canvas.clientWidth);
-        vector.y = - Math.round((vector.y * 0.5 - 0.5) * canvas.clientHeight);
-
-        var rect = canvas.getBoundingClientRect();
-        vector.x += rect.left;
-        vector.y += rect.top;
-
-        updateFixedHoverLabel(vector.x, vector.y, pointIndex, flag, canvas, labelType, isDisplay);
-
-    }
-}
 function updateCurrHoverIndex(event, index, isDisplay, flag) {
     let specifiedHoverLabel = makeSpecifiedVariableName('hoverLabel', flag);
     const hoverLabel = document.getElementById(specifiedHoverLabel);
@@ -269,61 +69,6 @@ function updateCurrHoverIndex(event, index, isDisplay, flag) {
     }
 
 
-}
-
-function updateHoverIndexUsingPointPosition(pointPosition, index, isDisplay, flag, camera, renderer) {
-    let specifiedHoverLabel = makeSpecifiedVariableName('hoverLabel', flag);
-    const hoverLabel = document.getElementById(specifiedHoverLabel);
-
-    if (isDisplay) {
-        hoverLabel.style.left = `${screenPosition.x + 5}px`;
-        hoverLabel.style.top = `${screenPosition.y - 5}px`;
-        hoverLabel.style.display = 'block';
-    } else {
-        if (index != null) {
-            const screenPosition = toScreenPosition(pointPosition, camera, renderer);
-            let specifiedHoverIndex = makeSpecifiedVariableName('hoverIndex', flag);
-            window.vueApp[specifiedHoverIndex] = index;
-            var canvas = renderer.domElement;
-            var rect = canvas.getBoundingClientRect();
-
-            // make sure selected index are not shown outside of viewport
-            if (screenPosition.x > rect.right || screenPosition.y > rect.bottom || screenPosition.x < rect.left || screenPosition.y < rect.top) {
-                hoverLabel.style.display = 'none';
-            } else {
-                hoverLabel.textContent = `${index}`;
-                hoverLabel.style.left = `${screenPosition.x + 5}px`;
-                hoverLabel.style.top = `${screenPosition.y - 5}px`;
-                hoverLabel.style.display = 'block';
-            }
-        } else {
-            if (hoverLabel) {
-                hoverLabel.textContent = '';
-                hoverLabel.style.display = 'none';
-            }
-        }
-    }
-}
-
-// map intersect point onto position on camera
-function toScreenPosition(obj, camera, renderer) {
-    var vector = new THREE.Vector3();
-    // obj is a point in 3D space
-    vector.copy(obj);
-
-    // map to normalized device coordinate (NDC) space
-    vector.project(camera);
-
-    // map to 2D screen space
-    vector.x = Math.round((0.5 + vector.x / 2) * renderer.domElement.width);
-    vector.y = Math.round((0.5 - vector.y / 2) * renderer.domElement.height);
-    var rect = renderer.domElement.getBoundingClientRect();
-    vector.x += rect.left;
-    vector.y += rect.top;
-    return {
-        x: vector.x,
-        y: vector.y
-    };
 }
 
 function capitalizeFirstLetter(string) {
@@ -583,11 +328,6 @@ function setIntersection(sets) {
     return intersection;
 }
 
-function calculateZoomSpeed(currentZoom, BASE_ZOOM_SPEED, MAX_ZOOM_SCALE) {
-    const speed = BASE_ZOOM_SPEED / currentZoom;
-    return Math.max(speed, BASE_ZOOM_SPEED / MAX_ZOOM_SCALE);
-}
-
 // check index point visibility in alphas visibility array 
 function checkVisibility(array, index) {
     return array[index] == 1.0;
@@ -725,6 +465,7 @@ function cleanForEpochChange(flag) {
     }
 
 }
+
 function resetHighlightAttributes() {
     window.vueApp.highlightAttributesRef.highlightedPointsYellow = [];
     window.vueApp.highlightAttributesRef.highlightedPointsBlue = [];
