@@ -297,7 +297,6 @@ class PlotCanvas {
                     x: e.clientX,
                     y: e.clientY
                 };
-                // updateLabelPosition('', this.vueApp.selectedPointPosition, this.vueApp.selectedIndex, selectedLabel, true)
                 updateCurrHoverIndex(e, null, true, '');
             }
         });
