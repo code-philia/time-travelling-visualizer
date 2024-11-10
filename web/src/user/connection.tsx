@@ -1,27 +1,47 @@
 import { useState, useEffect } from 'react';
-import { socket } from './socket.tsx';
 
-export function ConnectionStatus() {
-    const [isConnected, setIsConnected] = useState(socket.connected);
+const host = 'http://127.0.0.1:5001';
+
+export function Fetch(input: string, init: any) {
+    fetch(`${host}/${input}`, init)
+        .then(response => response.json())
+        .then(res => {
+            if (res.errorMessage != "") {
+                alert(res.errorMessage)
+            }
+            return res.json();
+        })
+        .catch(error => {
+            console.error('Fetch error:', error);
+        });
+}
+
+export function ConnectionStatus({useVscode}:{useVscode:boolean}) {
+    const [isConnected, setIsConnected] = useState(false);
 
     useEffect(() => {
-        const handleConnect = () => {
-            setIsConnected(true);
-            console.log('Connected to server');
+        const pingServer = async () => {
+            try {
+                const response = await fetch('/ping');
+                if (response.ok) {
+                    setIsConnected(true);
+                    console.log('Connected to server');
+                } else {
+                    setIsConnected(false);
+                    console.log('Disconnected from server');
+                }
+            } catch (error) {
+                setIsConnected(false);
+                console.log('Disconnected from server');
+            }
         };
-        const handleDisconnect = () => {
-            setIsConnected(false);
-            console.log('Disconnected from server');
-        };
-        socket.on('connect', handleConnect);
-        socket.on('disconnect', handleDisconnect);
-        return () => {
-            socket.off('connect', handleConnect);
-            socket.off('disconnect', handleDisconnect);
-        };
+
+        const intervalId = setInterval(pingServer, 5000);
+        pingServer();
+        return () => clearInterval(intervalId);
     }, []);
 
     return (
-        <h1>{isConnected ? '✅ Online' : '❌ Disconnected'}</h1>
+        !useVscode && <>{isConnected ? '✅ Online' : '❌ Disconnected'}</>
     );
 }

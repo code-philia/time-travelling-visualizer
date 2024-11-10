@@ -45,8 +45,8 @@ export function CanvasContainer({ isVisible }: { isVisible: boolean }) {
     const [frameloop, setFrameloop] = useState<'never' | 'always' | 'demand' | undefined>('never')
     const [pointData, setPointData] = useState<PointData>(initPointData)
     const [projuctionRes, setProjectionRes] = useState<ProjectionProps>(initProjectionRes)
-    const [boundary, setBoundary] = useState({ x1: 0, y1: 0, x2: 0, y2: 0 });
-    const [containerRect, setContainerRect] = useState({ width: 0, height: 0 });
+    const [boundary, setBoundary] = useState({ x1: -150, y1: -150, x2: 150, y2: 150 });
+    const [containerRect, setContainerRect] = useState({ width: 300, height: 300 });
     const [visible, setVisible] = useState(isVisible);
 
     useEffect(() => {
@@ -98,7 +98,13 @@ export function CanvasContainer({ isVisible }: { isVisible: boolean }) {
     }, [projuctionRes.grid_index])
 
     return (
-        <div id="canvas-container" ref={containerRef} style={{ display: visible ? 'block' : 'none' }}>
+        <div id="canvas-container"
+            ref={containerRef}
+            style={{
+                display: visible ? 'block' : 'none',
+                width: '100%',
+                height: '100%'
+            }}>
             <Canvas ref={canvasRef} frameloop={frameloop} >
                 <ambientLight color={0xffffff} intensity={1.0} />
                 <Camera container={containerRect} boundary={boundary} />

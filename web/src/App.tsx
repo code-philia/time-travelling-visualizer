@@ -1,4 +1,3 @@
-import './App.css'
 import { User } from './user'
 import { ContentContainer } from './component/content'
 import { ModelInfo } from './component/model-info'
@@ -6,10 +5,11 @@ import { ModelInfo } from './component/model-info'
 function App() {
   return (
     <>
-      <User />
-      <ContentContainer />
-      <ModelInfo />
-    </>
+      <div id='app'>
+        <User />
+        <ContentContainer />
+        <ModelInfo />
+      </div></>
   )
 }
 
