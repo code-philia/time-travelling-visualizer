@@ -34,6 +34,10 @@ interface T {
     forward: boolean;
     setContentPath: (contentPath: string) => void;
     setValue: <K extends keyof T>(key: string, value: T[K]) => void;
+    colorList: number[][];
+    labelNameDict: Record<number, string>;
+    setColorList: (colorList: number[][]) => void;
+
 }
 
 export const GlobalStore = create<T>((set) => ({
@@ -49,6 +53,10 @@ export const GlobalStore = create<T>((set) => ({
     forward: false,
     setContentPath: (contentPath: string) => set({ contentPath }),
     setValue: (key, value) => set({ [key]: value }),
+
+    colorList: [],
+    labelNameDict: {},
+    setColorList: (colorList) => set({ colorList }),
 }));
 
 export const useStore = <K extends keyof T>(keys: K[]) => {

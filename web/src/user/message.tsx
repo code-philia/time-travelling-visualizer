@@ -1,5 +1,5 @@
-import { socket } from './socket';
 import { useStore } from '../state/store';
+import { useEffect } from 'react';
 
 const validCommands = [
     'update', 'filterByIndex', 'indexSearchHandler',
@@ -8,8 +8,8 @@ const validCommands = [
 
 export function MessageHandler() {
     const { setValue } = useStore(['setValue']);
-    socket.on('message', (message: any) => {
-        console.log('Received message:', message);
+
+    function handleMessageData(message: any) {
         if (!message) {
             return;
         }
@@ -18,10 +18,26 @@ export function MessageHandler() {
             return;
         }
         for (const key in message) {
-            if (key!='args') {
+            if (key != 'args') {
                 setValue(key, message[key]);
             }
         }
-    });
+    };
+
+    useEffect(() => {
+        const handleMessage = (event: MessageEvent) => {
+            const message = event.data;
+            if (!message) {
+                console.error('Invalid message:', message);
+                return;
+            }
+            handleMessageData(message);
+        };
+        window.addEventListener('message', handleMessage);
+        return () => {
+            window.removeEventListener('message', handleMessage);
+        };
+    }, []);
+
     return <></>
 }

@@ -1,4 +1,4 @@
-import { fetch } from "./socket";
+import { Fetch } from './connection';
 
 import { ProjectionProps, ItertaionStructure } from "../state/types";
 
@@ -10,14 +10,7 @@ export function fetchTimelineData(contentPath: string): ItertaionStructure | voi
         headers: { 'Content-Type': 'application/json' },
         mode: 'cors',
     }
-    fetch('get_iteration_structure', data).then(([_, res]) => res.json()).then((res) => {
-        if (res.errorMessage != "") {
-            alert(res.errorMessage)
-        }
-        return res;
-    }).catch((err) => {
-        console.error('Fetch error:', err);
-    })
+    return Fetch('get_iteration_structure', data)
 }
 
 export function updateProjection(contentPath: string, visMethod: string,
@@ -35,14 +28,7 @@ export function updateProjection(contentPath: string, visMethod: string,
         headers: { 'Content-Type': 'application/json' },
         mode: 'cors'
     }
-    fetch('updateProjection', data).then(([_, res]) => res.json()).then(res => {
-        if (res.errorMessage != "") {
-            alert(res.errorMessage)
-        }
-        return res;
-    }).catch(error => {
-        console.error('Error fetching data:', error);
-    });
+    return Fetch('updateProjection', data)
 }
 
 export function getOriginalData(contentPath: string, dataType: string, index: number, iteration: number) {
@@ -60,11 +46,5 @@ export function getOriginalData(contentPath: string, dataType: string, index: nu
         method: 'GET',
         mode: 'cors'
     };
-    fetch(`sprite${dataType}`, data).then(([_, res]) => res.json()).then(res => {
-        if (res.errorMessage != "") {
-            alert(res.errorMessage)
-        }
-        return res;
-    }
-    );
+    return Fetch(`sprite${dataType}`, data);
 }

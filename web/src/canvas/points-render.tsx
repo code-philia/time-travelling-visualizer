@@ -51,7 +51,7 @@ export function PointsRender({ pointData }: { pointData: PointData }) {
                 <bufferAttribute attach="attributes-size" count={pointData.sizes.length} array={pointData.sizes} itemSize={1} />
                 <bufferAttribute attach="attributes-alpha" count={pointData.alphas.length} array={pointData.alphas} itemSize={1} />
             </bufferGeometry>
-            <pointsMaterial ref={materialRef} attach="material" opacity={1} transparent vertexColors size={10} sizeAttenuation={true} />
+            <pointsMaterial ref={materialRef} attach="material" opacity={1} size={3} sizeAttenuation={true} />
         </points>
     )
 }

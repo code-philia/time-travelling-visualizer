@@ -1,4 +1,3 @@
-import '../index.css'
 import { useState, useEffect } from 'react'
 
 import { CanvasContainer } from '../canvas/canvas'
