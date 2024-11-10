@@ -1,6 +1,7 @@
+import '../index.css'
 import { setColorPickerOpacity, translateCssColor, changeLabelColor, hexToRgbArray } from './utils'
 
-export function LabelList(labelNameDict: any, colorList: any) {
+function LabelList(labelNameDict: any, colorList: any) {
     return (
         labelNameDict && (
             <div id="labelList">
@@ -27,3 +28,15 @@ export function LabelList(labelNameDict: any, colorList: any) {
         )
     );
 };
+
+export function ModelInfo(labelNameDict: any, colorList: any) {
+    return (
+        <div id="subject_model_info_panel">
+            <div id="labelsSection">
+                <div>Labels</div>
+                <LabelList labelNameDict={labelNameDict} colorList={colorList}>
+                </LabelList>
+            </div>
+        </div>
+    )
+}

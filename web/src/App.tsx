@@ -1,17 +1,14 @@
 import './App.css'
+import { User } from './user'
 import { ContentContainer } from './component/content'
-import { ModelInfo } from './component/modelInfo'
+import { ModelInfo } from './component/model-info'
+
 function App() {
   return (
     <>
-      <ContentContainer>
-      </ContentContainer>
-      <ModelInfo>
-      </ModelInfo>
-      <div id="hoverLabel">
-      </div>
-      <div id="fixedHoverLabel">
-      </div>
+      <User />
+      <ContentContainer />
+      <ModelInfo />
     </>
   )
 }
