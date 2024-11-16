@@ -35,6 +35,7 @@ body {
     font-size: smaller;
     opacity: 80%;
     text-align: center;
+    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
 }
 
 #canvas-container-wrapper {
@@ -260,4 +261,31 @@ pre.highlight {
 }
 .highlight span {
     display: inline; /* 使 span 元素按行内元素显示 */
+}
+
+#play-timeline-button {
+    width: 30px;
+    height: 30px;
+    border-radius: 15px;
+    background-position: 50% 50%;
+
+    transition: background 0.1s, box-shadow 0.1s;
+
+    border: none;
+    background-color: var(--primary-color);
+    color: white;
+
+    cursor: pointer;
+}
+
+#play-timeline-button:hover {
+    box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+#play-timeline-button.play {
+    background-image: url('assets/play_arrow_24dp_UNDEFINED_FILL1_wght400_GRAD0_opsz24.svg');
+}
+
+#play-timeline-button.pause {
+    background-image: url('assets/pause_24dp_UNDEFINED_FILL1_wght400_GRAD0_opsz24.svg');
 }

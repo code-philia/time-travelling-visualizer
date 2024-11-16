@@ -1,5 +1,6 @@
 # TODO fix loading net, sys.append problem
 from abc import ABC, abstractmethod
+from genericpath import isfile
 
 import torch
 import tensorflow as tf
@@ -487,7 +488,9 @@ class Trustvis(StrategyAbstractClass):
         try:
             import Model.model as subject_model
             net = eval("subject_model.{}()".format(NET))
-            model_location = os.path.join(self.model_path, "{}_{:d}".format(self.epoch_name, n_epoch), "subject_model.pth")
+            model_location = os.path.join(self.model_path, "subject_model.pth")
+            if not os.path.isfile(model_location):
+                model_location = os.path.join(self.model_path, "{}_{:d}".format(self.epoch_name, n_epoch), "subject_model.pth")
             net.load_state_dict(torch.load(model_location, map_location=torch.device("cpu")))
             net.to(self.DEVICE)
             net.eval()

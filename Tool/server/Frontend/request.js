@@ -45,7 +45,7 @@ function updateProjection(content_path, iteration, taskType) {
                 result: res.proj,
                 label_list: res.labels,
                 label_name_dict: res.label_text_list,    // can also use as an index as dict
-                color_list: [[255, 0, 0], [0, 0, 255]],
+                color_list: [[21, 171, 250], [252, 144, 5]],
                 test_index: [],
                 train_index: [],
                 prediction_list: [],
@@ -58,13 +58,14 @@ function updateProjection(content_path, iteration, taskType) {
                     res.bounding.y_min,
                     res.bounding.x_max,
                     res.bounding.y_max,
-                ]
+                ],
+                structure: res.structure
             }
             drawCanvas(formattedData);
             window.vueApp.currEpoch = iteration;
             window.vueApp.epochData = formattedData;
         } else {
-            drawCanvas(res);
+          drawCanvas(res);
             window.vueApp.prediction_list = res.prediction_list
             window.vueApp.label_list = res.label_list
             window.vueApp.label_name_dict = res.label_name_dict
