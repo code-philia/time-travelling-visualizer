@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
     <link rel="stylesheet" href="Frontend/driver.min.css">
     <link rel="stylesheet" href="Frontend/index.css">
+
     <script src="https://cdn.jsdelivr.net/npm/js-cookie@3/dist/js.cookie.min.js"></script>
     <!-- <script src="https://unpkg.com/element-ui/lib/index.js"></script>   -->
     <!-- <script src="https://cdn.bootcss.com/vue/2.5.16/vue.min.js"></script> -->
@@ -16,7 +17,7 @@
     <!-- <script src="https://d3js.org/d3.v5.min.js"></script> -->
     <script src="Frontend/thirdParty/d3.v5.min.js"></script>
     <!-- <script src="https://cdn.jsdelivr.net/npm/three@0.126.1/build/three.min.js"></script> -->
-    <script src="Frontend/thirdParty/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.155.0/three.min.js"></script>
     <script src="Frontend/request.js"></script>
     <script src="Frontend/render.js"></script>
     <script src="Frontend/utils.js"></script>
@@ -85,6 +86,7 @@
                     <el-radio v-model="neighborhoodRevealType" label="None" :disabled="!neighborhoodAvailable">None</el-radio>
                     <el-radio v-model="neighborhoodRevealType" label="Intra-Type" :disabled="!neighborhoodAvailable">Intra-Type</el-radio>
                     <el-radio v-model="neighborhoodRevealType" label="Inter-Type" :disabled="!neighborhoodAvailable">Inter-Type</el-radio>
+                    <el-radio v-model="neighborhoodRevealType" label="Both" :disabled="!neighborhoodAvailable">Both</el-radio>
                 </div>
 
                 <el-divider></el-divider>
@@ -171,7 +173,6 @@
                 <div id="container">
                     
                 </div>
-                <!-- hard code showNumberBeforeText in code to improve performance  -->
                 <div v-if="showAllText && showNumberBeforeText" v-for="(label, idx) in displayedTextLabels" 
                 class="text-tip"
                 :style="{ left: label.coord[0] + 5 + 'px', top: label.coord[1] + 'px' }">
@@ -294,7 +295,11 @@
             </div>
         </div>
         <div id="footer">
-            <svg id="timeLinesvg"></svg>
+            <div style="display: flex; align-items: end;">
+                <svg id="timeLinesvg"></svg>
+                <button id="play-timeline-button" v-if="document.getElementById('timeLinesvg')?.classList?.contains('active')"
+                    @mousedown="playTimeline = !playTimeline" :class="playTimeline ? 'pause' : 'play'"/>
+            </div>
         </div>
         <div v-if="showMetadataCard" id="currHover">
             <h3>MetaData Card</h3>
@@ -377,6 +382,9 @@
                 showNumberBeforeText: false,
                 pointCoords: [],
                 displayedTextLabels: [],
+
+                playTimeline: false,
+                playEvent: undefined,
 
                 visibilityMap: null,
                 highlightAttributes: {
@@ -484,7 +492,10 @@
                 this.camera.lookAt(target);
             },
             filterByIndex(){
-                updateProjection(this.contentPath, this.currEpoch, this.taskType)
+                const filtered_index_list = this.filter_index.split(',').map((x) => parseInt(x)).filter((x) => !isNaN(x));
+                // this.selectedIndex = Array.from(new Set([...this.selectedIndex, ...filtered_index_list]));
+                this.selectedIndex = filtered_index_list;
+                this.update();
             },
             NlSearch(){
             },
@@ -595,6 +606,13 @@
                 }
                 fetchTimelineData(this.contentPath, "")
 
+            },
+            updateEpoch(value) {
+                this.currEpoch = value;
+                window.sessionStorage.setItem('acceptIndicates', "");
+                window.sessionStorage.setItem('rejectIndicates', "");
+                updateProjection(this.contentPath, this.currEpoch, this.taskType);
+                fetchTimelineData(this.contentPath, "");
             },
             VDBHandler() {
                 this.isCanvasLoading = true
@@ -710,6 +728,19 @@
             }
         },
         watch: {
+            playTimeline(newVal, oldVal) {
+                if (newVal) {
+                    this.playEvent = setInterval(() => {
+                        if (this.currEpoch < this.totalEpoch) {
+                            this.updateEpoch(this.currEpoch + 1)
+                        } else {
+                            this.playTimeline = false;
+                        }
+                    }, 3000)
+                } else {
+                    clearInterval(this.playEvent)
+                }
+            },
             pointCoords(newVal) {
                 const text_list = this.epochData?.tokens;
                 if (text_list) {

@@ -5,7 +5,7 @@ const PERSP_CAMERA_FOV_VERTICAL = 70;
 const PERSP_CAMERA_NEAR_CLIP_PLANE = 0.01;
 const PERSP_CAMERA_FAR_CLIP_PLANE = 100;
 const ORTHO_CAMERA_FRUSTUM_HALF_EXTENT = 1.2;
-const MIN_ZOOM_SCALE = 1;
+const MIN_ZOOM_SCALE = 0.2;
 const MAX_ZOOM_SCALE = 60;
 const NORMAL_SIZE = 10;
 const HOVER_SIZE = 22;
@@ -27,6 +27,7 @@ class PlotCanvas {
         // bind attributes to a vue app
         this.vueApp = vueApp;
         this.eventListeners = [];
+        this.animations = [];
     }
 
     // bind to a container, initiating a scene in it
@@ -39,26 +40,51 @@ class PlotCanvas {
         renderer.setSize(rect.width, rect.height);
         renderer.setClearColor(BACKGROUND_COLOR, 1);
         renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.toneMapping = false;
         this.renderer = renderer;
 
         this.canvas = renderer.domElement;
         container.appendChild(renderer.domElement);
+
+        // const logAndValidate = (functionName, args) => {
+        //     logGLCall(functionName, args);
+        //     validateNoneOfTheArgsAreUndefined (functionName, args);
+        // }
+
+        // const throwOnGLError = (err, funcName, args) => {
+        //     throw WebGLDebugUtils.glEnumToString(err) + " was caused by call to: " + funcName;
+        // };
+        
+        // let gl = this.canvas.getContext('webgl');
+        // gl = WebGLDebugUtils.makeDebugContext(gl, throwOnGLError, logAndValidate);
     }
 
-    plotDataPoints(visData) {
+    plotDataPoints(visData, updateOnly = false) {
+        const x_center = (visData.grid_index[0] + visData.grid_index[2]) / 2;
+        const y_center = (visData.grid_index[1] + visData.grid_index[3]) / 2;
+        const x_scale = 12 / (visData.grid_index[2] - visData.grid_index[0]);
+        const y_scale = 12 / (visData.grid_index[3] - visData.grid_index[1]);
+
+        visData.result = visData.result.map(([x, y]) => [(x - x_center) * x_scale, (y - y_center) * y_scale]);
+
         const boundary = {
-            x_min: visData.grid_index[0],
-            y_min: visData.grid_index[1],
-            x_max: visData.grid_index[2],
-            y_max: visData.grid_index[3]
+            x_min: (visData.grid_index[0] - x_center) * x_scale,
+            y_min: (visData.grid_index[1] - y_center) * y_scale,
+            x_max: (visData.grid_index[2] - x_center) * x_scale,
+            y_max: (visData.grid_index[3] - y_center) * y_scale
         };
 
         this.__updatePlotBoundary(boundary);
-        this.__initScene();
-        this.__initCamera();
-        this.__putPlane(visData.grid_color);
-        this.__putDataPoints(visData);
-        this.__addControls();
+        if (updateOnly) {
+            this.animations = [];
+            this.__updateDataPointsPosition(visData);
+        } else {
+            this.__initScene();
+            this.__initCamera();
+            // this.__putPlane(visData.grid_color);
+            this.__putDataPoints(visData);
+            this.__addControls();
+        }
         this.__syncAttributesToVueApp();
     }
 
@@ -96,11 +122,11 @@ class PlotCanvas {
 
     render() {
         const animate = () => {
-            this.renderTimeout = setTimeout(() => {
-                this.vueApp.animationFrameId = requestAnimationFrame(animate);
-                this.renderer.render(this.scene, this.camera);
-                this.__syncPointMeshPositions();
-            }, 1000 / 30);
+            const frameId = requestAnimationFrame(animate);
+            this.vueApp.animationFrameId = frameId
+            this.animations = this.animations.filter((a) => a(frameId));
+            this.renderer.render(this.scene, this.camera);
+            this.__syncPointMeshPositions();
         }
         animate();
     }
@@ -156,9 +182,10 @@ class PlotCanvas {
 
     __initScene() {
         this.scene = new THREE.Scene();
+        this.scene.background = new THREE.Color(BACKGROUND_COLOR);
 
         // render scene as all-white
-        let ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
+        let ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
         this.scene.add(ambientLight);
     }
 
@@ -236,6 +263,60 @@ class PlotCanvas {
         this.scene.add(this.pointsMesh);
     }
 
+    __updateDataPointsPosition(visData) {
+        const geoData = visData.result;
+        let tar = [];
+
+        geoData.forEach(function (point) {
+            tar.push(point[0], point[1], 0);
+        });
+
+        // returns true if their is move, else false
+        const moveNonLinear = (i, cur, tar) => {
+            const d = tar[i] - cur[i];
+            const dThres = 0.01;
+            const grade = 0.2;
+
+            if (d == 0) return;
+            let r;
+            // add a final linear
+            if (d >= dThres || d <= -dThres) {
+                r = cur[i] + d * grade;
+            } else if (d > 0 && d < dThres) {
+                r = cur[i] + dThres * grade;
+            } else {
+                r = cur[i] - dThres * grade;
+            }
+
+            // add quick stop
+            if ((r > tar[i]) == (cur[i] > tar[i])) {
+                cur[i] = r;
+                return true;
+            } else {
+                cur[i] = tar[i];
+                return false;
+            }
+        }
+
+        // FIXME prevent multiple same-kind animation, but not only one animation
+        if (this.animations.length) {
+            this.animations.length = 0;
+        }
+
+        // FIXME is it soft-rendering here? Could it be slow? Need shader?
+        const moveAnimation = () => {
+            const ori = this.pointsMesh.geometry.attributes.position.array;
+            let moving = false;
+            for (let i = 0; i < ori.length; ++i) {
+                if (moveNonLinear(i, ori, tar)) moving = true;
+            }
+            this.lastDoUpdateRevealing?.();
+            this.pointsMesh.geometry.attributes.position.needsUpdate = true;
+            return (moving);     // only when not done the animation needs to continue
+        }
+        this.animations.push(moveAnimation);
+    }
+
     __addControls() {
         this.__addClassicMapNavigationControls();
         this.__addHoverRevealingControl();
@@ -250,10 +331,11 @@ class PlotCanvas {
         canvas.width = 128;
         canvas.height = 128;
         let ctx = canvas.getContext("2d");
-        ctx.fillStyle = "white";
+        ctx.fillStyle = `rgb(255, 255, 255)`;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         let texture = new THREE.CanvasTexture(canvas);
         texture.needsUpdate = true;
+        texture.encoding = THREE.sRGBEncoding;
         callback(texture);
     }
 
@@ -349,49 +431,45 @@ class PlotCanvas {
     }
 
     __getDefaultPointShaderMaterial() {
-        // FIXME consider using circle
-        // If would still consider use points, refer to this shader and https://threejs.org/examples/#webgl_buffergeometry_custom_attributes_particles
-        return new THREE.ShaderMaterial({
-            uniforms: {
-                texture: { type: 't' },
-                spritesPerRow: { type: 'f' },
-                spritesPerColumn: { type: 'f' },
-                color: { type: 'c' },
-                fogNear: { type: 'f' },
-                fogFar: { type: 'f' },
-                isImage: { type: 'bool' },
-                sizeAttenuation: { type: 'bool' },
-                PointSize: { type: 'f' },
-            },
-            vertexShader: `
-                attribute float size;
-                attribute float alpha;
-                varying vec3 vColor;
-                varying float vAlpha; 
-            
-                void main() {
-                    vColor = color;
-                    vAlpha = alpha; 
-                    gl_PointSize = size; // Keep original size
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                }`,
-            fragmentShader: `
-                varying vec3 vColor;
-                varying float vAlpha; 
-            
-                void main() {
-                    vec2 uv = gl_PointCoord - vec2(0.5, 0.5);
-                    float r = length(uv);
-                    if (r > 0.5) discard;
-                    gl_FragColor = vec4(vColor, 1.0); // Maintain alpha
-                }`,
-            transparent: true,
-            vertexColors: true,
-            depthTest: false,
-            depthWrite: false,
-            fog: true,
-            blending: THREE.MultiplyBlending,
+        if (this.shaderMaterial === undefined) {
+            this.shaderMaterial = this.__createPointShaderMaterial();
+        }
+        return this.shaderMaterial;
+    }
+
+    __createPointShaderMaterial() {
+        const vertexShader = `
+            attribute vec3 color;
+            attribute float size;
+            varying vec3 vColor;
+            void main() {
+                vColor = color;  // Pass color to fragment shader
+                gl_PointSize = size;  // Use custom size attribute
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `;
+        
+        const fragmentShader = `
+            varying vec3 vColor;
+            void main() {
+                // Calculate distance from center of point
+                vec2 uv = gl_PointCoord.xy - 0.5;
+                float dist = length(uv);
+
+                // If distance is greater than 0.5 (outside circle), discard fragment
+                if (dist > 0.5) discard;
+
+                gl_FragColor = vec4(vColor, 1.0);  // Use varying color
+            }
+        `;
+
+        // Shader Material
+        const material = new THREE.ShaderMaterial({
+            vertexShader,
+            fragmentShader,
         });
+
+        return material;
     }
 
     __savePointMeshSettings() {
@@ -469,7 +547,7 @@ class PlotCanvas {
             }
         }
 
-        const updateHoveredIndexSize = (hoveredIndex, selectedIndices, visualizationError, nnIndices) => {
+        const updateHoveredIndexSize = (hoveredIndex, selectedIndices) => {
             const sizeArr = this.pointsMesh.geometry.attributes.size.array;
             const posArr = this.pointsMesh.geometry.attributes.position;    // keep dimension
             const alphaArr = this.pointsMesh.geometry.attributes.alpha.array;
@@ -486,13 +564,16 @@ class PlotCanvas {
             let top_k = undefined;
             if (this.vueApp.taskType === 'Umap-Neighborhood') {
                 const top_k_attr_name =
-                    this.vueApp.neighborhoodRevealType === 'Intra-Type'
-                        ? 'intra_sim_top_k'
-                        : this.vueApp.neighborhoodRevealType === 'Inter-Type'
-                            ? 'inter_sim_top_k'
-                            : undefined;
+                    this.vueApp.neighborhoodRevealType === 'Intra-Type' ? 'intra_sim_top_k'
+                    : this.vueApp.neighborhoodRevealType === 'Inter-Type' ? 'inter_sim_top_k'
+                    : undefined;
                 if (top_k_attr_name) {
                     top_k = window.vueApp.epochData[top_k_attr_name];
+                } else if (this.vueApp.neighborhoodRevealType === 'Both') {
+                    const zip = (arr1, arr2) => {
+                        return arr1.map((k, i) => [...k, ...arr2[i]]);
+                    }
+                    top_k = zip(window.vueApp.epochData['intra_sim_top_k'], window.vueApp.epochData['inter_sim_top_k']);
                 }
             }
 
@@ -506,7 +587,7 @@ class PlotCanvas {
             });
             this.pointsMesh.geometry.getAttribute('size').needsUpdate = true;
             // TODO consider adjusting the threshold reactive to monitor size and resolution
-            raycaster.params.Points.threshold = 0.4 / this.camera.zoom; // 根据点的屏幕大小调整
+            raycaster.params.Points.threshold = 0.1 / this.camera.zoom; // 根据点的屏幕大小调整
             let rect = this.renderer.domElement.getBoundingClientRect();
             mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
             mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -530,7 +611,7 @@ class PlotCanvas {
                 // Map it to the original index
                 if (this.vueApp.filter_index != '') {
                     console.log("this.vueApp.filter_index", this.vueApp.filter_index);
-                    filter_index = this.vueApp.filter_index.split(',');
+                    const filter_index = this.vueApp.filter_index.split(',');
                     index = filter_index[index];
                 }
                 this.vueApp.curIndex = index;
@@ -587,7 +668,7 @@ class PlotCanvas {
                 // }
         }
 
-        this.__registerContainerEventListener('mousemove', onMouseMove);
+        this.__registerContainerEventListener('mousemove', (e) => { onMouseMove.call(this, e, false); });
         // FIXME click-to-lock logic was mixed into the logic of mousemove
         this.__registerContainerEventListener('click', (e) => { onMouseMove.call(this, e, true); });    
     }
@@ -753,21 +834,24 @@ class PlotCanvas {
 }
 
 function drawCanvas(res) {
-    let container = document.getElementById("container");
-    while (container.firstChild) {
-        container.removeChild(container.firstChild);
-    }
-    
+    // if (window.vueApp.plotCanvas) {
+        //     window.vueApp.plotCanvas.disposeResources();
+        // }
     if (window.vueApp.plotCanvas) {
-        window.vueApp.plotCanvas.disposeResources();
+        window.vueApp.plotCanvas.plotDataPoints(res, true);
+    } else { 
+        let container = document.getElementById("container");
+        while (container.firstChild) {
+            container.removeChild(container.firstChild);
+        }
+        const plotCanvas = new PlotCanvas(window.vueApp);
+        plotCanvas.bindTo(container);
+        plotCanvas.plotDataPoints(res);
+        plotCanvas.render();
+    
+        window.vueApp.plotCanvas = plotCanvas;
     }
 
-    const plotCanvas = new PlotCanvas(window.vueApp);
-    plotCanvas.bindTo(container);
-    plotCanvas.plotDataPoints(res);
-    plotCanvas.render();
-
-    window.vueApp.plotCanvas = plotCanvas;
     window.vueApp.isCanvasLoading = false;
 }
 
