@@ -1,5 +1,6 @@
 # TODO fix loading net, sys.append problem
 from abc import ABC, abstractmethod
+from genericpath import isfile
 
 import torch
 import tensorflow as tf
@@ -484,8 +485,19 @@ class Trustvis(StrategyAbstractClass):
         # define hyperparameters
         self.DEVICE = torch.device("cuda:{}".format(GPU_ID) if torch.cuda.is_available() else "cpu")
 
-        import Model.model as subject_model
-        net = eval("subject_model.{}()".format(NET))
+        try:
+            import Model.model as subject_model
+            net = eval("subject_model.{}()".format(NET))
+            model_location = os.path.join(self.model_path, "subject_model.pth")
+            if not os.path.isfile(model_location):
+                model_location = os.path.join(self.model_path, "{}_{:d}".format(self.epoch_name, n_epoch), "subject_model.pth")
+            net.load_state_dict(torch.load(model_location, map_location=torch.device("cpu")))
+            net.to(self.DEVICE)
+            net.eval()
+        except Exception as e:
+            print(f"=== Model loading error: {e}")
+            print("=== For this Trustvis instance, the model is not loaded. Skipping...")
+            net = None
 
         self._data_provider = NormalDataProvider(self.CONTENT_PATH, net, EPOCH_START, EPOCH_END, EPOCH_PERIOD, device=self.DEVICE, classes=CLASSES, epoch_name=EPOCH_NAME, verbose=1)
         self.model = VisModel(ENCODER_DIMS, DECODER_DIMS)
