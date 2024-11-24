@@ -1,12 +1,12 @@
 import { useRef, useEffect } from 'react';
-import * as THREE from 'three';
+import { OrthographicCamera as OrthographicCameraImpl } from 'three';
 import { OrthographicCamera } from '@react-three/drei';
 import { ContextOnlyProps } from './visualizer-render-context';
 
-export function Camera({ visualizerRenderContext }: ContextOnlyProps) {
+export function VisualizerDefaultCamera({ visualizerRenderContext }: ContextOnlyProps) {
     const rc = visualizerRenderContext;
 
-    const cameraRef = useRef<THREE.OrthographicCamera>(null);
+    const cameraRef = useRef<OrthographicCameraImpl>(null);
     useEffect(
         () => { cameraRef.current?.lookAt(rc.centerX, rc.centerY, 0); }
     );
@@ -21,6 +21,6 @@ export function Camera({ visualizerRenderContext }: ContextOnlyProps) {
         bottom={-h / 2} top={h / 2} 
         near={1} far={1000}
         position={[rc.centerX, rc.centerY, 100]}
-        up={[0, 0, -1]} 
+        makeDefault manual
     />;
 }
