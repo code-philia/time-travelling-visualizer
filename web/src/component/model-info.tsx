@@ -84,13 +84,15 @@ function LabelList() {
     );
 };
 
-export function ModelInfo() {
+export function VisualizationInfo() {
     return (
-        <div id="subject_model_info_panel">
-            <div id="labelsSection">
-                <div>Labels</div>
-                <LabelList >
-                </LabelList>
+        <div className="info-column">
+            <div id="subject_model_info_panel">
+                <div id="labelsSection">
+                    <div>Labels</div>
+                    <LabelList >
+                    </LabelList>
+                </div>
             </div>
         </div>
     )

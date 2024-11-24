@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { CanvasContainer } from '../canvas/canvas'
 import { useStore } from '../state/store'
 
-export function ContentContainer() {
+export function VisualizationArea() {
     const { iteration } = useStore(['iteration']);
     const [canvasContainers, setCanvasContainers] = useState<number[]>([]);
     const [visibleCanvas, setVisibleCanvas] = useState<number | null>(null);
@@ -24,13 +24,11 @@ export function ContentContainer() {
     }, [iteration]);
 
     return (
-        <div className="content_container">
-            <div id="container_range">
-                <div id="container">
-                    {canvasContainers.map((id) => (
-                        <CanvasContainer key={id} isVisible={id === visibleCanvas} />
-                    ))}
-                </div>
+        <div className="canvas-column">
+            <div id="container">
+                {canvasContainers.map((id) => (
+                    <CanvasContainer key={id} isVisible={id === visibleCanvas} />
+                ))}
             </div>
             <div id="footer">
                 <div>Epochs</div>

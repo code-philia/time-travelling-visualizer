@@ -1,15 +1,14 @@
-import { User } from './user'
-import { ContentContainer } from './component/content'
-import { ModelInfo } from './component/model-info'
+import { VisualizationOptions } from './user'
+import { VisualizationArea } from './component/content'
+import { VisualizationInfo } from './component/model-info'
 
 function App() {
   return (
-    <>
-      <div id='app'>
-        <User />
-        <ContentContainer />
-        <ModelInfo />
-      </div></>
+    <div id='app'>
+      <VisualizationOptions />
+      <VisualizationArea />
+      <VisualizationInfo />
+    </div>
   )
 }
 
