@@ -39,12 +39,13 @@ const initPointData: PointData = {
 
 const NORMAL_SIZE = 10;
 
+
 export function CanvasContainer({ isVisible }: { isVisible: boolean }) {
-    const canvasRef = useRef<HTMLCanvasElement | null>(null)
+    const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const { command, contentPath, visMethod, taskType, iteration, filterIndex } = useStore(["command", "contentPath", "visMethod", "taskType", "iteration", "filterIndex"]);
-    const [frameloop, setFrameloop] = useState<'never' | 'always' | 'demand' | undefined>('never')
-    const [pointData, setPointData] = useState<PointData>(initPointData)
-    const [projectionRes, setProjectionRes] = useState<ProjectionProps>(initProjectionRes)
+    const [frameloop, setFrameloop] = useState<'never' | 'always' | 'demand' | undefined>('never');
+    const [pointData, setPointData] = useState<PointData>(initPointData);
+    const [projectionRes, setProjectionRes] = useState<ProjectionProps>(initProjectionRes);
     const [boundary, setBoundary] = useState({ x1: -100, y1: -200, x2: 150, y2: 150 });
     const [canvasRect, setCanvasRect] = useState({ width: 300, height: 300 });
     const [visible, setVisible] = useState(isVisible);
@@ -55,17 +56,15 @@ export function CanvasContainer({ isVisible }: { isVisible: boolean }) {
 
     useEffect(() => {
         if (command != 'update' || !visible) return;
-        const res = updateProjection(contentPath, visMethod, taskType, iteration, filterIndex);
-        if (res) {
-            setProjectionRes(res);
-        }
-    }, [contentPath, visMethod, taskType, iteration, filterIndex]);
+        (async () => {
+            const res = await updateProjection(contentPath, visMethod, taskType, iteration, filterIndex);
+            if (res) {
+                setProjectionRes(res);
+            }
+        })();
+    }, [contentPath, visMethod, taskType, iteration, filterIndex, command, visible]);
 
     useEffect(() => {
-        if (canvasRef.current) {
-            const rect = canvasRef.current.getBoundingClientRect();
-            setCanvasRect({ width: rect.width, height: rect.height });
-        }
         const observer = new IntersectionObserver(([{ isIntersecting }]) => {
             setFrameloop(isIntersecting ? 'always' : 'never')
         }, {})
@@ -78,14 +77,26 @@ export function CanvasContainer({ isVisible }: { isVisible: boolean }) {
 
     useEffect(() => {
         if (projectionRes.result.length == 0 || !visible) return;
-        const color = projectionRes.label_list.map((idx) => projectionRes.color_list[parseInt(idx)])
-        setPointData({
-            positions: new Float32Array(projectionRes.result.flat()),
-            colors: new Float32Array(color),
-            sizes: new Float32Array(NORMAL_SIZE),
-            alphas: new Float32Array(projectionRes.confidence_list.map(() => 1)),
-        })
-    }, [projectionRes.result, projectionRes.confidence_list, projectionRes.color_list, projectionRes.label_list])
+        const positions: number[] = [];
+        const colors: number[] = [];
+        const sizes: number[] = [];
+        const alphas: number[] = [];
+        projectionRes.result.forEach((point, i) => {
+            positions.push(point[0], point[1], 0);
+            const color = projectionRes.color_list[parseInt(projectionRes.label_list[i])];
+            colors.push(color[0] / 255, color[1] / 255, color[2] / 255);
+            sizes.push(NORMAL_SIZE);
+            alphas.push(1.0);
+        });
+        const d = {
+            positions: new Float32Array(positions),
+            colors: new Float32Array(colors),
+            sizes: new Float32Array(sizes),
+            alphas: new Float32Array(alphas),
+        };
+        console.log(d)
+        setPointData(d)
+    }, [projectionRes.result, projectionRes.confidence_list, projectionRes.color_list, projectionRes.label_list, visible])
 
     useEffect(() => {
         if (projectionRes.grid_index.length != 4 || !visible) return;
@@ -95,7 +106,7 @@ export function CanvasContainer({ isVisible }: { isVisible: boolean }) {
             x2: projectionRes.grid_index[2],
             y2: projectionRes.grid_index[3],
         })
-    }, [projectionRes.grid_index])
+    }, [projectionRes.grid_index, visible])
 
     // TODO add test for resting the camera
     // const testReset = () => {

@@ -25,7 +25,7 @@ export interface ProjectionProps {
     selectedPoints: number[];
     properties: number[];
     errorMessage: string;
-    color_list: number[];
+    color_list: number[][];
     confidence_list: number[];
 }
 
