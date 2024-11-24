@@ -4,12 +4,11 @@ import { ModelInfo } from './component/model-info'
 
 function App() {
   return (
-    <>
       <div id='app'>
         <User />
         <ContentContainer />
         <ModelInfo />
-      </div></>
+      </div>
   )
 }
 
