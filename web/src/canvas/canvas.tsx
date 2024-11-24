@@ -6,11 +6,10 @@ import { updateProjection } from '../user/api'
 import { useStore } from '../state/store';
 
 import { PointsRender } from './points-render.tsx'
-import { Plane } from './plane.tsx';
 import { PointData } from './points-render.tsx';
-import { OrthographicCamera } from 'three';
 import { VisualizerRenderContext } from './visualizer-render-context.tsx';
 import { VisualierDefaultControl } from './visualizer-default-control.tsx';
+import { VisualizerDefaultCamera } from './camera.tsx';
 
 const initProjectionRes: ProjectionProps = {
     result: [],
@@ -103,8 +102,6 @@ export function CanvasContainer({ isVisible }: { isVisible: boolean }) {
     //     setBoundary({ x1: -100, y1: -200, x2: 150, y2: 150 });
     // };
 
-    const defaultCamera = new OrthographicCamera();
-
     const rc = new VisualizerRenderContext(boundary, 'white', canvasRect);
 
     // CSS of canvas-container must not contain "margin", or the <Canvas/> rendering will lead to a bug due to r3f (react-three-fiber)
@@ -115,10 +112,11 @@ export function CanvasContainer({ isVisible }: { isVisible: boolean }) {
                 width: '100%',
                 height: '100%'
             }}>
-            <Canvas ref={canvasRef} frameloop={frameloop} camera={defaultCamera}>
+            <Canvas ref={canvasRef} frameloop={frameloop}>
                 <ambientLight color={0xffffff} intensity={1.0} />       {/* set to Math.PI and set <Canvas linear flat/> to render all-white texture */}
                 <PointsRender pointData={pointData} />
                 <axesHelper args={[100]} />
+                <VisualizerDefaultCamera visualizerRenderContext={rc} />
                 <VisualierDefaultControl visualizerRenderContext={rc}/>
             </Canvas>
         </div>
