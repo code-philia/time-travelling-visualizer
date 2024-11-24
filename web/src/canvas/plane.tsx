@@ -1,22 +1,18 @@
-import * as THREE from 'three';
-import { BoundaryProps } from '../state/types';
+import { DoubleSide } from 'three';
+import { VisualizerRenderContext } from './visualizer-render-context';
 
-interface Props {
-    boundary: BoundaryProps;
-    color: string;
-}
+type PlaneProps = {
+    visualizerRenderContext: VisualizerRenderContext;
+};
 
-export function Plane(props: Props) {
-    const { boundary, color } = props;
-    const width = boundary.x2 - boundary.x1;
-    const height = boundary.y2 - boundary.y1;
-    const centerX = boundary.x1 + width / 2;
-    const centerY = boundary.y1 + height / 2;
+export function Plane({ visualizerRenderContext }: PlaneProps) {
+    const rc = visualizerRenderContext;
 
+    // add a small offset to centerY to bypass rotation caused by spherical computation loss
     return (
-        <mesh position={[centerX, centerY, 0]}>
-            <planeGeometry args={[width, height]} />
-            <meshPhongMaterial color={color} side={THREE.DoubleSide} />
+        <mesh position={[rc.centerX, rc.centerY, 0]}>
+            <planeGeometry args={[100, 100]} />
+            <meshStandardMaterial color={rc.backgroundColor} side={DoubleSide} />
         </mesh>
     )
 }

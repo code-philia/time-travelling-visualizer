@@ -1,35 +1,26 @@
 import { useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import { OrthographicCamera } from '@react-three/drei';
-import { ContainerProps, BoundaryProps } from '../state/types';
-import { ThreeEvent } from '@react-three/fiber';
+import { ContextOnlyProps } from './visualizer-render-context';
 
-interface Props {
-    container: ContainerProps;
-    boundary: BoundaryProps;
-}
+export function Camera({ visualizerRenderContext }: ContextOnlyProps) {
+    const rc = visualizerRenderContext;
 
-export function Camera(props: Props) {
-    const { container, boundary } = props;
-    const { width, height } = container;
-    const { x1, y1, x2, y2 } = boundary;
-    const aspect = width / height;
     const cameraRef = useRef<THREE.OrthographicCamera>(null);
+    useEffect(
+        () => { cameraRef.current?.lookAt(rc.centerX, rc.centerY, 0); }
+    );
 
-    function onWheelZoom(event: ThreeEvent<WheelEvent>) {
-        if (cameraRef.current) {
-            cameraRef.current.position.z += event.deltaY * 0.01;
-        }
-    }
+    const w = rc.projectionWidth;
+    const h = rc.projectionHeight;
 
-    useEffect(() => {
-        if (cameraRef.current) {
-            cameraRef.current.position.set((x1 + x2) / 2, (y1 + y2) / 2, 100);
-            cameraRef.current.lookAt(new THREE.Vector3(0, 0, 0));
-        }
-    }, []);
-
-    return <OrthographicCamera ref={cameraRef} left={x1 * aspect}
-        right={x2 * aspect} top={y2} bottom={y1} near={1} far={1000}
-        onWheel={onWheelZoom} />;
+    // make map control z-axis up
+    return <OrthographicCamera
+        ref={cameraRef}
+        left={-w / 2} right={w / 2}
+        bottom={-h / 2} top={h / 2} 
+        near={1} far={1000}
+        position={[rc.centerX, rc.centerY, 100]}
+        up={[0, 0, -1]} 
+    />;
 }
