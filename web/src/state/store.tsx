@@ -2,6 +2,26 @@ import { create } from "zustand";
 import { StoreApi, UseBoundStore } from "zustand";
 import { shallow } from "zustand/shallow";
 import { useStoreWithEqualityFn } from "zustand/traditional";
+import { ProjectionProps } from "../state/types";
+
+const initProjectionRes: ProjectionProps = {
+    result: [],
+    grid_index: [],
+    grid_color: '',
+    label_name_dict: [],
+    label_color_list: [],
+    label_list: [],
+    maximum_iteration: 0,
+    training_data: [],
+    testing_data: [],
+    evaluation: 0,
+    prediction_list: [],
+    selectedPoints: [],
+    properties: [],
+    errorMessage: '',
+    color_list: [],
+    confidence_list: [],
+}
 
 export const useShallow = <T, K extends keyof T>(
     store: UseBoundStore<StoreApi<T>>,
@@ -28,7 +48,7 @@ interface T {
     taskType: string;
     colorType: string;
     iteration: number;
-    filterIndex: number[];
+    filterIndex: number[] | string;
     dataType: string;
     currLabel: string;
     forward: boolean;
@@ -37,6 +57,7 @@ interface T {
     colorList: number[][];
     labelNameDict: Record<number, string>;
     setColorList: (colorList: number[][]) => void;
+    projectionRes: ProjectionProps;
 
 }
 
@@ -47,13 +68,13 @@ export const GlobalStore = create<T>((set) => ({
     taskType: 'Classification',
     colorType: 'noColoring',
     iteration: 1,
-    filterIndex: [],
+    filterIndex: "",
     dataType: 'Image',
     currLabel: '',
     forward: false,
     setContentPath: (contentPath: string) => set({ contentPath }),
     setValue: (key, value) => set({ [key]: value }),
-
+    projectionRes: initProjectionRes,
     colorList: [],
     labelNameDict: {},
     setColorList: (colorList) => set({ colorList }),

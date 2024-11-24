@@ -21,13 +21,11 @@ export function PointsRender({ pointData }: { pointData: PointData }) {
         useEffect(() => {
             if (!geometry) return;
             let attr = geometry.getAttribute(attribute);
-            if (!attr) {
-                attr = new Float32BufferAttribute(array, itemSize);
-                geometry.setAttribute(attribute, attr);
-            } else {
-                attr.array.set(array);
-                attr.needsUpdate = true;
+            if (attr) {
+                geometry.deleteAttribute(attribute);
             }
+            attr = new Float32BufferAttribute(array, itemSize);
+            geometry.setAttribute(attribute, attr);        
         }, [geometry, attribute, array, itemSize]);
     }
     useAttributes('position', pointData.positions, 3);
@@ -51,7 +49,7 @@ export function PointsRender({ pointData }: { pointData: PointData }) {
                 <bufferAttribute attach="attributes-size" count={pointData.sizes.length} array={pointData.sizes} itemSize={1} />
                 <bufferAttribute attach="attributes-alpha" count={pointData.alphas.length} array={pointData.alphas} itemSize={1} />
             </bufferGeometry>
-            <pointsMaterial ref={materialRef} attach="material" opacity={1} size={3} sizeAttenuation={true} />
+            <pointsMaterial ref={materialRef} attach="material" opacity={1} size={0.05} sizeAttenuation={true} />
         </points>
     )
 }

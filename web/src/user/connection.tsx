@@ -3,13 +3,13 @@ import { useState, useEffect } from 'react';
 const host = 'http://127.0.0.1:5001';
 
 export function Fetch(input: string, init: any) {
-    fetch(`${host}/${input}`, init)
-        .then(response => response.json())
+    return fetch(`${host}/${input}`, init)
+        .then(res => res.json())
         .then(res => {
             if (res.errorMessage != "") {
                 alert(res.errorMessage)
             }
-            return res.json();
+            return res;
         })
         .catch(error => {
             console.error('Fetch error:', error);

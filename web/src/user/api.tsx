@@ -1,8 +1,11 @@
 import { Fetch } from './connection';
+import { useStore } from '../state/store';
+import { useEffect } from 'react';
+const headers = new Headers();
+headers.append('Content-Type', 'application/json');
+headers.append('Accept', 'application/json');
 
-import { ProjectionProps, ItertaionStructure } from "../state/types";
-
-export function fetchTimelineData(contentPath: string): ItertaionStructure | void {
+function fetchTimelineData(contentPath: string): Promise<any> {
     const data = {
         path: contentPath,
         method: 'Trustvis',
@@ -14,7 +17,7 @@ export function fetchTimelineData(contentPath: string): ItertaionStructure | voi
 }
 
 export function updateProjection(contentPath: string, visMethod: string,
-    taskType: string, iteration: number, filterIndex: number[]): ProjectionProps | void {
+    taskType: string, iteration: number, filterIndex: number[] | string): Promise<any> {
     const data = {
         path: contentPath,
         iteration: iteration,
@@ -25,13 +28,16 @@ export function updateProjection(contentPath: string, visMethod: string,
         predicates: {},
         TaskType: taskType,
         selectedPoints: filterIndex,
-        headers: { 'Content-Type': 'application/json' },
-        mode: 'cors'
     }
-    return Fetch('updateProjection', data)
+    return Fetch('updateProjection', {
+        method: 'POST',
+        headers: headers,
+        mode: 'cors',
+        body: JSON.stringify(data)
+    })
 }
 
-export function getOriginalData(contentPath: string, dataType: string, index: number, iteration: number) {
+function getOriginalData(contentPath: string, dataType: string, index: number, iteration: number) {
     if (index === null) {
         return;
     }
@@ -47,4 +53,18 @@ export function getOriginalData(contentPath: string, dataType: string, index: nu
         mode: 'cors'
     };
     return Fetch(`sprite${dataType}`, data);
+}
+
+export function Api() {
+    const { command, contentPath, visMethod, taskType, iteration, filterIndex, setValue } = useStore(["command", "contentPath", "visMethod", "taskType", "iteration", "filterIndex", "setValue"]);
+
+    useEffect(() => {
+        if (command != 'update') return;
+        setValue('command', '')
+        updateProjection(contentPath, visMethod, taskType, iteration, filterIndex)
+            .then(res => { console.log(res); setValue('projectionRes', res) })
+    }, [command]);
+    return (
+        <></>
+    )
 }
