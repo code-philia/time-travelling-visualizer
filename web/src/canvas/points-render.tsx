@@ -36,11 +36,11 @@ export function PointsRender({ pointData }: { pointData: PointData }) {
     useAttributes('alpha', pointData.alphas, 1);
 
     const handlePointerMove = (event: ThreeEvent<PointerEvent>) => {
-        console.log('Pointer moved:', event.clientX, event.clientY);
+        // console.log('Pointer moved:', event.clientX, event.clientY);
         // todo
     };
     const handleClick = (event: ThreeEvent<MouseEvent>) => {
-        console.log('Pointer clicked:', event.clientX, event.clientY);
+        // console.log('Pointer clicked:', event.clientX, event.clientY);
         // todo
     }
     return (

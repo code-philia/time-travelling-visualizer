@@ -6,9 +6,11 @@ import { updateProjection } from '../user/api'
 import { useStore } from '../state/store';
 
 import { PointsRender } from './points-render.tsx'
-import { Camera } from './camera.tsx';
 import { Plane } from './plane.tsx';
 import { PointData } from './points-render.tsx';
+import { OrthographicCamera } from 'three';
+import { VisualizerRenderContext } from './visualizer-render-context.tsx';
+import { VisualierDefaultControl } from './visualizer-default-control.tsx';
 
 const initProjectionRes: ProjectionProps = {
     result: [],
@@ -40,13 +42,12 @@ const NORMAL_SIZE = 10;
 
 export function CanvasContainer({ isVisible }: { isVisible: boolean }) {
     const canvasRef = useRef<HTMLCanvasElement | null>(null)
-    const containerRef = useRef<HTMLDivElement | null>(null)
     const { command, contentPath, visMethod, taskType, iteration, filterIndex } = useStore(["command", "contentPath", "visMethod", "taskType", "iteration", "filterIndex"]);
     const [frameloop, setFrameloop] = useState<'never' | 'always' | 'demand' | undefined>('never')
     const [pointData, setPointData] = useState<PointData>(initPointData)
-    const [projuctionRes, setProjectionRes] = useState<ProjectionProps>(initProjectionRes)
-    const [boundary, setBoundary] = useState({ x1: -150, y1: -150, x2: 150, y2: 150 });
-    const [containerRect, setContainerRect] = useState({ width: 300, height: 300 });
+    const [projectionRes, setProjectionRes] = useState<ProjectionProps>(initProjectionRes)
+    const [boundary, setBoundary] = useState({ x1: -100, y1: -200, x2: 150, y2: 150 });
+    const [canvasRect, setCanvasRect] = useState({ width: 300, height: 300 });
     const [visible, setVisible] = useState(isVisible);
 
     useEffect(() => {
@@ -62,9 +63,9 @@ export function CanvasContainer({ isVisible }: { isVisible: boolean }) {
     }, [contentPath, visMethod, taskType, iteration, filterIndex]);
 
     useEffect(() => {
-        if (containerRef.current) {
-            const rect = containerRef.current.getBoundingClientRect();
-            setContainerRect({ width: rect.width, height: rect.height });
+        if (canvasRef.current) {
+            const rect = canvasRef.current.getBoundingClientRect();
+            setCanvasRect({ width: rect.width, height: rect.height });
         }
         const observer = new IntersectionObserver(([{ isIntersecting }]) => {
             setFrameloop(isIntersecting ? 'always' : 'never')
@@ -77,39 +78,48 @@ export function CanvasContainer({ isVisible }: { isVisible: boolean }) {
     }, [])
 
     useEffect(() => {
-        if (projuctionRes.result.length == 0 || !visible) return;
-        let color = projuctionRes.label_list.map((idx) => projuctionRes.color_list[parseInt(idx)])
+        if (projectionRes.result.length == 0 || !visible) return;
+        const color = projectionRes.label_list.map((idx) => projectionRes.color_list[parseInt(idx)])
         setPointData({
-            positions: new Float32Array(projuctionRes.result.flat()),
+            positions: new Float32Array(projectionRes.result.flat()),
             colors: new Float32Array(color),
             sizes: new Float32Array(NORMAL_SIZE),
-            alphas: new Float32Array(projuctionRes.confidence_list.map(() => 1)),
+            alphas: new Float32Array(projectionRes.confidence_list.map(() => 1)),
         })
-    }, [projuctionRes.result, projuctionRes.confidence_list, projuctionRes.color_list, projuctionRes.label_list])
+    }, [projectionRes.result, projectionRes.confidence_list, projectionRes.color_list, projectionRes.label_list])
 
     useEffect(() => {
-        if (projuctionRes.grid_index.length != 4 || !visible) return;
+        if (projectionRes.grid_index.length != 4 || !visible) return;
         setBoundary({
-            x1: projuctionRes.grid_index[0],
-            y1: projuctionRes.grid_index[1],
-            x2: projuctionRes.grid_index[2],
-            y2: projuctionRes.grid_index[3],
+            x1: projectionRes.grid_index[0],
+            y1: projectionRes.grid_index[1],
+            x2: projectionRes.grid_index[2],
+            y2: projectionRes.grid_index[3],
         })
-    }, [projuctionRes.grid_index])
+    }, [projectionRes.grid_index])
 
+    // TODO add test for resting the camera
+    // const testReset = () => {
+    //     setBoundary({ x1: -100, y1: -200, x2: 150, y2: 150 });
+    // };
+
+    const defaultCamera = new OrthographicCamera();
+
+    const rc = new VisualizerRenderContext(boundary, 'white', canvasRect);
+
+    // CSS of canvas-container must not contain "margin", or the <Canvas/> rendering will lead to a bug due to r3f (react-three-fiber)
     return (
         <div id="canvas-container"
-            ref={containerRef}
             style={{
                 display: visible ? 'block' : 'none',
                 width: '100%',
                 height: '100%'
             }}>
-            <Canvas ref={canvasRef} frameloop={frameloop} >
-                <ambientLight color={0xffffff} intensity={1.0} />
-                <Camera container={containerRect} boundary={boundary} />
-                <Plane boundary={boundary} color='white' />
+            <Canvas ref={canvasRef} frameloop={frameloop} camera={defaultCamera}>
+                <ambientLight color={0xffffff} intensity={1.0} />       {/* set to Math.PI and set <Canvas linear flat/> to render all-white texture */}
                 <PointsRender pointData={pointData} />
+                <axesHelper args={[100]} />
+                <VisualierDefaultControl visualizerRenderContext={rc}/>
             </Canvas>
         </div>
     )
