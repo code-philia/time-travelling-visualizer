@@ -1,41 +1,56 @@
+html {
+  width: 100%;
+  height: 100%;
+}
+
 body {
   margin: 0;
   overflow: hidden;
+  width: 100%;
   height: 100%;
   color: #5f5b55;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  /* font-family: -apple-system, SF UI Text, Arial, PingFang SC, Hiragino Sans GB, Microsoft YaHei, WenQuanYi Micro Hei, sans-serif; */
 }
 
 #app {
-  /* font-family: -apple-system, SF UI Text, Arial, PingFang SC, Hiragino Sans GB, Microsoft YaHei, WenQuanYi Micro Hei, sans-serif; */
   display: flex;
   flex-direction: row;
+
+  width: 100%;
   height: 100%;
+
+  --layout-border-color: #cccccc;
 }
 
-.content_container {
-  flex-grow: 1;
+.user-column, .info-column {
+  flex: 1 0 auto;
   display: flex;
   flex-direction: column;
-  min-height: 0
+  width: 15em;
+  max-width: 15em;
+  height: 100%;
+  overflow-y: auto;
 }
 
-#subject_model_info_panel {
-  /* width: 30vh; */
-  padding: 20px;
+.user-column {
+  border-right: 1px solid var(--layout-border-color);
+}
+
+.canvas-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.info-column {
+  border-left: 1px solid var(--layout-border-color);
+}
+
+#control-panel {
+  padding: 1em;
   background-color: rgb(244, 244, 244);
   overflow-y: auto;
-  border-color: #e4e7ed;
-  border-width: 0 0 0 1px;
-  border-style: solid;
-  min-width: 5em;
-}
-
-#opration_bar {
-  background-color: rgb(244, 244, 244);
-  width: 100%;
-  height: 50px;
 }
 
 #advanced_panel {
@@ -44,10 +59,9 @@ body {
   background-color: rgb(244, 244, 244);
 }
 
-#container_range {
+#canvas-container {
   width: auto;
   height: auto;
-  margin: 10px;
   display: flex;
   flex: 1;
   justify-content: center;

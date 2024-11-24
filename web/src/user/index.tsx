@@ -1,13 +1,13 @@
 import { ConnectionStatus } from "./connection";
 import { MessageHandler } from "./message";
-import { Control } from "./control";
+import { ControlPanel } from "./control";
 
-export function User() {
+export function VisualizationOptions() {
     const useVscode = false
     return (
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <div className="user-column">
             <ConnectionStatus useVscode = {useVscode}/>
-            {useVscode ? <MessageHandler /> : <Control />}
+            {useVscode ? <MessageHandler /> : <ControlPanel />}
         </div>
     );
 }
