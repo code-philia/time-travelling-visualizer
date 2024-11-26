@@ -309,7 +309,7 @@ def update_projection():
     # FIXME the returned field are too fixed that hard to add or change
     # if you want a little improvement you should let this function decide the response
     # and create another function for another kind of response
-    if TaskType == 'Classfication' or TaskType == 'Non-Classification':
+    if TaskType == 'Classification' or TaskType == 'Non-Classification':
         embedding_2d, grid, decision_view, label_name_dict, label_color_list, label_list, max_iter, training_data_index, \
         testing_data_index, eval_new, prediction_list, selected_points, properties, error_message_projection, color_list, confidence_list = update_epoch_projection(context, EPOCH, predicates, TaskType,indicates)
         end = time.time()
