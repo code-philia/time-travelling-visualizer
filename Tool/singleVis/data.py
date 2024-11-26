@@ -49,7 +49,7 @@ class DataProviderAbstractClass(ABC):
 class DataProvider(DataProviderAbstractClass):
     def __init__(self, content_path, model, epoch_start, epoch_end, epoch_period, device, classes, epoch_name, verbose=1):
         self.content_path = content_path
-        self.model = model
+        self.model = model.to(device)
         self.s = epoch_start
         self.e = epoch_end
         self.p = epoch_period
