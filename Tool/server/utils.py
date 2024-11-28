@@ -308,114 +308,126 @@ def get_comparison_coloring(context_left, context_right, EPOCH_LEFT, EPOCH_RIGHT
 
     return label_color_list    
 
-def update_epoch_projection(context, EPOCH, predicates, TaskType, indicates):
-    # TODO consider active learning setting
+def update_epoch_projection(config, epoch, predicates, indicates=[]):
+    if config.TASK_TYPE == "classification":
+        return update_epoch_projection_classification(config, epoch, predicates, indicates)
+    else:
+        return update_epoch_projection_non_classification(config, epoch, predicates, indicates)
+
+def update_epoch_projection_classification(config, epoch, predicates, indicates):
     error_message = ""
-    start = time.time()
-    all_data = get_train_test_data(context, EPOCH)
     
-    labels = get_train_test_label(context, EPOCH)
-    if len(indicates):
-        all_data = all_data[indicates]
-        labels = labels[indicates]
-        
+    # load data and labels
+    all_labels = get_train_test_label(config)
+    # error_message = check_labels_match_alldata(all_labels, all_data, error_message)
     
-    print('labels',labels)
-    error_message = check_labels_match_alldata(labels, all_data, error_message)
-    
-    embedding_2d = get_embedding(context, all_data, EPOCH)
+    # load or create embedding_2d
+    embedding_2d = get_embedding(config, None, epoch)
     if len(indicates):
         indicates = [i for i in indicates if i < len(embedding_2d)]
         embedding_2d = embedding_2d[indicates]
-    print('all_data',all_data.shape,'embedding_2d',embedding_2d.shape)
-    print('indicates', indicates)
-    error_message = check_embedding_match_alldata(embedding_2d, all_data, error_message)
+    # error_message = check_embedding_match_alldata(embedding_2d, all_data, error_message)
     
-    training_data_number = context.strategy.config["TRAINING"]["train_num"]
-    testing_data_number = context.strategy.config["TRAINING"]["test_num"]
+    training_data_number = config.TRAINING["train_num"]
+    testing_data_number = config.TRAINING["test_num"]
     training_data_index = list(range(training_data_number))
     testing_data_index = list(range(training_data_number, training_data_number + testing_data_number))
-    error_message = check_config_match_embedding(training_data_number, testing_data_number, embedding_2d, error_message)
-    end = time.time()
-    print("beforeduataion", end- start)
-    # return the image of background
-    # read cache if exists
-   
-    grid, b_fig = get_grid_bfig(context, EPOCH,embedding_2d)
-    # TODO fix its structure
-    eval_new = get_eval_new(context, EPOCH)
-    start2 = time.time()
-    print("midquestion1", start2-end)
-    # coloring method    
-    label_color_list, color_list = get_coloring(context, EPOCH, "noColoring")
+    # error_message = check_config_match_embedding(training_data_number, testing_data_number, embedding_2d, error_message)
+
+    # load or create background figure
+    grid, b_fig = get_grid_bfig(config, epoch)
+
+    # load visualization evaluation result    
+    eval_new = get_eval_new(config, epoch)
+    
+    # load color list  
+    label_color_list, color_list = get_coloring(config, all_labels)
     if len(indicates):
         label_color_list = [label_color_list[i] for i in indicates]
 
-    start1 =time.time()
-    print("midquestion2",start1-start2)
-    CLASSES = np.array(context.strategy.config["CLASSES"])
-    label_list = CLASSES[labels].tolist()
+    # load label list, precidtion list, confidance
+    CLASSES = np.array(config.CLASSES)
+    label_list = all_labels.tolist() # [2, 1, 9, 2...]
     label_name_dict = dict(enumerate(CLASSES))
-
+    
     prediction_list = []
     confidence_list = []
-    # print("all_data",all_data.shape)
-    all_data = all_data.reshape(all_data.shape[0],all_data.shape[1])
-    if (TaskType == 'Classification'):
-        # check if there is stored prediction and load
-        prediction_path = os.path.join(context.strategy.data_provider.checkpoint_path(EPOCH), "modified_ranks.json")
-        if os.path.isfile(prediction_path):
-            with open(prediction_path, "r") as f:
-                predictions = json.load(f)
 
-            for prediction in predictions:
-                prediction_list.append(prediction)
-        else:
-            prediction_origin = context.strategy.data_provider.get_pred(EPOCH, all_data)
-            prediction = prediction_origin.argmax(1)
+    # check if there is stored prediction and load
+    prediction_path = os.path.join(config.checkpoint_path(epoch), "modified_ranks.json")
+    if os.path.isfile(prediction_path):
+        with open(prediction_path, "r") as f:
+            predictions = json.load(f)
 
-            for i in range(len(prediction)):
-                prediction_list.append(CLASSES[prediction[i]])
-                top_three_indices = np.argsort(prediction_origin[i])[-3:][::-1]
-                conf_list = [(label_name_dict[top_three_indices[j]], round(float(prediction_origin[i][top_three_indices[j]]), 1)) for j in range(len(top_three_indices))]
-                confidence_list.append(conf_list)
+        for prediction in predictions:
+            prediction_list.append(prediction)
     else:
-        for i in range(len(all_data)):
-            prediction_list.append(0)
-    
-    EPOCH_START = context.strategy.config["EPOCH_START"]
-    EPOCH_PERIOD = context.strategy.config["EPOCH_PERIOD"]
-    EPOCH_END = context.strategy.config["EPOCH_END"]
-    max_iter = (EPOCH_END - EPOCH_START) // EPOCH_PERIOD + 1
-    # max_iter = context.get_max_iter()
-    
-    # current_index = timevis.get_epoch_index(EPOCH)
-    # selected_points = np.arange(training_data_number + testing_data_number)[current_index]
-    selected_points = get_selected_points(context, predicates, EPOCH, training_data_number, testing_data_number)
-    
-    properties = get_properties(context, training_data_number, testing_data_number, training_data_index, EPOCH)
-    # highlightedPointIndices = []
-    #todo highlighpoint only when called with showVis
-    # if (TaskType == 'Classification'):
-    #     high_pred = context.strategy.data_provider.get_pred(EPOCH, all_data).argmax(1)
-    #     inv_high_dim_data = context.strategy.projector.batch_inverse(EPOCH, embedding_2d)
-    #     inv_high_pred = context.strategy.data_provider.get_pred(EPOCH, inv_high_dim_data).argmax(1)
-    #     highlightedPointIndices = np.where(high_pred != inv_high_pred)[0]
-    #     print()
-    # else:
-        
-    #     inv_high_dim_data = context.strategy.projector.batch_inverse(EPOCH, embedding_2d)
-    #     # todo, change train data to all data
-    #     squared_distances = np.sum((all_data - inv_high_dim_data) ** 2, axis=1)
-    #     squared_threshold = 1 ** 2
-    #     highlightedPointIndices = np.where(squared_distances > squared_threshold)[0]
-    #     print()
+        pass
+        # all_data = all_data.reshape(all_data.shape[0],all_data.shape[1])
+        # prediction_origin = context.strategy.data_provider.get_pred(EPOCH, all_data)
+        # prediction = prediction_origin.argmax(1)
 
-    end1 = time.time()
-    print("midduration", start1-end)
-    print("endduration", end1-start1)
-    print("EMBEDDINGLEN", len(embedding_2d))
-    return embedding_2d.tolist(), grid, b_fig, label_name_dict, label_color_list, label_list, max_iter, training_data_index, testing_data_index, eval_new, prediction_list, selected_points, properties,error_message, color_list, confidence_list
+        # for i in range(len(prediction)):
+        #     prediction_list.append(CLASSES[prediction[i]])
+        #     top_three_indices = np.argsort(prediction_origin[i])[-3:][::-1]
+        #     conf_list = [(label_name_dict[top_three_indices[j]], round(float(prediction_origin[i][top_three_indices[j]]), 1)) for j in range(len(top_three_indices))]
+        #     confidence_list.append(conf_list)
+    
+    max_iter = (config.EPOCH_END - config.EPOCH_START) // config.EPOCH_PERIOD + 1
+    
+    # selected_points = get_selected_points(context, predicates, EPOCH, training_data_number, testing_data_number)
+    selected_points = np.array(indicates)
+    return embedding_2d.tolist(), grid, b_fig, label_name_dict, label_color_list, label_list, max_iter, training_data_index, testing_data_index, eval_new, prediction_list, selected_points,error_message, color_list, confidence_list
+
+def update_epoch_projection_non_classification(config, epoch, predicates, indicates):
+    training_data_number = config.TRAINING["train_num"]
+    testing_data_number = config.TRAINING["test_num"]
+
+    error_message = ""
+    t0 = time.time()
+    
+    # load data and labels
+    all_data = None
+    all_labels = get_train_test_label(config)
+
+    # error_message = check_labels_match_alldata(all_labels, all_data, error_message)
+    
+    # load or create embedding_2d
+    embedding_2d = get_embedding(config, all_data, epoch)
+    if len(indicates):
+        indicates = [i for i in indicates if i < len(embedding_2d)]
+        embedding_2d = embedding_2d[indicates]
+    # error_message = check_embedding_match_alldata(embedding_2d, all_data, error_message)
+    
+    training_data_index = list(range(training_data_number))
+    testing_data_index = list(range(training_data_number, training_data_number + testing_data_number))
+    # error_message = check_config_match_embedding(all_data, training_data_number, testing_data_number, embedding_2d, error_message)
+
+    # load label list, precidtion list, confidance    
+    label_list = all_labels.tolist() #[0,1,0,1,...]
+    if len(indicates):
+        label_list = [label_list[i] for i in indicates]
+
+    # load or create background figure
+    grid, b_fig = get_grid_bfig(config, epoch)
+
+    # load visualization evaluation result    
+    eval_new = get_eval_new(config, epoch)
+    
+    # load color list  
+    label_color_list, color_list = get_coloring(config, label_list)
+    label_name_dict = dict(enumerate(config.CLASSES)) #{0:"code", 1:"doc"}
+    
+    prediction_list = []
+    confidence_list = []
+    for i in range(len(indicates)):
+        prediction_list.append(0)
+    
+    max_iter = (config.EPOCH_END - config.EPOCH_START) // config.EPOCH_PERIOD + 1
+    
+    # selected_points = get_selected_points(context, predicates, EPOCH, training_data_number, testing_data_number)
+    selected_points = np.array(indicates)
+    return embedding_2d.tolist(), grid, b_fig, label_name_dict, label_color_list, label_list, max_iter, training_data_index, testing_data_index, eval_new, prediction_list, selected_points,error_message, color_list, confidence_list
 
 def highlight_epoch_projection(context, EPOCH, predicates, TaskType,indicates):
     # TODO consider active learning setting
