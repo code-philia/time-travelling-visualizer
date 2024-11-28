@@ -2,7 +2,6 @@
 server/timevis_backend/__pycache__/backend_adapter.cpython-37.pyc
 server/timevis_backend/__pycache__/__init__.cpython-37.pyc
 server/timevis_backend/__pycache__/utils.cpython-37.pyc
-data/
 .DS_Store
 .vscode
 server/timevis_backend/__pycache__/
@@ -12,8 +11,6 @@ server/__pycache__/
 trustvis/__pycache__/
 
 VisTool/Backend/server/__pycache__
-
-training_dynamic/
 
 Tool/singleVis/eval/__pycache__/__init__.cpython-37.pyc
 Tool/singleVis/eval/__pycache__/evaluate.cpython-37.pyc
@@ -54,3 +51,13 @@ Tool/singleVis/eval/__pycache__/evaluator.cpython-37.pyc
 Tool/singleVis/eval/__pycache__/evaluator.cpython-39.pyc
 
 __pycache__
+
+training_dynamic/
+training_workspace/
+temp.py
+
+Tool/__pycache__/
+Tool/data/__pycache__/
+Tool/server/__pycache__/
+Tool/visualize/__pycache__/
+Tool/visualize/train_vis_model/__pycache__/
