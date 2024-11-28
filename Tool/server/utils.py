@@ -5,7 +5,6 @@ import time
 import csv
 import numpy as np
 import sys
-import pickle
 import base64
 
 vis_path = ".."
@@ -16,9 +15,21 @@ from singleVis.eval.evaluate import rank_similarities_and_color, evaluate_isAlig
 from sklearn.cluster import KMeans
 from scipy.special import softmax
 import matplotlib.pyplot as plt
-import time
 import torch
+
+from config import VisConfig
+
 """Interface align"""
+def initailize_config(config_file, setting = 'normal'):
+    if setting == "normal":
+        config_class = VisConfig(config_file)
+    # elif setting == "active learning":
+    #     context = ActiveLearningContext(strategy)
+    # elif setting == "abnormal":
+    #     context = AnormalyContext(strategy)
+    else:
+        raise NotImplementedError
+    return config_class
 
 def initialize_strategy(CONTENT_PATH, VIS_METHOD, SETTING, dense=False):
     # initailize strategy (visualization method)
@@ -90,20 +101,20 @@ def initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING, dense=False):
     return context, error_message
 
 
-
 def check_labels_match_alldata(labels, all_data, error_message):
     if (len(labels) != len(all_data)):
         error_message += "The total number of data labels doesn't match with the total number of data samples!\n"
     return error_message
 
-def get_embedding(context, all_data, EPOCH):
-    embedding_path = get_embedding_path(context, EPOCH)
-
+def get_embedding(config, all_data, epoch):
+    embedding_path = os.path.join(config.CONTENT_PATH,'Model',f'Epoch_{epoch}', "embedding.npy")
     if os.path.exists(embedding_path):
         embedding_2d = np.load(embedding_path, allow_pickle=True) 
     else:
-        embedding_2d = context.strategy.projector.batch_project(EPOCH, all_data)
-        np.save(embedding_path, embedding_2d)
+        # TODO: get embedding using visualization model
+        # embedding_2d = context.strategy.projector.batch_project(EPOCH, all_data)
+        # np.save(embedding_path, embedding_2d)
+        raise NotImplementedError()
     return embedding_2d
 
 
@@ -127,40 +138,49 @@ def check_config_match_embedding(training_data_number, testing_data_number, embe
         error_message += "config file's setting of total number of data samples and total number of projected points don't match!\n"
     return error_message
 
-def get_grid_bfig(context, EPOCH, embedding_2d):
-    bgimg_path = os.path.join(context.strategy.data_provider.checkpoint_path(EPOCH), "bgimg.png")
-    scale_path = os.path.join(context.strategy.data_provider.checkpoint_path(EPOCH), "scale.npy")
-    # grid_path = os.path.join(context.strategy.data_provider.checkpoint_path(EPOCH), "grid.pkl")
-    if os.path.exists(bgimg_path) and os.path.exists(scale_path):
-        # with open(os.path.join(grid_path), "rb") as f:
-        #     grid = pickle.load(f)
-        with open(bgimg_path, 'rb') as img_f:
-            img_stream = img_f.read()
-        b_fig = base64.b64encode(img_stream).decode()
-        grid = np.load(scale_path)
-    else:
-        x_min, y_min, x_max, y_max, b_fig = context.strategy.vis.get_background(EPOCH, context.strategy.config["VISUALIZATION"]["RESOLUTION"])
-        grid = [x_min, y_min, x_max, y_max]
-        # formating
-        grid = [float(i) for i in grid]
-        b_fig = str(b_fig, encoding='utf-8')
-        # save results, grid and decision_view
+# Func: get scale and background image
+def get_grid_bfig(config, epoch):
+    bgimg_path = os.path.join(config.checkpoint_path(epoch), "bgimg.png")
+    scale_path = os.path.join(config.checkpoint_path(epoch), "scale.npy")
+    if not (os.path.exists(bgimg_path) and os.path.exists(scale_path)):
+        # if config.TASK_TYPE == "classification":
+        #     context.strategy.visualizer.save_scale_bgimg(epoch, context.strategy.config["VISUALIZATION"]["RESOLUTION"])
+        # else:
+        #     context.strategy.visualizer.save_scale_bgimg_blank(epoch, context.strategy.config["VISUALIZATION"]["RESOLUTION"])
+        # x_min, y_min, x_max, y_max, b_fig = context.strategy.vis.get_background(EPOCH, context.strategy.config["VISUALIZATION"]["RESOLUTION"])
+        # grid = [x_min, y_min, x_max, y_max]
+        # # formating
+        # grid = [float(i) for i in grid]
+        # b_fig = str(b_fig, encoding='utf-8')
+        # # save results, grid and decision_view
         # with open(grid_path, "wb") as f:
         #     pickle.dump(grid, f)
-        np.save(get_embedding_path(context, EPOCH), embedding_2d)
+        # np.save(get_embedding_path(context, EPOCH), embedding_2d)
+        raise NotImplementedError() # TODO:KWY
+    with open(bgimg_path, 'rb') as img_f:
+        img_stream = img_f.read()
+    b_fig = base64.b64encode(img_stream).decode()
+    grid = np.load(scale_path)
+
     return grid, b_fig
 
-def get_eval_new(context, EPOCH):
+# Func: get evaluation results of subject model
+def get_eval_new(config, epoch):
+    # TODO: not now
+    # eval_new = dict()
+    # file_name = "evaluation"
+    # # save_eval_dir = os.path.join(context.strategy.data_provider.model_path, file_name + ".json")
+    # save_eval_dir = os.path.join(config.CONTENT_PATH, 'Model', file_name + ".json")
+    # if os.path.exists(save_eval_dir):
+    #     evaluation = context.strategy.evaluator.get_eval(file_name=file_name)
+    #     eval_new["train_acc"] = evaluation["train_acc"][str(epoch)]
+    #     eval_new["test_acc"] = evaluation["test_acc"][str(epoch)]
+    # else:
+    #     eval_new["train_acc"] = 0
+    #     eval_new["test_acc"] = 0
     eval_new = dict()
-    file_name = context.strategy.config["VISUALIZATION"]["EVALUATION_NAME"]
-    save_eval_dir = os.path.join(context.strategy.data_provider.model_path, file_name + ".json")
-    if os.path.exists(save_eval_dir):
-        evaluation = context.strategy.evaluator.get_eval(file_name=file_name)
-        eval_new["train_acc"] = evaluation["train_acc"][str(EPOCH)]
-        eval_new["test_acc"] = evaluation["test_acc"][str(EPOCH)]
-    else:
-        eval_new["train_acc"] = 0
-        eval_new["test_acc"] = 0
+    eval_new["train_acc"] = 0
+    eval_new["test_acc"] = 0
     return eval_new
 
 def get_train_test_data(context, EPOCH):
@@ -202,13 +222,6 @@ def get_selected_points(context, predicates, EPOCH, training_data_number, testin
         selected_points = np.intersect1d(selected_points, tmp)
 
     return selected_points
-
-def get_properties(context, training_data_number, testing_data_number, training_data_index, EPOCH):
-    properties = np.concatenate((np.zeros(training_data_number, dtype=np.int16), 2*np.ones(testing_data_number, dtype=np.int16)), axis=0)
-    lb = context.get_epoch_index(EPOCH)
-    ulb = np.setdiff1d(training_data_index, lb)
-    properties[ulb] = 1
-    return properties
 
 def get_coloring(context, EPOCH, ColorType):
     label_color_list = []
