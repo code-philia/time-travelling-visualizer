@@ -240,50 +240,81 @@ def get_selected_points(context, predicates, EPOCH, training_data_number, testin
 
     return selected_points
 
-def get_coloring(context, EPOCH, ColorType):
+# Func get color list to select, and color for each sample according to its label
+def get_coloring(config, label_list,colorType = 'classification-color'):
     label_color_list = []
-    train_data =  context.train_representation_data(EPOCH) 
-    test_data =  context.test_representation_data(EPOCH) 
-    labels = get_train_test_label(context, EPOCH)
-    # coloring method
-    if ColorType == "noColoring":
-        color = context.strategy.vis.get_standard_classes_color() * 255
-
-        color = color.astype(int)      
-        label_color_list = color[labels].tolist()
-        # print("alldata", all_data.shape, EPOCH)
-        color_list = color
-       
-    elif ColorType == "singleColoring":
-        n_clusters = 20
-        save_test_label_dir = os.path.join(context.strategy.data_provider.content_path, 'Testing_data',ColorType+ "label" + str(EPOCH)+".pth")
-        save_train_label_dir = os.path.join(context.strategy.data_provider.content_path, 'Training_data',ColorType+ "label" + str(EPOCH)+".pth")
-        if os.path.exists(save_train_label_dir):
-            labels_kmeans_train = torch.load(save_train_label_dir)
-            labels_kmeans_test = torch.load(save_test_label_dir)
-        else:
-       
-            kmeans = KMeans(n_clusters=n_clusters, random_state=0).fit(train_data)
-
-            labels_kmeans_train = kmeans.labels_
-            labels_kmeans_test = kmeans.predict(test_data)
-          
-            torch.save(torch.tensor(labels_kmeans_train), save_train_label_dir)
-            torch.save(torch.tensor(labels_kmeans_test), save_test_label_dir)
-
-        colormap = plt.cm.get_cmap('tab10', n_clusters)
-    
-        colors_rgb = (colormap(np.arange(n_clusters))[:, :3] * 255).astype(int)  
-        label_color_list_train = [colors_rgb[label].tolist() for label in labels_kmeans_train]
-        label_color_list_test = [colors_rgb[label].tolist() for label in labels_kmeans_test]
-        
-        label_color_list = np.concatenate((label_color_list_train, label_color_list_test), axis=0).tolist()
-        color_list = colors_rgb
-
+    if colorType == 'no-coloring':
+        color = [[0,160,255]]
+    elif colorType == 'classification-color':
+        class_num = len(config.CLASSES)
+        color = get_standard_classes_color(class_num) * 255
+        color = color.astype(int)
     else:
-        return         
-
+        raise NotImplementedError()
+    
+    label_color_list = color[label_list].tolist()
+    color_list = color      
     return label_color_list, color_list
+    
+    # train_data =  context.train_representation_data(EPOCH) 
+    # test_data =  context.test_representation_data(EPOCH) 
+    # labels = get_train_test_label(context, EPOCH)
+    # # coloring method
+    # if ColorType == "noColoring":
+    #     color = context.strategy.visualizer.get_standard_classes_color() * 255
+
+    #     color = color.astype(int)      
+    #     label_color_list = color[labels].tolist()
+    #     color_list = color
+       
+    # elif ColorType == "singleColoring":
+    #     n_clusters = 20
+    #     save_test_label_dir = os.path.join(context.strategy.data_provider.content_path, 'Testing_data',ColorType+ "label" + str(EPOCH)+".pth")
+    #     save_train_label_dir = os.path.join(context.strategy.data_provider.content_path, 'Training_data',ColorType+ "label" + str(EPOCH)+".pth")
+    #     if os.path.exists(save_train_label_dir):
+    #         labels_kmeans_train = torch.load(save_train_label_dir)
+    #         labels_kmeans_test = torch.load(save_test_label_dir)
+    #     else:
+       
+    #         kmeans = KMeans(n_clusters=n_clusters, random_state=0).fit(train_data)
+
+    #         labels_kmeans_train = kmeans.labels_
+    #         labels_kmeans_test = kmeans.predict(test_data)
+          
+    #         torch.save(torch.tensor(labels_kmeans_train), save_train_label_dir)
+    #         torch.save(torch.tensor(labels_kmeans_test), save_test_label_dir)
+
+    #     colormap = plt.cm.get_cmap('tab10', n_clusters)
+    
+    #     colors_rgb = (colormap(np.arange(n_clusters))[:, :3] * 255).astype(int)  
+    #     label_color_list_train = [colors_rgb[label].tolist() for label in labels_kmeans_train]
+    #     label_color_list_test = [colors_rgb[label].tolist() for label in labels_kmeans_test]
+        
+    #     label_color_list = np.concatenate((label_color_list_train, label_color_list_test), axis=0).tolist()
+    #     color_list = colors_rgb
+
+    # else:
+    #     return         
+
+    # return label_color_list, color_list
+
+
+def get_standard_classes_color(class_num):
+    '''
+    get the RGB value for class_num classes
+    return:
+        color : numpy.ndarray, shape (class_num, 3)
+    '''
+    mesh_max_class = class_num + 1
+    mesh_classes = np.arange(class_num+2)
+    # apply more color
+    color_map = plt.cm.get_cmap('tab20', class_num+2)
+    color = color_map(mesh_classes / mesh_max_class)
+    color = color[2:, 0:3]
+    # color = self.cmap(mesh_classes / mesh_max_class)
+    # color = color[:, 0:3]
+    # color = np.concatenate((color, np.zeros((1,3))), axis=0)
+    return color
 
 def get_comparison_coloring(context_left, context_right, EPOCH_LEFT, EPOCH_RIGHT):
     train_data_left = context_left.train_representation_data(EPOCH_LEFT)
