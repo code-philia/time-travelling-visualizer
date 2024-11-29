@@ -15,7 +15,7 @@ sys.path.append('..')
 sys.path.append('.')
 
 # flask for API server
-app = Flask(__name__,static_folder='Frontend')
+app = Flask(__name__,static_folder='../Frontend')
 cors = CORS(app, supports_credentials=True)
 app.config['CORS_HEADERS'] = 'Content-Type'
 
