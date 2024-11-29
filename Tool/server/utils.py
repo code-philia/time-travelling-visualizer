@@ -16,6 +16,7 @@ from sklearn.cluster import KMeans
 from scipy.special import softmax
 import matplotlib.pyplot as plt
 import torch
+from typing import List
 
 from config import VisConfig
 
@@ -196,18 +197,34 @@ def get_train_test_data(context, EPOCH):
     # print(len(train_data))
     return all_data
 
-def get_train_test_label(context, EPOCH):
-    train_labels = context.train_labels(EPOCH)
-    test_labels = context.test_labels(EPOCH)
-    train_data = context.train_representation_data(EPOCH) 
-    test_data = context.test_representation_data(EPOCH)
-    if train_labels is None:
-        train_labels = np.zeros(len(train_data) if train_data is not None else 0, dtype=int)
-    if test_labels is None:
-        test_labels = np.zeros(len(test_data) if test_data is not None else 0, dtype=int)
-    print("errorlabels", train_labels, test_labels)
-    labels = np.concatenate((train_labels, test_labels), axis=0).astype(int)
+# Func: get all labels and return as a ndarray([0,1,2,0,1,2...])
+def get_train_test_label(config):
+    training_data_number = config.TRAINING["train_num"]
+    testing_data_number = config.TRAINING["test_num"]
+    
+    if config.TASK_TYPE == "classification":
+        dataProvider = NormalDataProvider(config.CONTENT_PATH, None, \
+            config.EPOCH_START, config.EPOCH_END, config.EPOCH_PERIOD, None, \
+                config.TASK_TYPE, config.DATA_TYPE, config.SHOW_LABEL, config.CLASSES)
         
+        train_labels = dataProvider.train_labels()
+        test_labels = dataProvider.test_labels()
+        
+        if train_labels is None:
+            train_labels = np.zeros(training_data_number, dtype=int)
+        if test_labels is None:
+            test_labels = np.zeros(testing_data_number, dtype=int)
+    else:
+        # for non-classification, asign different label to each feature
+        feature_num = len(config.CLASSES)
+        
+        train_labels = np.zeros(training_data_number * feature_num, dtype=int)
+        test_labels = np.zeros(testing_data_number * feature_num, dtype=int)
+        for i in range(feature_num):
+            train_labels[i::feature_num] = i
+            test_labels[i::feature_num] = i
+    
+    labels = np.concatenate((train_labels, test_labels), axis=0).astype(int)        
     return labels
 
 def get_selected_points(context, predicates, EPOCH, training_data_number, testing_data_number):
@@ -545,7 +562,7 @@ def read_file_as_json(file_path: str):
         return json.load(f)
 
 # FIXME add cache when the content_path doesn't change
-def get_umap_neighborhood_epoch_projection(content_path: str, epoch: int, predicates: list[int], indicates: list[int]):
+def get_umap_neighborhood_epoch_projection(content_path: str, epoch: int, predicates: List[int], indicates: List[int]):
     data_folder = os.path.join(content_path, 'Model')
     epoch_folder = os.path.join(data_folder, f'Epoch_{epoch}')
 
