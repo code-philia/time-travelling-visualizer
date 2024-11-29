@@ -1,2 +1,0 @@
-#!/bin/sh
-exec ../io_bazel_rules_closure/java/io/bazel/rules/closure/webfiles/server/WebfilesServer org_tensorflow_tensorboard/tensorboard/projector/standalone_server_params.pbtxt

@@ -1,9 +1,0 @@
-WebfilesValidator
---dummy
-bazel-out/k8-fastbuild/bin/tensorboard/projector/standalone_lib-webfiles.ignoreme
---target
-bazel-out/k8-fastbuild/bin/tensorboard/projector/standalone_lib-webfiles.pbtxt
---direct_dep
-bazel-out/k8-fastbuild/bin/tensorboard/components/tf_imports/roboto-webfiles.pbtxt
---transitive_dep
-bazel-out/k8-fastbuild/bin/external/com_google_fonts_roboto/com_google_fonts_roboto.pbtxt
