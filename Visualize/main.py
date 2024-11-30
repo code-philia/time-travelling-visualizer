@@ -1,6 +1,7 @@
 import os
 import logging
 import argparse
+from strategy.DVIStrategy import DeepVisualInsight
 from config import VisConfig
 from data_provider import DataProvider
 
@@ -22,7 +23,9 @@ def generate_representation(config):
     logging.info("Representation generation finished")
     
 def train_visualize_model(config):
-    pass
+    strategy = DeepVisualInsight(config)
+    strategy.train_vis_model()
+    logging.info("Visualize model training finished")
 
 def generate_embedding(config):
     pass
@@ -31,7 +34,7 @@ def run(args):
     # step 0: initialize config
     config = VisConfig(os.path.join(args.content_path, 'config.json'))
     # step 1: generate high dimention representation
-    generate_representation(config)
+    # generate_representation(config)
     # step 2: train visualize model
     train_visualize_model(config)
     # step 3: use visualize model to get 2-D embedding
