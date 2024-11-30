@@ -1,4 +1,4 @@
-import { useThree } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { ContextOnlyProps, VisualizerRenderContext } from './visualizer-render-context';
 import { MapControls } from '@react-three/drei';
 import { OrthographicCamera, Vector3, EventListener, WebGLRenderer, Vector4 } from 'three';
@@ -13,10 +13,16 @@ type ControlState = {
 
 // for OrbitControl.d.ts does not define the events it could dispatch
 type MapControlsEventMap = {
-    update: void;     // this could be incorrect
+    change: void;     // this could be incorrect
+    start: void;
+    end: void;
 };
 type MapControlsEventDispatcher = { 
     addEventListener: <T extends Extract<keyof MapControlsEventMap, string>>(
+        type: T,
+        listener: EventListener<MapControlsEventMap[T], T, MapControlsImpl>
+    ) => void;
+    removeEventListener: <T extends Extract<keyof MapControlsEventMap, string>>(
         type: T,
         listener: EventListener<MapControlsEventMap[T], T, MapControlsImpl>
     ) => void;
@@ -65,8 +71,8 @@ function resizeCamera(camera: OrthographicCamera, gl: WebGLRenderer, oldScalingF
 }
 
 function resetCamera(camera: OrthographicCamera, rc: VisualizerRenderContext) {
-    const w = rc.projectionWidth;
-    const h = rc.projectionHeight;
+    const w = rc.initWorldWidth;
+    const h = rc.initWorldHeight;
     const centerX = rc.centerX;
     const centerY = rc.centerY;
 
@@ -94,7 +100,7 @@ function addResizeObserver(camera: OrthographicCamera, renderer: WebGLRenderer) 
     }
 }
 
-export function VisualierDefaultControl({ visualizerRenderContext }: ContextOnlyProps) {
+export function VisualierDefaultControl({ visualizerRenderContext, onResize }: ContextOnlyProps & { onResize: () => void }) {
     const rc = visualizerRenderContext;
     
     const mapControlsRef = useRef<MapControlsImpl>(null);
@@ -102,6 +108,14 @@ export function VisualierDefaultControl({ visualizerRenderContext }: ContextOnly
     
     const gl = useThree((state) => state.gl);
     const camera = useThree((state) => state.camera);
+
+    useEffect(
+        () => {
+            if (mapControlsRef.current !== null) {
+                rc.setControls(mapControlsRef.current);
+            }
+        }
+    , [rc]);
 
     useEffect(() => {
         if (!(camera instanceof OrthographicCamera)) return;
@@ -113,12 +127,28 @@ export function VisualierDefaultControl({ visualizerRenderContext }: ContextOnly
         const mapControl = mapControlsRef.current;
         if (mapControl) {
             restoreState(mapControl, controlState);
-            (mapControl as MapControlsEventDispatcher).addEventListener('update', () => {
-                saveState(mapControl, controlState);
-            });
+
+            // let isMoving = false;
+            // const listener = () => {
+            //     saveState(mapControl, controlState);
+            //     setResizeTrigger(new Date().toISOString());
+            // };
+
+            // (mapControl as MapControlsEventDispatcher).addEventListener('change', listener);
+            // rc.canvasElement.addEventListener('mouseover', () => { if (isMoving) listener(); });
+            // (mapControl as MapControlsEventDispatcher).addEventListener('start', () => { isMoving = true; });
+            // (mapControl as MapControlsEventDispatcher).addEventListener('end', () => { isMoving = false; });
+
+            // return () => {
+            //     (mapControl as MapControlsEventDispatcher).removeEventListener('change', listener);
+            // }
         }
-    }, [gl, camera, rc]);
+    }, [gl, camera, rc, onResize]);
     
+    useFrame(({ gl, scene, camera }) => {
+        onResize();
+        gl.render(scene, camera);
+    }, 1);
 
     return (
         <MapControls ref={mapControlsRef}

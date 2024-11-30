@@ -58,9 +58,11 @@ interface T {
     labelNameDict: Record<number, string>;
     setColorList: (colorList: number[][]) => void;
     projectionRes: ProjectionProps;
-
+    timelineData: object | undefined;
+    updateUUID: string ;  // FIXME should use a global configure object to manage this
 }
 
+// TODO make a reflection, so we do not define T
 export const GlobalStore = create<T>((set) => ({
     command: '',
     contentPath: "",
@@ -78,6 +80,8 @@ export const GlobalStore = create<T>((set) => ({
     colorList: [],
     labelNameDict: {},
     setColorList: (colorList) => set({ colorList }),
+    timelineData: undefined,
+    updateUUID: '',
 }));
 
 export const useStore = <K extends keyof T>(keys: K[]) => {

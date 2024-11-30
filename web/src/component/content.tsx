@@ -27,7 +27,7 @@ export function VisualizationArea() {
         <div className="canvas-column">
             <div id="container">
                 {canvasContainers.map((id) => (
-                    <CanvasContainer key={id} isVisible={id === visibleCanvas} />
+                    <CanvasContainer key={id} visible={id === visibleCanvas} />
                 ))}
             </div>
             <div id="footer">

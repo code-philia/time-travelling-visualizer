@@ -8,11 +8,15 @@ export function VisualizerDefaultCamera({ visualizerRenderContext }: ContextOnly
 
     const cameraRef = useRef<OrthographicCameraImpl>(null);
     useEffect(
-        () => { cameraRef.current?.lookAt(rc.centerX, rc.centerY, 0); }
-    );
+        () => {
+            if (cameraRef.current !== null) {
+                rc.setCamera(cameraRef.current);
+            }
+        }
+    , [rc]);
 
-    const w = rc.projectionWidth;
-    const h = rc.projectionHeight;
+    const w = rc.initWorldWidth;
+    const h = rc.initWorldHeight;
 
     // make map control z-axis up
     return <OrthographicCamera
