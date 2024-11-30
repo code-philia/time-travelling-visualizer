@@ -64,4 +64,26 @@ class DataProvider():
                 test_data_representation = batch_run_feature_extract(feat_func, testing_data, device=self.device, desc="feature_extraction")
                 np.save(os.path.join(self.config.checkpoint_path(n_epoch), "test_data_representation.npy"), test_data_representation)
     
+    def train_representation(self, epoch):
+        train_data_loc = os.path.join(self.config.checkpoint_path(epoch), "train_data_representation.npy")
+        try:
+            train_data = np.load(train_data_loc)
+        except Exception as e:
+            print("no train data representation saved for Epoch {}".format(epoch))
+            train_data = None
+        return train_data
     
+    def test_representation(self, epoch):
+        data_loc = os.path.join(self.config.checkpoint_path(epoch), "test_data_representation.npy")
+        try:
+            test_data = np.load(data_loc)
+        except Exception as e:
+            print("no test data representation saved for Epoch {}".format(epoch))
+            test_data = None
+        return test_data
+    
+    def all_representation(self, epoch):
+        train_data = self.train_representation(epoch)
+        test_data = self.test_representation(epoch)
+        all_data = np.concatenate((train_data, test_data), axis=0)
+        return all_data
