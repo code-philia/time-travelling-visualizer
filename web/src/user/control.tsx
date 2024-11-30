@@ -1,12 +1,16 @@
 import { Radio, Divider, Button, Input, Flex } from "antd"
 import { useState } from "react"
 import { useStore } from '../state/store';
+import { fetchTimelineData } from "./api";
+
+
 
 export function ControlPanel() {
     const [dataType, setDataType] = useState<string>("Image")
-    const [contentPath, setContentPath] = useState<string>("")
+    const [contentPath, setContentPath] = useState<string>("/home/yuhuan/projects/cophi/visualizer-original/dev/gcb_tokens")
     const options = [{ label: 'Image', value: 'Image', }, { label: 'Text', value: 'Text', },];
-    const { setValue } = useStore(["setValue"]);
+    const { setValue, timelineData } = useStore(["setValue", "timelineData"]);    // TODO now this global store acts as GlobalVisualizationConfiguration
+
     return (
         <div id="control-panel" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
             <span style={{ display: 'inline-block', marginRight: '20px' }}>Data Type:</span>
@@ -32,9 +36,15 @@ export function ControlPanel() {
             <Button id="showVisResBtn" style={{ backgroundColor: " #571792", color: "#fff", width: "100%", marginTop: "0px" }}
                 onClick={
                     (_) => {
+                        // TODO wrapped as update entire configuration
                         setValue("contentPath", contentPath)
                         setValue("command", "update")
-                        console.log(contentPath)
+                        setValue("updateUUID", Math.random().toString(36).substring(7))
+                        if (timelineData === undefined) {
+                            fetchTimelineData(contentPath).then((res) => {
+                                setValue("timelineData", res);
+                            });
+                        }
                     }
                 }>
                 Load Visualization Result
