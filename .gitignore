@@ -61,3 +61,4 @@ Tool/data/__pycache__/
 Tool/server/__pycache__/
 Tool/visualize/__pycache__/
 Tool/visualize/train_vis_model/__pycache__/
+Visualize/*.log

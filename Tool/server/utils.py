@@ -9,9 +9,9 @@ import base64
 
 vis_path = ".."
 sys.path.append(vis_path)
-from context import VisContext, ActiveLearningContext, AnormalyContext
-from strategy import DeepDebugger, TimeVis, tfDeepVisualInsight, DVIAL, tfDVIDenseAL, TimeVisDenseAL, Trustvis, DeepVisualInsight
-from singleVis.eval.evaluate import rank_similarities_and_color, evaluate_isAlign, evaluate_isNearestNeighbour, evaluate_isAlign_single, evaluate_isNearestNeighbour_single
+# from context import VisContext, ActiveLearningContext, AnormalyContext
+# from strategy import DeepDebugger, TimeVis, tfDeepVisualInsight, DVIAL, tfDVIDenseAL, TimeVisDenseAL, Trustvis, DeepVisualInsight
+# from singleVis.eval.evaluate import rank_similarities_and_color, evaluate_isAlign, evaluate_isNearestNeighbour, evaluate_isAlign_single, evaluate_isNearestNeighbour_single
 from sklearn.cluster import KMeans
 from scipy.special import softmax
 import matplotlib.pyplot as plt
