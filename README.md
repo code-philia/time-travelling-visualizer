@@ -16,7 +16,7 @@ cd time-travelling-visualizer
 To try our lastest features, switch to the following branch:
 
 ```bash
-git checkout feat/new-feature-temp
+git checkout feat/dev
 ```
 
 ### Setup Backend/Model
