@@ -20,7 +20,7 @@ cors = CORS(app, supports_credentials=True)
 app.config['CORS_HEADERS'] = 'Content-Type'
 
 # TODO:from where to get config path?
-config_file = '/home/kwy/project/visualizer/training_dynamic/code-to-text/config.json'
+config_file ='/path/to/config.json'
 
 @app.route("/", methods=["GET", "POST"])
 def GUI():

@@ -9,7 +9,11 @@ class DataProvider():
         self.content_path = config.CONTENT_PATH
         sys.path.append(self.content_path) # in order to locate model.py of subject model
         self.device = torch.device("cuda:{}".format(self.config.GPU) if torch.cuda.is_available() else "cpu")
+        self.classes = config.CLASSES
         
+    def checkpoint_path(self, epoch):
+        return os.path.join(self.content_path, 'Model', "Epoch_{}".format(epoch))
+    
     def load_subject_model(self, epoch):
         # definition of subject model
         import Model.model as subject_model

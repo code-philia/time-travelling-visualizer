@@ -1,6 +1,8 @@
 import os
 import logging
 import argparse
+from visualizer import Visualizer
+from strategy.projector import Projector
 from strategy.DVIStrategy import DeepVisualInsight
 from config import VisConfig
 from data_provider import DataProvider
@@ -16,29 +18,24 @@ def parse_args():
                        help='Visualization method')
     return parser.parse_args()
 
-# ================ pipeline funcs ================
-def generate_representation(config):
-    dataProvider = DataProvider(config)
-    dataProvider.generate_representation()
-    logging.info("Representation generation finished")
-    
-def train_visualize_model(config):
-    strategy = DeepVisualInsight(config)
-    strategy.train_vis_model()
-    logging.info("Visualize model training finished")
-
-def generate_embedding(config):
-    pass
-
 def run(args):
     # step 0: initialize config
     config = VisConfig(os.path.join(args.content_path, 'config.json'))
     # step 1: generate high dimention representation
-    # generate_representation(config)
-    # step 2: train visualize model
-    train_visualize_model(config)
+    dataProvider = DataProvider(config)
+    dataProvider.generate_representation()
+    logging.info("Representation generation finished")
+    
+    # # step 2: train visualize model
+    strategy = DeepVisualInsight(config)
+    strategy.train_vis_model()
+    logging.info("Visualize model training finished")
+    
     # step 3: use visualize model to get 2-D embedding
-    generate_embedding(config)
+    projector = Projector(config)
+    visualizer = Visualizer(config, dataProvider, projector)
+    visualizer.visualize_all_epoch()
+    logging.info("Visualization finished")
     
 
 if __name__ == "__main__":
