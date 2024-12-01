@@ -21,6 +21,7 @@ def parse_args():
 def run(args):
     # step 0: initialize config
     config = VisConfig(os.path.join(args.content_path, 'config.json'))
+    
     # step 1: generate high dimention representation
     dataProvider = DataProvider(config)
     dataProvider.generate_representation()

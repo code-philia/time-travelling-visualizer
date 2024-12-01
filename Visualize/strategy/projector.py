@@ -5,7 +5,7 @@ import json
 import numpy as np
 import torch
 
-from visualize_model import VisModel
+from strategy.visualize_model import VisModel
 
 # ------------------
 # Projector:
