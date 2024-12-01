@@ -9,7 +9,7 @@ from strategy.custom_weighted_random_sampler import CustomWeightedRandomSampler
 from strategy.edge_dataset import DVIDataHandler
 from strategy.spatial_edge_constructor import SingleEpochSpatialEdgeConstructor
 from strategy.losses import DVILoss, DummyTemporalLoss, TemporalLoss, UmapLoss, ReconstructionLoss
-from visualize_model import VisModel
+from strategy.visualize_model import VisModel
 from strategy.strategy_abstract import StrategyAbstractClass
 from data_provider import DataProvider
 from umap.umap_ import find_ab_params
@@ -18,9 +18,9 @@ from utils import find_neighbor_preserving_rate
 class DeepVisualInsight(StrategyAbstractClass):
     def __init__(self, config):
         super().__init__(config)
-        self.initial()        
+        self.initial_model()        
 
-    def initial(self):
+    def initial_model(self):
         self.device = torch.device("cuda:{}".format(self.config.GPU) if torch.cuda.is_available() else "cpu")
         self.data_provider = DataProvider(self.config)
         self.visualize_model = VisModel(self.config.VISUALIZATION['ENCODER_DIMS'], self.config.VISUALIZATION['DECODER_DIMS']).to(self.device)
@@ -95,7 +95,9 @@ class DeepVisualInsight(StrategyAbstractClass):
 
             trainer = DVITrainer(self.visualize_model, criterion, optimizer, lr_scheduler,edge_loader=edge_loader, DEVICE=self.device)
             trainer.train(PATIENT, MAX_EPOCH)
-            trainer.save(save_dir=os.path.join(self.config.checkpoint_path(epoch)), file_name=self.config.VIS_MODEL_NAME)
+            
+            self.save_vis_model(self.visualize_model, epoch, trainer.loss, trainer.optimizer)
+            # trainer.save(save_dir=os.path.join(self.config.checkpoint_path(epoch)), file_name=self.config.VIS_MODEL_NAME)
 
             prev_model.load_state_dict(self.visualize_model.state_dict())
             for param in prev_model.parameters():
