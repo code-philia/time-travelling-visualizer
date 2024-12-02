@@ -1,12 +1,6 @@
 import { OrthographicCamera, Vector4 } from "three";
 import { MapControls } from "three-stdlib";
-
-type BoundaryProps = {
-    x1: number;
-    y1: number;
-    x2: number;
-    y2: number;
-};
+import { BoundaryProps } from "../state/types";
 
 type WebElementRect = {
     width: number;
@@ -38,21 +32,24 @@ export class VisualizerRenderContext {
 
         this.aspect = this.canvasRect.width / this.canvasRect.height;
 
-        let w = 0;
-        let h = 0;
-        const { x1, y1, x2, y2 } = this.boundary;
-        if (this.aspect > 1.0) {
-            h = y2 - y1;
+        const { xMin, yMin, xMax, yMax } = this.boundary;
+
+        let w = xMax - xMin;
+        let h = yMax - yMin;
+        const plotAspect = w / h;
+
+        if (this.aspect > plotAspect) {
+            h = h * 1.1;            // padding
             w = h * this.aspect;
         } else {
-            w = x2 - x1;
+            w = w * 1.1;
             h = w / this.aspect;
         }
         this.initWorldWidth = w;
         this.initWorldHeight = h;
 
-        this.centerX = (x1 + x2) / 2;
-        this.centerY = (y1 + y2) / 2;
+        this.centerX = (xMin + xMax) / 2;
+        this.centerY = (yMin + yMax) / 2;
     }
 
     setCamera(camera: OrthographicCamera) {
@@ -87,6 +84,8 @@ function worldPositionToClipPosition(worldPosition: [number, number], camera: Or
     const [x, y] = worldPosition;
     const v4 = new Vector4(x, y, 0, 1.0);
     
+    camera.updateMatrixWorld();     // prevent wrongly update sprites after re-clicking load visualization result
+
     const { x: cx, y: cy } = v4
         .applyMatrix4(camera.matrixWorldInverse)
         .applyMatrix4(camera.projectionMatrix)
