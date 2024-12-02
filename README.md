@@ -70,7 +70,7 @@ pip install -r requirements.txt
 
 ### Download The Demo Dataset
 
-We recommend using this dataset to try the new option `Umap-Neighborhood` .
+We recommend using this dataset `gcb_tokens` to try the new option `Umap-Neighborhood` .
 
 - **bash/zsh:**
 
