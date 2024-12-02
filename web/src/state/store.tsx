@@ -3,6 +3,8 @@ import { StoreApi, UseBoundStore } from "zustand";
 import { shallow } from "zustand/shallow";
 import { useStoreWithEqualityFn } from "zustand/traditional";
 import { ProjectionProps } from "../state/types";
+import { UmapProjectionResult } from "../user/api";
+import { HighlightContext } from "../canvas/types";
 
 const initProjectionRes: ProjectionProps = {
     result: [],
@@ -47,7 +49,8 @@ interface T {
     visMethod: string;
     taskType: string;
     colorType: string;
-    iteration: number;
+    epoch: number;
+    setEpoch: (epoch: number) => void;
     filterIndex: number[] | string;
     dataType: string;
     currLabel: string;
@@ -59,7 +62,18 @@ interface T {
     setColorList: (colorList: number[][]) => void;
     projectionRes: ProjectionProps;
     timelineData: object | undefined;
-    updateUUID: string ;  // FIXME should use a global configure object to manage this
+    updateUUID: string;  // FIXME should use a global configure object to manage this
+    allEpochsProjectionData: Record<number, UmapProjectionResult>;
+    setProjectionDataAtEpoch: (epoch: number, data: UmapProjectionResult) => void;
+    availableEpochs: number[];
+
+    colorDict: Map<number, [number, number, number]>;
+    labelDict: Map<number, string>;
+    setColorDict: (labelDict: Map<number, [number, number, number]>) => void;
+    setLabelDict: (colorDict: Map<number, string>) => void;
+
+    highlightContext: HighlightContext;
+    setHighlightContext: (highlightContext: HighlightContext) => void;
 }
 
 // TODO make a reflection, so we do not define T
@@ -69,7 +83,8 @@ export const GlobalStore = create<T>((set) => ({
     visMethod: 'Trustvis',
     taskType: 'Classification',
     colorType: 'noColoring',
-    iteration: 1,
+    epoch: 1,
+    setEpoch: (epoch: number) => set({ epoch }),
     filterIndex: "",
     dataType: 'Image',
     currLabel: '',
@@ -82,6 +97,22 @@ export const GlobalStore = create<T>((set) => ({
     setColorList: (colorList) => set({ colorList }),
     timelineData: undefined,
     updateUUID: '',
+    allEpochsProjectionData: {},  // TODO add cache and lazy-load for this
+    setProjectionDataAtEpoch: (epoch: number, data: UmapProjectionResult) => set((state) => ({
+        allEpochsProjectionData: {
+            ...state.allEpochsProjectionData,
+            [epoch]: data,
+        },
+    })),
+    availableEpochs: new Array(30).fill(0).map((_, i) => i + 1),
+    
+    colorDict: new Map(),
+    labelDict: new Map(),
+    setColorDict: (colorDict) => set({ colorDict }),
+    setLabelDict: (labelDict) => set({ labelDict }),
+
+    highlightContext: new HighlightContext(),
+    setHighlightContext: (highlightContext) => set({ highlightContext })
 }));
 
 export const useStore = <K extends keyof T>(keys: K[]) => {

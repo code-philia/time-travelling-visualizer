@@ -1,7 +1,7 @@
 import { useFrame, useThree } from '@react-three/fiber';
 import { ContextOnlyProps, VisualizerRenderContext } from './visualizer-render-context';
 import { MapControls } from '@react-three/drei';
-import { OrthographicCamera, Vector3, EventListener, WebGLRenderer, Vector4 } from 'three';
+import { OrthographicCamera, Vector3, EventListener, WebGLRenderer, Vector4, Spherical, MOUSE } from 'three';
 import { MapControls as MapControlsImpl } from 'three-stdlib';
 import { useEffect, useRef } from 'react';
 
@@ -13,7 +13,7 @@ type ControlState = {
 
 // for OrbitControl.d.ts does not define the events it could dispatch
 type MapControlsEventMap = {
-    change: void;     // this could be incorrect
+    change: Event;     // this could be incorrect
     start: void;
     end: void;
 };
@@ -80,11 +80,13 @@ function resetCamera(camera: OrthographicCamera, rc: VisualizerRenderContext) {
     camera.right = w / 2;
     camera.top = h / 2;
     camera.bottom = -h / 2;
-    camera.updateProjectionMatrix();
+    camera.zoom = 1;
+    camera.rotation.set(0, 0, 0);
+    camera.up.set(0, 0, 1);
     
     camera.position.set(centerX, centerY, 100);
     camera.lookAt(centerX, centerY, 0);
-    camera.up.set(0, 0, -1);     // make map control z-axis up
+    camera.updateProjectionMatrix();   
 }
 
 function addResizeObserver(camera: OrthographicCamera, renderer: WebGLRenderer) {
@@ -100,7 +102,7 @@ function addResizeObserver(camera: OrthographicCamera, renderer: WebGLRenderer) 
     }
 }
 
-export function VisualierDefaultControl({ visualizerRenderContext, onResize }: ContextOnlyProps & { onResize: () => void }) {
+export function VisualizerDefaultControl({ visualizerRenderContext, onResize }: ContextOnlyProps & { onResize: () => void }) {
     const rc = visualizerRenderContext;
     
     const mapControlsRef = useRef<MapControlsImpl>(null);
@@ -108,15 +110,39 @@ export function VisualierDefaultControl({ visualizerRenderContext, onResize }: C
     
     const gl = useThree((state) => state.gl);
     const camera = useThree((state) => state.camera);
-
+    
     useEffect(
         () => {
             if (mapControlsRef.current !== null) {
                 rc.setControls(mapControlsRef.current);
+                
+                // const mapControl = mapControlsRef.current;
+                
+                // let remove = () => { };
+                // const listener = () => {
+                //     console.log('changing!');
+                //     camera.rotation.set(0, 0, 0);
+                //     // e.preventDefault();
+                //     // remove();
+                // };
+    
+                // remove = () => { (mapControl as MapControlsEventDispatcher).removeEventListener('change', listener); };
+                // (mapControl as MapControlsEventDispatcher).addEventListener('change', listener);
+                // return remove;
             }
+
+
+            // const sph = new Spherical().setFromVector3(new Vector3(0, 0, -10000));
+            // console.log(sph);
+
+            // const _v = new Vector3();
+            // // sph.phi = Math.PI + 0.01;
+            // _v.setFromSpherical(sph);
+            // console.log(_v);
         }
     , [rc]);
-
+    
+    // TODO add test for resting the camera
     useEffect(() => {
         if (!(camera instanceof OrthographicCamera)) return;
 
@@ -126,22 +152,7 @@ export function VisualierDefaultControl({ visualizerRenderContext, onResize }: C
 
         const mapControl = mapControlsRef.current;
         if (mapControl) {
-            restoreState(mapControl, controlState);
-
-            // let isMoving = false;
-            // const listener = () => {
-            //     saveState(mapControl, controlState);
-            //     setResizeTrigger(new Date().toISOString());
-            // };
-
-            // (mapControl as MapControlsEventDispatcher).addEventListener('change', listener);
-            // rc.canvasElement.addEventListener('mouseover', () => { if (isMoving) listener(); });
-            // (mapControl as MapControlsEventDispatcher).addEventListener('start', () => { isMoving = true; });
-            // (mapControl as MapControlsEventDispatcher).addEventListener('end', () => { isMoving = false; });
-
-            // return () => {
-            //     (mapControl as MapControlsEventDispatcher).removeEventListener('change', listener);
-            // }
+            restoreState(mapControl, controlState);     // FIXME this is useless now, because it cannot reset the orientation to the correct one
         }
     }, [gl, camera, rc, onResize]);
     
@@ -154,10 +165,13 @@ export function VisualierDefaultControl({ visualizerRenderContext, onResize }: C
         <MapControls ref={mapControlsRef}
             screenSpacePanning={true}
             enableDamping={false}
-            minPolarAngle={Math.PI}
-            target={[rc.centerX, rc.centerY - 0.01, 0]}
+            maxPolarAngle={0}
+            // maxAzimuthAngle={0}
+            // minAzimuthAngle={0}
+            target={[rc.centerX, rc.centerY, 0]}
             zoomToCursor={true}
             reverseHorizontalOrbit={true}
+            enableRotate={false}
         />
     )
 }

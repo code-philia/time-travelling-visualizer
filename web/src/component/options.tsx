@@ -1,12 +1,12 @@
-import { ConnectionStatus } from "./connection";
-import { MessageHandler } from "./message";
 import { ControlPanel } from "./control";
+import { MessageHandler } from "../user/message";
+
 
 export function VisualizationOptions() {
-    const useVscode = false
+    const useVscode = false;
     return (
         <div className="user-column">
-            <ConnectionStatus useVscode = {useVscode}/>
+            {/* <ConnectionStatus useVscode={useVscode} /> */}
             {useVscode ? <MessageHandler /> : <ControlPanel />}
         </div>
     );

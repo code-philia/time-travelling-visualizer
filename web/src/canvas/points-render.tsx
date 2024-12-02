@@ -2,21 +2,18 @@ import { ThreeEvent } from '@react-three/fiber';
 import { useEffect, useRef } from 'react';
 import { BufferAttribute } from 'three';
 import { isCircleHovered, VisualizerRenderContext } from './visualizer-render-context';
-
-export interface RawPointsData {
-    positions: [number, number, number][];
-    colors: [number, number, number][];
-    sizes: number[];
-    alphas: number[];
-}
+import { CommonPointsGeography } from './types';
 
 function getDefaultVertexShader() {
     return `
         attribute float size;
+        attribute float alpha;
         varying vec3 vColor;
+        varying float vAlpha;
 
         void main() {
             vColor = color;
+            vAlpha = alpha;
             vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
             gl_PointSize = size;
             gl_Position = projectionMatrix * mvPosition;
@@ -27,12 +24,13 @@ function getDefaultVertexShader() {
 function getDefaultFragmentShader() {
     return `
         varying vec3 vColor;
+        varying float vAlpha;
 
         void main() {
             vec2 coord = gl_PointCoord - vec2(0.5);
             float dist = length(coord);
             if (dist > 0.5) discard;
-            gl_FragColor = vec4(vColor, 1.0);
+            gl_FragColor = vec4(vColor, vAlpha);
         }
     `;
 }
@@ -40,9 +38,10 @@ function getDefaultFragmentShader() {
 type PlotEventListeners = {
     onHoverPoint?: (idx: number | undefined) => void;
     onClickPoint?: (idx: number) => void;
+    onReload?: () => void;
 }
 
-export function PointsRender({ rawPointsData, visualizerRenderContext, eventListeners }: { rawPointsData: RawPointsData, visualizerRenderContext: VisualizerRenderContext, eventListeners?: PlotEventListeners }) {
+export function PointsRender({ rawPointsData, visualizerRenderContext, eventListeners }: { rawPointsData: CommonPointsGeography, visualizerRenderContext: VisualizerRenderContext, eventListeners?: PlotEventListeners }) {
     const handlePointerMove = (event: ThreeEvent<PointerEvent>) => {
         // console.log('Pointer moved:', event.clientX, event.clientY);
         // todo
@@ -73,12 +72,24 @@ export function PointsRender({ rawPointsData, visualizerRenderContext, eventList
     };
 
     const sizeRef = useRef<BufferAttribute>(null);
+    const positionRef = useRef<BufferAttribute>(null);
+    const alphaRef = useRef<BufferAttribute>(null);
 
     useEffect(() => {
         if (sizeRef.current) {
             sizeRef.current.needsUpdate = true;
         }
+        if (positionRef.current) {
+            positionRef.current.needsUpdate = true;
+        }
+        if (alphaRef.current) {
+            alphaRef.current.needsUpdate = true;
+        }
     }, [rawPointsData]);
+
+    useEffect(() => {
+        eventListeners?.onReload?.();
+    }, [eventListeners, rawPointsData]);
 
     // setup events
 
@@ -111,7 +122,7 @@ export function PointsRender({ rawPointsData, visualizerRenderContext, eventList
 
         const clickListener = (e: MouseEvent) => {
             const foundOverPoint = findOverPoint(e);
-            if (foundOverPoint) eventListeners?.onClickPoint?.(foundOverPoint);
+            if (foundOverPoint !== undefined) eventListeners?.onClickPoint?.(foundOverPoint);
         }
         rc.canvasElement.addEventListener('click', clickListener);
 
@@ -122,11 +133,12 @@ export function PointsRender({ rawPointsData, visualizerRenderContext, eventList
     }, [eventListeners, rawPointsData.positions, rawPointsData.sizes, rc]);
 
     return (
-        <points onPointerMove={handlePointerMove} onClick={handleClick}>
+        <points onPointerMove={handlePointerMove} onClick={handleClick} frustumCulled={false}>
             <bufferGeometry>
-                <bufferAttribute attach="attributes-position" count={numPoints} array={geo.positions} itemSize={3} />
+                <bufferAttribute ref={positionRef} attach="attributes-position" count={numPoints} array={geo.positions} itemSize={3} />
                 <bufferAttribute attach="attributes-color" count={numPoints} array={geo.colors} itemSize={3} />
                 <bufferAttribute ref={sizeRef} attach="attributes-size" count={numPoints} array={geo.sizes} itemSize={1} />
+                <bufferAttribute ref={alphaRef} attach="attributes-alpha" count={numPoints} array={geo.alphas} itemSize={1} />
             </bufferGeometry>
             <shaderMaterial key={`${geo.sizes}`} opacity={1} transparent vertexShader={getDefaultVertexShader()} fragmentShader={getDefaultFragmentShader()} vertexColors />
         </points>
