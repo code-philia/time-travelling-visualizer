@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>TIME-TRAVELLING</title>
+    <meta charset="UTF-8" name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <link rel="stylesheet" href="Frontend/driver.min.css">
+    <link rel="stylesheet" href="Frontend/contrast_index.css">
+    <!-- <script src="https://unpkg.com/element-ui/lib/index.js"></script>   -->
+    <script src="https://cdn.bootcss.com/vue/2.5.16/vue.min.js"></script>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.126.1/build/three.min.js"></script>
+    <script src="Frontend/request.js"></script>
+    <script src="Frontend/contrast_render.js"></script>
+    <script src="Frontend/utils.js"></script>
+</head>
+
+<body>
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/driver.js/dist/driver.min.js"></script>
+    <div id="app" v-loading="isCanvasLoading">
+        <div class="header">
+            Time Travelling Visualizer (Contrast)
+            <a href="/" @click="clearStorageNavigate(event, '/')"
+                style="color: #fff; position:fixed; right: 20px;top:4px;"><i class="el-icon-back"
+                    style="font-size: 24px;"></i></a>
+        </div>
+        <el-button class="tutorial_btn" type="success" icon="el-icon-question" size="mini"
+            @click.prevent.stop="guide"></el-button>
+        <el-popover placement="left" width="200" trigger="click">
+            <div>
+                <span style="line-height: 40px; font-weight: 800;">Canvas Intereaction</span>
+                <br />
+                <div class="setting-item">
+                    <el-button size="mini" @click="resetCameraRef">Reset Left Camera</el-button>
+                </div>
+                <div class="setting-item">
+                    <el-button size="mini" @click="resetCameraTar">Reset Right Camera</el-button>
+                </div>
+            </div>
+            <el-button style="position: fixed; top: 130px; right:0px; font-size: 20px;" size="mini" type="warning"
+                slot="reference" icon="el-icon-setting"></el-button>
+        </el-popover>
+
+        <el-popover placement="left" width="200" trigger="click">
+            <div>
+                <span style="line-height: 40px; font-weight: 800;">Error Message</span>
+                <br />
+                <div class="error-message-content" style="margin: 10px 0;">
+                    {{ errorMessageRef }}
+                    <el-divider></el-divider>
+                    {{ errorMessageTar }}
+                </div>
+            </div>
+            <el-button style="position: fixed; top: 180px; right:0px; font-size: 20px;" size="mini" type="danger"
+                slot="reference" icon="el-icon-warning"></el-button>
+        </el-popover>
+        <div class="wrapout_ontainer">
+            <div class="content_container">
+                <div id="subject_model_info_panel">
+                    <el-tabs @tab-click="handleTabClick">
+                        <el-tab-pane label="Set Up" name="setup" style="overflow: auto;">
+                            <span style="display: inline-block; margin-right: 20px;">Data Type:</span>
+                            <div id="contentSettingData">            
+                                <el-radio v-model="dataType" label="Image">Image</el-radio>
+                                <el-radio v-model="dataType" label="Text">Text</el-radio>
+                            </div>
+                            <el-divider></el-divider>
+                            <span style="display: inline-block; margin-right: 20px;">Task Type:</span>
+                            <div id="contentSettingTask">
+                                <el-radio v-model="taskType" label="Classification">Classification</el-radio>
+                                <el-radio v-model="taskType" label="Non-Classification">Non-Classification</el-radio>
+                            </div>
+                            <el-divider></el-divider>
+                            <span style="display: inline-block; margin-right: 20px;" v-if="showColorSetting">Color Points?</span>
+                            <div id="colorSettingTask" v-if="showColorSetting">                 
+                                <el-radio v-model="colorType" label="noColoring">No Need</el-radio>
+                                <el-radio v-model="colorType" label="singleColoring">Classification Coloring</el-radio>
+                                <el-radio v-model="colorType" label="doubleColoring">Comparison Coloring</el-radio>
+                            </div>
+                            <el-button id="loadColorButton"
+                            style="background-color: #571792; color: #fff; width: 100%; margin-top: 0px;"
+                            @click="ColorHandler" v-if="showColorSetting">Load
+                            Color</el-button>
+                            <el-divider v-if="showColorSetting"></el-divider>
+                            <div id="contentPathInputRef">
+                                Content Path Left:
+                                <el-input v-model="contentPathRef"></el-input>
+                            </div>
+                            <div id="visMethodInputRef">
+                                Visualization Method Left:
+                                <el-input v-model="visMethodRef"></el-input>
+                            </div>
+                            <el-divider></el-divider>
+                            <div id="contentPathInputTar">
+                                Content Path Right:
+                                <el-input v-model="contentPathTar"></el-input>
+                            </div>
+                            <div id="visMethodInputTar">
+                                Visualization Method Right:
+                                <el-input v-model="visMethodTar"></el-input>
+                            </div>
+                            <el-divider></el-divider>
+                            <el-button id="showVisResBtn"
+                                style="background-color: #571792; color: #fff; width: 100%; margin-top: 0px;"
+                                @click="update">Load
+                                Visualization Result</el-button>
+                            <el-divider></el-divider>
+                            <table id="labelColorRef">
+                                <thead>
+                                    <tr>
+                                        <th>Label Ref</th>
+                                        <th>Color Ref</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+            
+                                </tbody>
+                            </table>
+                            <el-divider></el-divider>
+                            <table id="labelColorTar">
+                                <thead>
+                                    <tr>
+                                        <th>Label Tar</th>
+                                        <th>Color Tar</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+            
+                                </tbody>
+                            </table>
+                            <el-divider></el-divider>
+                        </el-tab-pane>
+                        <el-tab-pane name="normalQuery" label="Normal Query">
+                            Filter Index for Left Projection: 
+                            <div id="filterIndexLeft" style="display: flex;"></el-input><el-input v-model="selectedIndexRef">
+                            </el-input><el-button style="background-color: #571792; color: #fff;" @click="filterByIndexRef">Filter</el-button></div>
+  
+                            <el-divider></el-divider>
+                            Filter Index for Right Projection: 
+                            <div id="filterIndexRight" style="display: flex;"></el-input><el-input v-model="selectedIndexTar">
+                            </el-input><el-button style="background-color: #571792; color: #fff;" @click="filterByIndexTar">Filter</el-button></div>
+                        </el-tab-pane>
+
+                        <el-tab-pane label="Advanced Query" name="advancedQuery" style="overflow: auto;">
+                            <el-button id="loadVDBBtn"
+                                style="background-color: #571792; color: #fff; width: 100%; margin-top: 0px;"
+                                @click="VDBHandler">Load
+                                Vector Database</el-button>
+                            <el-divider></el-divider>
+                            Filter Index: 
+                            <div style="display: flex;"></el-input><el-input v-model="filter_index"></div>
+                            <el-switch v-model="isSwitchOn" active-text="Open KNN" inactive-text="Close KNN">
+                            </el-switch>
+                            <div class="advanced-query-row">
+                                <el-select v-model="query.key">
+                                    <el-option value="left-index" label="left-index">
+                                    </el-option>
+                                    <el-option value="right-index" label="right-index">
+                                    </el-option>
+                                    <el-option value="inter-index" label="inter-index">
+                                    </el-option>
+                                    <el-option value="nl" label="nl">
+                                    </el-option>
+                                    <el-option value="vector" label="vector">
+                                    </el-option>
+                                </el-select>
+                                <el-input style="margin-left:20px;" v-model="query.value"></el-input>
+                            </div>
+                            <div class="advanced-query-row">
+                                K: <el-input style="margin-left:20px;" v-model="query.k"></el-input>
+                            </div>
+                            <el-button style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;"
+                                @click="indexSearchHandler" id="vdbquery">
+                                Start Query
+                            </el-button>
+                            <el-button style="background-color: #571792; color: #fff; width: 100%; margin-top: 10px;"
+                                id="clearquery">
+                                Clear Query
+                            </el-button>
+                            <el-divider></el-divider>
+                            <el-button id="highlightQueryError" style="background-color: #571792; color: #fff; width: 100%; margin-top: 0px;"
+                            @click="HQEHandler">Highlight Query Error</el-button>
+                            <el-divider></el-divider>
+                            <el-button id="findQueryError" style="background-color: #571792; color: #fff; width: 100%; margin-top: 0px;"
+                            @click="FQEHandler">Find Query Error</el-button>
+                            <el-divider></el-divider>
+                            <span style="display: inline-block; line-height: 50px; vertical-align: top; margin-left:20px; margin-right: 5px;">Labeling Panel</span>
+                            <div class="advanced-query-row">
+                                index: <el-input style="margin-left:20px;" v-model="labeling.value"></el-input>
+                            </div>
+                            <div class="advanced-query-row">
+                                label: <el-input style="margin-left:20px;" v-model="labeling.label"></el-input>
+                            </div>
+                            <el-divider></el-divider>
+                            <el-button id="addNewLabel" style="background-color: #571792; color: #fff; width: 100%; margin-top: 0px;"
+                            @click="NLHandler">Add Label</el-button>
+                            <el-divider></el-divider>
+
+                            <span id="resultContainer">
+                                <ul>
+                                    <li v-for="result in query_result" :key="result.id">
+                                        Distance: {{ result.distance }}, ID: {{ result.id }}
+                                    </li>
+                                </ul>
+                            </span>
+                        </el-tab-pane>
+                        <el-tab-pane label="Projection Analysis" name="projectionAnalysis" style="overflow: auto;">
+                            <div class="projectionAnalysis_container">
+                                <span
+                                    style="display: inline-block; line-height: 50px; vertical-align: top; margin-left:20px; margin-right: 5px;font-weight: bold;">Comparative
+                                    Analysis Panel</span>
+                                <div id="select-container">
+                                    <div class="control-group">
+                                        <span
+                                            style="display: inline-block; line-height: 30px; vertical-align: top; margin-left:20px; margin-right: 5px;">Multiton:</span>
+                                        <el-select v-model="multiOption" id="highlightMethodInput">
+                                            <el-option value="align" label="align">
+                                            </el-option>
+                                            <el-option value="nearest neighbour" label="nearest neighbour">
+                                            </el-option>
+                                            <el-option value="both" label="both">
+                                            </el-option>
+                                        </el-select>
+                                        <div style="display: flex;"><el-button
+                                                style="background-color: #571792; color: #fff;" id="highlightButton"
+                                                @click="highlightDataMulti">Show</el-button></div>
+                                    </div>
+                                    <div class="control-group">
+                                        <span
+                                            style="display: inline-block; line-height: 30px; vertical-align: top; margin-left:20px;margin-right: 5px; margin-top: 10px">Singleton:</span>
+                                        <el-select v-model="singleOption" id="highlightMethodInputSingle">
+                                            <el-option value="align" label="align">
+                                            </el-option>
+                                            <el-option value="nearest neighbour" label="nearest neighbour">
+                                            </el-option>
+                                            <el-option value="reset" label="reset">
+                                            </el-option>
+                                        </el-select>
+                                        <div style="display: flex;"><el-button
+                                                style="background-color: #571792; color: #fff;"
+                                                id="highlightButtonSingle" @click="highlightDataSingle">Show</el-button>
+                                        </div>
+                                    </div>
+                                    <div class="control-group">
+                                        <span
+                                            style="display: inline-block; line-height: 30px; vertical-align: top; margin-left:20px;margin-right: 5px;margin-top: 10px ">Hover
+                                            Mode:</span>
+                                        <el-select v-model="hoverMode" id="changeHoverMode"
+                                            style="height: 30px; width: 80px;">
+                                            <el-option value="single" label="single">
+                                            </el-option>
+                                            <el-option value="pair" label="pair">
+                                            </el-option>
+                                        </el-select>
+                                    </div>
+                                    <div class="control-group">
+                                        <span
+                                            style="display: inline-block; line-height: 30px; vertical-align: top; margin-left:20px;margin-right: 5px; margin-top: 10px">Cocurrent
+                                            Mode:</span>
+                                        <el-select v-model="concurrentMode" id="changeConcurrentMode"
+                                            style="height: 30px; width: 80px;">
+                                            <el-option value="yes" selected>yes</el-option>
+                                            <el-option value="no">no</el-option>
+                                        </el-select>
+                                    </div>
+                                </div>
+                                <el-divider></el-divider>
+                                <span
+                                    style="display: inline-block; line-height: 50px; vertical-align: top; margin-left:20px; margin-right: 5px; font-weight: bold;">Display
+                                    Preference Panel</span>
+                                <div id="checkbox-container">
+                                    <div id="ref-checkbox-container">
+                                        <p> Left Projection:</p>
+                                        <el-checkbox v-model="showTrainingRef">Training</el-checkbox>
+                                        <el-checkbox v-model="showTestingRef">Testing</el-checkbox>
+                                        <el-checkbox v-model="showVisErrorRef">Visualization Error</el-checkbox>
+                                        <el-checkbox v-model="showPredictionFlipsRef">Prediction Flip</el-checkbox>
+                                    </div>
+                                    <div id="tar-checkbox-container">
+                                        <p> Right Projection:</p>
+                                        <el-checkbox v-model="showTrainingTar">Training</el-checkbox>
+                                        <el-checkbox v-model="showTestingTar">Testing</el-checkbox>
+                                        <el-checkbox v-model="showVisErrorTar">Visualization Error</el-checkbox>
+                                        <el-checkbox v-model="showPredictionFlipsTar">Prediction Flip</el-checkbox>
+                                    </div>
+                                </div>
+                            </div>
+                        </el-tab-pane>
+                    </el-tabs>
+                </div>
+                <div class="mid_container">
+                    <div id="container_ref">
+                        <div id="hoverLabelRef">
+                            <!-- Label content -->
+                        </div>
+
+                        <div id="fixedHoverLabelRef">
+
+                        </div>
+                    </div>
+                    <div id="container_tar">
+                        <div id="hoverLabelTar">
+                            <!-- Label content -->
+                        </div>
+
+                        <div id="fixedHoverLabelTar">
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="iterationContainer">
+                <div id="footerRef">
+                    <svg id="timeLinesvgRef"></svg>
+                </div>
+                <div id="footerTar">
+                    <svg id="timeLinesvgTar"></svg>
+                </div>
+            </div>
+
+        </div>
+
+        <div id="currHoverRef">
+            CurrHoverIndex: {{lastHoveredIndexRef}}<br />
+            prediction: {{curr_predRef}}<br />
+            label: {{curr_labelRef}}<br />
+            Confidence: {{confidence_dictRef}}<br />
+
+            <div v-if="dataType === 'Image'">
+                <img :src="imageSrcRef" alt="Image Description" height="100px" />
+            </div>
+            <div v-else>
+                <div style="max-height: 300px; overflow-y: auto; white-space: pre;">
+                    <p>{{ textContentRef }}</p>
+                </div>
+            </div>
+        </div>
+        <div id="currHoverTar">
+            CurrHoverIndex: {{lastHoveredIndexTar}}<br />
+            prediction: {{curr_predTar}}<br />
+            label: {{curr_labelTar}}<br />
+            Confidence: {{confidence_dictTar}}<br />
+
+            <div v-if="dataType === 'Image'">
+                <img :src="imageSrcTar" alt="Image Description" height="100px" />
+            </div>
+            <div v-else>
+                <div style="max-height: 300px; overflow-y: auto; white-space: pre;">
+                    <p>{{ textContentTar }}</p>
+                </div>
+            </div>
+        </div>
+        <div id="hoverLabelTar">
+            <!-- Label content -->
+        </div>
+
+        <div id="fixedHoverLabelTar">
+
+        </div>
+        <div id="fixedBoldLabel0Tar">
+
+        </div>
+        <div id="fixedBoldLabel1Tar">
+
+        </div>
+        <div id="hoverLabelRef">
+            <!-- Label content -->
+        </div>
+
+        <div id="fixedHoverLabelRef">
+
+        </div>
+        <div id="fixedBoldLabel0Ref">
+
+        </div>
+        <div id="fixedBoldLabel1Ref">
+
+        </div>
+    </div>
+</body>
+
+<script>
+
+    window.vueApp = new Vue({
+        el: '#app',
+        data() {
+            return {
+                lastHoveredIndexRef: null,
+                lastHoveredIndexTar: null,
+                curIndexRef:null,
+                curIndexTar:null,
+                nnIndices: [],
+                // contentPathRef: '/home/timeTravelling/guorui/git_space/TestFrontend/time-travelling-visualizer/Backdoor',
+                contentPathRef: '/home/yiming/cophi/projects/time-travelling-visualizer/training_dynamic/case_study_mnist_backdoor',
+                contentPathTar: '/home/yiming/cophi/training_dynamic/NL-code-search-Adv/TD/nl',
+                customContentPath: '',
+                // contentPathTar: '/home/timeTravelling/guorui/git_space/TestFrontend/time-travelling-visualizer/Backdoor',
+                isCanvasLoading: false,
+                taskType: 'Classification',
+                colorType: 'noColoring',
+                showColorSetting: false,
+                filter_index:'',
+                filter_indexRef:'',
+                filter_indexTar:'',
+                query_result: {},
+                prediction_listRef: [],
+                prediction_listTar: [],
+                curr_predRef: '',
+                curr_predTar: '',
+                curr_labelRef: '',
+                curr_labelTar: '',
+                label_listRef: [],
+                label_listTar: [],
+                label_name_dictRef: {},
+                label_name_dictTar: {},
+                color_listRef: [],
+                color_listTar: [],
+                confidence_listRef: [],
+                confidence_listTar: [],
+                confidence_dictRef: [],
+                confidence_dictTar: [],
+                evaluation: { test_acc: 0, train_acc: 0 },
+                currEpochRef: 1,
+                currEpochTar: 1,
+                totalEpochRef: null,
+                totalEpochTar: null,
+                train_indexRef: null,
+                test_indexRef: null,
+                train_indexTar: null,
+                test_indexTar: null,
+                showTraining: true,
+                showTesting: true,
+                SelectionMode: false,
+                imageSrcRef: '',
+                textContentRef: '',
+                imageSrcTar: '',
+                textContentTar: '',
+                selectedIndexRef: null,
+                selectedIndexTar: null,
+                selectedPointPositionRef: null,
+                selectedPointPositionTar: null,
+                hoverIndexRef: null,
+                hoverIndexTar: null,
+                showVisErrorRef: false,
+                showVisErrorTar: false,
+                showTrainingRef: true,
+                showTrainingTar: true,
+                showTestingRef: true,
+                showTestingTar: true,
+                showPredictionFlipsRef: false,
+                showPredictionFlipsTar: false,
+                predictionFlipIndicesRef: null,
+                predictionFlipIndicesTar: null,
+                errorMessageRef: null,
+                errorMessageTar: null,
+                visMethodRef: 'Trustvis',
+                visMethodTar: 'Trustvis',
+                highlightAttributesRef: {
+                    highlightedPointsYellow: null,
+                    highlightedPointsBlue: null,
+                    highlightedPointsGreen: null,
+                    allHighlightedSet: null,
+                    boldIndices: null,
+                    visualizationError: null,
+                },
+
+                highlightAttributesTar: {
+                    highlightedPointsYellow: null,
+                    highlightedPointsBlue: null,
+                    highlightedPointsGreen: null,
+                    allHighlightedSet: null,
+                    boldIndices: null,
+                    visualizationError: null,
+                },
+                originalSettingsRef: {
+                    originalColors: null,
+                    originalSizes: null,
+                },
+                originalSettingsTar: {
+                    originalColors: null,
+                    originalSizes: null,
+                },
+                pointsMeshRef: null,
+                pointsMeshTar: null,
+                multiOption: "align",
+                singleOption: "align",
+                scene: {
+                    'ref': null,
+                    'tar': null
+                },
+                renderer: {
+                    'ref': null,
+                    'tar': null
+                },
+                camera: {
+                    'ref': null,
+                    'tar': null
+                },
+                animationFrameId: {
+                    'ref': null,
+                    'tar': null
+                },
+
+                curImg: null,
+                dataType: "Image",
+                zoomInSpeed: 0.01,
+                hoverMode: "single",
+                concurrentMode: "no",
+                query: {
+                    key: 'left-index',
+                    value: null,
+                    k: null
+                },
+                isSwitchOn: false,
+                labeling: {
+                    value: null,
+                    label: ""
+                },
+                commonGuideSteps: [{
+                    element: '#footerRef',
+                    popover: {
+                        title: 'Time Line',
+                        description: 'It shows the total number of epochs of left loaded training/testing dynamics.',
+                        position: 'above',
+                    },
+                },
+                {
+                    element: '#footerTar',
+                    popover: {
+                        title: 'Time Line',
+                        description: 'It shows the total number of epochs of right loaded training/testing dynamics.',
+                        position: 'above',
+                    },
+                },
+                {
+                    element: '#currHoverRef',
+                    popover: {
+                        title: 'Hover Information for left projection',
+                        description: 'The detail of the current hover sample in left projection will be shown here',
+                        position: 'right'
+                    },
+                },
+                {
+                    element: '#currHoverTar',
+                    popover: {
+                        title: 'Hover Information for right projection',
+                        description: 'The detail of the current hover sample in right projection will be shown here',
+                        position: 'right'
+                    },
+                }],
+                tabGuides: {
+                    setup: [
+                        {
+                            element: '#contentSettingData',
+                            popover: {
+                                title: 'Data Type Selection',
+                                description: 'Please choose the data type used by the subject model',
+                                position: 'right'
+                            },
+                        },
+                        {
+                            element: '#contentSettingTask',
+                            popover: {
+                                title: 'Task Type Selection',
+                                description: 'Please choose whether your subject model is used for classification or not',
+                                position: 'right'
+                            },
+                        },
+
+                        {
+                            element: '#contentPathInputRef',
+                            popover: {
+                                title: 'Content Path Left',
+                                description: 'Please input the absolute path of the training/testing dynamics shown on the left',
+                                position: 'right'
+                            },
+                        },
+                        {
+                            element: '#contentPathInputTar',
+                            popover: {
+                                title: 'Content Path Right',
+                                description: 'Similarly, input for the one shown on the right',
+                                position: 'right'
+                            },
+                        },
+                        {
+                            element: '#showVisResBtn',
+                            popover: {
+                                title: 'Load Visualization Results',
+                                description: 'After input the content path, you can click this to load the visulization results(default start from epoch 1)',
+                                position: 'right'
+                            },
+                        },
+                        {
+                            element: '#footerRef',
+                            popover: {
+                                title: 'Time Line',
+                                description: 'It shows the total number of epochs of left loaded training/testing dynamics.',
+                                position: 'above',
+                            },
+                        },
+                        {
+                            element: '#footerTar',
+                            popover: {
+                                title: 'Time Line',
+                                description: 'It shows the total number of epochs of right loaded training/testing dynamics.',
+                                position: 'above',
+                            },
+                        },
+                        {
+                            element: '#currHoverRef',
+                            popover: {
+                                title: 'Hover Information for left projection',
+                                description: 'The detail of the current hover sample in left projection will be shown here',
+                                position: 'right'
+                            },
+                        },
+                        {
+                            element: '#currHoverTar',
+                            popover: {
+                                title: 'Hover Information for right projection',
+                                description: 'The detail of the current hover sample in right projection will be shown here',
+                                position: 'right'
+                            },
+                        }],
+                    projectionAnalysis: [
+                        {
+                            element: '#highlightMethodInput',
+                            popover: {
+                                title: 'Highligh All Similar Data',
+                                description: 'align: highlight data in two projections which has distance of less than 1 in between in embedding space\n nearest neighbour: highlight data in two projections which share the same 15 neighbours in embedding space',
+                                position: 'right'
+                            },
+                        },
+                        {
+                            element: '#highlightMethodInputSingle',
+                            popover: {
+                                title: 'Load Visualization Results',
+                                description: 'align: It will highlight all points that are within distance 1 of selected points\' absolute position on the other projection\n nearest neighbour: highlight selected points\' nearst neighbours in both projections\n reset: clear all highlighted points.',
+                                position: 'right'
+                            },
+                        },
+                        {
+                            element: '#changeHoverMode',
+                            popover: {
+                                title: 'Hover Mode',
+                                description: 'Switch between single hover and double hover mode',
+                                position: 'right'
+                            },
+                        },
+                        {
+                            element: '#changeConcurrentMode',
+                            popover: {
+                                title: 'Concurrent Projection',
+                                description: 'Switch between independent epoch change and concurrent epoch change',
+                                position: 'right'
+                            },
+                        },
+                        {
+                            element: '#ref-checkbox-container',
+                            popover: {
+                                title: 'Data Demonstration Preference',
+                                description: 'Check differnt boxes to show Training/Testing data points used by subject model. Check to show visualization errors(points with different embedding and high dimension prediction). Check to show prediction flip points on the next epoch ',
+                                position: 'right'
+                            },
+                        },
+                        {
+                            element: '#tar-checkbox-container',
+                            popover: {
+                                title: 'Data Demonstration Preference',
+                                description: 'The same to the left data demonstration',
+                                position: 'right'
+                            },
+                        },
+                        {
+                            element: '#footerRef',
+                            popover: {
+                                title: 'Time Line',
+                                description: 'It shows the total number of epochs of left loaded training/testing dynamics.',
+                                position: 'above',
+                            },
+                        },
+                        {
+                            element: '#footerTar',
+                            popover: {
+                                title: 'Time Line',
+                                description: 'It shows the total number of epochs of right loaded training/testing dynamics.',
+                                position: 'above',
+                            },
+                        },
+                        {
+                            element: '#currHoverRef',
+                            popover: {
+                                title: 'Hover Information for left projection',
+                                description: 'The detail of the current hover sample in left projection will be shown here',
+                                position: 'right'
+                            },
+                        },
+                        {
+                            element: '#currHoverTar',
+                            popover: {
+                                title: 'Hover Information for right projection',
+                                description: 'The detail of the current hover sample in right projection will be shown here',
+                                position: 'right'
+                            },
+                        }],
+                    advancedQuery: [
+                        {
+                            element: '#footerRef',
+                            popover: {
+                                title: 'Time Line',
+                                description: 'It shows the total number of epochs of left loaded training/testing dynamics.',
+                                position: 'above',
+                            },
+                        },
+                        {
+                            element: '#footerTar',
+                            popover: {
+                                title: 'Time Line',
+                                description: 'It shows the total number of epochs of right loaded training/testing dynamics.',
+                                position: 'above',
+                            },
+                        },
+                        {
+                            element: '#currHoverRef',
+                            popover: {
+                                title: 'Hover Information for left projection',
+                                description: 'The detail of the current hover sample in left projection will be shown here',
+                                position: 'right'
+                            },
+                        },
+                        {
+                            element: '#currHoverTar',
+                            popover: {
+                                title: 'Hover Information for right projection',
+                                description: 'The detail of the current hover sample in right projection will be shown here',
+                                position: 'right'
+                            },
+                        }],
+                        normalQuery: [
+
+                        {
+                            element: '#filterIndexLeft',
+                            popover: {
+                                title: 'Filter Index for Left Projection',
+                                description: 'It highlights the input index and show its position on left canvas.',
+                                position: 'above',
+                            },
+                        },
+                        {
+                            element: '#filterIndexRight',
+                            popover: {
+                                title: 'Filter Index for Right Projection',
+                                description: 'It highlights the input index and show its position on right canvas.',
+                                position: 'above',
+                            },
+                        },
+                        {
+                            element: '#footerRef',
+                            popover: {
+                                title: 'Time Line',
+                                description: 'It shows the total number of epochs of left loaded training/testing dynamics.',
+                                position: 'above',
+                            },
+                        },
+                        {
+                            element: '#footerTar',
+                            popover: {
+                                title: 'Time Line',
+                                description: 'It shows the total number of epochs of right loaded training/testing dynamics.',
+                                position: 'above',
+                            },
+                        },
+                        {
+                            element: '#currHoverRef',
+                            popover: {
+                                title: 'Hover Information for left projection',
+                                description: 'The detail of the current hover sample in left projection will be shown here',
+                                position: 'right'
+                            },
+                        },
+                        {
+                            element: '#currHoverTar',
+                            popover: {
+                                title: 'Hover Information for right projection',
+                                description: 'The detail of the current hover sample in right projection will be shown here',
+                                position: 'right'
+                            },
+                        }]
+                },
+
+                currentGuideSteps: [],
+                currentTabName: null,
+                sceneBoundary: {
+                    'tar': {   
+                        x_min: null,
+                        y_min: null,
+                        x_max: null,
+                        y_max: null 
+                    },
+                    'ref': {
+                        x_min: null,
+                        y_min: null,
+                        x_max: null,
+                        y_max: null
+                    }
+                },
+            }
+        },
+        methods: {
+            filterByIndexRef() {
+                this.filterByIndex('ref', this.selectedIndexRef)
+            },
+            filterByIndexTar() {
+                this.filterByIndex('tar', this.selectedIndexTar)
+            },
+            filterByIndex(flag, index) {
+                var pointPosition = new THREE.Vector3();
+                console.log("index", index)
+                if (index) {
+                    var specifiedPointsMesh = makeSpecifiedVariableName('pointsMesh', flag)
+                    pointPosition.fromBufferAttribute(window.vueApp[specifiedPointsMesh].geometry.attributes.position, index);
+                    var specifiedSelectedPointPosition = makeSpecifiedVariableName('selectedPointPosition', flag)
+                    window.vueApp[specifiedSelectedPointPosition] = pointPosition
+                    updateLabelPosition(flag, window.vueApp[specifiedSelectedPointPosition], index, 'fixedHoverLabel', true)
+                } else {
+                    updateFixedHoverLabel(null, null, null, flag, null, 'fixedHoverLabel', false)
+                }          
+            },
+            handleTabClick(tab) {
+                this.currentTabName = String(tab.name)
+            },
+            startGuide(steps) {
+                if (this.driver) {
+                    this.driver.reset();
+                    this.currentGuideSteps = steps;
+                    this.driver.defineSteps(steps);
+                    this.driver.start();
+                }
+            },
+            guide() {
+                this.startGuide(this.tabGuides[this.currentTabName]);
+            },
+            resetCameraRef() {
+                this.resetCameraGeneral('ref')
+            },
+            resetCameraTar() {
+                this.resetCameraGeneral('tar')
+            },
+            resetCameraGeneral(flag) {
+                const target = new THREE.Vector3(
+                    0, 0, 0
+                );
+                container = document.getElementById("container_" + flag)
+                const rect = container.getBoundingClientRect();
+                var aspectRatio = rect.width / rect.height;
+              
+                this.camera[flag].position.set(0, 0, 100);
+                this.camera[flag].left = this.sceneBoundary[flag].x_min * aspectRatio
+                this.camera[flag].right = this.sceneBoundary[flag].x_max * aspectRatio;
+                this.camera[flag].top = this.sceneBoundary[flag].y_max;
+                this.camera[flag].bottom = this.sceneBoundary[flag].y_min;
+  
+                this.renderer[flag].setSize(rect.width, rect.height);
+                this.renderer[flag].setClearColor(BACKGROUND_COLOR, 1);
+
+                const viewportWidth = this.renderer[flag].domElement.clientWidth;
+                const viewportHeight = this.renderer[flag].domElement.clientHeight;
+
+                this.camera[flag].zoom = 1;
+                this.camera[flag].updateProjectionMatrix();
+                this.camera[flag].lookAt(target);
+            },
+            update() {
+                this.isCanvasLoading = true
+                updateContraProjection(this.contentPathRef, this.currEpochRef, this.taskType, 'ref')
+                fetchTimelineData(this.contentPathRef, 'ref')
+                updateContraProjection(this.contentPathTar, this.currEpochTar, this.taskType, 'tar')
+                fetchTimelineData(this.contentPathTar, 'tar')
+            },
+            VDBHandler() {
+                this.isCanvasLoading = true
+                contrastloadVectorDBCode(this.contentPathRef, this.currEpochRef)
+                contrastloadVectorDBNl(this.contentPathTar, this.currEpochTar)
+            },
+            ColorHandler() {
+                this.isCanvasLoading = true
+                if (this.colorType == "noColoring" || this.colorType == "singleColoring") {
+                    reloadColor('ref')
+                    reloadColor('tar')
+                } else if (this.colorType == "doubleColoring") {
+                    contrastLoadColor('ref')
+                }
+            },
+            HQEHandler(){
+                highlightContraProjection(this.contentPathRef, this.currEpochRef, this.taskType, 'ref')
+                fetchTimelineData(this.contentPathRef, 'ref')
+                highlightContraProjection(this.contentPathTar, this.currEpochTar, this.taskType, 'tar')
+                fetchTimelineData(this.contentPathTar, 'tar')
+            },
+            FQEHandler(){
+                queryMissSearch(this.query, this.contentPathRef, this.currEpochRef, this.contentPathTar, this.currEpochTar)
+                updateContraProjection(this.contentPathRef, this.currEpochRef, this.taskType, 'ref')
+                fetchTimelineData(this.contentPathRef, 'ref')
+                updateContraProjection(this.contentPathTar, this.currEpochTar, this.taskType, 'tar')
+                fetchTimelineData(this.contentPathTar, 'tar')
+            },
+            NLHandler(){
+                addNewLbel(this.labeling, this.contentPathRef, this.currEpochRef, this.contentPathTar, this.currEpochTar)
+            },
+            indexSearchHandler() {
+                this.isCanvasLoading = true
+                contrastIndexSearch(this.query, this.isSwitchOn);
+            },
+            toggleSwitch() {
+                this.isSwitchOn = !this.isSwitchOn;
+                console.log(this.isSwitchOn)
+            },
+
+            highlightDataMulti() {
+                getHighlightedPoints("multi")
+            },
+            highlightDataSingle() {
+                getHighlightedPoints("single")
+            },
+            getInitialState() {
+                return {
+                    lastHoveredIndexRef: null,
+                    lastHoveredIndexTar: null,
+                    contentPathRef: '/home/timeTravelling/guorui/git_space/codesearch_simp/data1/codesearchQuery',
+                    contentPathTar: '/home/timeTravelling/guorui/git_space/codesearch_simp/data1/codesearchCode',
+                    customContentPath: '',
+                    isCanvasLoading: false,
+                    taskType: 'Classification',
+                    colorType: 'noColoring',
+                    showColorSetting: false,
+                    query_result: {},
+                    prediction_listRef: [],
+                    prediction_listTar: [],
+                    curr_predRef: '',
+                    curr_predTar: '',
+                    curr_labelRef: '',
+                    curr_labelTar: '',
+                    label_listRef: [],
+                    label_listTar: [],
+                    label_name_dictRef: {},
+                    label_name_dictTar: {},
+                    evaluation: { test_acc: 0, train_acc: 0 },
+                    currEpochRef: 1,
+                    currEpochTar: 1,
+                    totalEpochRef: null,
+                    totalEpochTar: null,
+                    train_indexRef: null,
+                    test_indexRef: null,
+                    train_indexTar: null,
+                    test_indexTar: null,
+                    showTraining: true,
+                    showTesting: true,
+                    SelectionMode: false,
+                    imageSrcRef: '',
+                    textContentRef: '',
+                    imageSrcTar: '',
+                    textContentTar: '',
+                    selectedIndexRef: null,
+                    selectedIndexTar: null,
+                    selectedPointPositionRef: null,
+                    selectedPointPositionTar: null,
+                    hoverIndexRef: null,
+                    hoverIndexTar: null,
+                    showVisErrorRef: false,
+                    showVisErrorTar: false,
+                    showTrainingRef: true,
+                    showTrainingTar: true,
+                    showTestingRef: true,
+                    showTestingTar: true,
+                    showPredictionFlipsRef: false,
+                    showPredictionFlipsTar: false,
+                    predictionFlipIndicesRef: null,
+                    predictionFlipIndicesTar: null,
+                    errorMessageRef: null,
+                    errorMessageTar: null,
+
+                    visMethodRef: 'Trustvis',
+                    visMethodTar: 'Trustvis',
+                    highlightAttributesRef: {
+                        highlightedPointsYellow: null,
+                        highlightedPointsBlue: null,
+                        highlightedPointsGreen: null,
+                        allHighlightedSet: null,
+                        boldIndices: null,
+                        visualizationError: null,
+                    },
+
+                    highlightAttributesTar: {
+                        highlightedPointsYellow: null,
+                        highlightedPointsBlue: null,
+                        highlightedPointsGreen: null,
+                        allHighlightedSet: null,
+                        boldIndices: null,
+                        visualizationError: null,
+                    },
+                    originalSettingsRef: {
+                        originalColors: null,
+                        originalSizes: null,
+                    },
+                    originalSettingsTar: {
+                        originalColors: null,
+                        originalSizes: null,
+                    },
+                    pointsMeshRef: null,
+                    pointsMeshTar: null,
+                    multiOption: "align",
+                    singleOption: "align",
+                    scene: {
+                        'ref': null,
+                        'tar': null
+                    },
+                    renderer: {
+                        'ref': null,
+                        'tar': null
+                    },
+                    camera: {
+                        'ref': null,
+                        'tar': null
+                    },
+                    animationFrameId: {
+                        'ref': null,
+                        'tar': null
+                    },
+
+                    curImg: null,
+                    dataType: "Image",
+                    zoomInSpeed: 0.01,
+                    hoverMode: "single",
+                    concurrentMode: "no",
+                    query: {
+                        key: 'left-index',
+                        value: null,
+                        k: null
+                    },
+                    isSwitchOn: false,
+                    currentGuideSteps: [],
+                    currentTabName: null,
+                    sceneBoundary: {
+                        'tar': {   
+                            x_min: null,
+                            y_min: null,
+                            x_max: null,
+                            y_max: null 
+                        },
+                        'ref': {
+                            x_min: null,
+                            y_min: null,
+                            x_max: null,
+                            y_max: null
+                        }
+                    }
+                };
+            },
+            resetData() {
+                Object.assign(this.$data, this.getInitialState());
+            },
+            clearStorageNavigate(event, url) {
+                event.preventDefault();
+
+                localStorage.clear();
+                sessionStorage.clear();
+                cleanForEpochChange('ref');
+                cleanForEpochChange('tar');
+                this.resetData();
+
+                window.location.href = url
+            }
+
+        },
+        watch: {
+            lastHoveredIndexRef: {
+                immediate: true,
+                handler(newVal, oldVal) {
+                    this.curr_predRef = this.prediction_listRef[newVal];
+                    this.curr_labelRef = this.label_name_dictRef[this.label_listRef[newVal]]
+                    this.confidence_dictRef = this.confidence_listRef[newVal]
+                    if (newVal != null) {
+                        getOriginalData(this.contentPathRef, newVal, this.dataType, 'ref', this.customContentPath)
+                        const updatedQuery = {
+                            ...this.query,
+                            // key: 'inter-index',
+                            value: newVal
+                        };
+                        if (this.isSwitchOn) {
+                            contrastIndexSearch(updatedQuery, this.isSwitchOn);
+                        }
+
+                    }
+
+                }
+            },
+            // curIndexRef:{
+            //     immediate: true,
+            //     handler(newVal, oldVal) {
+            //         this.curr_predRef = this.prediction_listRef[newVal];
+            //         this.curr_labelRef = this.label_name_dictRef[this.label_listRef[newVal]]
+            //     }
+            // },
+            lastHoveredIndexTar: {
+                immediate: true,
+                handler(newVal, oldVal) {
+                    this.curr_predTar = this.prediction_listTar[newVal];
+                    this.curr_labelTar = this.label_name_dictTar[this.label_listTar[newVal]]
+                    this.confidence_dictTar = this.confidence_listTar[newVal]
+                    if (newVal != null) {
+                        getOriginalData(this.contentPathTar, newVal, this.dataType, 'tar', this.customContentPath)
+                        const updatedQuery = {
+                            ...this.query,
+                            // key: 'inter-index',
+                            value: newVal
+                        };
+                        if (this.isSwitchOn) {
+                            contrastIndexSearch(updatedQuery, this.isSwitchOn);
+                        }
+
+                    }
+
+                }
+            },
+            // curIndexTar:{
+            //     immediate: true,
+            //     handler(newVal, oldVal) {
+            //         this.curr_predTar = this.prediction_listTar[newVal];
+            //         this.curr_labelTar = this.label_name_dictTar[this.label_listTar[newVal]]
+            //     }
+            // },
+            showVisErrorRef: {
+                immediate: true,
+                handler(newVal, oldVal) {
+                    if (newVal) {
+                        getHighlightedPoints('visError', 'ref')
+                        setTimeout(() => {
+                            updateContraProjection(this.contentPathRef, this.currEpochRef, this.taskType, 'ref')
+                        }, 1000);
+                    } else {
+                        this.highlightAttributesRef.visualizationError = null
+                    }
+                }
+            },
+            showVisErrorTar: {
+                immediate: true,
+                handler(newVal, oldVal) {
+                    if (newVal) {
+                        getHighlightedPoints('visError', 'tar')
+                        setTimeout(() => {
+                            updateContraProjection(this.contentPathRef, this.currEpochRef, this.taskType, 'tar')
+                        }, 1000);
+                    } else {
+                        this.highlightAttributesTar.visualizationError = null
+                    }
+                }
+            },
+
+            showPredictionFlipsRef: {
+                handler(newVal, oldVal) {
+                    console.log("currEpohc", this.currEpochRef, this.totalEpochRef)
+                    // prediction flip check for next epoch only
+                    if (newVal && this.currEpochRef < this.totalEpochRef) {
+                        console.log("called")
+                        getPredictionFlipIndices('ref')
+                        setTimeout(() => {
+                            updateContraProjection(this.contentPathRef, this.currEpochRef, this.taskType, 'ref')
+                        }, 1000);
+                    } else {
+                        this.predictionFlipIndicesRef = null
+                    }
+                }
+            },
+            showPredictionFlipsTar: {
+                handler(newVal, oldVal) {
+                    // prediction flip check for next epoch only
+                    if (newVal && this.currEpochTar < this.totalEpochTar) {
+                        getPredictionFlipIndices('tar')
+                        setTimeout(() => {
+                            updateContraProjection(this.contentPathRef, this.currEpochRef, this.taskType, 'tar')
+                        }, 1000);
+                    } else {
+                        this.predictionFlipIndicesTar = null
+                    }
+                }
+            },
+            taskType: {
+                handler(newVal, oldVal) {
+                    if (newVal == "Non-Classification") {
+                        this.showColorSetting = true
+                    } else {
+                        this.showColorSetting = false
+                    }
+                }
+            }
+        },
+        mounted() {
+            this.driver = new Driver()
+
+        },
+        unmounted() {
+            this.isCanvasLoading = true
+            if (this.driver) {
+                this.driver.reset();
+            }
+        }
+    })
+</script>
+
+</html>

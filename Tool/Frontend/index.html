@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>TIME-TRAVELLING</title>
+    <meta charset="UTF-8" name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+        
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <link rel="stylesheet" href="Frontend/driver.min.css">
+    <link rel="stylesheet" href="Frontend/index.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/js-cookie@3/dist/js.cookie.min.js"></script>
+    <!-- <script src="https://unpkg.com/element-ui/lib/index.js"></script>   -->
+    <!-- <script src="https://cdn.bootcss.com/vue/2.5.16/vue.min.js"></script> -->
+    <script src="Frontend/thirdParty/vue.min.js"></script>
+    <!-- <script src="https://d3js.org/d3.v5.min.js"></script> -->
+    <script src="Frontend/thirdParty/d3.v5.min.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/three@0.126.1/build/three.min.js"></script> -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.155.0/three.min.js"></script>
+    <script src="Frontend/request.js"></script>
+    <script src="Frontend/render.js"></script>
+    <script src="Frontend/utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+</head>
+
+<body>
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/driver.js/dist/driver.min.js"></script>
+    <div id="app" v-loading="isCanvasLoading" element-loading-text="loading..." element-loading-background="rgba(255, 255, 255, 0.4)">
+        <div class="header">
+            Time Travelling Visualizer
+            <a href="/contrast" @click="clearStorageNavigate(event,'/contrast')"style="color: #fff; position: absolute; right: 60px;top:4px;"><i class="el-icon-open"
+                    style="font-size: 24px;"></i></a>
+        </div>
+        <!-- <el-button class="tutorial_btn" type="success" icon="el-icon-question" size="mini"
+            @click.prevent.stop="guide"></el-button>
+        <el-popover placement="left" width="200" trigger="click">
+            <div>
+                <span style="line-height: 40px; font-weight: 800;">Canvas Intereaction</span>
+                <br />
+                <div class="setting-item">
+                    <span>Zoom Speed:</span> <el-input @input="filterInput('zoomSpeed', $event)" style="width: 100px;"
+                        size="mini" v-model="canvasSetting.zoomSpeed"></el-input>
+                </div>
+                <div class="setting-item">
+                    <el-button size="mini" @click="resetCamera">Reset Camera</el-button>
+                </div>
+            </div>
+            <el-button style="position: absolute; top: 120px; right:0; font-size: 20px;" size="mini" type="warning"
+                slot="reference" icon="el-icon-setting"></el-button>
+        </el-popover>
+
+        <el-popover placement="left" width="200" trigger="click">
+            <div>
+                <span style="line-height: 40px; font-weight: 800;">Error Message</span>
+                <br />
+                <div class="error-message-content" style="margin: 10px 0;">
+                    {{ errorMessage }}
+                </div>
+            </div>
+            <el-button style="position: absolute; top: 160px; right:0; font-size: 20px;" size="mini" type="danger"
+                slot="reference" icon="el-icon-warning"></el-button>
+        </el-popover> -->
+
+        <div class="content_container">
+            
+            <div id="subject_model_info_panel">
+                <span style="display: inline-block; margin-right: 20px;">Data Type:</span>
+                <div id="contentSettingData">
+                    <el-radio v-model="dataType" label="Image">Image</el-radio>
+                    <el-radio v-model="dataType" label="Text">Text</el-radio>
+                </div>
+                <el-divider></el-divider>
+                <span style="display: inline-block; margin-right: 20px;">Task Type:</span><br/>
+                <div id="contentSettingTask">
+                    <el-radio v-model="taskType" label="Classification">Classification</el-radio>
+                    <el-radio v-model="taskType" label="Non-Classification">Non-Classification</el-radio>
+                    <el-radio v-model="taskType" label="Umap-Neighborhood">Umap-Neighborhood</el-radio>
+                </div>
+
+                <el-divider></el-divider>
+
+                <span style="display: inline-block; margin-right: 20px;">Reveal Neighborhood:</span><br/>
+                <div id="neighborhoodSetting">
+                    <el-radio v-model="neighborhoodRevealType" label="None" :disabled="!neighborhoodAvailable">None</el-radio>
+                    <el-radio v-model="neighborhoodRevealType" label="Intra-Type" :disabled="!neighborhoodAvailable">Intra-Type</el-radio>
+                    <el-radio v-model="neighborhoodRevealType" label="Inter-Type" :disabled="!neighborhoodAvailable">Inter-Type</el-radio>
+                    <el-radio v-model="neighborhoodRevealType" label="Both" :disabled="!neighborhoodAvailable">Both</el-radio>
+                </div>
+
+                <el-divider></el-divider>
+
+                <span style="display: inline-block; margin-right: 20px;">Display Settings:</span><br/>
+                <div>
+                    <el-checkbox v-model="showMetadataCard">Show Metadata Card</el-checkbox>
+                </div>
+                <div>
+                    <el-checkbox v-model="showAllText">Show All Text</el-checkbox>
+                </div>
+                <div>
+                    <el-checkbox v-model="showNumberBeforeText">Show Number Before Text</el-checkbox>
+                </div>
+
+                <el-divider></el-divider>
+        
+                <span style="display: inline-block; margin-right: 20px;" v-if="showColorSetting">Color Points?</span>
+                <div id="colorSettingTask" v-if="showColorSetting">
+                    <el-radio v-model="colorType" label="noColoring">No Need</el-radio>
+                    <el-radio v-model="colorType" label="singleColoring">Classification Coloring</el-radio>
+                </div>
+                <el-button id="loadColorButton"
+                style="width: 100%; margin-top: 0px;"
+                @click="ColorHandler" v-if="showColorSetting">Load
+                Color</el-button>
+                <el-divider v-if="showColorSetting"></el-divider>
+
+                <div id="contentPathInput">
+                    Content Path:
+                    <el-input v-model="contentPath"></el-input>
+                </div>
+                <div id="visMethodInput">
+                    Visualization Method:
+                    <el-input v-model="visMethod"></el-input>
+                </div>
+                <!-- <el-divider></el-divider>
+                <div id="customContentPathInput">
+                    Custom Content Path:
+                    <el-input v-model="customContentPath"></el-input>
+                </div> -->
+                <div style="margin-top: 1em;">
+                    <el-button id="showVisResBtn"
+                        style="width: 100%; margin-top: 10px;" @click="update">Load
+                        Visualization Result</el-button>
+                </div>
+                <div style="margin-top: 1em;">
+                    <el-button id="loadVDBBtn" style="width: 100%; margin-top: 0px;"
+                        @click="VDBHandler">Load
+                        Vector Database</el-button>
+                </div>
+                <el-divider></el-divider>
+                <table id="subjectModeEvalRes">
+                    <caption style="margin-bottom: 10px 0;">Model Evaluation</caption>
+                    <tr>
+                        <td></td>
+                        <td>training acc</td>
+                        <td>Testing acc</td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td>{{evaluation.train_acc}}</td>
+                        <td>{{evaluation.test_acc}}</td>
+                    </tr>
+                </table>
+                <el-divider></el-divider>
+                <table id="labelColor">
+                    <thead>
+                        <tr>
+                            <th>Label</th>
+                            <th>Color</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                    </tbody>
+                </table>
+                <el-divider></el-divider>
+            </div>
+            <!-- <div class="mid_container">
+                <div id="container"></div>
+            </div> -->
+            <div id="canvas-container-wrapper">
+                <div id="container">
+                    
+                </div>
+                <div v-if="showAllText && showNumberBeforeText" v-for="(label, idx) in displayedTextLabels" 
+                class="text-tip"
+                :style="{ left: label.coord[0] + 5 + 'px', top: label.coord[1] + 'px' }">
+                    <span class="number-of-sample">{{ '(' + idx + ') '}}</span> {{ label.text }}
+                </div>
+                <div v-if="showAllText && !showNumberBeforeText" v-for="(label, idx) in displayedTextLabels" 
+                class="text-tip"
+                :style="{ left: label.coord[0] + 5 + 'px', top: label.coord[1] + 'px' }">
+                    {{ label.text }}
+                </div>
+            </div>
+
+            <div id="advanced_panel">
+                <el-checkbox v-model="showTraining">Training</el-checkbox>
+                <el-checkbox v-model="showTesting">Testing</el-checkbox>
+                <el-divider></el-divider>
+                <el-checkbox v-model="showVisError">Visualization Error</el-checkbox>
+                <el-checkbox v-model="showPredictionFlips">Prediction Flip</el-checkbox>
+                <br/>
+                <el-checkbox v-model="SelectionMode">Selection Mode</el-checkbox>
+                <el-divider></el-divider>
+                <el-tabs>
+                    <el-tab-pane label="Normal Query">
+                        Filter Index: 
+                        <div style="display: flex;"></el-input><el-input v-model="filter_index">
+                        </el-input><el-button style="margin: 0 0.2em;" @click="filterByIndex">Filter</el-button></div>
+                        <div class="query-row">
+                            <el-select v-model="predicates.key">
+                                <el-option value="label" label="label">
+                                </el-option>
+                                <el-option value="prediction" label="prediction">
+                                </el-option>
+                            </el-select>
+                            <el-input style="margin-left:20px;" v-model="predicates.value"></el-input>
+                        </div>
+                        <div class="query-row">
+                            Confidence: <el-input style="margin-left:20px; margin-right:10px;" v-model="confidence[0]">
+                            </el-input> - <el-input style="margin-left:10px;" v-model="confidence[1]"></el-input>
+                        </div>
+                        <el-button style="width: 100%; margin-top: 10px;">
+                            Start Query
+                        </el-button>
+
+                    </el-tab-pane>
+                   
+                    <el-tab-pane label="Advanced Query">
+                        <div style="display: flex;"></el-input><el-input v-model="filter_index">
+                        </el-input><el-button style="margin: 0 0.3em;" @click="NlSearch">Search</el-button></div>
+                        <el-divider></el-divider>
+                        <div class="switch-container">
+                            <el-switch v-model="isSwitchOn" active-text="Open KNN" inactive-text="Close KNN">
+                            </el-switch>
+                        </div>
+                        <div class="advanced-query-row">
+                            <el-select v-model="query.key">
+                                <el-option value="index" label="index">
+                                </el-option>
+                                <el-option value="nl" label="nl">
+                                </el-option>
+                                <el-option value="vector" label="vector">
+                                </el-option>
+                            </el-select>
+                            <el-input style="margin-left:20px;" v-model="query.value"></el-input>
+                        </div>
+                        <div class="advanced-query-row">
+                            K: <el-input style="margin-left:20px;" v-model="query.k"></el-input>
+                        </div>
+                        <el-button style="width: 100%; margin-top: 10px;"
+                            @click="indexSearchHandler">
+                            Start Query
+                        </el-button>
+                        <el-button style="width: 100%; margin-top: 10px; margin-left:0px;"
+                            @click="clearSearchHandler">
+                            Clear Query
+                        </el-button>
+
+                        <!-- 显示查询结果 -->
+                        <span id="resultContainer">
+                            <ul>
+                                <li v-for="result in query_result" :key="result.id">
+                                    Distance: {{ result.distance }}, ID: {{ result.id }}
+                                </li>
+                            </ul>
+                        </span>
+                    </el-tab-pane>
+                </el-tabs>
+                <el-divider></el-divider>
+                <div class="Selection Pool">
+                    Selection Pool
+                    <div v-for="item in selectedIndex" style="display: flex; line-height: 20px; justify-content: space-between;">
+                            Index: {{item}} <i class="el-icon-delete" @click="deleteItemfromSel(item)"></i>
+                    </div>
+                    <el-button style="width: 100%; margin-top: 10px;"
+                            @click="openModal">
+                            Representation Editing
+                    </el-button>
+                </div>
+                <!-- Modal -->
+                <el-dialog :visible.sync="showModal" width="80%">
+                    <span slot="title">Representation Editing</span>
+                    <div class="modal-container">
+                        <div class="modal-column" v-for="item in selectedIndex">
+                            <h4>Index: {{item}}</h4>
+                            <h4>Code:</h4>
+                            <pre>{{"SAMPLE"}}</pre>
+                            <pre id="highlight" class="highlight">
+<span style="background-color:rgb(255,150,150)">&lt;code_window&gt;</span>
+    <span style="background-color:rgb(255,255,255)">&lt;mask&gt;</span><span style="background-color:rgb(167,255,167)">       </span><span style="background-color:rgb(222,222,255)"> super</span><span style="background-color:rgb(255,255,159)">().</span><span style="background-color:rgb(255,255,255)">__</span><span style="background-color:rgb(255,255,255)">init</span><span style="background-color:rgb(255,255,255)">__</span><span style="background-color:rgb(255,255,255)">(</span><span style="background-color:rgb(255,255,255)">address</span><span style="background-color:rgb(255,255,255)">_</span><span style="background-color:rgb(255,212,255)">or</span><span style="background-color:rgb(255,255,255)">_</span><span style="background-color:rgb(255,255,255)">ble</span><span style="background-color:rgb(255,255,255)">_</span><span style="background-color:rgb(149,255,255)">device</span><span style="background-color:rgb(255,255,255)">,</span><span style="background-color:rgb(255,255,255)"> *</span><span style="background-color:rgb(255,141,141)">args</span><span style="background-color:rgb(255,255,255)">,</span><span style="background-color:rgb(185,255,185)"> **</span><span style="background-color:rgb(172,172,255)">kwargs</span><span style="background-color:rgb(255,255,139)">)</span>
+    <span style="background-color:rgb(255,255,255)">&lt;mask&gt;</span><span style="background-color:rgb(255,255,255)">       </span><span style="background-color:rgb(255,174,255)"> self</span><span style="background-color:rgb(255,255,255)">._</span><span style="background-color:rgb(255,255,255)">ble</span><span style="background-color:rgb(255,255,255)">_</span><span style="background-color:rgb(179,255,255)">device</span><span style="background-color:rgb(255,118,118)"> =</span><span style="background-color:rgb(173,255,173)"> address</span><span style="background-color:rgb(183,183,255)">_</span><span style="background-color:rgb(255,255,179)">or</span><span style="background-color:rgb(255,255,255)">_</span><span style="background-color:rgb(255,255,255)">ble</span><span style="background-color:rgb(255,255,255)">_</span><span style="background-color:rgb(255,255,255)">device</span>
+    <span style="background-color:rgb(255,255,255)">&lt;mask&gt;</span><span style="background-color:rgb(255,255,255)">       </span><span style="background-color:rgb(255,186,255)"> self</span><span style="background-color:rgb(255,255,255)">._</span><span style="background-color:rgb(255,255,255)">address</span><span style="background-color:rgb(255,255,255)">_</span><span style="background-color:rgb(188,255,255)">as</span><span style="background-color:rgb(255,255,255)">_</span><span style="background-color:rgb(255,195,195)">int</span><span style="background-color:rgb(255,255,255)"> =</span><span style="background-color:rgb(255,255,255)"> mac</span><span style="background-color:rgb(255,255,255)">_</span><span style="background-color:rgb(255,255,255)">to</span><span style="background-color:rgb(139,255,139)">_</span><span style="background-color:rgb(255,255,255)">int</span><span style="background-color:rgb(255,255,255)">(</span><span style="background-color:rgb(255,255,255)">self</span><span style="background-color:rgb(255,255,255)">._</span><span style="background-color:rgb(255,255,255)">ble</span><span style="background-color:rgb(255,255,255)">_</span><span style="background-color:rgb(173,173,255)">device</span><span style="background-color:rgb(255,255,255)">.</span><span style="background-color:rgb(255,255,255)">address</span><span style="background-color:rgb(255,255,255)">)</span>
+
+                            </pre>
+                        </div>
+                    </div>
+                    <span slot="footer" class="dialog-footer">
+                        <el-button @click="showModal = false">Cancel</el-button>
+                        <el-button type="primary" @click="saveChanges">Save</el-button>
+                    </span>
+                </el-dialog>
+            </div>
+        </div>
+        <div id="footer">
+            <div style="display: flex; align-items: end;">
+                <svg id="timeLinesvg"></svg>
+                <button id="play-timeline-button" v-if="document.getElementById('timeLinesvg')?.classList?.contains('active')"
+                    @mousedown="playTimeline = !playTimeline" :class="playTimeline ? 'pause' : 'play'"/>
+            </div>
+        </div>
+        <div v-if="showMetadataCard" id="currHover">
+            <h3>MetaData Card</h3>
+            HoverIndex: {{lastHoveredIndex}}<br />
+            Prediction: {{curr_pred}}<br />
+            Label: {{curr_label}}<br />
+            Confidence: {{confidence_dict}}<br />
+            <div v-if="dataType === 'Image' && lastHoveredIndex != null">
+                <img :src="imageSrc" alt="Image Description" height="100px" />
+            </div>
+            <div v-else>
+                <div style="overflow-y: auto; white-space: pre;">
+                    <p>{{ textContent }}</p>
+                </div>
+            </div>
+        </div>
+        <div id="hoverLabel">
+            <!-- Label content -->
+        </div>
+        <div id="fixedHoverLabel">
+
+        </div>
+    </div>
+</body>
+
+<script>
+
+    window.vueApp = new Vue({
+        el: '#app',
+        data() {
+            return {
+                selectedList:[{'index':22},{'index':77}],
+                selectedIndex: [],
+                selectedPointPos:[],
+                selectedPointPos: [],
+                showModal: false,
+                lastHoveredIndex: null,
+                curIndex:null,
+                nnIndices: [],
+                contentPath: ' ',
+                customContentPath: '',
+                visMethod: 'Trustvis',
+                taskType: 'Classification',
+                colorType: 'noColoring',
+                showColorSetting: false,
+                filter_index:'',
+                isCanvasLoading: false,
+                query_result: {},
+                prediction_list: [],
+                curr_pred: '',
+                curr_label: '',
+                label_list: [],
+                label_name_dict: {},
+                color_list: [],
+                confidence_list: [],
+                confidence_dict: [],
+                text_list: [],
+                evaluation: { test_acc: 0, train_acc: 0 },
+                currEpoch: 1,
+                totalEpoch: null,
+                train_index: null,
+                test_index: null,
+                showTraining: true,
+                showTesting: true,
+                showVisError: false,
+                showPredictionFlips: false,
+                SelectionMode: false,
+                isShifting: false,
+                scene: null,
+                renderer: null,
+                camera: null,
+                curImg: null,
+                imageSrc: "",
+                textContent: "",
+                dataType: "Image",
+
+                neighborhoodRevealType: "None",
+                showAllText: false,
+                showMetadataCard: false,
+                showNumberBeforeText: false,
+                pointCoords: [],
+                displayedTextLabels: [],
+
+                playTimeline: false,
+                playEvent: undefined,
+
+                visibilityMap: null,
+                highlightAttributes: {
+                    visualizationError: null,
+                },
+                predictionFlipIndices: null,
+                hoverIndex: null,
+                errorMessage: null,
+                originalSettings: {
+                    originalColors: null,
+                    originalSizes: null,
+                },
+                pointsMesh: null,
+                canvasSetting: {
+                    zoomSpeed: 0.01,
+                    dragSpeed: 0.1,
+                    panSpeed: 0.1,
+                },
+                predicates: {
+                    key: 'lable',
+                    value: null
+                },
+                query: {
+                    key: 'index',
+                    value: null,
+                    k: null
+                },
+                isSwitchOn: false,
+                confidence: [0, 1],
+                sceneBoundary: {
+                    x_min: null,
+                    y_min: null,
+                    x_max: null,
+                    y_max: null 
+                }
+            }
+        },
+        created(){
+            this.loadCookies()
+        },
+        computed: {
+            neighborhoodAvailable() {
+                return this.taskType === 'Umap-Neighborhood';
+            }
+        },
+        methods: {
+            loadCookies(){
+                this.contentPath = Cookies.get('contentPath') || '';
+                this.dataType = Cookies.get('dataType') || 'Image';
+                this.taskType = Cookies.get('taskType') || 'Classification';
+                this.neighborhoodRevealType = Cookies.get('neighborhoodRevealType') || 'None';
+                this.showAllText = Cookies.get('showAllText') == 'true';
+                this.showMetadataCard = Cookies.get('showMetadataCard') == 'true';
+                this.showNumberBeforeText = Cookies.get('showNumberBeforeText') == 'true';
+            },
+            deleteItemfromSel(item) {
+                const index = this.selectedIndex.indexOf(item);
+                if (index !== -1) {
+                  this.selectedIndex.splice(index, 1);
+                }
+              },
+            saveCookies(){
+                const options = { expires: 7 };
+                Cookies.set('contentPath', this.contentPath, options);
+                Cookies.set('dataType', this.dataType, options);
+                Cookies.set('taskType', this.taskType, options);
+                Cookies.set('neighborhoodRevealType', this.neighborhoodRevealType, options);
+                Cookies.set('showAllText', this.showAllText, options);
+                Cookies.set('showMetadataCard', this.showMetadataCard, options);
+                Cookies.set('showNumberBeforeText', this.showNumberBeforeText, options);
+            },
+            filterInput(key, event) {
+                console.log(key, event)
+                let value = event
+
+                value = value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1');
+
+                if ((value.match(/\./g) || []).length > 1) {
+                    value = value.replace(/\.$/, '');
+                }
+                this.canvasSetting[key] = value;
+            },
+            resetCamera() {
+                const target = new THREE.Vector3(
+                    0, 0, 0
+                );
+                container = document.getElementById("container")
+                const rect = container.getBoundingClientRect();
+                var aspectRatio = rect.width / rect.height;
+              
+                this.camera.position.set(0, 0, 100);
+                this.camera.left = this.sceneBoundary.x_min * aspectRatio
+                this.camera.right = this.sceneBoundary.x_max * aspectRatio;
+                this.camera.top = this.sceneBoundary.y_max;
+                this.camera.bottom = this.sceneBoundary.y_min;
+  
+                this.renderer.setSize(rect.width, rect.height);
+                this.renderer.setClearColor(BACKGROUND_COLOR, 1);
+
+                const viewportWidth = this.renderer.domElement.clientWidth;
+                const viewportHeight = this.renderer.domElement.clientHeight;
+
+                this.camera.zoom = 1;
+                this.camera.updateProjectionMatrix();
+                this.camera.lookAt(target);
+            },
+            filterByIndex(){
+                const filtered_index_list = this.filter_index.split(',').map((x) => parseInt(x)).filter((x) => !isNaN(x));
+                // this.selectedIndex = Array.from(new Set([...this.selectedIndex, ...filtered_index_list]));
+                this.selectedIndex = filtered_index_list;
+                this.update();
+            },
+            NlSearch(){
+            },
+            guide() {
+                const steps = [
+                    // {
+                    //     element: '#connectUs',
+                    //     popover: {
+                    //         title: 'Connect Us',
+                    //         description: '**************',
+                    //         position: 'left'
+                    //     },
+                    // },
+                    {
+                        element: '#contentSettingData',
+                        popover: {
+                            title: 'Data Type Selection',
+                            description: 'Please choose the data type used by the subject model',
+                            position: 'right'
+                        },
+                    },
+                    {
+                        element: '#contentSettingTask',
+                        popover: {
+                            title: 'Task Type Selection',
+                            description: 'Please choose whether your subject model is used for classification or not',
+                            position: 'right'
+                        },
+                    },
+                    {
+                        element: '#taskType',
+                        popover: {
+                            title: 'Content Path',
+                            description: 'Please input the absolute path of the training/testing dynamics',
+                            position: 'right'
+                        },
+                    },
+                    {
+                        element: '#contentPathInput',
+                        popover: {
+                            title: 'Content Path',
+                            description: 'Please input the absolute path of the training/testing dynamics',
+                            position: 'right'
+                        },
+                    },
+                    {
+                        element: '#showVisResBtn',
+                        popover: {
+                            title: 'Load Visualization Results',
+                            description: 'After input the content path, you can click this to load the visulization results(default start from epoch 1)',
+                            position: 'right'
+                        },
+                    },
+                    {
+                        element: '#footer',
+                        popover: {
+                            title: 'Time Line',
+                            description: 'It shows the total number of epochs of loaded training/testing dynamics',
+                            position: 'top',
+                        },
+                    },
+                    {
+                        element: '#subjectModeEvalRes',
+                        popover: {
+                            title: 'Subject Model Eval Result',
+                            description: 'After load the visualization result, the corresponding training and testing accuracies wiil be shown here',
+                            position: 'right'
+                        },
+                    },
+                    {
+                        element: '#currHover',
+                        popover: {
+                            title: 'Hover Information',
+                            description: 'The detail of the current hover sample will be shown here',
+                            position: 'right'
+                        },
+                    },
+                    {
+                        element: '#container',
+                        popover: {
+                            title: 'Visualization Canvas',
+                            description: 'It shows the interactable 2D embedding space generated by your previously used visualization techniques',
+                            position: 'right'
+                        },
+                    },
+                    {
+                        element: '#advanced_panel',
+                        popover: {
+                            title: 'Advanced panel',
+                            description: 'You can input proper value to query data points you interested in',
+                            position: 'left'
+                        },
+                    }
+
+                ]
+                this.driver.defineSteps(steps)
+                this.driver.start()
+            },
+            update() {
+                this.isCanvasLoading = true
+                console.log("taskType", this.taskType)
+                this.saveCookies();
+                if (this.customContentPath != '') {
+                    updateCustomProjection(this.contentPath, this.customContentPath, this.currEpoch, this.taskType)
+                }
+                else{
+                    updateProjection(this.contentPath, this.currEpoch, this.taskType)
+                }
+                fetchTimelineData(this.contentPath, "")
+
+            },
+            updateEpoch(value) {
+                this.currEpoch = value;
+                window.sessionStorage.setItem('acceptIndicates', "");
+                window.sessionStorage.setItem('rejectIndicates', "");
+                updateProjection(this.contentPath, this.currEpoch, this.taskType);
+                fetchTimelineData(this.contentPath, "");
+            },
+            VDBHandler() {
+                this.isCanvasLoading = true
+                loadVectorDB(this.contentPath, this.currEpoch)
+            },
+            ColorHandler() {
+                this.isCanvasLoading = true  
+                reloadColor('')   
+            },
+            indexSearchHandler() {
+                this.isCanvasLoading = true
+                indexSearch(this.query, this.isSwitchOn);
+            },
+            clearSearchHandler() {
+                clear();
+            },
+            toggleSwitch() {
+                this.isSwitchOn = !this.isSwitchOn; // 切换开关状态
+                console.log(this.isSwitchOn)
+            },
+            openModal() {
+                this.showModal = true;
+            },
+            saveChanges() {
+                console.log('保存更改:', this.selectedIndex);
+                this.showModal = false;
+            },
+            getInitialState() {
+                return {lastHoveredIndex: null,
+                contentPath: '/home/yifan/dataset/case_study_mnist_backdoor',
+                customContentPath: '',
+                visMethod: 'Trustvis',
+                taskType: 'Classification',
+                colorType: 'noColoring',
+                showColorSetting: false,
+                isCanvasLoading: false,
+                query_result: {},
+                prediction_list: [],
+                curr_pred: '',
+                curr_label: '',
+                label_list: [],
+                label_name_dict: {},
+                color_list: [],
+                confidence_list: [],
+                confidence_dict: [],
+                evaluation: { test_acc: 0, train_acc: 0 },
+                currEpoch: 1,
+                totalEpoch: null,
+                train_index: null,
+                test_index: null,
+                showTraining: true,
+                showTesting: true,
+                showVisError: false,
+                showPredictionFlips: false,
+                SelectionMode: false,
+                isShifting: false,
+                scene: null,
+                renderer: null,
+                camera: null,
+                curImg: null,
+                imageSrc: "",
+                textContent: "",
+                dataType: "Image",
+                visibilityMap: null,
+                highlightAttributes: {
+                    visualizationError: null,
+                },
+                predictionFlipIndices: null,
+                hoverIndex: null,
+                errorMessage: null,
+                originalSettings: {
+                    originalColors: null,
+                    originalSizes: null,
+                },
+                pointsMesh: null,
+                canvasSetting: {
+                    zoomSpeed: 0.01,
+                    dragSpeed: 0.1,
+                    panSpeed: 0.1,
+                },
+                predicates: {
+                    key: 'lable',
+                    value: null
+                },
+                query: {
+                    key: 'index',
+                    value: null,
+                    k: null
+                },
+                isSwitchOn: false,
+                confidence: [0, 1],
+                sceneBoundary: {
+                    x_min: null,
+                    y_min: null,
+                    x_max: null,
+                    y_max: null 
+                }
+            };
+            },
+
+            resetData() {
+                Object.assign(this.$data, this.getInitialState());
+            },
+            clearStorageNavigate(event, url) {
+                event.preventDefault();
+
+                localStorage.clear();
+                sessionStorage.clear(); 
+                cleanForEpochChange('');
+                this.resetData();
+
+                window.location.href = url
+            }
+        },
+        watch: {
+            playTimeline(newVal, oldVal) {
+                if (newVal) {
+                    this.playEvent = setInterval(() => {
+                        if (this.currEpoch < this.totalEpoch) {
+                            this.updateEpoch(this.currEpoch + 1)
+                        } else {
+                            this.playTimeline = false;
+                        }
+                    }, 3000)
+                } else {
+                    clearInterval(this.playEvent)
+                }
+            },
+            pointCoords(newVal) {
+                const text_list = this.epochData?.tokens;
+                if (text_list) {
+                    this.displayedTextLabels = newVal.slice(0, text_list.length)
+                        .map((h, i) => {
+                            return {
+                                coord: h,
+                                text: text_list[i]
+                            }
+                        });
+                }
+            },
+            contentPath(newVal) {
+                this.saveCookies();
+            },
+            neighborhoodRevealType(newVal) {
+                this.plotCanvas?.lastDoUpdateRevealing?.();
+            },
+            lastHoveredIndex: {
+                immediate: true,
+                handler(newVal, oldVal) {
+                    if (newVal != null) {
+                        if (this.taskType === 'Umap-Neighborhood') {
+                            let specifiedTextContent = makeSpecifiedVariableName('textContent', "");
+                            this[specifiedTextContent] = this.epochData.tokens[newVal];
+                        } else {
+                            getOriginalData(this.contentPath, newVal, this.dataType, "", this.customContentPath);
+                        }
+                        const updatedQuery = {
+                            ...this.query,
+                            key: 'index',
+                            value: newVal
+                        };
+                        if (this.isSwitchOn) {
+                            indexSearch(updatedQuery, this.isSwitchOn);
+                        }
+
+                    }
+                }
+            },
+            curIndex:{
+                immediate: true,
+                handler(newVal, oldVal) {
+                    if (this.filter_index !== null && this.filter_index !== "" && (!Array.isArray(this.filter_index) || this.filter_index.length !== 0)) {
+                        let filter_index = window.vueApp.filter_index.split(',');
+                        console.log("filter_index[newVal]", filter_index[newVal])
+                        this.curr_pred = this.prediction_list[filter_index[newVal]];
+                    } else {
+                        console.log("newVal", newVal)
+                        this.curr_pred = this.prediction_list[newVal];
+                    }
+                    this.curr_label = this.label_name_dict[this.label_list[newVal]];
+                    this.confidence_dict = this.confidence_list[newVal]
+                }
+            },
+
+            showVisError: {
+                immediate: true,
+                handler(newVal, oldVal) {
+                    if (newVal) {
+                        getHighlightedPoints('visError', '')
+                        setTimeout(() => {
+                            updateProjection(this.contentPath, this.currEpoch, this.taskType)
+                        }, 1000);
+                    } else {
+                        if (this.highlightAttributes.visualizationError) {
+                            this.highlightAttributes.visualizationError.clear()
+                        }
+                        this.highlightAttributes.visualizationError = null
+                    }
+                }
+            },
+            showPredictionFlips: {
+                handler(newVal, oldVal) {
+                    // prediction flip check for next epoch only
+                    console.log("newVal", newVal, this.currEpoch,  this.totalEpoch)
+                    if (newVal && this.currEpoch < this.totalEpoch) {
+                        getPredictionFlipIndices('')
+                        setTimeout(() => {
+                            updateProjection(this.contentPath, this.currEpoch, this.taskType)
+                        }, 1000);
+                    } else {
+                        console.log("else branch")
+                        this.predictionFlipIndices = null
+                    }
+                }
+            },
+            taskType: {
+                handler(newVal, oldVal) {
+                    if (newVal == "Non-Classification") {
+                        this.showColorSetting = true
+                    } else {
+                        this.showColorSetting = false
+                    }
+                }
+            }
+        },
+        mounted() {
+            this.driver = new Driver()
+        }
+    })
+</script>
+
+</html>

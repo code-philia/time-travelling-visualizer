@@ -157,8 +157,8 @@ export function VisualizerDefaultControl({ visualizerRenderContext, onResize }: 
     }, [gl, camera, rc, onResize]);
     
     useFrame(({ gl, scene, camera }) => {
-        onResize();
         gl.render(scene, camera);
+        onResize();
     }, 1);
 
     return (
