@@ -53,10 +53,12 @@ export type UmapProjectionResult = {
         pid: string;
     }[];
     tokens: string[];
+    inter_sim_top_k: number[][],
+    intra_sim_top_k: number[][]
 }
 
 export async function fetchTimelineData(contentPath: string){
-    return fetch(`http://localhost:5001/get_itertaion_structure?path=${contentPath}&method=Trustvis&setting=normal`, {
+    return fetch(`http://localhost:5000/get_itertaion_structure?path=${contentPath}&method=Trustvis&setting=normal`, {
         method: 'POST',
         headers: headers,
         mode: 'cors'
@@ -68,7 +70,7 @@ export async function fetchTimelineData(contentPath: string){
 export async function fetchUmapProjectionData(contentPath: string, iteration: number): Promise<UmapProjectionResult> {
     const umapTaskType = 'Umap-Neighborhood';
 
-    return fetch(`http://localhost:5001/updateProjection`, {
+    return fetch(`http://localhost:5000/updateProjection`, {
         method: 'POST',
         body: JSON.stringify({
             "path": contentPath,
@@ -76,9 +78,9 @@ export async function fetchUmapProjectionData(contentPath: string, iteration: nu
             "resolution": 200,
             "vis_method": 'TrustVis',
             "setting": 'normal',
-            "content_path": contentPath,
+            "contentPath": contentPath,
             "predicates": {},
-            "TaskType": umapTaskType,
+            "taskType": umapTaskType,
             "selectedPoints": ''
         }),
         headers: headers,
@@ -107,12 +109,12 @@ function getOriginalData(contentPath: string, dataType: string, index: number, i
 }
 
 export function Api() {
-    const { command, contentPath, visMethod, taskType, iteration, filterIndex, setValue } = useStore(["command", "contentPath", "visMethod", "taskType", "iteration", "filterIndex", "setValue"]);
+    const { command, contentPath, visMethod, taskType, epoch, filterIndex, setValue } = useStore(["command", "contentPath", "visMethod", "taskType", "epoch", "filterIndex", "setValue"]);
 
     useEffect(() => {
         if (command != 'update') return;
         setValue('command', '')
-        updateProjection(contentPath, visMethod, taskType, iteration, filterIndex)
+        updateProjection(contentPath, visMethod, taskType, epoch, filterIndex)
             .then(res => { console.log(res); setValue('projectionRes', res) })
     }, [command]);
     return (

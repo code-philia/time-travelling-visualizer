@@ -4,10 +4,10 @@ export interface ContainerProps {
 }
 
 export interface BoundaryProps {
-    x1: number;
-    y1: number;
-    x2: number;
-    y2: number;
+    xMin: number;
+    yMin: number;
+    xMax: number;
+    yMax: number;
 }
 
 export interface ProjectionProps {
@@ -35,4 +35,10 @@ export interface ItertaionStructure {
         name: string;
         pid: string;
     }[];
+}export interface CommonPointsGeography {
+    positions: [number, number, number][];
+    colors: [number, number, number][];
+    sizes: number[];
+    alphas: number[];
 }
+

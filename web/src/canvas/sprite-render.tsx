@@ -1,12 +1,8 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from 'react';
-import { RawPointsData } from './points-render';
+import { CommonPointsGeography, pointsDefaultSize, SpriteData } from './types';
 import { VisualizerRenderContext, worldPositionToScreenPosition } from './visualizer-render-context';
 
-export type SpriteData = {
-    labels: string[];
-}
-
-function repaintSprite(canvas: HTMLCanvasElement, rawPointsData: RawPointsData, spriteData: SpriteData, rc: VisualizerRenderContext) {
+function repaintSprite(canvas: HTMLCanvasElement, rawPointsData: CommonPointsGeography, spriteData: SpriteData, rc: VisualizerRenderContext) {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -20,8 +16,8 @@ function repaintSprite(canvas: HTMLCanvasElement, rawPointsData: RawPointsData, 
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    const scale = Math.max(1.0, Math.min(rc.camera?.zoom ?? 1.0, 4.0));
-    const initFontSize = 10;
+    const scale = Math.max(1.0, Math.min(rc.camera?.zoom ?? 1.0, 2.0));     // NOTE scaling need another algorithm
+    const initFontSize = 18;
 
     // Set text styles
     ctx.fillStyle = 'black';
@@ -37,13 +33,15 @@ function repaintSprite(canvas: HTMLCanvasElement, rawPointsData: RawPointsData, 
         const label = spriteData.labels[i];
 
         const pixelRate = 2;
-        const offsetRight = 5;
-        const offsetDown = 5;
-        ctx.fillText(label, sx * pixelRate + offsetRight * scale, sy * pixelRate + offsetDown * scale);
+        const offsetRight = (initFontSize / 2 + pointsDefaultSize) / 2;
+        const offsetDown = (pointsDefaultSize) / 2;
+
+        ctx.fillStyle = `rgba(0, 0, 0, ${rawPointsData.alphas[i]})`;
+        ctx.fillText(`${i}. ${label}`, sx * pixelRate + offsetRight * scale, sy * pixelRate + offsetDown * scale);
     });
 }
 
-export const SpriteRender = forwardRef(function SpriteRender({ rawPointsData, visualizerRenderContext, spriteData }: { rawPointsData: RawPointsData, spriteData: SpriteData, visualizerRenderContext: VisualizerRenderContext },
+export const SpriteRender = forwardRef(function SpriteRender({ rawPointsData, visualizerRenderContext, spriteData }: { rawPointsData: CommonPointsGeography, spriteData: SpriteData, visualizerRenderContext: VisualizerRenderContext },
     ref: React.Ref<{ repaint: () => void }>) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const tryRepaintSprite = useCallback(() => {
@@ -59,7 +57,7 @@ export const SpriteRender = forwardRef(function SpriteRender({ rawPointsData, vi
             }
         };
     }, [tryRepaintSprite]);
-    
+
     useEffect(() => {
         tryRepaintSprite();
     }, [tryRepaintSprite]);

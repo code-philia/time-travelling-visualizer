@@ -1,0 +1,73 @@
+import { Radio, Button, Input, Flex, Select } from "antd"
+import { useState } from "react"
+import { useStore } from '../state/store';
+import { fetchTimelineData } from "../user/api";
+import { DefaultOptionType } from "antd/es/select";
+
+const items: DefaultOptionType['items'] = [
+    {
+        value: 'TrustVis',
+        label: 'TrustVis',
+        key: '1'
+    },
+];
+
+
+export function ControlPanel() {
+    const [dataType, setDataType] = useState<string>("Image")
+    const [contentPath, setContentPath] = useState<string>("/home/yuhuan/projects/cophi/visualizer-original/dev/gcb_tokens")
+    const options = [{ label: 'Image', value: 'Image', }, { label: 'Text', value: 'Text', },];
+    const { setValue, timelineData } = useStore(["setValue", "timelineData"]);    // TODO now this global store acts as GlobalVisualizationConfiguration
+
+    return (
+        <div id="control-panel">
+            <div className="component-block">
+                <div className="input label">Data Type</div>
+                <Flex vertical gap="middle">
+                    <Radio.Group
+                        block
+                        options={options}
+                        defaultValue="Image"
+                        optionType="button"
+                        buttonStyle="solid"
+                        onChange={(e) => setDataType(e.target.value)}
+                    />
+                </Flex>
+            </div>
+            <div className="component-block">
+                <div className="input label">Content Path</div>
+                <Input onChange={(e) => setContentPath(e.target.value)} />
+            </div>
+            <div className="component-block">
+                <div className="input label">Visualization Method</div>
+                <Select className="full-width" defaultValue="TrustVis" options={items} />
+            </div>
+            {/* <div className="component-block">
+                <div className="input label">Options</div>
+                <Checkbox checked={}>Show Numbers</Checkbox>
+                <Checkbox >Show Tokens</Checkbox>
+            </div> */}
+            <Button className="input-button"
+                onClick={
+                    (_) => {
+                        // TODO wrapped as update entire configuration
+                        setValue("contentPath", contentPath)
+                        setValue("command", "update")
+                        setValue("updateUUID", Math.random().toString(36).substring(7))
+                        if (timelineData === undefined) {
+                            fetchTimelineData(contentPath).then((res) => {
+                                setValue("timelineData", res);
+                            });
+                        }
+                    }
+                }>
+                Load Visualization Result
+            </Button>
+            <Button className="input-button">
+                Load Vector Database
+            </Button>
+            <table id="subjectModeEvalRes">
+            </table>
+        </div >
+    )
+}
