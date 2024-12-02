@@ -70,7 +70,7 @@ pip install -r requirements.txt
 
 ### Download The Demo Dataset
 
-We recommend using this dataset to try the new option `Umap-Neighborhood` .
+We recommend using this dataset `gcb_tokens` to try the new option `Umap-Neighborhood` .
 
 - **bash/zsh:**
 
@@ -101,7 +101,7 @@ There are other demo datasets you can try. This table is a summary:
 1. If you are using a virtual environment, **be sure it is activated.** Then run:
 
 ```bash
-cd Tool/Server/
+cd Tool/server/
 python server.py
 ```
 
