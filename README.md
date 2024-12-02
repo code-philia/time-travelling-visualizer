@@ -23,9 +23,12 @@ git checkout dev
 
 ### Set up Backend/Model
 
-At the beginning of this step, we recommend to [create a venv](https://docs.python.org/3/library/venv.html) or use [conda](https://docs.conda.io/projects/conda/en/24.9.x/user-guide/install/index.html) to isolate the running envirionment before installing all the dependencies, especially when your device has enough storage.
+At the beginning of this step, we recommend creating [venv](https://docs.python.org/3/library/venv.html) or using [conda](https://docs.conda.io/projects/conda/en/24.9.x/user-guide/install/index.html) to isolate the running envirionment before installing all the dependencies, especially when your device has enough storage.
 
-#### Option 1: Create Python `.venv`
+> [!NOTE] 
+> Ignore it if you have encounter any error from pip dependency resolver, which has no impact on running the tool and will be fixed later.
+
+#### Option 1: Create Python venv
 
 Use an installed Python 3.10 executable to create the venv, then it would start from that Python version:
 
@@ -43,22 +46,21 @@ pip install -r requirements.txt
 
 Remember to activate the venv each time before you run the tool.
 
-#### Option 2: Use `conda`
+#### Option 2: Use conda
 
-First sure you have `conda` installed on your system, then run:
+First sure you have [conda](https://docs.conda.io/projects/conda/en/24.9.x/user-guide/install/index.html) installed on your system, then run:
 
 ```bash
 conda create -n visualizer-venv python=3.10 -y
 conda activate visualizer-venv
 pip install -r requirements.txt
-cd Tool/server && python server.py
 ```
 
 Rememeber to `conda activate visualizer-venv` each time you run the tool.
 
 #### Option 3: Directly Install PyTorch and Other Dependencies
 
-Refer to the [PyTorch official guide](https://pytorch.org/get-started/locally/). Installation methods vary by platform, and PyTorch versions depend on your GPU and the appropriate CUDA or ROCm version.
+If you haven't got in touch with PyTorch, please refer to the [PyTorch official guide](https://pytorch.org/get-started/locally/) to install it. Installation methods may vary by platform, and the available PyTorch version depend on your GPU and the appropriate CUDA or ROCm version.
 
 Then, run the following command to install all required dependencies:
 
@@ -84,6 +86,8 @@ We recommend using this dataset to try the new option `Umap-Neighborhood` .
     Expand-Archive gcb_tokens.zip -DestinationPath .
     ```
 
+#### Recommended Demo Datasets
+
 There are other demo datasets you can try. This table is a summary:
 
 | Dataset Name | Download Address | Data Type | Task Type |
@@ -94,10 +98,10 @@ There are other demo datasets you can try. This table is a summary:
 
 ### Run the Backend Server
 
-1. If you are using a virtual environment, be sure it is activated. Then run:
+1. If you are using a virtual environment, **be sure it is activated.** Then run:
 
 ```bash
-cd ../Tool/Server/
+cd Tool/Server/
 python server.py
 ```
 
