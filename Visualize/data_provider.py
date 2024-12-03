@@ -91,3 +91,23 @@ class DataProvider():
         test_data = self.test_representation(epoch)
         all_data = np.concatenate((train_data, test_data), axis=0)
         return all_data
+    
+    def border_representation(self, epoch):
+        border_centers_loc = os.path.join(self.model_path, "{}_{:d}".format(self.epoch_name, epoch),
+                                          "border_centers.npy")
+        try:
+            border_centers = np.load(border_centers_loc)
+        except Exception as e:
+            print("no border points saved for Epoch {}".format(epoch))
+            border_centers = np.array([])
+        return border_centers
+    
+    def test_border_representation(self, epoch):
+        border_centers_loc = os.path.join(self.model_path, "{}_{:d}".format(self.epoch_name, epoch),
+                                          "test_border_centers.npy")
+        try:
+            border_centers = np.load(border_centers_loc)
+        except Exception as e:
+            print("no border points saved for Epoch {}".format(epoch))
+            border_centers = np.array([])
+        return border_centers

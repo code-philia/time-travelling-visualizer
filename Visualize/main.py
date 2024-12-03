@@ -15,8 +15,6 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Time Travelling Visualizer')
     parser.add_argument('--content_path', '-p', type=str, required=True, default='',
                        help='Training dynamic path')
-    parser.add_argument('--vis_method', '-v', type=str, default='DVI',
-                       help='Visualization method')
     return parser.parse_args()
 
 def init_visualize_component(config):
@@ -47,6 +45,7 @@ def run(args):
     
     # # step 2: train visualize model
     strategy.train_vis_model()
+    strategy.check_vis_model()
     logging.info("Visualize model training finished")
     
     # step 3: use visualize model to get 2-D embedding

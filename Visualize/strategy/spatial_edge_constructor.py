@@ -10,8 +10,8 @@ from umap.umap_ import fuzzy_simplicial_set
 from pynndescent import NNDescent
 from sklearn.neighbors import NearestNeighbors
 from sklearn.utils import check_random_state
-from intrinsic_dim import IntrinsicDim
-from kcenter_greedy import kCenterGreedy
+from strategy.intrinsic_dim import IntrinsicDim
+from strategy.kcenter_greedy import kCenterGreedy
 
 class SpatialEdgeConstructorAbstractClass(ABC):
     @abstractmethod
