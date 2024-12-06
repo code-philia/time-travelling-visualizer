@@ -7,7 +7,7 @@ import { useStore } from "./state/store";
 import { HighlightContext, randomColor } from "./canvas/types";
 
 function App() {
-    const { contentPath, epoch, allEpochsProjectionData, setProjectionDataAtEpoch } = useStore(['contentPath', 'epoch', 'allEpochsProjectionData', 'setProjectionDataAtEpoch']);
+    const { contentPath, epoch, allEpochsProjectionData, setProjectionDataAtEpoch, updateUUID } = useStore(['contentPath', 'epoch', 'allEpochsProjectionData', 'setProjectionDataAtEpoch', 'updateUUID']);
 
     const { setHighlightContext } = useStore(['setHighlightContext']);
     let shouldSetHighlightContext = false;
@@ -29,7 +29,7 @@ function App() {
                 }
             }
         })();
-    }, [allEpochsProjectionData, contentPath, epoch, setProjectionDataAtEpoch]);
+    }, [allEpochsProjectionData, contentPath, epoch, setHighlightContext, setProjectionDataAtEpoch, shouldSetHighlightContext, updateUUID]);
 
     const { setLabelDict, setColorDict } = useStore(["setLabelDict", "setColorDict"]);
 

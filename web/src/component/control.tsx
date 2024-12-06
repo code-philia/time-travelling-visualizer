@@ -1,5 +1,5 @@
-import { Radio, Button, Input, Flex, Select } from "antd"
-import { useState } from "react"
+import { Radio, Button, Input, Flex, Select, InputRef } from "antd"
+import { useRef, useState } from "react"
 import { useStore } from '../state/store';
 import { fetchTimelineData } from "../user/api";
 import { DefaultOptionType } from "antd/es/select";
@@ -16,8 +16,12 @@ const items: DefaultOptionType['items'] = [
 export function ControlPanel() {
     const [dataType, setDataType] = useState<string>("Image")
     const [contentPath, setContentPath] = useState<string>("/home/yuhuan/projects/cophi/visualizer-original/dev/gcb_tokens")
-    const options = [{ label: 'Image', value: 'Image', }, { label: 'Text', value: 'Text', },];
+    
     const { setValue, timelineData } = useStore(["setValue", "timelineData"]);    // TODO now this global store acts as GlobalVisualizationConfiguration
+    
+    const dataTypeOptions = [{ label: 'Image', value: 'Image', }, { label: 'Text', value: 'Text', },];
+
+    const inputRef = useRef<InputRef>(null);
 
     return (
         <div id="control-panel">
@@ -26,7 +30,7 @@ export function ControlPanel() {
                 <Flex vertical gap="middle">
                     <Radio.Group
                         block
-                        options={options}
+                        options={dataTypeOptions}
                         defaultValue="Image"
                         optionType="button"
                         buttonStyle="solid"
@@ -36,7 +40,7 @@ export function ControlPanel() {
             </div>
             <div className="component-block">
                 <div className="input label">Content Path</div>
-                <Input onChange={(e) => setContentPath(e.target.value)} />
+                <Input ref={inputRef} onChange={(e) => setContentPath(e.target.value)} />
             </div>
             <div className="component-block">
                 <div className="input label">Visualization Method</div>
@@ -51,7 +55,9 @@ export function ControlPanel() {
                 onClick={
                     (_) => {
                         // TODO wrapped as update entire configuration
-                        setValue("contentPath", contentPath)
+                        if (inputRef.current?.input) {
+                            setValue("contentPath", inputRef.current.input.value);
+                        }
                         setValue("command", "update")
                         setValue("updateUUID", Math.random().toString(36).substring(7))
                         if (timelineData === undefined) {

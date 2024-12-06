@@ -35,30 +35,6 @@ export function extractConnectedPoints(res: UmapProjectionResult): UmapPointsNei
     return { interNeighbors: res.inter_sim_top_k, intraNeighbors: res.intra_sim_top_k };
 }
 
-// FIXME color is updated else where, so their is a two-way dependency :(
-export function extractRawPointsGeography(res: UmapProjectionResult): CommonPointsGeography {
-    // const tempColorForLabels = [[21, 171, 250], [252, 144, 5]];
-
-    const labelsAsNumber = res.labels.map((label) => parseInt(label));
-
-    const positions: [number, number, number][] = [];
-    const colors: [number, number, number][] = [];
-    const sizes: number[] = [];
-    const alphas: number[] = [];
-    res.proj.forEach((point, i) => {
-        positions.push([point[0], point[1], 0]);
-        const color = randomColor(labelsAsNumber[i]);
-        colors.push([color[0] / 255, color[1] / 255, color[2] / 255]);
-        sizes.push(pointsDefaultSize);
-        alphas.push(1.0);
-    });
-
-    const data = {
-        positions, colors, sizes, alphas
-    };
-    return data;
-}
-
 export function extractSpriteData(res: UmapProjectionResult): SpriteData {
     return {
         labels: res.tokens

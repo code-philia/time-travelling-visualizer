@@ -71,19 +71,17 @@ export function PointsRender({ rawPointsData, visualizerRenderContext, eventList
         alphas: new Float32Array(rawPointsData.alphas),
     };
 
-    const sizeRef = useRef<BufferAttribute>(null);
+    // FIXME when changing color, will also lead to a reset-and-rotate of MapController
     const positionRef = useRef<BufferAttribute>(null);
+    const colorRef = useRef<BufferAttribute>(null);
+    const sizeRef = useRef<BufferAttribute>(null);
     const alphaRef = useRef<BufferAttribute>(null);
 
     useEffect(() => {
-        if (sizeRef.current) {
-            sizeRef.current.needsUpdate = true;
-        }
-        if (positionRef.current) {
-            positionRef.current.needsUpdate = true;
-        }
-        if (alphaRef.current) {
-            alphaRef.current.needsUpdate = true;
+        for (const ref of [positionRef, colorRef, sizeRef, alphaRef]) {
+            if (ref.current) {
+                ref.current.needsUpdate = true;
+            }
         }
     }, [rawPointsData]);
 
@@ -136,7 +134,7 @@ export function PointsRender({ rawPointsData, visualizerRenderContext, eventList
         <points onPointerMove={handlePointerMove} onClick={handleClick} frustumCulled={false}>
             <bufferGeometry>
                 <bufferAttribute ref={positionRef} attach="attributes-position" count={numPoints} array={geo.positions} itemSize={3} />
-                <bufferAttribute attach="attributes-color" count={numPoints} array={geo.colors} itemSize={3} />
+                <bufferAttribute ref={colorRef} attach="attributes-color" count={numPoints} array={geo.colors} itemSize={3} />
                 <bufferAttribute ref={sizeRef} attach="attributes-size" count={numPoints} array={geo.sizes} itemSize={1} />
                 <bufferAttribute ref={alphaRef} attach="attributes-alpha" count={numPoints} array={geo.alphas} itemSize={1} />
             </bufferGeometry>

@@ -1,9 +1,7 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
-
+import { useState, useEffect, useMemo } from 'react'
 import { CanvasContainer, Plot2DCanvasContext, Plot2DDataContext } from '../canvas/canvas'
 import { useStore } from '../state/store'
-import { CommonPointsGeography, extractConnectedPoints, extractRawPointsGeography, extractSpriteData, HighlightContext, UmapPointsNeighborRelationship } from '../canvas/types';
-import { SpriteData } from '../canvas/types';
+import { CommonPointsGeography, extractConnectedPoints, extractSpriteData, pointsDefaultSize, SpriteData, UmapPointsNeighborRelationship } from '../canvas/types';
 
 function Timeline({ epoch, epochs, onSwitchEpoch }: { epoch: number, epochs: number[], onSwitchEpoch: (epoch: number) => void }) {
     const [nodes, setNodes] = useState<{ value: number, x: number, y: number }[]>([]);
@@ -96,14 +94,18 @@ function Timeline({ epoch, epochs, onSwitchEpoch }: { epoch: number, epochs: num
 };
 
 export function VisualizationArea() {
-    const { epoch, setEpoch, highlightContext } = useStore(['epoch', 'setEpoch', 'highlightContext']);
-    const { availableEpochs, allEpochsProjectionData } = useStore(["contentPath", "updateUUID", "availableEpochs", "allEpochsProjectionData"]);
+    const { epoch, setEpoch } = useStore(['epoch', 'setEpoch']);
+
+    const { availableEpochs, allEpochsProjectionData, updateUUID } = useStore(["contentPath", "updateUUID", "availableEpochs", "allEpochsProjectionData", "updateUUID"]);
     
     const [canvasContainerTabs, setCanvasContainerTabs] = useState<number[]>([]);
 
-    const [rawPointsGeography, setRawPointsGeography] = useState<CommonPointsGeography | null>(null);
+    const { rawPointsGeography, setRawPointsGeography } = useStore(['rawPointsGeography', 'setRawPointsGeography']);
+    const { colorDict } = useStore(['colorDict']);
     const [finalPointsGeography, setFinalPointsGeography] = useState<CommonPointsGeography | null>(null);
     const [spriteData, setSpriteData] = useState<SpriteData | null>(null);
+
+    const { highlightContext } = useStore(['highlightContext']);
 
     // FIXME move this to new file
     const [neighborhood, setNeighborhood] = useState<UmapPointsNeighborRelationship | null>(null);
@@ -113,6 +115,7 @@ export function VisualizationArea() {
     const [plot2DDataContext, setPlot2DDataContext] = useState<Plot2DDataContext>(new Plot2DDataContext());
     const [plot2DCanvasContext, setPlot2DCanvasContext] = useState<Plot2DCanvasContext>(new Plot2DCanvasContext());
 
+    // FIXME this is useless, when to implement it?
     useEffect(() => {
         if (!canvasContainerTabs.includes(epoch)) {
             setCanvasContainerTabs((prev) => {
@@ -126,16 +129,35 @@ export function VisualizationArea() {
 
     useEffect(() => {
         if (!allEpochsProjectionData[epoch]) return;
+        const res = allEpochsProjectionData[epoch];
 
-        const rawPointsGeo = extractRawPointsGeography(allEpochsProjectionData[epoch]);
-        setRawPointsGeography(rawPointsGeo);
+        const labelsAsNumber = res.labels.map((label) => parseInt(label));
 
-        const spriteData = extractSpriteData(allEpochsProjectionData[epoch]);
+        const positions: [number, number, number][] = [];
+        const colors: [number, number, number][] = [];
+        const sizes: number[] = [];
+        const alphas: number[] = [];
+        res.proj.forEach((point, i) => {
+            const color = colorDict.get(labelsAsNumber[i]);
+            if (color === undefined) return;
+
+            positions.push([point[0], point[1], 0]);
+            colors.push([color[0] / 255, color[1] / 255, color[2] / 255]);
+            sizes.push(pointsDefaultSize);
+            alphas.push(1.0);
+        });
+
+        const data = {
+            positions, colors, sizes, alphas
+        };
+        setRawPointsGeography(data);
+
+        const spriteData = extractSpriteData(res);
         setSpriteData(spriteData);
 
-        const neighborhood = extractConnectedPoints(allEpochsProjectionData[epoch]);
+        const neighborhood = extractConnectedPoints(res);
         setNeighborhood(neighborhood);
-      }, [allEpochsProjectionData, epoch]);
+      }, [allEpochsProjectionData, epoch, updateUUID, colorDict, setRawPointsGeography]);
 
     useEffect(() => {
         setFinalPointsGeography(rawPointsGeography);
