@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
-import { CanvasContainer, Plot2DCanvasContext, Plot2DDataContext } from '../canvas/canvas'
+import { CanvasContainer, Plot2DCanvasContext, Plot2DDataContext } from './canvas/canvas'
 import { useStore } from '../state/store'
-import { CommonPointsGeography, extractConnectedPoints, extractSpriteData, pointsDefaultSize, SpriteData, UmapPointsNeighborRelationship } from '../canvas/types';
+import { CommonPointsGeography, extractConnectedPoints, extractSpriteData, pointsDefaultSize, SpriteData, UmapPointsNeighborRelationship } from './canvas/types';
 
 function Timeline({ epoch, epochs, onSwitchEpoch }: { epoch: number, epochs: number[], onSwitchEpoch: (epoch: number) => void }) {
     const [nodes, setNodes] = useState<{ value: number, x: number, y: number }[]>([]);

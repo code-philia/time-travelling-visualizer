@@ -29,7 +29,7 @@ export interface ProjectionProps {
     confidence_list: number[];
 }
 
-export interface ItertaionStructure {
+export interface IterationStructure {
     structure: {
         value: number;
         name: string;

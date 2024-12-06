@@ -1,7 +1,7 @@
 import { Radio, Button, Input, Flex, Select, InputRef } from "antd"
 import { useRef, useState } from "react"
-import { useStore } from '../state/store';
-import { fetchTimelineData } from "../user/api";
+import { useStore } from '../../state/store';
+import { fetchTimelineData } from "../../communication/api";
 import { DefaultOptionType } from "antd/es/select";
 
 const items: DefaultOptionType['items'] = [
@@ -13,12 +13,12 @@ const items: DefaultOptionType['items'] = [
 ];
 
 
-export function ControlPanel() {
+export function OptionsPanel() {
     const [dataType, setDataType] = useState<string>("Image")
     const [contentPath, setContentPath] = useState<string>("/home/yuhuan/projects/cophi/visualizer-original/dev/gcb_tokens")
-    
+
     const { setValue, timelineData } = useStore(["setValue", "timelineData"]);    // TODO now this global store acts as GlobalVisualizationConfiguration
-    
+
     const dataTypeOptions = [{ label: 'Image', value: 'Image', }, { label: 'Text', value: 'Text', },];
 
     const inputRef = useRef<InputRef>(null);

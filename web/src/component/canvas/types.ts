@@ -1,5 +1,5 @@
-import { BoundaryProps } from "../state/types";
-import { UmapProjectionResult } from "../user/api";
+import { BoundaryProps } from "../../state/types";
+import { UmapProjectionResult } from "../../communication/api";
 
 export const pointsDefaultSize = 20;
 
@@ -90,7 +90,7 @@ export class HighlightContext {
     checkLocked(idx: number) {
         return this.lockedIndices.has(idx);
     }
-    
+
     computeHighlightedPoints() {
         const highlightedPoints = Array.from(this.lockedIndices);
         if (this.hoveredIndex !== undefined) {
@@ -107,12 +107,12 @@ export class HighlightContext {
         //     highlightedPoints.every((value, index) => value === this.lastHighlightedPoints[index]) && this.lastPlotPoints) {
         //     return [false, { ...this.lastPlotPoints }];
         // }
-        
+
         if (useCache && highlightedPoints.length === this.lastHighlightedPoints.length &&
             highlightedPoints.every((value, index) => value === this.lastHighlightedPoints[index]) && this.lastPlotPoints) {
             return [false, { ...this.lastPlotPoints }];
         }
-    
+
         const positions = originalPointsData.positions.slice();
         const colors = originalPointsData.colors.slice();
         const sizes = originalPointsData.sizes.slice();
@@ -126,12 +126,12 @@ export class HighlightContext {
                 alphas[i] = 1.0;
             });
         }
-    
+
         this.lastHighlightedPoints = highlightedPoints;
         const nextPlotPoints = {
             positions, colors, sizes, alphas
         };
-    
+
         // // do check here
         // if (this.lastPlotPoints && this.lastPlotPoints.positions.length === nextPlotPoints.positions.length &&
         //     this.lastPlotPoints.positions.every((value, index) => value === nextPlotPoints.positions[index]) &&

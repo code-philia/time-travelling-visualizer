@@ -1,5 +1,5 @@
-import { ControlPanel } from "./control";
-import { MessageHandler } from "../user/message";
+import { OptionsPanel } from "./options/options-panel";
+import { MessageHandler } from "../communication/message";
 
 
 export function LeftSidebar() {
@@ -7,7 +7,7 @@ export function LeftSidebar() {
     return (
         <div className="user-column">
             {/* <ConnectionStatus useVscode={useVscode} /> */}
-            {useVscode ? <MessageHandler /> : <ControlPanel />}
+            {useVscode ? <MessageHandler /> : <OptionsPanel />}
         </div>
     );
 }

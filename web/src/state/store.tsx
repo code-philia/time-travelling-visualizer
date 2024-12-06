@@ -3,8 +3,8 @@ import { StoreApi, UseBoundStore } from "zustand";
 import { shallow } from "zustand/shallow";
 import { useStoreWithEqualityFn } from "zustand/traditional";
 import { CommonPointsGeography, ProjectionProps } from "../state/types";
-import { UmapProjectionResult } from "../user/api";
-import { HighlightContext } from "../canvas/types";
+import { UmapProjectionResult } from "../communication/api";
+import { HighlightContext } from "../component/canvas/types";
 
 const initProjectionRes: ProjectionProps = {
     result: [],
@@ -44,7 +44,7 @@ function createMutableTypes<T>(initialState: T, set: SetFunction<object>): WithS
     // Don't know how to pre declare a type for this
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const setters: any = {};
-    
+
     for (const key in initialState) {
         const setterName = `set${key.charAt(0).toUpperCase()}${key.slice(1)}`;
         setters[setterName] = (value: typeof key) => set(() => ({ [key]: value }));

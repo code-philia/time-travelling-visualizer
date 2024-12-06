@@ -1,10 +1,10 @@
-import { LeftSidebar } from "./component/options"
-import { MainBlock } from './component/content'
-import { RightSidebar } from './component/model-info'
 import { useEffect } from "react";
-import { fetchUmapProjectionData } from "./user/api";
+import { LeftSidebar } from "./component/left-sidebar"
+import { MainBlock } from './component/main-block'
+import { RightSidebar } from './component/right-sidebar'
+import { fetchUmapProjectionData } from "./communication/api";
 import { useStore } from "./state/store";
-import { HighlightContext, randomColor } from "./canvas/types";
+import { HighlightContext, randomColor } from "./component/canvas/types";
 
 function App() {
     const { contentPath, epoch, allEpochsProjectionData, setProjectionDataAtEpoch, updateUUID } = useStore(['contentPath', 'epoch', 'allEpochsProjectionData', 'setProjectionDataAtEpoch', 'updateUUID']);
