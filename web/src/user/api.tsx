@@ -109,14 +109,6 @@ function getOriginalData(contentPath: string, dataType: string, index: number, i
 }
 
 export function Api() {
-    const { command, contentPath, visMethod, taskType, epoch, filterIndex, setValue } = useStore(["command", "contentPath", "visMethod", "taskType", "epoch", "filterIndex", "setValue"]);
-
-    useEffect(() => {
-        if (command != 'update') return;
-        setValue('command', '')
-        updateProjection(contentPath, visMethod, taskType, epoch, filterIndex)
-            .then(res => { console.log(res); setValue('projectionRes', res) })
-    }, [command]);
     return (
         <></>
     )
