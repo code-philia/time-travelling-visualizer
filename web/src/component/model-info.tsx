@@ -8,16 +8,14 @@ type SampleTag = {
 }
 
 interface LabelProps {
-    labelID: string;
+    label: string;
     colorArray: number[];
     onColorChange: (newColor: [number, number, number]) => void;
 }
 
-const Label: React.FC<LabelProps> = ({ labelID, colorArray, onColorChange }) => {
+const ColoredClassLabel: React.FC<LabelProps> = ({ label, colorArray, onColorChange }) => {
     const inputRef = useRef<HTMLInputElement>(null);
-    const handleChange = (newColor: [number, number, number]) => {
-        onColorChange(newColor);
-    };
+
 
     function setColorPickerOpacity(value: number) {
         const colorPickerItem = inputRef.current;
@@ -33,49 +31,22 @@ const Label: React.FC<LabelProps> = ({ labelID, colorArray, onColorChange }) => 
 
     return (
         <div
-            key={labelID}
-            onMouseOver={(_) => setColorPickerOpacity(1)}
-            onMouseLeave={(_) => setColorPickerOpacity(0)}
+            className="class-item"
+            key={label}
+            onMouseOver={() => setColorPickerOpacity(1)}
+            onMouseLeave={() => setColorPickerOpacity(0)}
         >
-            <span style={{ color: rgbArrToHex(colorArray) }}>
-                {colorArray}
-            </span>
             <input
                 type="color"
                 value={rgbArrToHex(colorArray)}
-                onChange={(e) => handleChange(hexToRgbArray((e.target as HTMLInputElement).value))}
+                onChange={ (e) => onColorChange(hexToRgbArray((e.target as HTMLInputElement).value)) }
             />
+            <span style={{ color: rgbArrToHex(colorArray) }}>
+                {label}
+            </span>
         </div>
     )
 }
-function LabelList() {
-    const { colorList, labelNameDict, setColorList } = useStore(['colorList', 'labelNameDict', 'setColorList']);
-
-    const handleLabelIDChange = (oldLabelID: number, newColor: [number, number, number]) => {
-        setColorList(
-            colorList.map((color, idx) => {
-                if (idx === oldLabelID) {
-                    return newColor;
-                }
-                return color;
-            })
-        );
-    };
-
-    return (
-        labelNameDict && (
-            <div id="labelList">
-                {Object.keys(labelNameDict).map((labelNum) => (
-                    <Label
-                        labelID={labelNum}
-                        colorArray={colorList[parseInt(labelNum)]}
-                        onColorChange={(newColor) => handleLabelIDChange(parseInt(labelNum), newColor)}
-                    />
-                ))}
-            </div>
-        )
-    );
-};
 
 // TODO wrap this into a color object
 function rgbArrToHex(rgbArray: number[]) {
@@ -103,13 +74,11 @@ export function VisualizationInfo() {
     // ]);
 
     // TODO this is too messy all using useStore
-    const { labelDict, colorDict,} =
-        useStore(["labelDict", "colorDict"]);
-
-    const classListRefs = useRef<Map<number, HTMLDivElement>>(new Map());
-    
+    const { labelDict, colorDict, setColorDict } =
+        useStore(["labelDict", "colorDict", "setColorDict"]);
+       
     function changeLabelColor(i: number, newColor: [number, number, number]) {
-        console.log(i, newColor);
+        setColorDict(new Map([...colorDict, [i, newColor]]));
     }
     
     // for search
@@ -190,24 +159,13 @@ export function VisualizationInfo() {
                 <div className="label">Classes</div>
                 <div className="class-list">
                     {
-                        Array.from(labelDict.keys()).map((labelNum) => (
-                            <div
-                                className="class-item"
-                                key={labelNum}
-                                ref={el => classListRefs.current.set(labelNum, el!)}
-                                // onMouseOver={() => classListRefs.current.get(labelNum)!.style.opacity = '1'}
-                                // onMouseLeave={() => classListRefs.current.get(labelNum)!.style.opacity = '0.3'}
-                            >
-                                <input
-                                    type="color"
-                                    value={rgbArrToHex(colorDict.get(labelNum)!)}
-                                    onChange={(e) => changeLabelColor(labelNum, hexToRgbArray((e.target as HTMLInputElement).value))}
-                                />
-                                <span style={{ color: rgbArrToHex(colorDict.get(labelNum)!) }}>
-                                    {labelDict.get(labelNum)}
-                                </span>
-                            </div>
-                        ))
+                        Array.from(labelDict.keys()).map((labelNum) =>
+                            <ColoredClassLabel
+                                label={labelDict.get(labelNum)!}
+                                colorArray={colorDict.get(labelNum)!}
+                                onColorChange={(newColor) => changeLabelColor(labelNum, newColor)}
+                            />
+                        )
                     }
                 </div>
             </div>

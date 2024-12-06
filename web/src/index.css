@@ -170,8 +170,7 @@ input[type="color"] {
 .class-item span {
   display: inline-block;
   padding-left: 0.2em;
-
-  cursor: pointer;
+  transform: translateY(-0.1em);  /* make the text look more centered */
 }
 
 .class-item {
@@ -180,6 +179,8 @@ input[type="color"] {
   padding: 0.3em;
   border-radius: 0.5em;
   margin: 0.2em 0;
+
+  cursor: pointer;
 }
 
 .class-item:hover {
