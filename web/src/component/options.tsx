@@ -2,7 +2,7 @@ import { ControlPanel } from "./control";
 import { MessageHandler } from "../user/message";
 
 
-export function VisualizationOptions() {
+export function LeftSidebar() {
     const useVscode = false;
     return (
         <div className="user-column">

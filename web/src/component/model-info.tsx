@@ -62,7 +62,7 @@ function hexToRgbArray(hex: string): [number, number, number]  {
     return [r, g, b];
 }
 
-export function VisualizationInfo() {
+export function RightSidebar() {
     // for color
     // const labelDict: Map<number, string> = new Map([
     //     [1, 'code'],
@@ -76,11 +76,11 @@ export function VisualizationInfo() {
     // TODO this is too messy all using useStore
     const { labelDict, colorDict, setColorDict } =
         useStore(["labelDict", "colorDict", "setColorDict"]);
-       
+
     function changeLabelColor(i: number, newColor: [number, number, number]) {
         setColorDict(new Map([...colorDict, [i, newColor]]));
     }
-    
+
     // for search
     // const searchResult: SampleTag[] = [
     //     {
@@ -104,10 +104,10 @@ export function VisualizationInfo() {
             setSearchResult([]);
             return;
         }
-        
+
         if (allEpochsProjectionData[epoch] === undefined) return;
         const tokensWithIndex = allEpochsProjectionData[epoch].tokens.entries();
-        
+
         setSearchResult(Array.from(tokensWithIndex).filter(([idx, token]) => token.includes(searchText)).map(([num, title]) => ({ num, title })));
     };
 
