@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { StoreApi, UseBoundStore } from "zustand";
 import { shallow } from "zustand/shallow";
 import { useStoreWithEqualityFn } from "zustand/traditional";
-import { ProjectionProps } from "../state/types";
+import { CommonPointsGeography, ProjectionProps } from "../state/types";
 import { UmapProjectionResult } from "../user/api";
 import { HighlightContext } from "../canvas/types";
 
@@ -25,6 +25,114 @@ const initProjectionRes: ProjectionProps = {
     confidence_list: [],
 }
 
+// Not used to ensure all original types are uncapitalized for now
+// type EnsureUncapitalizedAttr<T> = {
+//     [K in keyof T as Uncapitalize<string & K>]: T[K] | { setK: (value: T[K]) => void };
+// }
+
+type SetFunction<T> = (setState: (state: T) => T | Partial<T>) => void;
+
+type SettersOnAttr<T> = {
+    [K in keyof T as `set${Capitalize<string & K>}`]: (value: T[K]) => void;
+};
+
+// use a flatten-setter type for this
+type WithSettersOnAttr<T> = T & SettersOnAttr<T>;
+
+// this can not only be used to the setter of zustand create
+function createMutableTypes<T>(initialState: T, set: SetFunction<object>): WithSettersOnAttr<T> {
+    // Don't know how to pre declare a type for this
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const setters: any = {};
+    
+    for (const key in initialState) {
+        const setterName = `set${key.charAt(0).toUpperCase()}${key.slice(1)}`;
+        setters[setterName] = (value: typeof key) => set(() => ({ [key]: value }));
+    }
+    return {
+        ...initialState,
+        ...setters,
+    };
+}
+
+type BaseMutableGlobalStore = {
+    command: string;
+    contentPath: string;
+    visMethod: string;
+    taskType: string;
+    colorType: string;
+    epoch: number;
+    filterIndex: number[] | string;
+    dataType: string;
+    colorList: number[][];
+    labelNameDict: Record<number, string>;
+    timelineData: object | undefined;
+    updateUUID: string;
+    allEpochsProjectionData: Record<number, UmapProjectionResult>;
+    availableEpochs: number[];
+    colorDict: Map<number, [number, number, number]>;
+    labelDict: Map<number, string>;
+    highlightContext: HighlightContext;
+    rawPointsGeography: CommonPointsGeography | null;
+}
+
+const initMutableGlobalStore: BaseMutableGlobalStore = {
+    command: '',
+    contentPath: "/home/yuhuan/projects/cophi/visualizer-original/dev/gcb_tokens",
+    visMethod: 'Trustvis',
+    taskType: 'Classification',
+    colorType: 'noColoring',
+    epoch: 1,
+    filterIndex: "",
+    dataType: 'Image',
+    colorList: [],
+    labelNameDict: {},
+    timelineData: undefined,
+    updateUUID: '',     // FIXME should use a global configure object to manage this
+    allEpochsProjectionData: {},
+    availableEpochs: new Array(30).fill(0).map((_, i) => i + 1),
+    // FIXME should use an object to apply user settings (like color) to original data, computing final point geography, and setting cache
+    colorDict: new Map(),
+    labelDict: new Map(),
+    highlightContext: new HighlightContext(),
+    rawPointsGeography: null,
+};
+
+type MutableGlobalStore = WithSettersOnAttr<BaseMutableGlobalStore>;
+
+type CustomGlobalStore = {
+    setProjectionDataAtEpoch: (epoch: number, data: UmapProjectionResult) => void;
+}
+function createCustomGlobalStore(set: SetFunction<GlobalStore>): CustomGlobalStore {
+    return {
+        setProjectionDataAtEpoch: (epoch: number, data: UmapProjectionResult) => set((state) => ({
+            allEpochsProjectionData: {
+                ...state.allEpochsProjectionData,
+                [epoch]: data,
+            },
+        }))
+    };
+}
+
+type DefaultValueSetter<T> = <K extends keyof T>(key: K, value: T[K]) => void;
+function createDefaultValueSetter(set: SetFunction<GlobalStore>): DefaultValueSetter<GlobalStore> {
+    return (key, value) => set(() => ({ [key]: value }));
+}
+
+// FIXME does this lead to cyclic reference of type GlobalStore?
+type WithDefaultValueSetter = {
+    setValue: DefaultValueSetter<GlobalStore>
+};
+
+type GlobalStore = MutableGlobalStore & CustomGlobalStore & WithDefaultValueSetter;
+
+const useGlobalStore = create<GlobalStore>((set) => ({
+    setValue: createDefaultValueSetter(set),
+    ...createMutableTypes(initMutableGlobalStore, set),
+    ...createCustomGlobalStore(set)
+}));    // don't use "as xxx" here so that we can check
+
+// comparison-based update
 export const useShallow = <T, K extends keyof T>(
     store: UseBoundStore<StoreApi<T>>,
     keys: K[]
@@ -43,78 +151,6 @@ export const useShallow = <T, K extends keyof T>(
     );
 };
 
-interface T {
-    command: string;
-    contentPath: string;
-    visMethod: string;
-    taskType: string;
-    colorType: string;
-    epoch: number;
-    setEpoch: (epoch: number) => void;
-    filterIndex: number[] | string;
-    dataType: string;
-    currLabel: string;
-    forward: boolean;
-    setContentPath: (contentPath: string) => void;
-    setValue: <K extends keyof T>(key: string, value: T[K]) => void;
-    colorList: number[][];
-    labelNameDict: Record<number, string>;
-    setColorList: (colorList: number[][]) => void;
-    projectionRes: ProjectionProps;
-    timelineData: object | undefined;
-    updateUUID: string;  // FIXME should use a global configure object to manage this
-    allEpochsProjectionData: Record<number, UmapProjectionResult>;
-    setProjectionDataAtEpoch: (epoch: number, data: UmapProjectionResult) => void;
-    availableEpochs: number[];
-
-    colorDict: Map<number, [number, number, number]>;
-    labelDict: Map<number, string>;
-    setColorDict: (labelDict: Map<number, [number, number, number]>) => void;
-    setLabelDict: (colorDict: Map<number, string>) => void;
-
-    highlightContext: HighlightContext;
-    setHighlightContext: (highlightContext: HighlightContext) => void;
-}
-
-// TODO make a reflection, so we do not define T
-export const GlobalStore = create<T>((set) => ({
-    command: '',
-    contentPath: "",
-    visMethod: 'Trustvis',
-    taskType: 'Classification',
-    colorType: 'noColoring',
-    epoch: 1,
-    setEpoch: (epoch: number) => set({ epoch }),
-    filterIndex: "",
-    dataType: 'Image',
-    currLabel: '',
-    forward: false,
-    setContentPath: (contentPath: string) => set({ contentPath }),
-    setValue: (key, value) => set({ [key]: value }),
-    projectionRes: initProjectionRes,
-    colorList: [],
-    labelNameDict: {},
-    setColorList: (colorList) => set({ colorList }),
-    timelineData: undefined,
-    updateUUID: '',
-    allEpochsProjectionData: {},  // TODO add cache and lazy-load for this
-    setProjectionDataAtEpoch: (epoch: number, data: UmapProjectionResult) => set((state) => ({
-        allEpochsProjectionData: {
-            ...state.allEpochsProjectionData,
-            [epoch]: data,
-        },
-    })),
-    availableEpochs: new Array(30).fill(0).map((_, i) => i + 1),
-    
-    colorDict: new Map(),
-    labelDict: new Map(),
-    setColorDict: (colorDict) => set({ colorDict }),
-    setLabelDict: (labelDict) => set({ labelDict }),
-
-    highlightContext: new HighlightContext(),
-    setHighlightContext: (highlightContext) => set({ highlightContext })
-}));
-
-export const useStore = <K extends keyof T>(keys: K[]) => {
-    return useShallow(GlobalStore, keys);
+export const useStore = <K extends keyof GlobalStore>(keys: K[]) => {
+    return useShallow(useGlobalStore, keys);
 };
