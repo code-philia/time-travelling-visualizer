@@ -1,6 +1,6 @@
 import { OrthographicCamera, Vector4 } from "three";
 import { MapControls } from "three-stdlib";
-import { BoundaryProps } from "../state/types";
+import { BoundaryProps } from "../../state/types";
 
 type WebElementRect = {
     width: number;
@@ -70,27 +70,27 @@ export type ContextOnlyProps = {
 function worldPositionToClipPosition(worldPosition: [number, number], camera: OrthographicCamera): [number, number] {
     // const [wx, wy] = worldPosition;
     // const [x, y] = camera.position;
-    
+
     // const projectionWidth = (camera.right - camera.left) / camera.zoom;
     // const projectionHeight = (camera.top - camera.bottom) / camera.zoom;
-    
+
     // const dx = wx - x;
     // const dy = wy - y;
     // return [
         //     (projectionWidth / 2 + dx) / projectionWidth,
         //     (projectionHeight / 2 - dy) / projectionHeight,
         // ];
-        
+
     const [x, y] = worldPosition;
     const v4 = new Vector4(x, y, 0, 1.0);
-    
+
     camera.updateMatrixWorld();     // prevent wrongly update sprites after re-clicking load visualization result
 
     const { x: cx, y: cy } = v4
         .applyMatrix4(camera.matrixWorldInverse)
         .applyMatrix4(camera.projectionMatrix)
         .divideScalar(v4.w);
-    
+
     return [cx, cy];
 }
 

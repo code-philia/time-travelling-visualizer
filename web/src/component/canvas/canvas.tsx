@@ -1,7 +1,7 @@
 import { memo, useEffect, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber'
 
-import { BoundaryProps } from '../state/types.ts';
+import { BoundaryProps } from '../../state/types.ts';
 
 import { PointsRender } from './points-render.tsx'
 import { CommonPointsGeography, UmapPointsNeighborRelationship } from './types.ts';
@@ -16,12 +16,12 @@ class EventDispatcher {
     dispatch: () => void = this._dispatch.bind(this);
 
     private _dispatch() {
-        this.callback?.();        
+        this.callback?.();
     }
 }
 
 // class CommonDataContext {
-    
+
 // }
 
 export class Plot2DDataContext {
@@ -32,7 +32,7 @@ export class Plot2DDataContext {
     constructor(geo?: CommonPointsGeography, sprite?: SpriteData) {
         this.geo = geo;
         this.sprite = sprite;
-    }  
+    }
 }
 
 export class Plot2DCanvasContext {
@@ -59,13 +59,13 @@ interface CanvasEventListeners {
 
 export const CanvasContainer = memo(({ plotDataContext, plotCanvasContext, eventListeners, neighborRelationship }: { plotDataContext: Plot2DDataContext, plotCanvasContext: Plot2DCanvasContext, eventListeners: CanvasEventListeners, neighborRelationship?: UmapPointsNeighborRelationship }) => {
     const [rc, setRc] = useState<VisualizerRenderContext | null>(null);
-    
+
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    
+
     // for real-time subtitle update
     const spriteRenderRef = useRef<{ repaint: () => void }>(null);
     const viewUpdateEvent = useRef(new EventDispatcher());
-    
+
     // one-time after mounted
     useEffect(() => {
         viewUpdateEvent.current.callback = () => {
@@ -84,7 +84,7 @@ export const CanvasContainer = memo(({ plotDataContext, plotCanvasContext, event
 
     const shouldRenderPoints = rc !== null && plotDataContext.geo !== undefined;
     const shouldRenderSprites = shouldRenderPoints && plotDataContext.sprite;
-  
+
     return (
         <div
             id="canvas-container"
@@ -96,7 +96,7 @@ export const CanvasContainer = memo(({ plotDataContext, plotCanvasContext, event
             <Canvas ref={canvasRef} frameloop="demand" resize={{ debounce: 0 }} linear flat>
                 {/* Ambient Light */}
                 <ambientLight color={0xffffff} intensity={2.0} />
-  
+
                 {/* Points Rendering */}
                 {shouldRenderPoints && (
                     <PointsRender
@@ -105,7 +105,7 @@ export const CanvasContainer = memo(({ plotDataContext, plotCanvasContext, event
                         eventListeners={{ ...eventListeners, onReload: viewUpdateEvent.current.dispatch }}
                     />
                 )}
-  
+
                 {/* Camera and Controls */}
                 {rc && (
                     <>
@@ -117,7 +117,7 @@ export const CanvasContainer = memo(({ plotDataContext, plotCanvasContext, event
                     </>
                 )}
             </Canvas>
-  
+
             {/* Sprite Rendering */}
             {shouldRenderSprites && (
                 <SpriteRender

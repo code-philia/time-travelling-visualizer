@@ -1,23 +1,10 @@
 import { Fetch } from './connection';
-import { useStore } from '../state/store';
-import { useEffect } from 'react';
 const headers = new Headers();
 headers.append('Content-Type', 'application/json');
 headers.append('Accept', 'application/json');
 
-// function fetchTimelineData(contentPath: string): Promise<any> {
-//     const data = {
-//         path: contentPath,
-//         method: 'Trustvis',
-//         setting: 'normal',
-//         headers: { 'Content-Type': 'application/json' },
-//         mode: 'cors',
-//     }
-//     return Fetch('get_iteration_structure', data)
-// }
-
 export function updateProjection(contentPath: string, visMethod: string,
-    taskType: string, iteration: number, filterIndex: number[] | string): Promise<any> {
+    taskType: string, iteration: number, filterIndex: number[] | string): Promise<UmapProjectionResult> {
     const data = {
         path: contentPath,
         iteration: iteration,
@@ -106,10 +93,4 @@ function getOriginalData(contentPath: string, dataType: string, index: number, i
         mode: 'cors'
     };
     return Fetch(`sprite${dataType}`, data);
-}
-
-export function Api() {
-    return (
-        <></>
-    )
 }
