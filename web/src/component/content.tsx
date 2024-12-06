@@ -93,11 +93,11 @@ function Timeline({ epoch, epochs, onSwitchEpoch }: { epoch: number, epochs: num
     );
 };
 
-export function VisualizationArea() {
+export function MainBlock() {
     const { epoch, setEpoch } = useStore(['epoch', 'setEpoch']);
 
     const { availableEpochs, allEpochsProjectionData, updateUUID } = useStore(["contentPath", "updateUUID", "availableEpochs", "allEpochsProjectionData", "updateUUID"]);
-    
+
     const [canvasContainerTabs, setCanvasContainerTabs] = useState<number[]>([]);
 
     const { rawPointsGeography, setRawPointsGeography } = useStore(['rawPointsGeography', 'setRawPointsGeography']);

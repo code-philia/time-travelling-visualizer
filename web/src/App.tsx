@@ -1,6 +1,6 @@
-import { VisualizationOptions } from "./component/options"
-import { VisualizationArea } from './component/content'
-import { VisualizationInfo } from './component/model-info'
+import { LeftSidebar } from "./component/options"
+import { MainBlock } from './component/content'
+import { RightSidebar } from './component/model-info'
 import { useEffect } from "react";
 import { fetchUmapProjectionData } from "./user/api";
 import { useStore } from "./state/store";
@@ -33,7 +33,7 @@ function App() {
 
     const { setLabelDict, setColorDict } = useStore(["setLabelDict", "setColorDict"]);
 
-    
+
     useEffect(() => {
         // TODO extract this currentEpochData to a useStore
         const currentEpochData = allEpochsProjectionData[epoch];
@@ -59,9 +59,9 @@ function App() {
 
     return (
         <div id='app'>
-            <VisualizationOptions />
-            <VisualizationArea />
-            <VisualizationInfo />
+            <LeftSidebar />
+            <MainBlock />
+            <RightSidebar />
         </div>
     )
 }
