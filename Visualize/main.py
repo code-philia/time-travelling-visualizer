@@ -15,6 +15,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Time Travelling Visualizer')
     parser.add_argument('--content_path', '-p', type=str, required=True, default='',
                        help='Training dynamic path')
+    parser.add_argument('--preprocess', '-pre', type=bool, default=False, 
+                       help='whether to get representation first')
     return parser.parse_args()
 
 def init_visualize_component(config):
@@ -39,9 +41,12 @@ def run(args):
     config = VisConfig(os.path.join(args.content_path, 'config.json'))
     dataProvider, visualizer, strategy = init_visualize_component(config)
     
-    # step 1: generate high dimention representation
-    dataProvider.generate_representation()
-    logging.info("Representation generation finished")
+    if args.preprocess:
+        # step 1: generate high dimention representation
+        dataProvider.generate_representation()
+        logging.info("Representation generation finished")
+    else:
+        logging.info("Already has representation generation")
     
     # # step 2: train visualize model
     strategy.train_vis_model()

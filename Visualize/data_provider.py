@@ -139,7 +139,10 @@ class DataProvider():
     def all_representation(self, epoch):
         train_data = self.train_representation(epoch)
         test_data = self.test_representation(epoch)
-        all_data = np.concatenate((train_data, test_data), axis=0)
+        if test_data is None:
+            all_data = train_data
+        else:
+            all_data = np.concatenate((train_data, test_data), axis=0)
         return all_data
     
     def border_representation(self, epoch):
