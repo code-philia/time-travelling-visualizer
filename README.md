@@ -93,7 +93,7 @@ There are other demo datasets you can try. This table is a summary:
 | Dataset Name | Download Address | Data Type | Task Type |
 | --- | --- | --- | --- |
 | gcb_tokens | https://huggingface.co/datasets/code-philia/mtpnet/resolve/main/gcb_tokens.zip?download=true | Text | Umap-Neighborhood |
-| csn_python_code | https://huggingface.co/datasets/code-philia/mtpnet/resolve/main/case_study_mnist_backdoor.zip?download=true | Text | Non-Classification |
+| csn_python_code | https://huggingface.co/datasets/code-philia/mtpnet/resolve/main/csn_python_code.zip?download=true | Text | Non-Classification |
 | case_study_mnist_backdoor | https://huggingface.co/datasets/code-philia/mtpnet/resolve/main/case_study_mnist_backdoor.zip?download=true | Image | Classification |
 
 ### Run the Backend Server
