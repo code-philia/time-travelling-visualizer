@@ -14,6 +14,10 @@ class DataProvider():
     def checkpoint_path(self, epoch):
         return os.path.join(self.content_path, 'Model', "Epoch_{}".format(epoch))
     
+    ########################################################################################################################
+    #                                                       MODEL                                                          #
+    ########################################################################################################################
+    
     def load_subject_model(self, epoch):
         # definition of subject model
         import Model.model as subject_model
@@ -26,6 +30,10 @@ class DataProvider():
         model.eval()
         return model
     
+    def load_subject_pred_func(self, epoch):
+        subject_model = self.load_subject_model(epoch)
+        return subject_model.prediction
+    
     def load_data(self):
         dataset_path = os.path.join(self.content_path, "Dataset")
         train_data = torch.load(os.path.join(dataset_path, "training_dataset_data.pth"),map_location="cpu")
@@ -37,6 +45,48 @@ class DataProvider():
         else:
             return train_data, test_data, None, None
     
+    def train_labels(self):
+        # load train data
+        dataset_path = os.path.join(self.content_path, "Dataset")
+        training_data_loc = os.path.join(dataset_path, "training_dataset_label.pth")
+        try:
+            training_labels = torch.load(training_data_loc, map_location="cpu")
+            training_labels = np.array(training_labels)
+        except Exception as e:
+            print("no train labels saved !")
+            training_labels = None
+        return training_labels
+    
+    def test_labels(self):
+        dataset_path = os.path.join(self.content_path, "Dataset")
+        testing_data_loc = os.path.join(dataset_path, "testing_dataset_label.pth")
+        try:
+            # avoid index checking for testing data
+            testing_labels = torch.load(testing_data_loc, map_location="cpu")
+            testing_labels = np.array(testing_labels)
+        except Exception as e:
+            print("no test labels saved !")
+            testing_labels = None
+        return testing_labels
+    
+    def all_labels(self):
+        training_labels = self.train_labels()
+        testing_labels = self.test_labels()
+        
+        if training_labels is not None and testing_labels is not None:
+            all_labels = np.concatenate((training_labels, testing_labels))
+        elif training_labels is not None:
+            all_labels = training_labels
+        elif testing_labels is not None:
+            all_labels = testing_labels
+        else:
+            all_labels = None
+        
+        return all_labels
+    
+    ########################################################################################################################
+    #                                                       REPRESENTATION                                                 #
+    ########################################################################################################################
     def generate_representation(self):
         training_data, testing_data, training_label, testing_label = self.load_data()
         for n_epoch in range(self.config.EPOCH_START, self.config.EPOCH_END + 1, self.config.EPOCH_PERIOD):
@@ -111,3 +161,19 @@ class DataProvider():
             print("no border points saved for Epoch {}".format(epoch))
             border_centers = np.array([])
         return border_centers
+    
+    ########################################################################################################################
+    #                                                       PREDICTION                                                     #
+    ########################################################################################################################
+    def get_pred(self, epoch, data):
+        '''
+        get the prediction score for data in epoch_id
+        :param data: numpy.ndarray
+        :param epoch_id:
+        :return: pred, numpy.ndarray
+        '''
+        pred_func = self.load_subject_pred_func(epoch)
+        data = torch.from_numpy(data)
+        data = data.to(self.device)
+        pred = batch_run(pred_func, data, desc="getting prediction")
+        return pred
