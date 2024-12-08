@@ -40,6 +40,8 @@ def GUI():
 @cross_origin()
 def get_tree():
     config = TempConfig()
+    # config = initailize_config(config_file)
+
     json_data = []
     previous_epoch = ""
     for epoch in range(config.EPOCH_START, config.EPOCH_END + 1, config.EPOCH_PERIOD):
@@ -63,6 +65,7 @@ def update_projection():
 
     # load config from config_file    
     config = TempConfig(req['taskType'], req['contentPath'])
+    # config = initailize_config(config_file)
     
     # load visualization result of one epoch
     if config.TASK_TYPE == 'classification' or config.TASK_TYPE == 'non-classification':
@@ -95,7 +98,6 @@ def update_projection():
         return make_response(jsonify(result), 200)
     else:
         return make_response(jsonify({'error': 'TaskType not found'}), 400)
-
 
 # Func: get sprite or text of one sample
 @app.route('/spriteImage', methods = ["GET"])
@@ -156,9 +158,6 @@ def sprite_text():
     }
     return make_response(jsonify(response_data), 200)
 
-
-
-    
 def check_port_inuse(port, host):
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
