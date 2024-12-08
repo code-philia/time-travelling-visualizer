@@ -213,8 +213,8 @@ class EvalProjector(DeepDebuggerProjector):
 
 
 class DVIProjector(Projector):
-    def __init__(self, vis_model, content_path, vis_model_name, device) -> None:
-        super().__init__(vis_model, content_path, vis_model_name, device)
+    def __init__(self, config) -> None:
+        super().__init__(config)
 
     def load(self, iteration):
         print("DVIPROJECTOR", self.vis_model_name)
@@ -227,9 +227,8 @@ class DVIProjector(Projector):
 
 
 class TimeVisProjector(Projector):
-    def __init__(self, vis_model, content_path, vis_model_name, device, verbose=0) -> None:
-        super().__init__(vis_model, content_path, vis_model_name, device)
-        self.verbose = verbose
+    def __init__(self, config) -> None:
+        super().__init__(config)
 
     def load(self, iteration):
         file_path = os.path.join(self.content_path, "Model", "{}.pth".format(self.vis_model_name))
@@ -237,8 +236,7 @@ class TimeVisProjector(Projector):
         self.vis_model.load_state_dict(save_model["state_dict"])
         self.vis_model.to(self.device)
         self.vis_model.eval()
-        if self.verbose>0:
-            print("Successfully load the TimeVis visualization model for iteration {}".format(iteration))
+        print("Successfully load the TimeVis visualization model for iteration {}".format(iteration))
 
 
 class TimeVisDenseALProjector(Projector):

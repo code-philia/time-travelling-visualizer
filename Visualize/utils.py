@@ -10,7 +10,22 @@ def get_feature_num(data):
         return 1
     else:
         return data.shape[1]
-    
+
+def batch_run(model, data, desc = "batch_run", batch_size=200):
+    """batch run, in case memory error"""
+    data = data.to(dtype=torch.float)
+    output = None
+    n_batches = max(math.ceil(len(data) / batch_size), 1)
+    for b in tqdm.tqdm(range(n_batches)):
+        r1, r2 = b * batch_size, (b + 1) * batch_size
+        inputs = data[r1:r2]
+        with torch.no_grad():
+            pred = model(inputs).cpu().numpy()
+            if output is None:
+                output = pred
+            else:
+                output = np.concatenate((output, pred), axis=0)
+    return output
 
 def batch_run_feature_extract(feat_func, data, device = None, batch_size=64, desc="feature_extraction"):
     """
@@ -42,9 +57,13 @@ def batch_run_feature_extract(feat_func, data, device = None, batch_size=64, des
     for b in tqdm.tqdm(range(n_batches),desc=desc, leave=True):
         r1, r2 = b * batch_size, (b + 1) * batch_size
         batch_data = data[r1:r2]
-        batch_inputs = [batch_data[:,j,:] for j in range(num_inputs)]
+
         with torch.no_grad():
-            pred = feat_func(*batch_inputs)
+            if num_inputs == 1:
+                pred = feat_func(batch_data)
+            else:
+                batch_inputs = [batch_data[:,j,:] for j in range(num_inputs)]
+                pred = feat_func(*batch_inputs)
             
             if isinstance(pred, tuple):
                 #(code_feature, nl_feature)
