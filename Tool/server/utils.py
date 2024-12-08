@@ -7,7 +7,7 @@ import numpy as np
 import sys
 import base64
 
-vis_path = ".."
+vis_path = "../.."
 sys.path.append(vis_path)
 # from context import VisContext, ActiveLearningContext, AnormalyContext
 # from strategy import DeepDebugger, TimeVis, tfDeepVisualInsight, DVIAL, tfDVIDenseAL, TimeVisDenseAL, Trustvis, DeepVisualInsight
@@ -19,6 +19,8 @@ import torch
 from typing import List
 
 from config import VisConfig
+from Visualize.data_provider import DataProvider
+
 
 """Interface align"""
 def initailize_config(config_file, setting = 'normal'):
@@ -203,9 +205,7 @@ def get_train_test_label(config):
     testing_data_number = config.TRAINING["test_num"]
     
     if config.TASK_TYPE == "classification":
-        dataProvider = NormalDataProvider(config.CONTENT_PATH, None, \
-            config.EPOCH_START, config.EPOCH_END, config.EPOCH_PERIOD, None, \
-                config.TASK_TYPE, config.DATA_TYPE, config.SHOW_LABEL, config.CLASSES)
+        dataProvider = DataProvider(config)
         
         train_labels = dataProvider.train_labels()
         test_labels = dataProvider.test_labels()
@@ -616,8 +616,8 @@ def get_umap_neighborhood_epoch_projection(content_path: str, epoch: int, predic
     code_tokens = read_tokens_by_file(code_labels_folder, code_idx_num)
     comment_tokens = read_tokens_by_file(comment_labels_folder, cmt_idx_num)
 
-    assert (len(code_tokens) == code_idx_num)
-    assert (len(comment_tokens) == cmt_idx_num)
+    # assert (len(code_tokens) == code_idx_num)
+    # assert (len(comment_tokens) == cmt_idx_num)
 
     # Read and return projections
     proj_file = os.path.join(epoch_folder, 'embedding.npy')

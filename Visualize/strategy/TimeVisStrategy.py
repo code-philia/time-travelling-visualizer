@@ -4,17 +4,16 @@ import torch
 from torch.utils.data import DataLoader
 from torch.utils.data import WeightedRandomSampler
 
-from strategy.trainer import DVITrainer, SingleVisTrainer
+from strategy.trainer import SingleVisTrainer
 from strategy.custom_weighted_random_sampler import CustomWeightedRandomSampler
-from strategy.edge_dataset import DataHandler,DVIDataHandler
-from strategy.spatial_edge_constructor import SingleEpochSpatialEdgeConstructor, kcSpatialEdgeConstructor
+from strategy.edge_dataset import DataHandler
+from strategy.spatial_edge_constructor import kcSpatialEdgeConstructor
 from strategy.temporal_edge_constructor import GlobalTemporalEdgeConstructor
-from strategy.losses import DVILoss, DummyTemporalLoss, TemporalLoss, UmapLoss, ReconstructionLoss
+from strategy.losses import SingleVisLoss, UmapLoss, ReconstructionLoss
 from strategy.visualize_model import VisModel
 from strategy.strategy_abstract import StrategyAbstractClass
 from data_provider import DataProvider
 from umap.umap_ import find_ab_params
-from utils import find_neighbor_preserving_rate
 
 class TimeVis(StrategyAbstractClass):
     def __init__(self, config):
@@ -32,6 +31,7 @@ class TimeVis(StrategyAbstractClass):
         _a, _b = find_ab_params(1.0, min_dist)
         self.umap_fn = UmapLoss(negative_sample_rate, self.device, _a, _b, repulsion_strength=1.0)
         self.recon_fn = ReconstructionLoss(beta=1.0)
+        self.criterion = SingleVisLoss(self.umap_fn, self.recon_fn, lambd=self.config.VISUALIZATION['LAMBDA1'])
     
     def train_vis_model(self):
         # parameters
@@ -48,8 +48,8 @@ class TimeVis(StrategyAbstractClass):
         INIT_NUM = 100
         MAX_HAUSDORFF = 1
         ALPHA, BETA = 1, 1
-        T_N_EPOCHS = 1
-        spatial_cons = kcSpatialEdgeConstructor(data_provider=self.data_provider, init_num=INIT_NUM, s_n_epochs=S_N_EPOCHS, b_n_epochs=B_N_EPOCHS, n_neighbors=N_NEIGHBORS, MAX_HAUSDORFF=MAX_HAUSDORFF, ALPHA=ALPHA, BETA=BETA)
+        T_N_EPOCHS = 5
+        spatial_cons = kcSpatialEdgeConstructor(data_provider=self.data_provider, init_num=INIT_NUM, s_n_epochs=S_N_EPOCHS, b_n_epochs=B_N_EPOCHS, n_neighbors=N_NEIGHBORS, MAX_HAUSDORFF=None, ALPHA=ALPHA, BETA=BETA)
         s_edge_to, s_edge_from, s_probs, feature_vectors, time_step_nums, time_step_idxs_list, knn_indices, sigmas, rhos, attention = spatial_cons.construct()
         temporal_cons = GlobalTemporalEdgeConstructor(X=feature_vectors, time_step_nums=time_step_nums, sigmas=sigmas, rhos=rhos, n_neighbors=N_NEIGHBORS, n_epochs=T_N_EPOCHS)
         t_edge_to, t_edge_from, t_probs = temporal_cons.construct()
@@ -72,7 +72,7 @@ class TimeVis(StrategyAbstractClass):
             sampler = WeightedRandomSampler(probs, n_samples, replacement=True)
         edge_loader = DataLoader(dataset, batch_size=1000, sampler=sampler)
 
-        trainer = SingleVisTrainer(self.visualize_mode, self.criterion, optimizer, lr_scheduler, edge_loader=edge_loader, DEVICE=self.device)
+        trainer = SingleVisTrainer(self.visualize_model, self.criterion, optimizer, lr_scheduler, edge_loader=edge_loader, DEVICE=self.device)
         trainer.train(PATIENT, MAX_EPOCH)
 
         self.save_vis_model(self.visualize_model, trainer.loss, trainer.optimizer)

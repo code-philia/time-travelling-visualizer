@@ -145,6 +145,8 @@ class SpatialEdgeConstructor(SpatialEdgeConstructorAbstractClass):
         with open(file_path, "w") as f:
             json.dump(ti, f)
 
+
+# Used in DVI
 class SingleEpochSpatialEdgeConstructor(SpatialEdgeConstructor):
     def __init__(self, data_provider, iteration, s_n_epochs, b_n_epochs, n_neighbors) -> None:
         super().__init__(data_provider, 100, s_n_epochs, b_n_epochs, n_neighbors)
@@ -191,6 +193,8 @@ class SingleEpochSpatialEdgeConstructor(SpatialEdgeConstructor):
         with open(file_path, "w") as f:
             json.dump(ti, f)
 
+
+# Used in TimeVis
 class kcSpatialEdgeConstructor(SpatialEdgeConstructor):
     def __init__(self, data_provider, init_num, s_n_epochs, b_n_epochs, n_neighbors, MAX_HAUSDORFF, ALPHA, BETA, init_idxs=None, adding_num=100) -> None:
         super().__init__(data_provider, init_num, s_n_epochs, b_n_epochs, n_neighbors)
@@ -239,15 +243,16 @@ class kcSpatialEdgeConstructor(SpatialEdgeConstructor):
         time_step_nums = list()
         time_step_idxs_list = list()
 
-        train_num = self.data_provider.train_num
+        baseline_data = self.data_provider.train_representation(self.data_provider.config.EPOCH_END)
+        baseline_data = baseline_data.reshape(-1,baseline_data.shape[-1])
+        max_x = np.linalg.norm(baseline_data, axis=1).max()
+        baseline_data = baseline_data/max_x
+        
+        train_num = baseline_data.shape[0]
         if self.init_idxs is None:
             selected_idxs = np.random.choice(np.arange(train_num), size=self.init_num, replace=False)
         else:
             selected_idxs = np.copy(self.init_idxs)
-
-        baseline_data = self.data_provider.train_representation(self.data_provider.e)
-        max_x = np.linalg.norm(baseline_data, axis=1).max()
-        baseline_data = baseline_data/max_x
         
         c0,d0,_ = self._get_unit(baseline_data, self.init_num, self.adding_num)
 
@@ -255,10 +260,11 @@ class kcSpatialEdgeConstructor(SpatialEdgeConstructor):
             self.MAX_HAUSDORFF = c0-0.01
 
         # each time step
-        for t in range(self.data_provider.e, self.data_provider.s - 1, -self.data_provider.p):
+        for t in range(self.data_provider.config.EPOCH_END, self.data_provider.config.EPOCH_START - 1, -self.data_provider.config.EPOCH_PERIOD):
             print("=================+++={:d}=+++================".format(t))
             # load train data and border centers
             train_data = self.data_provider.train_representation(t)
+            train_data = train_data.reshape(-1,train_data.shape[-1])
 
             # normalize data by max ||x||_2
             max_x = np.linalg.norm(train_data, axis=1).max()
@@ -284,6 +290,7 @@ class kcSpatialEdgeConstructor(SpatialEdgeConstructor):
             time_step_idxs_list.insert(0, np.arange(len(selected_idxs)).tolist())
 
             train_data = self.data_provider.train_representation(t).squeeze()
+            train_data = train_data.reshape(-1,train_data.shape[-1])
             train_data = train_data[selected_idxs]
 
             if self.b_n_epochs != 0:
