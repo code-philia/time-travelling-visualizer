@@ -1,5 +1,6 @@
 # TODO fix loading net, sys.append problem
 from abc import ABC, abstractmethod
+from genericpath import isfile
 
 import torch
 import tensorflow as tf

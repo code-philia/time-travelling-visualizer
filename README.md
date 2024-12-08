@@ -1,196 +1,113 @@
-# Training Dynamic Visualization
-Training Dynamic Visualization, a technique designed to visualize high-dimensional representations during the deep learning training process. In other words, our method is designed to transform the model training dynamics into an animation of canvas with colorful dots and territories.
+# Training Dynamic Visualization Tool
 
+> 🏗️ The tool is under renovation, and only part of the datasets are validated to be visualized. Introduction to the original tool and research project and could be found in [PROTOTYPE.md](PROTOTYPE.md). Old experiment scripts were run in Python 3.7, using `requirements.old.txt`.
 
-![ The results of our visualization technique for the image classifier training process from epoch10 to epoch200](image.png)
-# How to Use it?
+## How To Start the Tool
 
-## Pull Our Code
-We strongly recommend that you store source code and training dynamics in the **Linux file system** instead of the Windows file system to get a complete user experience.
-```
+We recommend using **Python 3.10** to run and contribute to this tool, since no other versions were tested. 
+
+### Prepare the Project
+
+```bash
 git clone https://github.com/code-philia/time-travelling-visualizer.git
+cd time-travelling-visualizer
 ```
 
-The project structure looks as follow:
-```
-time-travelling-visualizer
-│   README.md
-|
-└───training_dynamic
-│   │   README.md
-    
-│   
-└───Vis
-|   │   singleVis | ...
-|   │   trustvis  | ...
-|   │   subject_model_eval.py
-|   │   trustvis_tempo.py 
-|   │   requirements.txt
-|   
-│   
-└───VisTool
-│   │   Backend
-│   |   |    ...
-│   |   |    server
-│   |   |    |   server.py
-│   |   |    ...
-│   │   Frontend
-│   |   |    ...
-│   |   |    tensorboard
-│   |   |    |   projector | ...
-│   |   |    ...
-└───
+### Switch Git Branch
+
+To try our lastest features, switch to the following branch:
+
+```bash
+git checkout dev
 ```
 
-- training_dynamic fold is for storing the dataset
-- Vis fold is for training the visualization models
-- visTool fold is the interactive visualization tool's backend and frontend
+### Set up Backend/Model
 
-⚠️ Note that, the training_dynamic folder stores the training process and the target dataset. 
+At the beginning of this step, we recommend creating [venv](https://docs.python.org/3/library/venv.html) or using [conda](https://docs.conda.io/projects/conda/en/24.9.x/user-guide/install/index.html) to isolate the running envirionment before installing all the dependencies, especially when your device has enough storage.
 
-# Environment Configuration
-1. create conda environment
-```
-$ conda create -n visualizer python=3.7
-$ (visualizer) ~/time-travelling-visualizer$ conda activate visualizer
-```
+> [!NOTE] 
+> Ignore it if you have encounter any error from pip dependency resolver, which has no impact on running the tool and will be fixed later.
 
-2. install pyTorch and CUDA
-For setting up PyTorch on that conda environment, use the guidelines provided at [PyTorch's official local installation page](https://pytorch.org/get-started/locally/). This guide will help you select the appropriate configuration based on your operating system, package manager, Python version, and CUDA version.
+#### Option 1: Create Python venv
 
-3. install requirements
+Use an installed Python 3.10 executable to create the venv, then it would start from that Python version:
 
-For linux developers, you can use the following command to install the required packages.
-```
-$ (visualizer) ~/time-travelling-visualizer$ pip install -r requirements.txt
-```
-For windows developers, you can use the following command instead.
-```
-$ (visualizer) ~/time-travelling-visualizer$ pip install -r win-requirements.txt
+```bash
+python --version    # make sure the output is Python 3.10.*, or you should install and use python3.10
+python -m venv .venv
+
+# On Linux or MacOS run
+source .venv/bin/activate
+# On Windows run
+.venv\Scripts\activate
+
+pip install -r requirements.txt
 ```
 
-Note that, if you are using VPN or other proxy, please specify `--proxy` parameter to install the packages.
+Remember to activate the venv each time before you run the tool.
 
-4. vector database environment configuration
-If you wish to explore the vector database extension on our visualization tool, please follow the steps below to install the necessary packages.
+#### Option 2: Use conda
 
-Please note that the **versions** of Docker and Docker Compose are important! You can refer to the official documentation, [Milvus's Prerequisties](https://milvus.io/docs/prerequisite-docker.md), or simply follow the commands provided below.
+First sure you have [conda](https://docs.conda.io/projects/conda/en/24.9.x/user-guide/install/index.html) installed on your system, then run:
 
-For linux developers, you can use the following command to install Docker and Docker Compose.
-```
-$ (visualizer) ~/time-travelling-visualizer$ pip install docker==6.1.3
-$ (visualizer) ~/time-travelling-visualizer$ pip install docker-compose==1.29.2
-```
-
-For windows developers, Windows with WSL 2 enabled and Docker Desktop are needed.
-
-For installing Linux on Windows with WSL, use the guidelines provided at [Microsofts's official WSL installation page](https://learn.microsoft.com/en-us/windows/wsl/install) 
-
-When your WSL is ready, you should move both your **source code** and **training dynamics** into WSL file system.
-
-For setting up WSL 2 with Docker Desktop, see [WSL](https://docs.docker.com/desktop/wsl/).
-
-And if you want to open your WSL distribution in VS Code, refer to the documentation at [Microsofts's official WSL tutorial for vscode](https://learn.microsoft.com/en-us/windows/wsl/tutorials/wsl-vscode) 
-
-After completing the above steps, you should install Docker Compose by:
-```
-$ (visualizer) ~/time-travelling-visualizer$ pip install docker-compose==1.29.2
+```bash
+conda create -n visualizer-venv python=3.10 -y
+conda activate visualizer-venv
+pip install -r requirements.txt
 ```
 
-## Training Process Dataset (the training process of a model)
+Rememeber to `conda activate visualizer-venv` each time you run the tool.
 
+#### Option 3: Directly Install PyTorch and Other Dependencies
 
-You can train your classification model and save the training dynamics. For information on the structure of the training dynamics directory and the config file format, refer to the the [dataset's readme document](./training_dynamic/README.md). For details about training visualization model on training dynamics, refer to the [Vis Model's readme document](./Vis/README.md)
+If you haven't got in touch with PyTorch, please refer to the [PyTorch official guide](https://pytorch.org/get-started/locally/) to install it. Installation methods may vary by platform, and the available PyTorch version depend on your GPU and the appropriate CUDA or ROCm version.
 
-🍃 Training dynamics examples are also available on [Hugging Face](https://huggingface.co/datasets/code-philia/mtpnet) for you to download. 
+Then, run the following command to install all required dependencies:
 
-1. download training dynamics example from huggingface
-```
-~/time-travelling-visualizer$ cd training_dynamic
-~/time-travelling-visualizer/training_dynamic$ git lfs clone https://huggingface.co/datasets/code-philia/mtpnet.git
-~/time-travelling-visualizer/training_dynamic$ unzip mtpnet/case_study_mnist_backdoor.zip
-```
-2. unzip the dataset file
-
-For linux user, you can unzip the example dataset into training_dynamic directory using the command
-```
-~/time-travelling-visualizer/training_dynamic$ unzip mtpnet/case_study_mnist_backdoor.zip
-```
-For windows user, you can unzip the example dataset into training_dynamic directory using the command
-```
-~/time-travelling-visualizer/training_dynamic$ Expand-Archive mtpnet/case_study_mnist_backdoor.zip -DestinationPath .
+```bash
+pip install -r requirements.txt
 ```
 
-With this provided example, you can directly experience our tool.
+### Download The Demo Dataset
 
-If you want to train your own visualization model, refer to the the [visualization model's readme document](./Vis/README.md).
+We recommend using this dataset `gcb_tokens` to try the new option `Umap-Neighborhood` .
 
-# Run interactive Visualizer Tool
-```
-~/time-travelling-visualizer$ cd /Tool/server
-~/time-travelling-visualizer/Tool/server$ conda activate visualizer
-```
-For linux and WSL users, you can use this command to start the tool with vector database (It will take a few minutes to start the docker container in the first time)
-```
-~/time-travelling-visualizer/Tool/server$ (visualizer) ./start_server.sh 
-```
-Windows users can use the following command instead to run the tool
-```
-~/time-travelling-visualizer/Tool/server$ (visualizer) python server.py
-```
-you will see: 
-```
-[+] Running 3/3 (WSL only)
-✔ Container milvus-minio       Started (WSL only)
-✔ Container milvus-etcd        Started (WSL only)
-✔ Container milvus-standalone  Started (WSL only)
-Starting milvus-minio ... done (Linux only) 
-Starting milvus-etcd  ... done (Linux only)
-Starting milvus-standalone ... done (Linux only)
-* Serving Flask app 'server'
-* Environment: production
-* Debug mode: off
-* Running on http://ip:port
+- **bash/zsh:**
 
-Access the user interface by opening http://ip:port in your web browser.
-```
+    ```bash
+    wget https://huggingface.co/datasets/code-philia/mtpnet/resolve/main/gcb_tokens.zip?download=true -O gcb_tokens.zip
+    unzip gcb_tokens.zip
+    ```
 
-![Interactive Visualizer Tool](screenshot.png)
+- **PowerShell:**
 
+    ```powershell
+    Invoke-WebRequest https://huggingface.co/datasets/code-philia/mtpnet/resolve/main/gcb_tokens.zip?download=true -OutFile gcb_tokens.zip
+    Expand-Archive gcb_tokens.zip -DestinationPath .
+    ```
 
+#### Recommended Demo Datasets
 
----
+There are other demo datasets you can try. This table is a summary:
 
+| Dataset Name | Download Address | Data Type | Task Type |
+| --- | --- | --- | --- |
+| gcb_tokens | https://huggingface.co/datasets/code-philia/mtpnet/resolve/main/gcb_tokens.zip?download=true | Text | Umap-Neighborhood |
+| csn_python_code | https://huggingface.co/datasets/code-philia/mtpnet/resolve/main/case_study_mnist_backdoor.zip?download=true | Text | Non-Classification |
+| case_study_mnist_backdoor | https://huggingface.co/datasets/code-philia/mtpnet/resolve/main/case_study_mnist_backdoor.zip?download=true | Image | Classification |
 
-# Citation
+### Run the Backend Server
 
-```
-@inproceedings{yang2023deepdebugger,
-  title={DeepDebugger: An Interactive Time-Travelling Debugging Approach for Deep Classifiers},
-  author={Yang, Xianglin and Lin, Yun and Zhang, Yifan and Huang, Linpeng and Dong, Jin Song and Mei, Hong},
-  booktitle={Proceedings of the 31st ACM Joint European Software Engineering Conference and Symposium on the Foundations of Software Engineering},
-  pages={973--985},
-  year={2023}
-}
+1. If you are using a virtual environment, **be sure it is activated.** Then run:
 
-
-@inproceedings{yang2022temporality,
-  title={Temporality Spatialization: A Scalable and Faithful Time-Travelling Visualization for Deep Classifier Training},
-  author={Yang, Xianglin and Lin, Yun and Liu, Ruofan and Dong, Jin Song},
-  booktitle = {Proceedings of the Thirty-First International Joint Conference on Artificial Intelligence, {IJCAI-22}},
-  year={2022}
-}
-
-@inproceedings{yang2022deepvisualinsight,
-  title={DeepVisualInsight: Time-Travelling Visualization for Spatio-Temporal Causality of Deep Classification Training},
-  author={Yang, Xianglin and Lin, Yun and Liu, Ruofan and He, Zhenfeng and Wang, Chao and Dong, Jin Song and Mei, Hong},
-  booktitle = {The Thirty-Sixth AAAI Conference on Artificial Intelligence (AAAI)},
-  year={2022}
-}
+```bash
+cd Tool/server/
+python server.py
 ```
 
-## Acknowledgement
-We appreciate all our collaborators for their contributions in this project:
+2. You should see an URL after the server is started (if you start this tool remotely, you may need to set up port forwarding in your IDE, e.g. VS Code). Visit it in your browser.
+3. Fill in the **Content Path** field the absolute path to the extracted dataset.
+4. Choose the correct options, the data type **Image/Text** and the task type **Classification/Non-Classification/Umap-Neighborhood**, according to the table above.
+5. Click **Load Visualization Result**. If you see any warnings, click **OK** to proceed.
 
-Xianglin Yang, Ruofan Liu, Guorui Qin, ... (the list is expanding)
-
+You should now see the visualization plot, and the console will show access log.

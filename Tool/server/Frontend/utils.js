@@ -249,7 +249,7 @@ function updateCurrHoverIndex(event, index, isDisplay, flag) {
   const hoverLabel = document.getElementById(specifiedHoverLabel);
   if (isDisplay) {
     hoverLabel.style.left = (event.clientX + 5) + 'px';
-    hoverLabel.style.top = (event.clientY - 5) + 'px';
+    hoverLabel.style.top = (event.clientY - 20) + 'px';
     hoverLabel.style.display = 'block';
   } else {
     if (index !=null) {
@@ -257,7 +257,7 @@ function updateCurrHoverIndex(event, index, isDisplay, flag) {
       window.vueApp[specifiedHoverIndex] = index;
       hoverLabel.textContent = `${index}`;
       hoverLabel.style.left = (event.clientX + 5) + 'px';
-      hoverLabel.style.top = (event.clientY - 5) + 'px';
+      hoverLabel.style.top = (event.clientY - 20) + 'px';
       hoverLabel.style.display = 'block';
     
     } else {
@@ -339,16 +339,18 @@ function makeSpecifiedVariableName(string, flag) {
 
 
 function drawTimeline(res, flag) {
-  console.log('res', res)
+  console.log('res', res);
   // this.d3loader()
 
   const d3 = window.d3;
-  let specifiedTimeLinesvg = makeSpecifiedVariableName('timeLinesvg', flag)
-  let specifiedContentPath = makeSpecifiedVariableName('contentPath', flag)
-  let specifiedCurrEpoch = makeSpecifiedVariableName('currEpoch', flag)
+  let specifiedTimeLinesvg = makeSpecifiedVariableName('timeLinesvg', flag);
+  let specifiedContentPath = makeSpecifiedVariableName('contentPath', flag);
+  let specifiedCurrEpoch = makeSpecifiedVariableName('currEpoch', flag);
 
-  let svgDom = document.getElementById(specifiedTimeLinesvg)
+  let currEpoch = window.vueApp[specifiedCurrEpoch] ?? window.vueApp.currEpoch;
 
+  let svgDom = document.getElementById(specifiedTimeLinesvg);
+  svgDom.classList.add('active');
 
   while (svgDom?.firstChild) {
       svgDom.removeChild(svgDom.lastChild);
@@ -356,38 +358,38 @@ function drawTimeline(res, flag) {
 
 
 
-  let total = res.structure.length
-  
-  window.treejson = res.structure
+  let total = res.structure.length;
 
-  let data = res.structure
+  window.treejson = res.structure;
+
+  let data = res.structure;
 
 
   function tranListToTreeData(arr) {
-      const newArr = []
-      const map = {}
+      const newArr = [];
+      const map = {};
 
       arr.forEach(item => {
-          item.children = []
-          const key = item.value
-          map[key] = item
-      })
+          item.children = [];
+          const key = item.value;
+          map[key] = item;
+      });
 
       // 2. 对于arr中的每一项
       arr.forEach(item => {
-          const parent = map[item.pid]
+          const parent = map[item.pid];
           if (parent) {
               //    如果它有父级，把当前对象添加父级元素的children中
-              parent.children.push(item)
+              parent.children.push(item);
           } else {
               //    如果它没有父级（pid:''）,直接添加到newArr
-              newArr.push(item)
+              newArr.push(item);
           }
-      })
+      });
 
-      return newArr
+      return newArr;
   }
-  data = tranListToTreeData(data)[0]
+  data = tranListToTreeData(data)[0];
   var margin = 20;
   var svg = d3.select(svgDom);
   var width = svg.attr("width");
@@ -405,21 +407,22 @@ function drawTimeline(res, flag) {
       });
 
   //create tree
-  let len = total
+  // The number of links is 1 less than number of nodes
+  let len = total - 1;
 
-  let svgWidth = len * 40
+  let svgWidth = len * 40;
   if (window.sessionStorage.taskType === 'active learning') {
-      svgWidth = 1000
+      svgWidth = 1000;
   }
   // svgWidth = 1000
-  console.log('svgWid', len, svgWidth)
-  svgDom.style.width = svgWidth + 200
+  console.log('svgWid', len, svgWidth);
+  svgDom.style.width = svgWidth + 50;
   if (window.sessionStorage.selectedSetting !== 'active learning' && window.sessionStorage.selectedSetting !== 'dense al') {
-      svgDom.style.height = 60
+      svgDom.style.height = 60;
       // svgDom.style.width = 2000
   }
 
-
+  // TODO Why we need to draw the tree manually although its size is determined here?
   var tree = d3.tree()
       .size([100, svgWidth])
       .separation(function (a, b) {
@@ -427,7 +430,7 @@ function drawTimeline(res, flag) {
       });
 
   //init
-  var treeData = tree(hierarchyData)
+  var treeData = tree(hierarchyData);
 
   //line node
   var nodes = treeData.descendants();
@@ -442,6 +445,10 @@ function drawTimeline(res, flag) {
           return d.x;
       });
 
+
+  const purple = '#452d8a'
+  const blue = '#3278F0'
+  const w_blue = '#72A8F0'
 
   //path
   g.append('g')
@@ -463,7 +470,7 @@ function drawTimeline(res, flag) {
               target: end
           });
       })
-      .attr('stroke', '#452d8a')
+      .attr('stroke', w_blue)
       .attr('stroke-width', 1)
       .attr('fill', 'none');
 
@@ -475,7 +482,7 @@ function drawTimeline(res, flag) {
       .enter()
       .append('g')
       .attr('transform', function (d, i) {
-          return 'translate(' + d.data.pid * 40 + ',' + d.x + ')';
+          return 'translate(' + d.y + ',' + d.x + ')';
       });
 
   //绘制文字和节点
@@ -483,21 +490,24 @@ function drawTimeline(res, flag) {
       .attr('r', 8)
       .attr('fill', function (d, i) {
           // console.log("1111",d.data.value, window.iteration, d.data.value == window.iteration )
-          return d.data.value == window.vueApp[specifiedCurrEpoch] ? 'orange' : '#452d8a'
+          return d.data.value == currEpoch ? blue : w_blue;
       })
       .attr('stroke-width', 1)
       .attr('stroke', function (d, i) {
-          return d.data.value == window.vueApp[specifiedCurrEpoch] ? 'orange' : '#452d8a'
+          return d.data.value == currEpoch ? blue : w_blue;
       })
+      .attr('class', 'hover-effect');
 
   gs.append('text')
-      .attr('x', function (d, i) {
-          return d.children ? 5 : 10;
-      })
+      .attr('x', 0)
       .attr('y', function (d, i) {
-          return d.children ? -20 : -5;
+          return -14;
       })
-      .attr('dy', 10)
+      .attr('dy', 0)
+      .attr('text-anchor', 'middle')
+      .style('fill', function (d, i) {
+          return d.data.value == currEpoch ? blue : w_blue;
+      })
       .text(function (d, i) {
           if (window.sessionStorage.taskType === 'active learning') {
               return `${d.data.value}|${d.data.name}`;
@@ -505,47 +515,48 @@ function drawTimeline(res, flag) {
               return `${d.data.value}`;
           }
 
-      })
+      });
   setTimeout(() => {
       let list = svgDom.querySelectorAll("circle");
       for (let i = 0; i <= list.length; i++) {
-          let c = list[i]
+          let c = list[i];
           if (c) {
-              c.style.cursor = "pointer"
-              c.addEventListener('click', (e) => {
+              c.style.cursor = "pointer";
+            c.addEventListener('click', (e) => {
+                  // TODO method of "switch to an epoch" should be extracted
                   if (e.target.nextSibling.innerHTML != window.vueApp[specifiedCurrEpoch]) {
 
-                      let value = e.target.nextSibling.innerHTML.split("|")[0]
-                      window.vueApp.isCanvasLoading = true
+                      let value = parseInt(e.target.nextSibling.innerHTML.split("|")[0]);
+                      window.vueApp.isCanvasLoading = true;
                       if (flag != '') {
-                        updateContraProjection(window.vueApp[specifiedContentPath], value, window.vueApp.taskType, flag)
+                          updateContraProjection(window.vueApp[specifiedContentPath], value, window.vueApp.taskType, flag);
 
-                        if (window.vueApp.concurrentMode == "yes") {
-                          let anotherFlag = referToAnotherFlag(flag)
-                          let specifiedContentPathMirror = makeSpecifiedVariableName('contentPath', anotherFlag)
-                          let specifiedCurrEpochMirror = makeSpecifiedVariableName('currEpoch', anotherFlag)
+                          if (window.vueApp.concurrentMode == "yes") {
+                              let anotherFlag = referToAnotherFlag(flag);
+                              let specifiedContentPathMirror = makeSpecifiedVariableName('contentPath', anotherFlag);
+                              let specifiedCurrEpochMirror = makeSpecifiedVariableName('currEpoch', anotherFlag);
 
-                          if (window.vueApp[specifiedCurrEpochMirror] != value) {                   
-                            updateContraProjection(window.vueApp[specifiedContentPathMirror], value, window.vueApp.taskType, anotherFlag)
-                            window.vueApp[specifiedCurrEpochMirror] = value
-                            drawTimeline(res, anotherFlag)
-                          //todo res currently only support same epoch number from different content paths
-                          }             
-                        }  
+                              if (window.vueApp[specifiedCurrEpochMirror] != value) {
+                                  updateContraProjection(window.vueApp[specifiedContentPathMirror], value, window.vueApp.taskType, anotherFlag);
+                                  window.vueApp[specifiedCurrEpochMirror] = value;
+                                  drawTimeline(res, anotherFlag);
+                                  //todo res currently only support same epoch number from different content paths
+                              }
+                          }
                       } else {
-                        updateProjection(window.vueApp[specifiedContentPath], value, window.vueApp.taskType)
+                          updateProjection(window.vueApp[specifiedContentPath], value, window.vueApp.taskType);
                       }
-                     
-                      window.sessionStorage.setItem('acceptIndicates', "")
-                      window.sessionStorage.setItem('rejectIndicates', "")
-                      window.vueApp[specifiedCurrEpoch] = value
-                      drawTimeline(res, flag)
+
+                      window.sessionStorage.setItem('acceptIndicates', "");
+                      window.sessionStorage.setItem('rejectIndicates', "");
+                      window.vueApp[specifiedCurrEpoch] = value;
+                      drawTimeline(res, flag);
                   }
-              })
+              });
 
           }
       }
-  }, 50)
+  }, 50);
 }
 
 function referToAnotherFlag(flag) {
@@ -603,7 +614,7 @@ function updateShowingIndices(alphas, isShow, indices, flip_indices) {
 function cleanForEpochChange(flag) {
   var specifiedPointsMesh = makeSpecifiedVariableName("pointsMesh", flag)
   var specifiedOriginalSettings = makeSpecifiedVariableName("originalSettings", flag)
-  console.log("specirfid point mesh", specifiedPointsMesh)
+  // console.log("specirfid point mesh", specifiedPointsMesh)
   if (window.vueApp[specifiedPointsMesh]) {
     console.log("pointMesh")
     if (window.vueApp[specifiedPointsMesh].geometry) {

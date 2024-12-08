@@ -49,7 +49,7 @@ class DataProviderAbstractClass(ABC):
 class DataProvider(DataProviderAbstractClass):
     def __init__(self, content_path, model, epoch_start, epoch_end, epoch_period, device, classes, epoch_name, verbose=1):
         self.content_path = content_path
-        self.model = model
+        self.model = model.to(device)
         self.s = epoch_start
         self.e = epoch_end
         self.p = epoch_period
@@ -86,6 +86,7 @@ class DataProvider(DataProviderAbstractClass):
 
 class NormalDataProvider(DataProvider):
     def __init__(self, content_path, model, epoch_start, epoch_end, epoch_period, device, classes, epoch_name, verbose=1):
+        '''`model` must be checkpoint-loaded.'''
         super().__init__(content_path, model, epoch_start, epoch_end, epoch_period, device, classes, epoch_name, verbose)
         self.mode = "normal"
     
@@ -120,11 +121,6 @@ class NormalDataProvider(DataProvider):
             else:
                 test_index = range(len(testing_data))
             testing_data = testing_data[test_index]
-
-            model_location = os.path.join(self.model_path, "{}_{:d}".format(self.epoch_name, n_epoch), "subject_model.pth")
-            self.model.load_state_dict(torch.load(model_location, map_location=torch.device("cpu")))
-            self.model = self.model.to(self.DEVICE)
-            self.model.eval()
 
             repr_model = self.feature_function(n_epoch)
             # repr_model = torch.nn.Sequential(*(list(self.model.children())[:self.split]))
@@ -332,23 +328,19 @@ class NormalDataProvider(DataProvider):
         return max_x
 
     def prediction_function(self, epoch):
-        model_location = os.path.join(self.model_path, "{}_{:d}".format(self.epoch_name, epoch), "subject_model.pth")
-        self.model.load_state_dict(torch.load(model_location, map_location=torch.device("cpu")))
-        self.model.to(self.DEVICE)
-        self.model.eval()
-
-        pred_fn = self.model.prediction
-        return pred_fn
+        if self.model is not None:
+            pred_fn = self.model.prediction
+            return pred_fn
+        else:
+            return None
 
 
     def feature_function(self, epoch):
-        model_location = os.path.join(self.model_path, "{}_{:d}".format(self.epoch_name, epoch), "subject_model.pth")
-        self.model.load_state_dict(torch.load(model_location, map_location=torch.device("cpu")))
-        self.model = self.model.to(self.DEVICE)
-        self.model.eval()
-
-        fea_fn = self.model.feature
-        return fea_fn
+        if self.model is not None:
+            fea_fn = self.model.feature
+            return fea_fn
+        else:
+            return None
 
     def get_pred(self, epoch, data):
         '''

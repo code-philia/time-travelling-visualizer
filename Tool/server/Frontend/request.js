@@ -30,7 +30,7 @@ function updateProjection(content_path, iteration, taskType) {
     })
     .then(response => response.json())
     .then(res => {
-        if (res.errorMessage != "") {
+        if (res.errorMessage) {
           if (window.vueApp.errorMessage) {
             window.vueApp.errorMessage =  res.errorMessage
           } else {
@@ -39,17 +39,44 @@ function updateProjection(content_path, iteration, taskType) {
           }
         }
        
-        drawCanvas(res);
-        window.vueApp.prediction_list = res.prediction_list
-        window.vueApp.label_list = res.label_list
-        window.vueApp.label_name_dict = res.label_name_dict
-        window.vueApp.color_list = res.color_list
-        window.vueApp.evaluation = res.evaluation
-        window.vueApp.currEpoch = iteration
-        window.vueApp.test_index = res.testing_data
-        window.vueApp.train_index = res.training_data
-        window.vueApp.confidence_list = res.confidence_list
-        labelColor();
+        if (taskType === 'Umap-Neighborhood') {
+            // in the new specification, res.label_list should be all number, and color_list should be a list
+            const formattedData = {
+                result: res.proj,
+                label_list: res.labels,
+                label_name_dict: res.label_text_list,    // can also use as an index as dict
+                color_list: [[21, 171, 250], [252, 144, 5]],
+                test_index: [],
+                train_index: [],
+                prediction_list: [],
+                confidence_list: [],
+                inter_sim_top_k: res.inter_sim_top_k,
+                intra_sim_top_k: res.intra_sim_top_k,
+                tokens: res.tokens,
+                grid_index: [
+                    res.bounding.x_min,
+                    res.bounding.y_min,
+                    res.bounding.x_max,
+                    res.bounding.y_max,
+                ],
+                structure: res.structure
+            }
+            drawCanvas(formattedData);
+            window.vueApp.currEpoch = iteration;
+            window.vueApp.epochData = formattedData;
+        } else {
+          drawCanvas(res);
+            window.vueApp.prediction_list = res.prediction_list
+            window.vueApp.label_list = res.label_list
+            window.vueApp.label_name_dict = res.label_name_dict
+            window.vueApp.color_list = res.color_list
+            window.vueApp.evaluation = res.evaluation
+            window.vueApp.currEpoch = iteration
+            window.vueApp.test_index = res.testing_data
+            window.vueApp.train_index = res.training_data
+            window.vueApp.confidence_list = res.confidence_list
+            labelColor();
+        }
     })
     .catch(error => {
         console.error('Error fetching data:', error);
@@ -75,7 +102,7 @@ function updateProjection(content_path, iteration, taskType) {
 }
 
   function getOriginalData(content_path,index, dataType, flag, custom_path){
-    if(index != null){
+    if (index != null) {
         let specifiedCurrEpoch = makeSpecifiedVariableName('currEpoch', flag)
         fetch(`${window.location.href}/sprite${dataType}?index=${index}&path=${content_path}&cus_path=${custom_path}&username=admin&iteration=${window.vueApp[specifiedCurrEpoch]}&`, {
             method: 'GET',

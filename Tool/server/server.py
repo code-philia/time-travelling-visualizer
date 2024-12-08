@@ -11,7 +11,7 @@ import gc
 import shutil
 sys.path.append('..')
 sys.path.append('.')
-from utils import get_comparison_coloring, get_coloring, getVisError, update_epoch_projection, initialize_backend, add_line, getConfChangeIndices, getContraVisChangeIndices, getContraVisChangeIndicesSingle,getCriticalChangeIndices, update_custom_epoch_projection, highlight_epoch_projection
+from utils import get_comparison_coloring, get_coloring, get_umap_neighborhood_epoch_projection, getVisError, update_epoch_projection, update_custom_epoch_projection, initialize_backend, add_line, getConfChangeIndices, getContraVisChangeIndices, getContraVisChangeIndicesSingle,getCriticalChangeIndices, update_custom_epoch_projection, highlight_epoch_projection
 
 import time
 # flask for API server
@@ -277,15 +277,18 @@ def load_vectorDB_nl():
 @cross_origin()
 def update_projection():
     res = request.get_json()
+    if res is None:
+        return make_response(jsonify({'error': 'No data received'}), 400)
     CONTENT_PATH = os.path.normpath(res['path'])
     VIS_METHOD = res['vis_method']
     SETTING = res["setting"]
-    print(CONTENT_PATH,VIS_METHOD,SETTING)
+    # print(CONTENT_PATH,VIS_METHOD,SETTING)
     start = time.time()
     iteration = int(res['iteration'])
     predicates = res["predicates"]
     # username = res['username']
     TaskType = res['TaskType']
+
     s = res['selectedPoints']
     if s == '':
         indicates = []
@@ -303,32 +306,42 @@ def update_projection():
     # EPOCH = (iteration-1)*context.strategy.data_provider.p + context.strategy.data_provider.s
     EPOCH = int(iteration)
     
-    embedding_2d, grid, decision_view, label_name_dict, label_color_list, label_list, max_iter, training_data_index, \
-    testing_data_index, eval_new, prediction_list, selected_points, properties, error_message_projection, color_list, confidence_list = update_epoch_projection(context, EPOCH, predicates, TaskType,indicates)
-    end = time.time()
-    print("label_colorlenUpdate", len(label_color_list))
-    print("duration", end-start)
-    # sys.path.remove(CONTENT_PATH)
-    # add_line(API_result_path,['TT',username])
-    grid = np.array(grid)
-    color_list = color_list.tolist()
-    return make_response(jsonify({'result': embedding_2d, 
-                                  'grid_index': grid.tolist(), 
-                                  'grid_color': 'data:image/png;base64,' + decision_view,
-                                  'label_name_dict':label_name_dict,
-                                  'label_color_list': label_color_list, 
-                                  'label_list': label_list,
-                                  'maximum_iteration': max_iter, 
-                                  'training_data': training_data_index,
-                                  'testing_data': testing_data_index, 
-                                  'evaluation': eval_new,
-                                  'prediction_list': prediction_list,
-                                  "selectedPoints":selected_points.tolist(),
-                                  "properties":properties.tolist(),
-                                  "errorMessage": error_message_context + error_message_projection,
-                                  "color_list": color_list,
-                                  "confidence_list": confidence_list
-                                  }), 200)
+    # FIXME the returned field are too fixed that hard to add or change
+    # if you want a little improvement you should let this function decide the response
+    # and create another function for another kind of response
+    if TaskType == 'Classification' or TaskType == 'Non-Classification':
+        embedding_2d, grid, decision_view, label_name_dict, label_color_list, label_list, max_iter, training_data_index, \
+        testing_data_index, eval_new, prediction_list, selected_points, properties, error_message_projection, color_list, confidence_list = update_epoch_projection(context, EPOCH, predicates, TaskType,indicates)
+        end = time.time()
+        print("label_colorlenUpdate", len(label_color_list))
+        print("duration", end-start)
+        # sys.path.remove(CONTENT_PATH)
+        # add_line(API_result_path,['TT',username])
+        grid = np.array(grid)
+        color_list = color_list.tolist()
+        return make_response(jsonify({'result': embedding_2d, 
+                                    'grid_index': grid.tolist(), 
+                                    'grid_color': 'data:image/png;base64,' + decision_view,
+                                    'label_name_dict':label_name_dict,
+                                    'label_color_list': label_color_list, 
+                                    'label_list': label_list,
+                                    'maximum_iteration': max_iter, 
+                                    'training_data': training_data_index,
+                                    'testing_data': testing_data_index, 
+                                    'evaluation': eval_new,
+                                    'prediction_list': prediction_list,
+                                    "selectedPoints":selected_points.tolist(),
+                                    "properties":properties.tolist(),
+                                    "errorMessage": error_message_context + error_message_projection,
+                                    "color_list": color_list,
+                                    "confidence_list": confidence_list,
+                                    
+                                    }), 200)
+    elif TaskType == 'Umap-Neighborhood':
+        result = get_umap_neighborhood_epoch_projection(CONTENT_PATH, EPOCH, predicates, indicates)
+        return make_response(jsonify(result), 200)
+    else:
+        return make_response(jsonify({'error': 'TaskType not found'}), 400)
 
 app.route('/contrast/updateProjection', methods=["POST", "GET"])(update_projection)
 
