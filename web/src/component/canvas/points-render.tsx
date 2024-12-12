@@ -71,7 +71,6 @@ export function PointsRender({ rawPointsData, visualizerRenderContext, eventList
         alphas: new Float32Array(rawPointsData.alphas),
     };
 
-    // FIXME when changing color, will also lead to a reset-and-rotate of MapController
     const positionRef = useRef<BufferAttribute>(null);
     const colorRef = useRef<BufferAttribute>(null);
     const sizeRef = useRef<BufferAttribute>(null);
@@ -96,10 +95,10 @@ export function PointsRender({ rawPointsData, visualizerRenderContext, eventList
     useEffect(() => {
         const findOverPoint = (e: MouseEvent) => {
             let foundHighlighted: number | undefined = undefined;
-    
+
             const { x, y } = rc.canvasElement.getBoundingClientRect();
             const cursor: [number, number] = [e.clientX - x, e.clientY - y];
-    
+
             for (let i = 0; i < rawPointsData.positions.length; i++) {
                 const [px, py] = rawPointsData.positions[i];
                 const d = rawPointsData.sizes[i];

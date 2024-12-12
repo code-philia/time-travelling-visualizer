@@ -152,19 +152,15 @@ export function MainBlock() {
         };
         setRawPointsGeography(data);
 
+        setFinalPointsGeography(data);
+        setPlot2DCanvasContext(new Plot2DCanvasContext(data));
+
         const spriteData = extractSpriteData(res);
         setSpriteData(spriteData);
 
         const neighborhood = extractConnectedPoints(res);
         setNeighborhood(neighborhood);
       }, [allEpochsProjectionData, epoch, updateUUID, colorDict, setRawPointsGeography]);
-
-    useEffect(() => {
-        setFinalPointsGeography(rawPointsGeography);
-        if (rawPointsGeography !== null) {
-            setPlot2DCanvasContext(new Plot2DCanvasContext(rawPointsGeography));
-        }
-    }, [rawPointsGeography]);
 
     useEffect(() => {
         if (finalPointsGeography === null) return;
