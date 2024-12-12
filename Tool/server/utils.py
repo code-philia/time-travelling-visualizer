@@ -7,7 +7,7 @@ import numpy as np
 import sys
 import base64
 
-vis_path = ".."
+vis_path = "../.."
 sys.path.append(vis_path)
 # from context import VisContext, ActiveLearningContext, AnormalyContext
 # from strategy import DeepDebugger, TimeVis, tfDeepVisualInsight, DVIAL, tfDVIDenseAL, TimeVisDenseAL, Trustvis, DeepVisualInsight
@@ -19,6 +19,7 @@ import torch
 from typing import List
 
 from config import VisConfig
+from Visualize.data_provider import DataProvider
 
 """Interface align"""
 def initailize_config(config_file, setting = 'normal'):
@@ -203,9 +204,7 @@ def get_train_test_label(config):
     testing_data_number = config.TRAINING["test_num"]
     
     if config.TASK_TYPE == "classification":
-        dataProvider = NormalDataProvider(config.CONTENT_PATH, None, \
-            config.EPOCH_START, config.EPOCH_END, config.EPOCH_PERIOD, None, \
-                config.TASK_TYPE, config.DATA_TYPE, config.SHOW_LABEL, config.CLASSES)
+        dataProvider = DataProvider(config)
         
         train_labels = dataProvider.train_labels()
         test_labels = dataProvider.test_labels()
@@ -217,7 +216,6 @@ def get_train_test_label(config):
     else:
         # for non-classification, asign different label to each feature
         feature_num = len(config.CLASSES)
-        
         train_labels = np.zeros(training_data_number * feature_num, dtype=int)
         test_labels = np.zeros(testing_data_number * feature_num, dtype=int)
         for i in range(feature_num):
@@ -619,6 +617,7 @@ def get_umap_neighborhood_epoch_projection(content_path: str, epoch: int, predic
     assert (len(code_tokens) == code_idx_num)
     assert (len(comment_tokens) == cmt_idx_num)
 
+
     # Read and return projections
     proj_file = os.path.join(epoch_folder, 'embedding.npy')
 
@@ -632,12 +631,12 @@ def get_umap_neighborhood_epoch_projection(content_path: str, epoch: int, predic
     intra_sim_top_k = np.load(intra_sim_file).tolist()
     
     # Read and return attention
-    attention_folder = os.path.join(data_folder,'aa_possim') # gcb_tokens_temp/Model/aa_possim
-    code_attention_file = os.path.join(attention_folder,'train_code_attention_aa.npy')
-    nl_attention_file = os.path.join(attention_folder,'train_nl_attention_aa.npy')
+    # attention_folder = os.path.join(data_folder,'aa_possim') # gcb_tokens_temp/Model/aa_possim
+    # code_attention_file = os.path.join(attention_folder,'train_code_attention_aa.npy')
+    # nl_attention_file = os.path.join(attention_folder,'train_nl_attention_aa.npy')
     
-    code_attention = np.load(code_attention_file).tolist() if os.path.exists(code_attention_file) else []
-    nl_attention = np.load(nl_attention_file).tolist() if os.path.exists(nl_attention_file) else []
+    # code_attention = np.load(code_attention_file).tolist()
+    # nl_attention = np.load(nl_attention_file).tolist()
     
     # Read the bounding box (TODO necessary?)
     bounding_file = os.path.join(epoch_folder, 'scale.npy')
@@ -651,8 +650,8 @@ def get_umap_neighborhood_epoch_projection(content_path: str, epoch: int, predic
         'tokens': comment_tokens + code_tokens,
         'inter_sim_top_k': inter_sim_top_k,
         'intra_sim_top_k': intra_sim_top_k,
-        'code_attention': code_attention,
-        'nl_attention': nl_attention,
+        # 'code_attention': code_attention,
+        # 'nl_attention': nl_attention,
         'bounding': {
             'x_min': x_min,
             'y_min': y_min,

@@ -27,9 +27,9 @@ python-dateutil==2.8.2
 scikit-learn==1.0.2
 scipy==1.7.3
 six==1.16.0
-tensorflow==2.7.0
+tensorflow
 threadpoolctl==3.1.0
-torch==1.13.1
+torch==1.11.0
 tqdm==4.66.1
 typing_extensions==4.7.1
 umap==0.1.1
