@@ -57,7 +57,7 @@ class Visualizer(VisualizerAbstractClass):
                     os.mkdir(save_dir)
                 # save background image and visualization image
                 self.save_scale_bgimg(i, self.resolution)
-                self.savefig(i, embedding, path=os.path.join(save_dir, "{}_{}.png".format(self.VIS_METHOD, i)))
+                self.savefig(i, embedding, path=os.path.join(save_dir, "{}_{}.png".format(self.config.VIS_METHOD, i)))
             else:
                 # only save background image
                 self.save_scale_bgimg_blank(i, self.resolution)
@@ -225,7 +225,7 @@ class Visualizer(VisualizerAbstractClass):
         # train_data = self.data_provider.train_representation(epoch)
         # train_labels = self.data_provider.train_labels(epoch)
         train_data = self.data_provider.all_representation(epoch)
-        train_labels = self.data_provider.all_labels(epoch)
+        train_labels = self.data_provider.all_labels()
         pred = self.data_provider.get_pred(epoch, train_data)
         pred = pred.argmax(axis=1)
 
