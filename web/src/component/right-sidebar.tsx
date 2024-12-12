@@ -161,6 +161,7 @@ export function RightSidebar() {
                     {
                         Array.from(labelDict.keys()).map((labelNum) =>
                             <ColoredClassLabel
+                                key={labelNum}
                                 label={labelDict.get(labelNum)!}
                                 colorArray={colorDict.get(labelNum)!}
                                 onColorChange={(newColor) => changeLabelColor(labelNum, newColor)}
