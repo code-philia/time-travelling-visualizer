@@ -1,6 +1,9 @@
+import json
 import os
 import logging
 import argparse
+
+import torch
 from visualizer import Visualizer
 from strategy.projector import DVIProjector, TimeVisProjector
 from strategy.DVIStrategy import DeepVisualInsight
@@ -15,21 +18,24 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Time Travelling Visualizer')
     parser.add_argument('--content_path', '-p', type=str, required=True, default='',
                        help='Training dynamic path')
+    parser.add_argument('--vis_method', '-m', type=str, required=False, default='DVI',
+                       help='Visualization method')
     parser.add_argument('--preprocess', '-pre', type=bool, default=False, 
                        help='whether to get representation first')
     return parser.parse_args()
 
-def init_visualize_component(config):
-    dataProvider = DataProvider(config)
+def init_visualize_component(config, params):
+    device = torch.device("cuda:{}".format(config['gpu']) if torch.cuda.is_available() else "cpu")
+    dataProvider = DataProvider(config, device)
     
-    if config.VIS_METHOD == "DVI":
-        projector = DVIProjector(config)
+    if config['visMethod'] == "DVI":
+        projector = DVIProjector(config, params)
         visualizer = Visualizer(config, dataProvider, projector)
-        strategy = DeepVisualInsight(config)
-    elif config.VIS_METHOD == "TimeVis":
-        projector = TimeVisProjector(config)
+        strategy = DeepVisualInsight(config, params)
+    elif config['visMethod'] == "TimeVis":
+        projector = TimeVisProjector(config, params)
         visualizer = Visualizer(config, dataProvider, projector)
-        strategy = TimeVis(config)
+        strategy = TimeVis(config, params)
     else:
         raise NotImplementedError
     
@@ -38,8 +44,25 @@ def init_visualize_component(config):
 
 def run(args):
     # step 0: initialize config
-    config = VisConfig(os.path.join(args.content_path, 'config.json'))
-    dataProvider, visualizer, strategy = init_visualize_component(config)
+    # these are the common config from frontend
+    config = {}
+    config["contentPath"] = args.content_path
+    config["visMethod"] = args.vis_method
+    config["epochStart"] = 1
+    config["epochEnd"] = 1
+    config["epochPeriod"] = 1
+    config["taskType"] = "classification"
+    config["classes"] = [" negative","positive"]
+    config["net"] = "Bert_FNN"
+    config["gpu"] = 2
+    config["resolution"] = 200
+    
+    # these are the parameters for training visualize model, read from single config file
+    with open('./visualize_config.json', 'r') as f:
+        all_params = json.load(f)
+    params = all_params[config["visMethod"]]
+    
+    dataProvider, visualizer, strategy = init_visualize_component(config, params)
     
     if args.preprocess:
         # step 1: generate high dimention representation
@@ -50,7 +73,6 @@ def run(args):
     
     # # step 2: train visualize model
     strategy.train_vis_model()
-    strategy.check_vis_model()
     logging.info("Visualize model training finished")
     
     # step 3: use visualize model to get 2-D embedding

@@ -4,13 +4,14 @@ import numpy as np
 import torch
 from utils import *
 class DataProvider():
-    def __init__(self, config):
+    def __init__(self, config, device = None):
         self.config = config
-        self.content_path = config.CONTENT_PATH
+        self.content_path = config['contentPath']
         sys.path.append(self.content_path) # in order to locate model.py of subject model
-        self.device = torch.device("cuda:{}".format(self.config.GPU) if torch.cuda.is_available() else "cpu")
-        self.classes = config.CLASSES
-        
+        if device is not None:
+            self.device = device
+        else:
+            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")        
     def checkpoint_path(self, epoch):
         return os.path.join(self.content_path, 'Model', "Epoch_{}".format(epoch))
     
@@ -22,10 +23,10 @@ class DataProvider():
     def load_subject_model(self, epoch):
         # definition of subject model
         import Model.model as subject_model
-        model = eval("subject_model.{}()".format(self.config.TRAINING['NET']))
+        model = eval("subject_model.{}()".format(self.config['net']))
         
         # state dict of subject model
-        subject_model_location = os.path.join(self.config.checkpoint_path(epoch), "subject_model.pth")
+        subject_model_location = os.path.join(self.config["contentPath"],"Model",f"Epoch_{epoch}", "subject_model.pth")
         model.load_state_dict(torch.load(subject_model_location, map_location=torch.device("cpu")))
         model.to(self.device)
         model.eval()
@@ -93,7 +94,7 @@ class DataProvider():
 
     def generate_representation(self):
         training_data, testing_data, training_label, testing_label = self.load_data()
-        for n_epoch in range(self.config.EPOCH_START, self.config.EPOCH_END + 1, self.config.EPOCH_PERIOD):
+        for n_epoch in range(self.config["epochStart"], self.config["epochEnd"] + 1, self.config["epochPeriod"]):
             # load feature function of each epoch
             model = self.load_subject_model(n_epoch)
             feat_func = model.feature
@@ -105,7 +106,7 @@ class DataProvider():
                     train_representation = np.stack([train_data_representation,train_label_representation], axis=1)
                 else:
                     train_representation = np.concatenate([train_data_representation,train_label_representation],axis=1) # [train_num, data_feature_num+label_feature_num, feature_dim]
-                np.save(os.path.join(self.config.checkpoint_path(n_epoch), "train_data_representation.npy"), train_representation)
+                np.save(os.path.join(self.config["contentPath"],"Model",f"Epoch_{n_epoch}", "train_data_representation.npy"), train_representation)
                 # test data
                 test_data_representation = batch_run_feature_extract(feat_func, testing_data, device=self.device, desc="feature_extraction: source")
                 test_label_representation = batch_run_feature_extract(feat_func, testing_label, device=self.device, desc="feature_extraction: target")
@@ -113,17 +114,17 @@ class DataProvider():
                     test_representation = np.stack([test_data_representation,test_label_representation], axis=1)
                 else:
                     test_representation = np.concatenate([test_data_representation,test_label_representation],axis=1)
-                np.save(os.path.join(self.config.checkpoint_path(n_epoch), "test_data_representation.npy"), test_representation)
+                np.save(os.path.join(self.config["contentPath"],"Model",f"Epoch_{n_epoch}", "test_data_representation.npy"), test_representation)
             else:
                 # train data
                 train_data_representation = batch_run_feature_extract(feat_func, training_data, device=self.device, desc="feature_extraction")
-                np.save(os.path.join(self.config.checkpoint_path(n_epoch), "train_data_representation.npy"), train_data_representation)
+                np.save(os.path.join(self.config["contentPath"],"Model",f"Epoch_{n_epoch}", "train_data_representation.npy"), train_data_representation)
                 # test data
                 test_data_representation = batch_run_feature_extract(feat_func, testing_data, device=self.device, desc="feature_extraction")
-                np.save(os.path.join(self.config.checkpoint_path(n_epoch), "test_data_representation.npy"), test_data_representation)
+                np.save(os.path.join(self.config["contentPath"],"Model",f"Epoch_{n_epoch}", "test_data_representation.npy"), test_data_representation)
     
     def train_representation(self, epoch):
-        train_data_loc = os.path.join(self.config.checkpoint_path(epoch), "train_data_representation.npy")
+        train_data_loc = os.path.join(self.config["contentPath"],"Model",f"Epoch_{epoch}", "train_data_representation.npy")
         try:
             train_data = np.load(train_data_loc)
         except Exception as e:
@@ -132,7 +133,7 @@ class DataProvider():
         return train_data
     
     def test_representation(self, epoch):
-        data_loc = os.path.join(self.config.checkpoint_path(epoch), "test_data_representation.npy")
+        data_loc = os.path.join(self.config["contentPath"],"Model",f"Epoch_{epoch}", "test_data_representation.npy")
         try:
             test_data = np.load(data_loc)
         except Exception as e:
