@@ -22,7 +22,7 @@ from config import VisConfig
 from Visualize.data_provider import DataProvider
 
 """Interface align"""
-def initailize_config(config_file, setting = 'normal'):
+def initialize_config(config_file, setting = 'normal'):
     if setting == "normal":
         config_class = VisConfig(config_file)
     # elif setting == "active learning":
@@ -109,7 +109,7 @@ def check_labels_match_alldata(labels, all_data, error_message):
     return error_message
 
 def get_embedding(config, all_data, epoch):
-    embedding_path = os.path.join(config.CONTENT_PATH,'Model',f'Epoch_{epoch}', "embedding.npy")
+    embedding_path = os.path.join(config.CONTENT_PATH,'Model',f'Epoch_{epoch}', "embedding_"+config.VIS_METHOD+".npy")
     if os.path.exists(embedding_path):
         embedding_2d = np.load(embedding_path, allow_pickle=True) 
     else:
@@ -204,10 +204,8 @@ def get_train_test_label(config):
     testing_data_number = config.TRAINING["test_num"]
     
     if config.TASK_TYPE == "classification":
-        dataProvider = DataProvider(config)
-        
-        train_labels = dataProvider.train_labels()
-        test_labels = dataProvider.test_labels()
+        train_labels = get_classification_label(config, True)
+        test_labels = get_classification_label(config, False)
         
         if train_labels is None:
             train_labels = np.zeros(training_data_number, dtype=int)
@@ -224,6 +222,21 @@ def get_train_test_label(config):
     
     labels = np.concatenate((train_labels, test_labels), axis=0).astype(int)        
     return labels
+
+def get_classification_label(config, train = True):
+    dataset_path = os.path.join(config.CONTENT_PATH, "Dataset")
+    if train is True:
+        label_loc = os.path.join(dataset_path, "training_dataset_label.pth")
+    else:
+        label_loc = os.path.join(dataset_path, "testing_dataset_label.pth")
+
+    try:
+        labels = torch.load(label_loc, map_location="cpu")
+        labels = np.array(labels)
+    except Exception as e:
+        labels = None
+    return labels
+
 
 def get_selected_points(context, predicates, EPOCH, training_data_number, testing_data_number):
     selected_points = np.arange(training_data_number + testing_data_number)
@@ -619,7 +632,7 @@ def get_umap_neighborhood_epoch_projection(content_path: str, epoch: int, predic
 
 
     # Read and return projections
-    proj_file = os.path.join(epoch_folder, 'embedding.npy')
+    proj_file = os.path.join(epoch_folder, 'embedding_DVI.npy')
 
     proj = np.load(proj_file).tolist()
 
