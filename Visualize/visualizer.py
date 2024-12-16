@@ -39,25 +39,25 @@ class Visualizer(VisualizerAbstractClass):
         self.data_provider = data_provider
         self.projector = projector
         self.cmap = plt.get_cmap(cmap)
-        self.classes = data_provider.classes
+        self.classes = config["classes"]
         self.class_num = len(self.classes)
-        self.resolution= config.VISUALIZATION['RESOLUTION']
+        self.resolution= config['resolution']
 
     def visualize_all_epoch(self):
-        for i in range(self.config.EPOCH_START, self.config.EPOCH_END+1, self.config.EPOCH_PERIOD):
+        for i in range(self.config['epochStart'], self.config['epochEnd']+1, self.config['epochPeriod']):
             # get and save embedding
             all_data_representation = self.data_provider.all_representation(i)
             embedding = self.projector.batch_project(i,all_data_representation)
-            np.save(os.path.join(self.config.checkpoint_path(i), "embedding.npy"), embedding)
+            np.save(os.path.join(self.config["contentPath"],"Model",f"Epoch_{i}", "embedding_"+self.config["visMethod"]+".npy"), embedding)
 
             # save background image and visualize image
-            if self.config.TASK_TYPE == 'classification':
+            if self.config["taskType"] == 'classification':
                 save_dir = os.path.join(self.data_provider.content_path, "Visualize_result")
                 if not os.path.exists(save_dir):
                     os.mkdir(save_dir)
                 # save background image and visualization image
                 self.save_scale_bgimg(i, self.resolution)
-                self.savefig(i, embedding, path=os.path.join(save_dir, "{}_{}.png".format(self.config.VIS_METHOD, i)))
+                self.savefig(i, embedding, path=os.path.join(save_dir, "{}_{}.png".format(self.config["visMethod"], i)))
             else:
                 # only save background image
                 self.save_scale_bgimg_blank(i, self.resolution)
@@ -138,7 +138,7 @@ class Visualizer(VisualizerAbstractClass):
         """get plot measure for visualization"""
         # data = self.data_provider.train_representation(epoch)
         # embedded = self.projector.batch_project(epoch, data)
-        embedding_path = os.path.join(self.data_provider.checkpoint_path(epoch),"embedding.npy")
+        embedding_path = os.path.join(self.data_provider.checkpoint_path(epoch),"embedding_"+self.config["visMethod"]+".npy")
         embedded = np.load(embedding_path, allow_pickle=True)
 
         ebd_min = np.min(embedded, axis=0)

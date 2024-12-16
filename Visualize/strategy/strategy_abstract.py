@@ -1,15 +1,16 @@
 from abc import ABC, abstractmethod
+import json
 import os
 
 import torch
 
 class StrategyAbstractClass(ABC):
-    def __init__(self, config):
+    def __init__(self, config, params):
         self.config = config
-        self.initial_model()
+        self.params = params
 
     @abstractmethod
-    def initial_model(self):
+    def initialize_model(self):
         # define your visualize model here
         # e.g. self.model = tfModel(...)
         pass
@@ -30,10 +31,10 @@ class StrategyAbstractClass(ABC):
             "state_dict": model.state_dict(),
             "optimizer": optimizer.state_dict()
         }
-        torch.save(save_model, os.path.join(self.config.checkpoint_path(epoch), self.config.VIS_MODEL_NAME+".pth"))
+        torch.save(save_model, os.path.join(self.config["contentPath"],"Model",f"Epoch_{epoch}", self.config["visMethod"]+"_model.pth"))
 
     def check_vis_model(self):
         for epoch in range(self.config.EPOCH_START, self.config.EPOCH_END + 1, self.config.EPOCH_PERIOD):
-            model_path = os.path.join(self.config.checkpoint_path(epoch), self.config.VIS_MODEL_NAME+".pth")
+            model_path = os.path.join(self.config["contentPath"],"Model",f"Epoch_{epoch}", self.config["visMethod"]+"_model.pth")
             if not os.path.isfile(model_path):
                 raise FileExistsError("Visualization model not found at {}".format(model_path))

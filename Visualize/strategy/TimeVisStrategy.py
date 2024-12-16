@@ -16,14 +16,14 @@ from data_provider import DataProvider
 from umap.umap_ import find_ab_params
 
 class TimeVis(StrategyAbstractClass):
-    def __init__(self, config):
-        super().__init__(config)
-        self.initial_model()
+    def __init__(self, config, params):
+        super().__init__(config, params)
+        self.initialize_model()
         
-    def initial_model(self):
-        self.device = torch.device("cuda:{}".format(self.config.GPU) if torch.cuda.is_available() else "cpu")
-        self.data_provider = DataProvider(self.config)
-        self.visualize_model = VisModel(self.config.VISUALIZATION['ENCODER_DIMS'], self.config.VISUALIZATION['DECODER_DIMS']).to(self.device)
+    def initialize_model(self):
+        self.device = torch.device("cuda:{}".format(self.params["GPU"]) if torch.cuda.is_available() else "cpu")
+        self.data_provider = DataProvider(self.config, self.device)
+        self.visualize_model = VisModel(self.params['ENCODER_DIMS'], self.params['DECODER_DIMS']).to(self.device)
         
         # define losses
         negative_sample_rate = 5
@@ -31,15 +31,15 @@ class TimeVis(StrategyAbstractClass):
         _a, _b = find_ab_params(1.0, min_dist)
         self.umap_fn = UmapLoss(negative_sample_rate, self.device, _a, _b, repulsion_strength=1.0)
         self.recon_fn = ReconstructionLoss(beta=1.0)
-        self.criterion = SingleVisLoss(self.umap_fn, self.recon_fn, lambd=self.config.VISUALIZATION['LAMBDA1'])
+        self.criterion = SingleVisLoss(self.umap_fn, self.recon_fn, lambd=self.params['LAMBDA1'])
     
     def train_vis_model(self):
         # parameters
-        N_NEIGHBORS = self.config.VISUALIZATION["N_NEIGHBORS"]
-        S_N_EPOCHS = self.config.VISUALIZATION["S_N_EPOCHS"]
-        B_N_EPOCHS = self.config.VISUALIZATION["BOUNDARY"]["B_N_EPOCHS"]
-        PATIENT = self.config.VISUALIZATION["PATIENT"]
-        MAX_EPOCH = self.config.VISUALIZATION["MAX_EPOCH"]
+        N_NEIGHBORS = self.params["N_NEIGHBORS"]
+        S_N_EPOCHS = self.params["S_N_EPOCHS"]
+        B_N_EPOCHS = self.params["BOUNDARY"]["B_N_EPOCHS"]
+        PATIENT = self.params["PATIENT"]
+        MAX_EPOCH = self.params["MAX_EPOCH"]
         
         optimizer = torch.optim.Adam(self.visualize_model.parameters(), lr=.01, weight_decay=1e-5)
         lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=4, gamma=.1)
@@ -83,9 +83,4 @@ class TimeVis(StrategyAbstractClass):
             "state_dict": model.state_dict(),
             "optimizer": optimizer.state_dict()
         }
-        torch.save(save_model, os.path.join(self.config.CONTENT_PATH, "Model", self.config.VIS_MODEL_NAME+".pth"))
-
-    def check_vis_model(self):
-        model_path = os.path.join(self.config.CONTENT_PATH, "Model", self.config.VIS_MODEL_NAME+".pth")
-        if not os.path.isfile(model_path):
-            raise FileExistsError("Visualization model not found at {}".format(model_path))
+        torch.save(save_model, os.path.join(self.config["contentPath"], "Model", +"TimeVis_model.pth"))

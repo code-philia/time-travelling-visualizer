@@ -16,14 +16,14 @@ from umap.umap_ import find_ab_params
 from utils import find_neighbor_preserving_rate
 
 class DeepVisualInsight(StrategyAbstractClass):
-    def __init__(self, config):
-        super().__init__(config)
-        self.initial_model()        
+    def __init__(self, config, params):
+        super().__init__(config, params)
+        self.initialize_model()
 
-    def initial_model(self):
-        self.device = torch.device("cuda:{}".format(self.config.GPU) if torch.cuda.is_available() else "cpu")
-        self.data_provider = DataProvider(self.config)
-        self.visualize_model = VisModel(self.config.VISUALIZATION['ENCODER_DIMS'], self.config.VISUALIZATION['DECODER_DIMS']).to(self.device)
+    def initialize_model(self):
+        self.device = torch.device("cuda:{}".format(self.params["GPU"]) if torch.cuda.is_available() else "cpu")
+        self.data_provider = DataProvider(self.config, self.device)
+        self.visualize_model = VisModel(self.params['ENCODER_DIMS'], self.params['DECODER_DIMS']).to(self.device)
         
         # define losses
         negative_sample_rate = 5
@@ -34,19 +34,20 @@ class DeepVisualInsight(StrategyAbstractClass):
     
     def train_vis_model(self):
         # parameters
-        EPOCH_START = self.config.EPOCH_START
-        EPOCH_END = self.config.EPOCH_END
-        EPOCH_PERIOD = self.config.EPOCH_PERIOD
-        LAMBDA1 = self.config.VISUALIZATION["LAMBDA1"]
-        LAMBDA2 = self.config.VISUALIZATION["LAMBDA2"]
-        N_NEIGHBORS = self.config.VISUALIZATION["N_NEIGHBORS"]
-        S_N_EPOCHS = self.config.VISUALIZATION["S_N_EPOCHS"]
-        B_N_EPOCHS = self.config.VISUALIZATION["BOUNDARY"]["B_N_EPOCHS"]
-        PATIENT = self.config.VISUALIZATION["PATIENT"]
-        MAX_EPOCH = self.config.VISUALIZATION["MAX_EPOCH"]
+        EPOCH_START = self.config["epochStart"]
+        EPOCH_END = self.config["epochEnd"]
+        EPOCH_PERIOD = self.config["epochPeriod"]
+        
+        LAMBDA1 = self.params["LAMBDA1"]
+        LAMBDA2 = self.params["LAMBDA2"]
+        N_NEIGHBORS = self.params["N_NEIGHBORS"]
+        S_N_EPOCHS = self.params["S_N_EPOCHS"]
+        B_N_EPOCHS = self.params["BOUNDARY"]["B_N_EPOCHS"]
+        PATIENT = self.params["PATIENT"]
+        MAX_EPOCH = self.params["MAX_EPOCH"]
         
         # visualize model of last epoch
-        prev_model = VisModel(self.config.VISUALIZATION['ENCODER_DIMS'], self.config.VISUALIZATION['DECODER_DIMS']).to(self.device)
+        prev_model = VisModel(self.params['ENCODER_DIMS'], self.params['DECODER_DIMS']).to(self.device)
         prev_model.load_state_dict(self.visualize_model.state_dict())
         for param in prev_model.parameters():
             param.requires_grad = False
@@ -97,7 +98,6 @@ class DeepVisualInsight(StrategyAbstractClass):
             trainer.train(PATIENT, MAX_EPOCH)
             
             self.save_vis_model(self.visualize_model, epoch, trainer.loss, trainer.optimizer)
-            # trainer.save(save_dir=os.path.join(self.config.checkpoint_path(epoch)), file_name=self.config.VIS_MODEL_NAME)
 
             prev_model.load_state_dict(self.visualize_model.state_dict())
             for param in prev_model.parameters():

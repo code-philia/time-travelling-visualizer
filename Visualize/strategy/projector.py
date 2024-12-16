@@ -38,12 +38,12 @@ class ProjectorAbstractClass(ABC):
         pass
 
 class Projector(ProjectorAbstractClass):
-    def __init__(self, config):
-        self.content_path = config.CONTENT_PATH
-        self.vis_model_name = config.VIS_METHOD + "_model"
-        GPU_ID = config.GPU
-        self.device = torch.device("cuda:{}".format(GPU_ID) if torch.cuda.is_available() else "cpu")
-        self.vis_model = VisModel(config.VISUALIZATION['ENCODER_DIMS'], config.VISUALIZATION['DECODER_DIMS']).to(self.device)
+    def __init__(self, config, params):
+        self.content_path = config['contentPath']
+        self.vis_model_name = config['visMethod'] + "_model"
+        gpu_id = config['gpu']
+        self.device = torch.device("cuda:{}".format(gpu_id) if torch.cuda.is_available() else "cpu")
+        self.vis_model = VisModel(params['ENCODER_DIMS'], params['DECODER_DIMS']).to(self.device)
 
     def load(self, iteration):
         file_path = os.path.join(self.content_path, "Model", "Epoch_{}".format(iteration), "{}.pth".format(self.vis_model_name))
@@ -213,8 +213,8 @@ class EvalProjector(DeepDebuggerProjector):
 
 
 class DVIProjector(Projector):
-    def __init__(self, config) -> None:
-        super().__init__(config)
+    def __init__(self, config, params) -> None:
+        super().__init__(config, params)
 
     def load(self, iteration):
         print("DVIPROJECTOR", self.vis_model_name)
@@ -227,8 +227,8 @@ class DVIProjector(Projector):
 
 
 class TimeVisProjector(Projector):
-    def __init__(self, config) -> None:
-        super().__init__(config)
+    def __init__(self, config, params) -> None:
+        super().__init__(config, params)
 
     def load(self, iteration):
         file_path = os.path.join(self.content_path, "Model", "{}.pth".format(self.vis_model_name))
