@@ -106,7 +106,7 @@ def sprite_image():
     index = int(request.args.get("index"))
     
     # load config from config_file
-    config = initailize_config(config_file)
+    config = initialize_config(config_file)
     if config.DATA_TYPE == "image":
         pic_save_dir_path = os.path.join(config.CONTENT_PATH, "Dataset","sprites", "{}.png".format(index))
         img_stream = ""
@@ -136,7 +136,7 @@ def sprite_text():
     index = int(request.args.get("index"))
     
     # load config from config_file
-    config = initailize_config(config_file)
+    config = initialize_config(config_file)
     
     if config.SHOW_LABEL:
         if index % 2 == 0: # source
