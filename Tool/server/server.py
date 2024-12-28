@@ -102,6 +102,7 @@ Response:
     type (str): data type (image, text, ...)
     sample (str): base64 encoded image or plain text
 """
+@app.route('/getSample', methods = ["POST"])
 def get_sample():
     req = request.get_json()
     content_path = req['content_path']
