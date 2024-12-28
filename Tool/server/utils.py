@@ -65,7 +65,7 @@ def load_one_sample(config, content_path, index):
         raise NotImplementedError("sample is not in attributes")
     
     file_path_pattern = attributes['sample']['source']['pattern']
-    file_path = file_path_pattern.replace('$\{index\}', str(index))
+    file_path = file_path_pattern.replace('${index}', str(index))
     file_path = os.path.join(content_path, file_path)
     
     _, file_extension = os.path.splitext(file_path)
@@ -113,6 +113,9 @@ def load_single_attribute(config, content_path, epoch, attribute):
     attributes = config['dataset']['attributes']
     if attribute not in attributes:
         raise NotImplementedError("Attribute name not found in config file")
+    
+    # TODO other types of attributes?
+    # how does 'dataType' and 'sourceType' work?
     
     file_path_pattern = attributes[attribute]['source']['pattern']
     file_path = os.path.join(content_path, file_path_pattern)
