@@ -21,7 +21,127 @@ from typing import List
 from config import VisConfig
 from Visualize.data_provider import DataProvider
 
-"""Interface align"""
+"""Utils of new data schema"""
+# Func: infer available epochs through projection files, return a list of available epochs
+# TODO other methods to infer epoch structure
+def epoch_structure_from_projection(content_path):
+    visMethods = ['DVI', 'TimeVis']
+    for visMethod in visMethods:
+        projection_folder = os.path.join(content_path, "visualize", visMethod, "projection")
+        if not os.path.exists(projection_folder):
+            continue
+        
+        files = os.listdir(projection_folder)
+        
+        file_numbers = [int(file.rstrip('.npy')) for file in files if file.endswith('.npy')]
+        file_numbers = sorted(file_numbers)
+        if file_numbers != []:
+            return file_numbers
+    raise ValueError("No projection files found")
+
+# Func: load projection and label list (minimum requirement for 'update_projection')
+def load_projection(config, content_path, vis_method, epoch):
+    # here we only have one kind of projection for each vis method, so we directly locate them in 'projection' folder
+    # in the future, maybe projection is also a kind of 'attribute' and need to be pointed out in the config.json
+    projection_path = os.path.join(content_path, "visualize", vis_method, "projection", f"{epoch}.npy")
+    projection = np.load(projection_path)
+    projection_list = projection.tolist()
+    
+    # load label list for samples in projection
+    attributes = config['dataset']['attributes']
+    if 'label' not in attributes:
+        raise NotImplementedError("label is not in attributes")
+    
+    file_path_pattern = attributes['label']['source']['pattern']
+    file_path = os.path.join(content_path, file_path_pattern)
+    label_list = read_label_file(file_path)
+
+    return projection_list, label_list
+
+# Func: load one sample from content_path
+def load_one_sample(config, content_path, index):
+    attributes = config['dataset']['attributes']
+    if 'sample' not in attributes:
+        raise NotImplementedError("sample is not in attributes")
+    
+    file_path_pattern = attributes['sample']['source']['pattern']
+    file_path = file_path_pattern.replace('$\{index\}', str(index))
+    file_path = os.path.join(content_path, file_path)
+    
+    _, file_extension = os.path.splitext(file_path)
+    if file_extension == '.txt':
+        sample = ""
+        single_file = attributes['sample']['source']['type']=='folder'
+        if single_file: # this indicates that all the text samples are saved in one file
+            with open(file_path, 'r') as f:
+                all_sample = f.readlines()
+                sample = all_sample[index]
+        else:
+            with open(file_path, 'r') as f:
+                sample = f.readline()
+        return 'text',sample
+        
+    elif file_extension == '.png' or file_extension == '.jpg':
+        img_stream = ""
+        with open(file_path, 'rb') as img_f:
+            img_stream = img_f.read()
+            img_stream = base64.b64encode(img_stream).decode()
+        return 'image','data:image/png;base64,' + img_stream
+    else:
+        raise NotImplementedError("Unsupported file extension: {}".format(file_extension))
+
+
+# Func: given label file path, return python list of labels
+def read_label_file(file_path):
+    _, file_extension = os.path.splitext(file_path)
+    
+    if file_extension == '.npy':
+        data = np.load(file_path)
+        label_list = data.tolist()
+    elif file_extension == '.pth':
+        data = torch.load(file_path)
+        if isinstance(data, torch.Tensor):
+            label_list = data.tolist()
+        else:
+            raise ValueError(f"Unsupported data type in .pth file: {type(data)}")
+    else:
+        raise ValueError(f"Unsupported file extension: {file_extension}")
+    
+    return label_list
+
+def load_single_attribute(config, content_path, epoch, attribute):
+    attributes = config['dataset']['attributes']
+    if attribute not in attributes:
+        raise NotImplementedError("Attribute name not found in config file")
+    
+    file_path_pattern = attributes[attribute]['source']['pattern']
+    file_path = os.path.join(content_path, file_path_pattern)
+    file_path = file_path.replace('${epoch}', str(epoch))
+    
+    attr_data = read_from_file(file_path)
+    
+    return attr_data
+
+def read_from_file(file_path):
+    _, file_extension = os.path.splitext(file_path)
+    
+    if file_extension == '.npy':
+        data = np.load(file_path)
+        result = data.tolist()
+    elif file_extension == '.pth':
+        data = torch.load(file_path)
+        if isinstance(data, torch.Tensor):
+            result = data.tolist()
+        elif isinstance(data, (dict, list)):
+            result = data
+        else:
+            raise ValueError(f"Unsupported data type in .pth file: {type(data)}")
+    else:
+        raise ValueError(f"Unsupported file extension: {file_extension}")
+    
+    return result
+
+""" ==================================================================== """
 def initialize_config(config_file, setting = 'normal'):
     if setting == "normal":
         config_class = VisConfig(config_file)
@@ -398,12 +518,12 @@ def get_umap_neighborhood_epoch_projection(content_path: str, epoch: int, predic
     intra_sim_top_k = np.load(intra_sim_file).tolist()
     
     # Read and return attention
-    # attention_folder = os.path.join(data_folder,'aa_possim') # gcb_tokens_temp/Model/aa_possim
-    # code_attention_file = os.path.join(attention_folder,'train_code_attention_aa.npy')
-    # nl_attention_file = os.path.join(attention_folder,'train_nl_attention_aa.npy')
+    attention_folder = os.path.join(data_folder,'aa_possim') # gcb_tokens_temp/Model/aa_possim
+    code_attention_file = os.path.join(attention_folder,'train_code_attention_aa.npy')
+    nl_attention_file = os.path.join(attention_folder,'train_nl_attention_aa.npy')
     
-    # code_attention = np.load(code_attention_file).tolist()
-    # nl_attention = np.load(nl_attention_file).tolist()
+    code_attention = np.load(code_attention_file).tolist()
+    nl_attention = np.load(nl_attention_file).tolist()
     
     # Read the bounding box (TODO necessary?)
     bounding_file = os.path.join(epoch_folder, 'scale.npy')
@@ -417,8 +537,8 @@ def get_umap_neighborhood_epoch_projection(content_path: str, epoch: int, predic
         'tokens': comment_tokens + code_tokens,
         'inter_sim_top_k': inter_sim_top_k,
         'intra_sim_top_k': intra_sim_top_k,
-        # 'code_attention': code_attention,
-        # 'nl_attention': nl_attention,
+        'code_attention': code_attention,
+        'nl_attention': nl_attention,
         'bounding': {
             'x_min': x_min,
             'y_min': y_min,
