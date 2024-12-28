@@ -151,8 +151,8 @@ const XYZ_NUM_ELEMENTS = 3;
   }`;
 
    function cleanMaterial(material) {
- 
-    
+
+
     // 释放纹理
     if (material.map) material.map.dispose();
     if (material.lightMap) material.lightMap.dispose();
@@ -214,14 +214,14 @@ function updateFixedHoverLabel(x, y, index, flag, canvas, labelType, isDisplay) 
     label.style.display = 'none';
   } else {
     label.style.left = `${x + 2}px`;
-    label.style.top = `${y - 2}px`; 
+    label.style.top = `${y - 2}px`;
     label.textContent = `${index}`;
-    label.style.display = 'block'; 
+    label.style.display = 'block';
   }
 }
 
 function updateLabelPosition(flag, pointPosition, pointIndex, labelType, isDisplay) {
- 
+
   if (pointPosition) {
     let camera = window.vueApp.camera
     let canvas = window.vueApp.renderer.domElement;
@@ -232,7 +232,7 @@ function updateLabelPosition(flag, pointPosition, pointIndex, labelType, isDispl
 
     var vector = pointPosition.clone().project(camera);
 
-    
+
     vector.x =  Math.round((vector.x * 0.5 + 0.5) * canvas.clientWidth);
     vector.y = - Math.round((vector.y * 0.5 - 0.5) * canvas.clientHeight);
 
@@ -241,7 +241,7 @@ function updateLabelPosition(flag, pointPosition, pointIndex, labelType, isDispl
     vector.y += rect.top;
 
     updateFixedHoverLabel(vector.x, vector.y, pointIndex, flag, canvas, labelType, isDisplay);
-    
+
   }
 }
 function updateCurrHoverIndex(event, index, isDisplay, flag) {
@@ -259,7 +259,7 @@ function updateCurrHoverIndex(event, index, isDisplay, flag) {
       hoverLabel.style.left = (event.clientX + 5) + 'px';
       hoverLabel.style.top = (event.clientY - 20) + 'px';
       hoverLabel.style.display = 'block';
-    
+
     } else {
       if (hoverLabel) {
         hoverLabel.textContent = '';
@@ -267,7 +267,7 @@ function updateCurrHoverIndex(event, index, isDisplay, flag) {
       }
     }
   }
- 
+
 
 }
 
@@ -286,7 +286,7 @@ function updateHoverIndexUsingPointPosition(pointPosition, index, isDisplay, fla
           window.vueApp[specifiedHoverIndex] = index;
           var canvas = renderer.domElement;
           var rect = canvas.getBoundingClientRect();
-      
+
            // make sure selected index are not shown outside of viewport
           if (screenPosition.x > rect.right || screenPosition.y > rect.bottom || screenPosition.x < rect.left || screenPosition.y < rect.top) {
             hoverLabel.style.display = 'none';
@@ -415,7 +415,6 @@ function drawTimeline(res, flag) {
       svgWidth = 1000;
   }
   // svgWidth = 1000
-  console.log('svgWid', len, svgWidth);
   svgDom.style.width = svgWidth + 50;
   if (window.sessionStorage.selectedSetting !== 'active learning' && window.sessionStorage.selectedSetting !== 'dense al') {
       svgDom.style.height = 60;
@@ -586,10 +585,10 @@ function setIntersection(sets) {
 
 function calculateZoomSpeed(currentZoom, BASE_ZOOM_SPEED, MAX_ZOOM_SCALE) {
   const speed = BASE_ZOOM_SPEED / currentZoom;
-  return Math.max(speed, BASE_ZOOM_SPEED / MAX_ZOOM_SCALE); 
+  return Math.max(speed, BASE_ZOOM_SPEED / MAX_ZOOM_SCALE);
 }
 
-// check index point visibility in alphas visibility array 
+// check index point visibility in alphas visibility array
 function checkVisibility(array, index) {
     return array[index] == 1.0
 }
@@ -619,16 +618,16 @@ function cleanForEpochChange(flag) {
     console.log("pointMesh")
     if (window.vueApp[specifiedPointsMesh].geometry) {
         if (window.vueApp[specifiedPointsMesh].geometry.color) {
-            window.vueApp[specifiedPointsMesh].geometry.color.dispose() 
+            window.vueApp[specifiedPointsMesh].geometry.color.dispose()
         }
         if (window.vueApp[specifiedPointsMesh].geometry.position) {
-            window.vueApp[specifiedPointsMesh].geometry.position.dispose() 
+            window.vueApp[specifiedPointsMesh].geometry.position.dispose()
         }
         if (window.vueApp[specifiedPointsMesh].geometry.alpha) {
-            window.vueApp[specifiedPointsMesh].geometry.alpha.dispose() 
+            window.vueApp[specifiedPointsMesh].geometry.alpha.dispose()
         }
         if (window.vueApp[specifiedPointsMesh].geometry.size) {
-            window.vueApp[specifiedPointsMesh].geometry.size.dispose() 
+            window.vueApp[specifiedPointsMesh].geometry.size.dispose()
         }
         window.vueApp[specifiedPointsMesh].geometry.dispose();
     }
