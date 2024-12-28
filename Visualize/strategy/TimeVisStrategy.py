@@ -83,4 +83,4 @@ class TimeVis(StrategyAbstractClass):
             "state_dict": model.state_dict(),
             "optimizer": optimizer.state_dict()
         }
-        torch.save(save_model, os.path.join(self.config["contentPath"], "Model", +"TimeVis_model.pth"))
+        torch.save(save_model, os.path.join(self.config["contentPath"], "Model", "TimeVis_model.pth"))

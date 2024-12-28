@@ -243,7 +243,7 @@ class kcSpatialEdgeConstructor(SpatialEdgeConstructor):
         time_step_nums = list()
         time_step_idxs_list = list()
 
-        baseline_data = self.data_provider.train_representation(self.data_provider.config.EPOCH_END)
+        baseline_data = self.data_provider.train_representation(self.data_provider.config['epochEnd'])
         baseline_data = baseline_data.reshape(-1,baseline_data.shape[-1])
         max_x = np.linalg.norm(baseline_data, axis=1).max()
         baseline_data = baseline_data/max_x
@@ -260,7 +260,7 @@ class kcSpatialEdgeConstructor(SpatialEdgeConstructor):
             self.MAX_HAUSDORFF = c0-0.01
 
         # each time step
-        for t in range(self.data_provider.config.EPOCH_END, self.data_provider.config.EPOCH_START - 1, -self.data_provider.config.EPOCH_PERIOD):
+        for t in range(self.data_provider.config['epochEnd'], self.data_provider.config['epochStart'] - 1, -self.data_provider.config['epochPeriod']):
             print("=================+++={:d}=+++================".format(t))
             # load train data and border centers
             train_data = self.data_provider.train_representation(t)
