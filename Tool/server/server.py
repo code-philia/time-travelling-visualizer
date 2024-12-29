@@ -14,13 +14,16 @@ sys.path.append('.')
 from utils import get_comparison_coloring, get_coloring, get_umap_neighborhood_epoch_projection, getVisError, update_epoch_projection, update_custom_epoch_projection, initialize_backend, add_line, getConfChangeIndices, getContraVisChangeIndices, getContraVisChangeIndicesSingle,getCriticalChangeIndices, update_custom_epoch_projection, highlight_epoch_projection
 
 import time
+
 # flask for API server
-app = Flask(__name__,static_folder='Frontend')
+app = Flask(__name__, static_url_path='/static', static_folder='Frontend')
 cors = CORS(app, supports_credentials=True)
 app.config['CORS_HEADERS'] = 'Content-Type'
 
 API_result_path = "./admin_API_result.csv"
 
+# Check for "--dev" argument
+is_dev_mode = "--dev" in sys.argv
 
 import time
 
@@ -46,11 +49,11 @@ def load_vectorDB():
     global code_embeddings_collection
     res = request.get_json()
     CONTENT_PATH = os.path.normpath(res['path'])
-    
+
     print(CONTENT_PATH)
 
     iteration = int(res['iteration'])
-    
+
     EPOCH = int(iteration)
 
     code_path = CONTENT_PATH + '/Model/Epoch_' + str(EPOCH) + '/train_data.npy'
@@ -124,11 +127,11 @@ def load_vectorDB_code():
     global code_embeddings_collection
     res = request.get_json()
     CONTENT_PATH = os.path.normpath(res['path'])
-    
+
     print(CONTENT_PATH)
 
     iteration = int(res['iteration'])
-    
+
     EPOCH = int(iteration)
 
     code_path = CONTENT_PATH + '/Model/Epoch_' + str(EPOCH) + '/train_data.npy'
@@ -201,11 +204,11 @@ def load_vectorDB_nl():
     global nl_embeddings_collection
     res = request.get_json()
     CONTENT_PATH = os.path.normpath(res['path'])
-    
+
     print(CONTENT_PATH)
 
     iteration = int(res['iteration'])
-    
+
     EPOCH = int(iteration)
 
     nl_path = CONTENT_PATH + '/Model/Epoch_' + str(EPOCH) + '/train_data.npy'
@@ -299,13 +302,13 @@ def update_projection():
             # 处理或记录错误
             print("Some items in the string cannot be converted to integers.")
             indicates = []  # 或者根据你的需要进行其他处理
-        
+
     # sys.path.append(CONTENT_PATH)
     context, error_message_context = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
     # use the true one
     # EPOCH = (iteration-1)*context.strategy.data_provider.p + context.strategy.data_provider.s
     EPOCH = int(iteration)
-    
+
     # FIXME the returned field are too fixed that hard to add or change
     # if you want a little improvement you should let this function decide the response
     # and create another function for another kind of response
@@ -319,15 +322,15 @@ def update_projection():
         # add_line(API_result_path,['TT',username])
         grid = np.array(grid)
         color_list = color_list.tolist()
-        return make_response(jsonify({'result': embedding_2d, 
-                                    'grid_index': grid.tolist(), 
+        return make_response(jsonify({'result': embedding_2d,
+                                    'grid_index': grid.tolist(),
                                     'grid_color': 'data:image/png;base64,' + decision_view,
                                     'label_name_dict':label_name_dict,
-                                    'label_color_list': label_color_list, 
+                                    'label_color_list': label_color_list,
                                     'label_list': label_list,
-                                    'maximum_iteration': max_iter, 
+                                    'maximum_iteration': max_iter,
                                     'training_data': training_data_index,
-                                    'testing_data': testing_data_index, 
+                                    'testing_data': testing_data_index,
                                     'evaluation': eval_new,
                                     'prediction_list': prediction_list,
                                     "selectedPoints":selected_points.tolist(),
@@ -335,7 +338,7 @@ def update_projection():
                                     "errorMessage": error_message_context + error_message_projection,
                                     "color_list": color_list,
                                     "confidence_list": confidence_list,
-                                    
+
                                     }), 200)
     elif TaskType == 'Umap-Neighborhood':
         result = get_umap_neighborhood_epoch_projection(CONTENT_PATH, EPOCH, predicates, indicates)
@@ -361,7 +364,7 @@ def get_original_colors():
     label_color_list = get_coloring(context, EPOCH, ColorType)
     print("label_colorlen", len(label_color_list))
     return make_response(jsonify({
-                                  'label_color_list': label_color_list,        
+                                  'label_color_list': label_color_list,
                                   "errorMessage": error_message_context
                                   }), 200)
 
@@ -387,7 +390,7 @@ def get_comparison_colors():
     label_color_list = get_comparison_coloring(context_left, context_right, EPOCH_LEFT, EPOCH_RIGHT)
     print("label_colorlen", len(label_color_list))
     return make_response(jsonify({
-                                  'label_color_list': label_color_list,        
+                                  'label_color_list': label_color_list,
                                   "errorMessage": error_message_context
                                   }), 200)
 
@@ -415,13 +418,13 @@ def update_custom_projection():
             # 处理或记录错误
             print("Some items in the string cannot be converted to integers.")
             indicates = []  # 或者根据你的需要进行其他处理
-        
+
     # sys.path.append(CONTENT_PATH)
     context, error_message_context = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
     # use the true one
     # EPOCH = (iteration-1)*context.strategy.data_provider.p + context.strategy.data_provider.s
     EPOCH = int(iteration)
-    
+
     embedding_2d, grid, decision_view, label_name_dict, label_color_list, label_list, max_iter, training_data_index, \
     testing_data_index, eval_new, prediction_list, selected_points, properties, error_message_projection = update_custom_epoch_projection(context, EPOCH, predicates, TaskType,indicates, CUSTOM_PATH)
     end = time.time()
@@ -429,15 +432,15 @@ def update_custom_projection():
     # sys.path.remove(CONTENT_PATH)
     # add_line(API_result_path,['TT',username])
     grid = np.array(grid)
-    return make_response(jsonify({'result': embedding_2d, 
-                                  'grid_index': grid.tolist(), 
+    return make_response(jsonify({'result': embedding_2d,
+                                  'grid_index': grid.tolist(),
                                   'grid_color': 'data:image/png;base64,' + decision_view,
                                   'label_name_dict':label_name_dict,
-                                  'label_color_list': label_color_list, 
+                                  'label_color_list': label_color_list,
                                   'label_list': label_list,
-                                  'maximum_iteration': max_iter, 
+                                  'maximum_iteration': max_iter,
                                   'training_data': training_data_index,
-                                  'testing_data': testing_data_index, 
+                                  'testing_data': testing_data_index,
                                   'evaluation': eval_new,
                                   'prediction_list': prediction_list,
                                   "selectedPoints":selected_points.tolist(),
@@ -468,13 +471,13 @@ def highlight_projection():
             # 处理或记录错误
             print("Some items in the string cannot be converted to integers.")
             indicates = []  # 或者根据你的需要进行其他处理
-        
+
     # sys.path.append(CONTENT_PATH)
     context, error_message_context = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
     # use the true one
     # EPOCH = (iteration-1)*context.strategy.data_provider.p + context.strategy.data_provider.s
     EPOCH = int(iteration)
-    
+
     embedding_2d, grid, decision_view, label_name_dict, label_color_list, label_list, max_iter, training_data_index, \
     testing_data_index, eval_new, prediction_list, selected_points, properties, error_message_projection = highlight_epoch_projection(context, EPOCH, predicates, TaskType,indicates)
     end = time.time()
@@ -482,15 +485,15 @@ def highlight_projection():
     # sys.path.remove(CONTENT_PATH)
     # add_line(API_result_path,['TT',username])
     grid = np.array(grid)
-    return make_response(jsonify({'result': embedding_2d, 
-                                  'grid_index': grid.tolist(), 
+    return make_response(jsonify({'result': embedding_2d,
+                                  'grid_index': grid.tolist(),
                                   'grid_color': 'data:image/png;base64,' + decision_view,
                                   'label_name_dict':label_name_dict,
-                                  'label_color_list': label_color_list, 
+                                  'label_color_list': label_color_list,
                                   'label_list': label_list,
-                                  'maximum_iteration': max_iter, 
+                                  'maximum_iteration': max_iter,
                                   'training_data': training_data_index,
-                                  'testing_data': testing_data_index, 
+                                  'testing_data': testing_data_index,
                                   'evaluation': eval_new,
                                   'prediction_list': prediction_list,
                                   "selectedPoints":selected_points.tolist(),
@@ -578,7 +581,7 @@ def sprite_text():
     iteration = request.args.get("iteration")
     cus_path = request.args.get("cus_path")
     # filter_indices = request.args.get("filter_index")
-    
+
     CONTENT_PATH = os.path.normpath(path)
     idx = int(index)
     start = time.time()
@@ -588,7 +591,7 @@ def sprite_text():
     #     idx = filter_index[int(index)]
     # else:
     #     idx = int(index)
-    
+
     if cus_path != '':
         text_save_dir_path = os.path.join(CONTENT_PATH, f"Model/Epoch_{iteration}/custom_labels",  "text_{}.txt".format(idx))
     else:
@@ -600,7 +603,7 @@ def sprite_text():
             sprite_texts = text_f.read()
     else:
         print("File does not exist:", text_save_dir_path)
-  
+
     response_data = {
         "texts": sprite_texts
     }
@@ -649,7 +652,7 @@ def highlight_conf_change():
     print(confChangeInput)
     # sys.path.append(CONTENT_PATH)
     context, error_message = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
-  
+
     confChangeIndices = getConfChangeIndices(context, curr_iteration, last_iteration, confChangeInput)
     print(confChangeIndices)
     # sys.path.remove(CONTENT_PATH)
@@ -673,10 +676,10 @@ def contravis_highlight_single():
     method = res['method']
     left_selected = res['selectedPointLeft']
     right_selected = res['selectedPointRight']
-    
+
     context_left, error_message = initialize_backend(CONTENT_PATH_LEFT, VIS_METHOD_LEFT, SETTING)
     context_right, error_message = initialize_backend(CONTENT_PATH_RIGHT, VIS_METHOD_RIGHT, SETTING)
-  
+
     contraVisChangeIndicesLeft, contraVisChangeIndicesRight, contraVisChangeIndicesLeftLeft, contraVisChangeIndicesLeftRight, contraVisChangeIndicesRightLeft, contraVisChangeIndicesRightRight = getContraVisChangeIndicesSingle(context_left,context_right, curr_iteration, last_iteration, method, left_selected, right_selected)
     end_time = time.time()
     elapsed_time = end_time - start_time
@@ -703,7 +706,7 @@ def contravis_highlight():
     method = res['method']
     CONTENT_PATH_LEFT = res['content_path_left']
     CONTENT_PATH_RIGHT = res['content_path_right']
-    
+
     context_left, error_message = initialize_backend(CONTENT_PATH_LEFT, VIS_METHOD_LEFT, SETTING)
     context_right, error_message = initialize_backend(CONTENT_PATH_RIGHT, VIS_METHOD_RIGHT, SETTING)
     contraVisChangeIndices = getContraVisChangeIndices(context_left,context_right, curr_iteration, last_iteration, method)
@@ -719,7 +722,7 @@ def get_visualization_error():
     start_time = time.time()
     res = request.get_json()
     CONTENT_PATH= res['content_path']
- 
+
     VIS_METHOD = res['vis_method']
     SETTING = res["setting"]
     curr_iteration = int(res['iteration'])
@@ -734,7 +737,7 @@ def get_visualization_error():
     print(elapsed_time)
     print(len(visualization_error))
     return make_response(jsonify({
-                                  "visualizationError": visualization_error,       
+                                  "visualizationError": visualization_error,
                                   }), 200)
 
 app.route('/contrast/getVisualizationError', methods=["POST", "GET"])(get_visualization_error)
@@ -750,7 +753,7 @@ def highlight_critical_change():
     next_iteration = int(res['next_iteration'])
 
     context, error_message = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
-  
+
     predChangeIndices = getCriticalChangeIndices(context, curr_iteration, next_iteration)
     # print("predchagenInd", predChangeIndices)
     return make_response(jsonify({
@@ -787,8 +790,8 @@ def al_query():
     scores = scores[sort_i]
 
     sys.path.remove(CONTENT_PATH)
-    if not isRecommend: 
-       #  add_line(API_result_path,['Feedback', user_name]) 
+    if not isRecommend:
+       #  add_line(API_result_path,['Feedback', user_name])
         print()
     else:
        #  add_line(API_result_path,['Recommend', user_name])
@@ -823,8 +826,8 @@ def anomaly_query():
     scores = scores[sort_i]
 
     sys.path.remove(CONTENT_PATH)
-    if not isRecommend: 
-       #  add_line(API_result_path,['Feedback', user_name]) 
+    if not isRecommend:
+       #  add_line(API_result_path,['Feedback', user_name])
         print()
     else:
         # add_line(API_result_path,['Recommend', user_name])
@@ -846,7 +849,7 @@ def al_train():
 
     sys.path.append(CONTENT_PATH)
     # default setting al_train is light version, we only save the last epoch
-    
+
     context, error_message = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
     context.save_acc_and_rej(iteration, acc_idxs, rej_idxs, user_name)
     context.al_train(iteration, acc_idxs)
@@ -856,7 +859,7 @@ def al_train():
     # update iteration projection
     embedding_2d, grid, decision_view, label_name_dict, label_color_list, label_list, _, training_data_index, \
     testing_data_index, eval_new, prediction_list, selected_points, properties, _, _ = update_epoch_projection(context, NEW_ITERATION, dict(),None)
-    
+
     # rewirte json =========
     res_json_path = os.path.join(CONTENT_PATH, "iteration_structure.json")
     with open(res_json_path,encoding='utf8')as fp:
@@ -873,7 +876,7 @@ def al_train():
     gc.collect()
 
     sys.path.remove(CONTENT_PATH)
- 
+
    # add_line(API_result_path,['al_train', user_name])
     return make_response(jsonify({'result': embedding_2d, 'grid_index': grid, 'grid_color': 'data:image/png;base64,' + decision_view,
                                   'label_name_dict': label_name_dict,
@@ -926,9 +929,9 @@ def login():
 def record_bb():
     data = request.get_json()
     username = data['username']
-    # add_line(API_result_path,['boundingbox', username])  
+    # add_line(API_result_path,['boundingbox', username])
     return make_response(jsonify({}), 200)
-  
+
 @app.route('/all_result_list', methods=["POST"])
 @cross_origin()
 def get_res():
@@ -946,7 +949,7 @@ def get_res():
 
     sys.path.append(CONTENT_PATH)
     context, error_message = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
-    
+
     EPOCH_START = context.strategy.config["EPOCH_START"]
     EPOCH_PERIOD = context.strategy.config["EPOCH_PERIOD"]
     EPOCH_END = context.strategy.config["EPOCH_END"]
@@ -983,11 +986,11 @@ def get_res():
         imglist[str(i)] = 'data:image/png;base64,' + img_stream
         # imglist[str(i)] = "http://{}{}".format(ip_adress, bgimg_path)
     sys.path.remove(CONTENT_PATH)
-    
-    del config
-    gc.collect()  
 
-    # add_line(API_result_path,['animation', username])  
+    del config
+    gc.collect()
+
+    # add_line(API_result_path,['animation', username])
     return make_response(jsonify({"results":results,"bgimgList":imglist, "grid": gridlist}), 200)
 
 @app.route("/", methods=["GET", "POST"])
@@ -1010,17 +1013,17 @@ def get_tree():
 
     sys.path.append(CONTENT_PATH)
     context, error_message = initialize_backend(CONTENT_PATH, VIS_METHOD, SETTING)
-    
+
     EPOCH_START = context.strategy.config["EPOCH_START"]
     EPOCH_PERIOD = context.strategy.config["EPOCH_PERIOD"]
     EPOCH_END = context.strategy.config["EPOCH_END"]
 
-    
+
     res_json_path = os.path.join(CONTENT_PATH, "iteration_structure.json")
     if os.path.exists(res_json_path):
         with open(res_json_path,encoding='utf8')as fp:
             json_data = json.load(fp)
-    
+
     else:
         json_data = []
         previous_epoch = ""
@@ -1185,7 +1188,7 @@ def query_miss_search():
                     if int(hit.id) == i:
                         miss_query_flag = False
                         break
-            if miss_query_flag: 
+            if miss_query_flag:
                 if mis_query_indices == '':
                     mis_query_indices += str(i)
                 else:
@@ -1247,7 +1250,7 @@ def add_new_label():
         tar_output_file = os.path.join(tar_label_text_path, 'text_{}.txt'.format(index))
         print("ref_output_file", ref_output_file)
         print("tar_output_file", tar_output_file)
-        
+
         with open(ref_output_file, "w") as output:
             output.write(target_item['code'])
 
@@ -1260,6 +1263,8 @@ def add_new_label():
     return make_response(jsonify({'success': success}), 200)
 
 def check_port_inuse(port, host):
+    import socket
+
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.settimeout(1)
@@ -1270,15 +1275,27 @@ def check_port_inuse(port, host):
     finally:
         if s:
             s.close()
+
 # for contrast
 if __name__ == "__main__":
-    import socket
-    # hostname = socket.gethostname()
-    # ip_address = socket.gethostbyname(hostname)
-    ip_address = '0.0.0.0'
-    port = 5000
-    while check_port_inuse(port, ip_address):
+    host = '0.0.0.0'
+    port = 5010
+    while check_port_inuse(port, host):
         port = port + 1
 
-    app.run(host=ip_address, port=port)
-    # app.run(host=ip_address, port=int(port))
+    if not is_dev_mode:
+        app.run(host=host, port=port)
+    else:
+        from livereload import Server
+        from flask_debugtoolbar import DebugToolbarExtension
+
+        app.debug = True
+        app.config['SECRET_KEY'] = 'a-random-secret-key'
+        toolbar = DebugToolbarExtension(app)
+
+        server = Server(app.wsgi_app)
+
+        server.watch('Frontend/**/*.css')
+        server.watch('Frontend/**/*.html')
+        server.watch('Frontend/**/*.js')
+        server.serve(host=host, port=port)

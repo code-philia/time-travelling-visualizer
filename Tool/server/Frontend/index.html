@@ -7,20 +7,20 @@
         content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
         
     <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
-    <link rel="stylesheet" href="Frontend/driver.min.css">
-    <link rel="stylesheet" href="Frontend/index.css">
+    <link rel="stylesheet" href="/static/driver.min.css">
+    <link rel="stylesheet" href="/static/index.css">
 
     <script src="https://cdn.jsdelivr.net/npm/js-cookie@3/dist/js.cookie.min.js"></script>
     <!-- <script src="https://unpkg.com/element-ui/lib/index.js"></script>   -->
     <!-- <script src="https://cdn.bootcss.com/vue/2.5.16/vue.min.js"></script> -->
-    <script src="Frontend/thirdParty/vue.min.js"></script>
+    <script src="/static/thirdParty/vue.min.js"></script>
     <!-- <script src="https://d3js.org/d3.v5.min.js"></script> -->
-    <script src="Frontend/thirdParty/d3.v5.min.js"></script>
+    <script src="/static/thirdParty/d3.v5.min.js"></script>
     <!-- <script src="https://cdn.jsdelivr.net/npm/three@0.126.1/build/three.min.js"></script> -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.155.0/three.min.js"></script>
-    <script src="Frontend/request.js"></script>
-    <script src="Frontend/render.js"></script>
-    <script src="Frontend/utils.js"></script>
+    <script src="/static/request.js"></script>
+    <script src="/static/render.js"></script>
+    <script src="/static/utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
 </head>
 
@@ -295,11 +295,18 @@
             </div>
         </div>
         <div id="footer">
-            <div style="display: flex; align-items: end;">
-                <svg id="timeLinesvg"></svg>
-                <button id="play-timeline-button" v-if="document.getElementById('timeLinesvg')?.classList?.contains('active')"
-                    @mousedown="playTimeline = !playTimeline" :class="playTimeline ? 'pause' : 'play'"/>
-            </div>
+            <el-tabs v-model="activeTab">
+                <el-tab-pane label="Timeline" name="timeline">
+                    <div style="display: flex; align-items: end;">
+                        <svg id="timeLinesvg"></svg>
+                        <button id="play-timeline-button" v-if="document.getElementById('timeLinesvg')?.classList?.contains('active')"
+                            @mousedown="playTimeline = !playTimeline" :class="playTimeline ? 'pause' : 'play'"/>
+                    </div>
+                </el-tab-pane>
+                <el-tab-pane label="Tokens Overview" name="tokens-overview">
+                    
+                </el-tab-pane>
+            </el-tabs>
         </div>
         <div v-if="showMetadataCard" id="currHover">
             <h3>MetaData Card</h3>
@@ -330,7 +337,28 @@
     window.vueApp = new Vue({
         el: '#app',
         data() {
+            const newFeatureAttributes = {
+                neighborhoodRevealType: "None",
+                showAllText: false,
+                showMetadataCard: false,
+                showNumberBeforeText: false,
+                pointCoords: [],
+                displayedTextLabels: [],
+
+                playTimeline: false,
+                playEvent: undefined,
+
+                activeTab: 'timeline',
+
+                codeTokens: undefined,
+                codeText: undefined,
+                commentTokens: undefined,
+                commentText: undefined
+            };
+
             return {
+                ...newFeatureAttributes,
+
                 selectedList:[{'index':22},{'index':77}],
                 selectedIndex: [],
                 selectedPointPos:[],
@@ -375,16 +403,6 @@
                 imageSrc: "",
                 textContent: "",
                 dataType: "Image",
-
-                neighborhoodRevealType: "None",
-                showAllText: false,
-                showMetadataCard: false,
-                showNumberBeforeText: false,
-                pointCoords: [],
-                displayedTextLabels: [],
-
-                playTimeline: false,
-                playEvent: undefined,
 
                 visibilityMap: null,
                 highlightAttributes: {
