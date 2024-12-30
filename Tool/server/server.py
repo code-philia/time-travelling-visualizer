@@ -41,18 +41,17 @@ Request:
 Response:
     structure (list[dict]): list of {epoch, previous_epoch}
 """
-@app.route('/get_iteration_structure', methods=["GET"])
+@app.route('/getIterationStructure', methods=["GET"])
 @cross_origin()
 def get_epoch_structure():
     content_path = request.args.get('content_path')
+    available_epochs, error_message = epoch_structure_from_projection(content_path)
     
-    try:
-        available_epochs = epoch_structure_from_projection(content_path)
-    except Exception as e:
-        return make_response(jsonify({'error': 'Error in loading epoch structure'}), 400)
-    
+    if available_epochs is None:
+        return make_response(jsonify({'error_message': error_message}), 400)
+        
     result = jsonify({
-        'availableEpochs': available_epochs
+        'available_epochs': available_epochs
     })
     return make_response(result, 200)
 
