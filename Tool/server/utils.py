@@ -91,6 +91,40 @@ def load_one_sample(config, content_path, index):
         raise NotImplementedError("Unsupported file extension: {}".format(file_extension))
 
 
+# Func: load all text samples
+def get_all_texts(config, content_path):
+    attributes = config['dataset']['attributes']
+    if 'sample' not in attributes:
+        return None, 'sample is not in attributes'
+    
+    sampleConfig = attributes['sample']
+    if sampleConfig['dataType'] != 'text':
+        return None, 'sample is not text'
+    
+    text_list = []
+    if sampleConfig['source']['type'] == 'folder':
+        parent_directory = os.path.dirname(sampleConfig['source']['pattern'])
+        parent_directory = os.path.join(content_path, parent_directory)
+        
+        files_and_folders = os.listdir(parent_directory)
+        numbered_files = [f for f in files_and_folders if f.endswith('.txt') and f[:-4].isdigit()]
+        numbered_files.sort(key=lambda f: int(f[:-4]))
+        
+        # TODO: if we know index of samples, we can directly read the file by index
+        for file_name in numbered_files:
+            file_path = os.path.join(parent_directory, file_name)
+            with open(file_path, 'r') as file:
+                content = file.read()
+                text_list.append(content)
+
+    elif sampleConfig['source']['type'] == 'file':
+        with open(sampleConfig['source']['pattern'], 'r') as f:
+            text_list = f.readlines()
+    else:
+        return None, 'Unsupported source type: {}'.format(sampleConfig['source']['type'])
+
+    return text_list, ''
+
 # Func: given label file path, return python list of labels
 def read_label_file(file_path):
     _, file_extension = os.path.splitext(file_path)
