@@ -36,8 +36,9 @@ def epoch_structure_from_projection(content_path):
         file_numbers = [int(file.rstrip('.npy')) for file in files if file.endswith('.npy')]
         file_numbers = sorted(file_numbers)
         if file_numbers != []:
-            return file_numbers
-    raise ValueError("No projection files found")
+            return file_numbers, ''
+        
+    return None, "No projection files found, can't infer epoch structure"
 
 # Func: load projection and label list (minimum requirement for 'update_projection')
 def load_projection(config, content_path, vis_method, epoch):
