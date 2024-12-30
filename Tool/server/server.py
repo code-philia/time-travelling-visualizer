@@ -123,6 +123,32 @@ def get_sample():
 
 
 """
+Api: get text data of all samples
+
+Request:
+    content_path (str)
+Response:
+    text_list (lsit of str)
+"""
+@app.route('/getAllText', methods = ["POST"])
+def get_all_text():
+    req = request.get_json()
+    content_path = req['content_path']
+    
+    config = read_file_as_json(os.path.join(content_path, 'config.json'))
+    
+    text_list, error_message = get_all_texts(config, content_path)
+    
+    if text_list is None:
+        return make_response(jsonify({'error_message': error_message}), 400)
+    
+    result = jsonify({
+        'text_list': text_list
+    })
+    return make_response(result, 200)
+    
+    
+"""
 Api: get selected attributes of the dataset
 
 Request:
