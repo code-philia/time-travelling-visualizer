@@ -177,6 +177,37 @@ def get_attributes():
     return make_response(result, 200)
 
 
+"""
+Api: get simple filter result
+
+Request:
+    content_path (str)
+    epoch (str)
+    filter_type (str): "label", "prediction", "train", "test"
+    filter_data (str): label name
+Response:
+    indices (list of int): indeices of samples that satisfy the filter
+"""
+@app.route('/getSimpleFilterResult', methods = ["POST"])
+@cross_origin()
+def get_attributes():
+    req = request.get_json()
+    content_path = req['content_path']
+    epoch = int(req['epoch'])
+    filters = req['filters']
+    
+    config = read_file_as_json(os.path.join(content_path, 'config.json'))
+    indices, error_message = get_filter_result(config, content_path, epoch, filters)
+    
+    if indices is None:
+        return make_response(jsonify({'error_message': error_message}), 400)
+    
+    result = jsonify({
+        'indices': indices
+    })
+    return make_response(result, 200)
+
+
 
 """ ===================================================================== """
 # Func: get iteration structure
