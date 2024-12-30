@@ -179,6 +179,59 @@ def read_from_file(file_path):
     
     return result
 
+# Func: get simple filtered indices
+def get_filter_result(config, content_path, epoch, filters):
+    index_file_path = os.path.join(content_path, 'index.json')
+    if not os.path.exists(index_file_path):
+        return None, 'index.json not found'
+    
+    indice_obj = read_file_as_json(index_file_path)
+    
+    all_indices = indice_obj['train'] + indice_obj['test']
+    result = all_indices
+    
+    for filter in filters:
+        filter_type = filter['filter_type']
+        label_text_list = config['dataset']['classes']
+        
+        if filter_type == 'label':
+            filter_data = filter['filter_data']
+            
+            attributes = config['dataset']['attributes']
+            file_path_pattern = attributes['label']['source']['pattern']
+            file_path = os.path.join(content_path, file_path_pattern)
+            if not os.path.exists(file_path):
+                return None, 'label file not found'
+            
+            label_list = read_label_file(file_path)
+            
+            filtered_indices = [index for index, label in zip(all_indices, label_list) if label_text_list[label] == filter_data]
+            result = list(set(result) & set(filtered_indices))
+        
+        elif filter_type == 'prediction':
+            filter_data = filter['filter_data']
+            
+            attributes = config['dataset']['attributes']
+            file_path_pattern = attributes['prediction']['source']['pattern']
+            file_path_pattern = file_path_pattern.replace('${epoch}', str(epoch))
+            file_path = os.path.join(content_path, file_path_pattern)
+            if not os.path.exists(file_path):
+                return None, 'prediction file not found'
+            
+            prediction_list = read_label_file(file_path)
+            
+            filtered_indices = [index for index, label in zip(all_indices, prediction_list) if label_text_list[label] == filter_data]
+            result = list(set(result) & set(filtered_indices))
+        
+        elif filter_type == 'train':
+            result = list(set(result) & set(indice_obj['train']))
+        
+        elif filter_type == 'test':
+            result = list(set(result) & set(indice_obj['test']))
+    
+    return result,''
+
+
 """ ==================================================================== """
 def initialize_config(config_file, setting = 'normal'):
     if setting == "normal":
