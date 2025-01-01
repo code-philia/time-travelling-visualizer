@@ -190,7 +190,7 @@ Response:
 """
 @app.route('/getSimpleFilterResult', methods = ["POST"])
 @cross_origin()
-def get_attributes():
+def get_simple_filter_result():
     req = request.get_json()
     content_path = req['content_path']
     epoch = int(req['epoch'])
