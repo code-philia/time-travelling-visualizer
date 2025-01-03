@@ -38,12 +38,188 @@ class TempConfig:
 def GUI():
     return send_from_directory('../Frontend', 'index.html')
 
-# Func: get iteration structure
-@app.route('/get_itertaion_structure', methods=["POST", "GET"])
+"""
+Api: get epoch structure of one training process
+
+Request:
+    content_path (str)
+    vis_method (str)
+Response:
+    structure (list[dict]): list of {epoch, previous_epoch}
+"""
+@app.route('/getIterationStructure', methods=["GET"])
 @cross_origin()
+def get_epoch_structure():
+    content_path = request.args.get('content_path')
+    available_epochs, error_message = epoch_structure_from_projection(content_path)
+
+    if available_epochs is None:
+        return make_response(jsonify({'error_message': error_message}), 400)
+
+    result = jsonify({
+        'available_epochs': available_epochs
+    })
+    return make_response(result, 200)
+
+
+"""
+Api: get minimum info of one epoch
+
+Request:
+    content_path (str)
+    vis_method (str)
+    epoch (str): epoch number
+Response:
+    config (dict)
+    project (list)
+    label_list (list): label list of samples in projection
+"""
+@app.route('/updateProjection', methods = ["POST"])
+@cross_origin()
+def update_projection():
+    req = request.get_json()
+    content_path = req['content_path']
+    vis_method = req['vis_method']
+    epoch = int(req['epoch'])
+
+    config = read_file_as_json(os.path.join(content_path, 'config.json'))
+
+    try:
+        projection, label_list = load_projection(config, content_path, vis_method, epoch)
+    except Exception as e:
+        return make_response(jsonify({'error': 'Error in loading projection'}), 400)
+
+    result = jsonify({
+        'config': config,
+        'proj': projection[:min(100,len(projection))],
+        'labels': label_list[:min(100,len(label_list))],
+        'label_text_list': config['dataset']['classes']
+    })
+    return make_response(result, 200)
+
+"""
+Api: get original data of one sample
+
+Request:
+    content_path (str)
+    index (str): sample index
+Response:
+    type (str): data type (image, text, ...)
+    sample (str): base64 encoded image or plain text
+"""
+@app.route('/getSample', methods = ["POST"])
+def get_sample():
+    req = request.get_json()
+    content_path = req['content_path']
+    index = int(req['index'])
+
+    config = read_file_as_json(os.path.join(content_path, 'config.json'))
+
+    try:
+        data_type, data = load_one_sample(config, content_path, index)
+    except Exception as e:
+        return make_response(jsonify({'error': 'Error in loading sample'}), 400)
+
+    result = jsonify({
+        'type': data_type,
+        'sample': data
+    })
+    return make_response(result, 200)
+
+
+"""
+Api: get text data of all samples
+
+Request:
+    content_path (str)
+Response:
+    text_list (lsit of str)
+"""
+@app.route('/getAllText', methods = ["POST"])
+def get_all_text():
+    req = request.get_json()
+    content_path = req['content_path']
+
+    config = read_file_as_json(os.path.join(content_path, 'config.json'))
+
+    text_list, error_message = get_all_texts(config, content_path)
+
+    if text_list is None:
+        return make_response(jsonify({'error_message': error_message}), 400)
+
+    result = jsonify({
+        'text_list': text_list
+    })
+    return make_response(result, 200)
+
+
+"""
+Api: get selected attributes of the dataset
+
+Request:
+    content_path (str)
+    epoch (str): epoch number
+    attributes (list): selected attributes
+Response:
+    attribute1 (object)
+    attribute2 (object)
+    ...
+"""
+@app.route('/getAttributes', methods = ["POST"])
+@cross_origin()
+def get_attributes():
+    req = request.get_json()
+    content_path = req['content_path']
+    epoch = req['epoch']
+    attributes = req['attributes']
+
+    config = read_file_as_json(os.path.join(content_path, 'config.json'))
+
+    result = {}
+    for attribute in attributes:
+        result[attribute] = load_single_attribute(config, content_path, epoch, attribute)
+
+    result = jsonify(result)
+    return make_response(result, 200)
+
+
+"""
+Api: get simple filter result
+
+Request:
+    content_path (str)
+    epoch (str)
+    filter_type (str): "label", "prediction", "train", "test"
+    filter_data (str): label name
+Response:
+    indices (list of int): indeices of samples that satisfy the filter
+"""
+@app.route('/getSimpleFilterResult', methods = ["POST"])
+@cross_origin()
+def get_simple_filter_result():
+    req = request.get_json()
+    content_path = req['content_path']
+    epoch = int(req['epoch'])
+    filters = req['filters']
+
+    config = read_file_as_json(os.path.join(content_path, 'config.json'))
+    indices, error_message = get_filter_result(config, content_path, epoch, filters)
+
+    if indices is None:
+        return make_response(jsonify({'error_message': error_message}), 400)
+
+    result = jsonify({
+        'indices': indices
+    })
+    return make_response(result, 200)
+
+
+
+""" ===================================================================== """
+# Func: get iteration structure
 def get_tree():
-    config = TempConfig()
-    # config = initailize_config(config_file)
+    # config = TempConfig()
+    config = initialize_config(config_file)
 
     json_data = []
     previous_epoch = ""
@@ -57,9 +233,7 @@ def get_tree():
     return make_response(jsonify({"structure":json_data}), 200)
 
 # Func: load projection result of one epoch
-@app.route('/updateProjection', methods = ["POST", "GET"])
-@cross_origin()
-def update_projection():
+def update_projection_old():
     # search filter
     req = request.get_json()
     iteration = int(req['iteration'])
@@ -67,8 +241,8 @@ def update_projection():
     indicates = list(range(100)) # we now don't use req['selectedPoints'] to filter in backend
 
     # load config from config_file
-    config = TempConfig(req['taskType'], req['contentPath'])
-    # config = initailize_config(config_file)
+    # config = TempConfig(req['taskType'], req['contentPath'])
+    config = initialize_config(config_file)
 
     # load visualization result of one epoch
     if config.TASK_TYPE == 'classification' or config.TASK_TYPE == 'non-classification':
