@@ -12,6 +12,7 @@ __pycache__
 
 Visualize/*.log
 
+training_dynamic_old/
 training_dynamic/
 training_workspace/
 temp.py
