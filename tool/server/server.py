@@ -16,7 +16,7 @@ sys.path.append('..')
 sys.path.append('.')
 
 # flask for API server
-app = Flask(__name__, static_url_path='/static', static_folder='../Frontend')
+app = Flask(__name__, static_url_path='/static', static_folder='../frontend')
 cors = CORS(app, supports_credentials=True)
 app.config['CORS_HEADERS'] = 'Content-Type'
 
@@ -36,7 +36,7 @@ class TempConfig:
 
 @app.route("/", methods=["GET", "POST"])
 def GUI():
-    return send_from_directory('../Frontend', 'index.html')
+    return send_from_directory('../frontend', 'index.html')
 
 """
 Api: get epoch structure of one training process
@@ -368,7 +368,7 @@ if __name__ == "__main__":
 
         server = Server(app.wsgi_app)
 
-        server.watch('../Frontend/**/*.css')
-        server.watch('../Frontend/**/*.html')
-        server.watch('../Frontend/**/*.js')
+        server.watch('../frontend/**/*.css')
+        server.watch('../frontend/**/*.html')
+        server.watch('../frontend/**/*.js')
         server.serve(host=host, port=port)
