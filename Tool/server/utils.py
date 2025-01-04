@@ -59,6 +59,19 @@ def load_projection(config, content_path, vis_method, epoch):
 
     return projection_list, label_list
 
+# Func: load background image
+def load_background_image_base64(config, content_path, vis_method, epoch):
+    if config['taskType'] == 'classification':
+        bgimg_path = os.path.join(content_path, "visualize", vis_method, "bgimg", f"{epoch}.png")
+    else:
+        bgimg_path = os.path.join(content_path, "visualize", vis_method, "bgimg", "1.png") # blank background image
+    
+    with open(bgimg_path, 'rb') as img_f:
+        img_stream = img_f.read()
+        img_stream = base64.b64encode(img_stream).decode()
+    
+    return 'data:image/png;base64,' + img_stream
+
 # Func: load one sample from content_path
 def load_one_sample(config, content_path, index):
     attributes = config['dataset']['attributes']
