@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 import numpy as np
@@ -19,24 +20,27 @@ class DataProvider():
     ########################################################################################################################
     #                                                       MODEL                                                          #
     ########################################################################################################################
-
     def load_subject_model(self, epoch):
-        # definition of subject model
-        import Model.model as subject_model
+        # definition of subject model, copied to content_path/model.py
+        import model as subject_model
         model = eval("subject_model.{}()".format(self.config['net']))
         
         # state dict of subject model
-        subject_model_location = os.path.join(self.config["contentPath"],"Model",f"Epoch_{epoch}", "subject_model.pth")
+        subject_model_location = os.path.join(self.config["contentPath"],"model", f"{epoch}.pth")
         model.load_state_dict(torch.load(subject_model_location, map_location=torch.device("cpu")))
         model.to(self.device)
         model.eval()
         return model
     
+    def load_subject_feat_func(self, epoch):
+        subject_model = self.load_subject_model(epoch)
+        return subject_model.feature
 
     def load_subject_pred_func(self, epoch):
         subject_model = self.load_subject_model(epoch)
         return subject_model.prediction
     
+    # Not used, we assume the high dimension representation is already saved during training subject model
     def load_data(self):
         dataset_path = os.path.join(self.content_path, "Dataset")
         train_data = torch.load(os.path.join(dataset_path, "training_dataset_data.pth"),map_location="cpu")
@@ -48,50 +52,41 @@ class DataProvider():
         else:
             return train_data, test_data, None, None
     
-
-    def train_labels(self):
-        # load train data
-        dataset_path = os.path.join(self.content_path, "Dataset")
-        training_data_loc = os.path.join(dataset_path, "training_dataset_label.pth")
+    # Save train and test labels together, distinguished by index
+    def all_labels(self):
+        dataset_path = os.path.join(self.content_path, "dataset")
+        label_loc = os.path.join(dataset_path, "label", "labels.npy")
         try:
-            training_labels = torch.load(training_data_loc, map_location="cpu")
-            training_labels = np.array(training_labels)
+            labels = np.load(label_loc, allow_pickle=True)
         except Exception as e:
             print("no train labels saved !")
-            training_labels = None
-        return training_labels
+            labels = None
+        return labels
+    
+    def train_labels(self):
+        all_labels = self.all_labels()        
+        index_file_path = os.path.join(self.config["contentPath"],"index.json")
+        with open(index_file_path, "r") as f:
+            index_dict = json.load(f)
+        
+        train_index = index_dict["train"]
+        train_labels = [all_labels[i] for i in train_index]
+        return train_labels
     
     def test_labels(self):
-        dataset_path = os.path.join(self.content_path, "Dataset")
-        testing_data_loc = os.path.join(dataset_path, "testing_dataset_label.pth")
-        try:
-            # avoid index checking for testing data
-            testing_labels = torch.load(testing_data_loc, map_location="cpu")
-            testing_labels = np.array(testing_labels)
-        except Exception as e:
-            print("no test labels saved !")
-            testing_labels = None
-        return testing_labels
-    
-    def all_labels(self):
-        training_labels = self.train_labels()
-        testing_labels = self.test_labels()
+        all_labels = self.all_labels()        
+        index_file_path = os.path.join(self.config["contentPath"],"index.json")
+        with open(index_file_path, "r") as f:
+            index_dict = json.load(f)
         
-        if training_labels is not None and testing_labels is not None:
-            all_labels = np.concatenate((training_labels, testing_labels))
-        elif training_labels is not None:
-            all_labels = training_labels
-        elif testing_labels is not None:
-            all_labels = testing_labels
-        else:
-            all_labels = None
-        
-        return all_labels
+        test_index = index_dict["test"]
+        test_labels = [all_labels[i] for i in test_index]
+        return test_labels
     
     ########################################################################################################################
     #                                                       REPRESENTATION                                                 #
     ########################################################################################################################
-
+    # Not used, we assume the high dimension representation is already saved during training subject model
     def generate_representation(self):
         training_data, testing_data, training_label, testing_label = self.load_data()
         for n_epoch in range(self.config["epochStart"], self.config["epochEnd"] + 1, self.config["epochPeriod"]):
@@ -123,53 +118,35 @@ class DataProvider():
                 test_data_representation = batch_run_feature_extract(feat_func, testing_data, device=self.device, desc="feature_extraction")
                 np.save(os.path.join(self.config["contentPath"],"Model",f"Epoch_{n_epoch}", "test_data_representation.npy"), test_data_representation)
     
-    def train_representation(self, epoch):
-        train_data_loc = os.path.join(self.config["contentPath"],"Model",f"Epoch_{epoch}", "train_data_representation.npy")
+    # Save train and test data representation together, distinguished by index
+    def all_representation(self, epoch):
+        representation_loc = os.path.join(self.config["contentPath"],"dataset","representation",f"{epoch}.npy")
         try:
-            train_data = np.load(train_data_loc)
+            train_data = np.load(representation_loc)
         except Exception as e:
             print("no train data representation saved for Epoch {}".format(epoch))
             train_data = None
         return train_data
     
+    def train_representation(self, epoch):
+        all_representation = self.all_representation(epoch)
+        index_file_path = os.path.join(self.config["contentPath"],"index.json")
+        with open(index_file_path, "r") as f:
+            index_dict = json.load(f)
+        
+        train_index = index_dict["train"]
+        train_representations = [all_representation[i] for i in train_index]
+        return train_representations
+    
     def test_representation(self, epoch):
-        data_loc = os.path.join(self.config["contentPath"],"Model",f"Epoch_{epoch}", "test_data_representation.npy")
-        try:
-            test_data = np.load(data_loc)
-        except Exception as e:
-            print("no test data representation saved for Epoch {}".format(epoch))
-            test_data = None
-        return test_data
-    
-    def all_representation(self, epoch):
-        train_data = self.train_representation(epoch)
-        test_data = self.test_representation(epoch)
-
-        if test_data is None:
-            all_data = train_data
-        else:
-            all_data = np.concatenate((train_data, test_data), axis=0)
-        return all_data
-    
-    def border_representation(self, epoch):
-        border_centers_loc = os.path.join(self.model_path, "{}_{:d}".format(self.epoch_name, epoch),
-                                          "border_centers.npy")
-        try:
-            border_centers = np.load(border_centers_loc)
-        except Exception as e:
-            print("no border points saved for Epoch {}".format(epoch))
-            border_centers = np.array([])
-        return border_centers
-    
-    def test_border_representation(self, epoch):
-        border_centers_loc = os.path.join(self.model_path, "{}_{:d}".format(self.epoch_name, epoch),
-                                          "test_border_centers.npy")
-        try:
-            border_centers = np.load(border_centers_loc)
-        except Exception as e:
-            print("no border points saved for Epoch {}".format(epoch))
-            border_centers = np.array([])
-        return border_centers
+        all_representation = self.all_representation(epoch)
+        index_file_path = os.path.join(self.config["contentPath"],"index.json")
+        with open(index_file_path, "r") as f:
+            index_dict = json.load(f)
+        
+        test_index = index_dict["test"]
+        test_representations = [all_representation[i] for i in test_index]        
+        return test_representations
     
     ########################################################################################################################
     #                                                       PREDICTION                                                     #

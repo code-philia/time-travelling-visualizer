@@ -48,16 +48,16 @@ class Visualizer(VisualizerAbstractClass):
             # get and save embedding
             all_data_representation = self.data_provider.all_representation(i)
             embedding = self.projector.batch_project(i,all_data_representation)
-            np.save(os.path.join(self.config["contentPath"],"Model",f"Epoch_{i}", "embedding_"+self.config["visMethod"]+".npy"), embedding)
+            # np.save(os.path.join(self.config["contentPath"],"Model",f"Epoch_{i}", "embedding_"+self.config["visMethod"]+".npy"), embedding)
+            projection_path = os.path.join(self.config['contentPath'], "visualize", self.config["visMethod"], "projection")
+            if not os.path.exists(projection_path):
+                os.makedirs(projection_path)
+            np.save(os.path.join(self.config['contentPath'], "visualize", self.config["visMethod"], "projection", f"{i}.npy"), embedding)
 
-            # save background image and visualize image
             if self.config["taskType"] == 'classification':
-                save_dir = os.path.join(self.data_provider.content_path, "Visualize_result")
-                if not os.path.exists(save_dir):
-                    os.mkdir(save_dir)
                 # save background image and visualization image
                 self.save_scale_bgimg(i, self.resolution)
-                self.savefig(i, embedding, path=os.path.join(save_dir, "{}_{}.png".format(self.config["visMethod"], i)))
+                # self.savefig(i, embedding, path=os.path.join(save_dir, "{}_{}.png".format(self.config["visMethod"], i)))
             else:
                 # only save background image
                 self.save_scale_bgimg_blank(i, self.resolution)
@@ -138,7 +138,8 @@ class Visualizer(VisualizerAbstractClass):
         """get plot measure for visualization"""
         # data = self.data_provider.train_representation(epoch)
         # embedded = self.projector.batch_project(epoch, data)
-        embedding_path = os.path.join(self.data_provider.checkpoint_path(epoch),"embedding_"+self.config["visMethod"]+".npy")
+        # embedding_path = os.path.join(self.data_provider.checkpoint_path(epoch),"embedding_"+self.config["visMethod"]+".npy")
+        embedding_path = os.path.join(self.config['contentPath'], "visualize", self.config["visMethod"], "projection", f"{epoch}.npy")
         embedded = np.load(embedding_path, allow_pickle=True)
 
         ebd_min = np.min(embedded, axis=0)
@@ -359,6 +360,9 @@ class Visualizer(VisualizerAbstractClass):
         ax.set_ylim((y_min, y_max))
 
         save_dir = self.data_provider.checkpoint_path(epoch)
+        bgimg_data_path = os.path.join(save_dir, "bgimg_data.npy")
+        np.save(bgimg_data_path, decision_view)
+        
         scale = [x_min, y_min, x_max, y_max]
         scale_path = os.path.join(save_dir, "scale.npy")
         np.save(scale_path, scale)
