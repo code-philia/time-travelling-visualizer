@@ -90,7 +90,7 @@ const initMutableGlobalStore: BaseMutableGlobalStore = {
     timelineData: undefined,
     updateUUID: '',     // FIXME should use a global configure object to manage this
     allEpochsProjectionData: {},
-    availableEpochs: new Array(30).fill(0).map((_, i) => i + 1),
+    availableEpochs: [],
     // FIXME should use an object to apply user settings (like color) to original data, computing final point geography, and setting cache
     colorDict: new Map(),
     labelDict: new Map(),
