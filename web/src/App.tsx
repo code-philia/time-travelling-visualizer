@@ -8,6 +8,10 @@ import { HighlightContext, randomColor } from "./component/canvas/types";
 import { Button } from "antd";
 import { SettingOutlined, SettingTwoTone } from "@ant-design/icons";
 
+function isInitialState(contentPath: string): boolean {
+    return contentPath.trim() === "";
+}
+
 function App() {
     const { contentPath, epoch, allEpochsProjectionData, setProjectionDataAtEpoch, updateUUID } = useStore(['contentPath', 'epoch', 'allEpochsProjectionData', 'setProjectionDataAtEpoch', 'updateUUID']);
 
@@ -21,7 +25,10 @@ function App() {
     // FIXME this is updating too many things
     useEffect(() => {
         (async () => {
+            if (isInitialState(contentPath)) return;
+
             if (allEpochsProjectionData[epoch]) return;
+
             const res = await fetchUmapProjectionData(contentPath, epoch);
             if (res) {
                 setProjectionDataAtEpoch(epoch, res);

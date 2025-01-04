@@ -78,7 +78,7 @@ type BaseMutableGlobalStore = {
 
 const initMutableGlobalStore: BaseMutableGlobalStore = {
     command: '',
-    contentPath: "/home/yuhuan/projects/cophi/visualizer-original/dev/gcb_tokens",
+    contentPath: "",
     visMethod: 'Trustvis',
     taskType: 'Classification',
     colorType: 'noColoring',
