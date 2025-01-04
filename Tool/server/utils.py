@@ -153,6 +153,24 @@ def read_label_file(file_path):
     
     return label_list
 
+
+# Func: load representation of one epoch
+def load_representation(config, content_path, epoch):
+    attributes = config['dataset']['attributes']
+    if 'representation' not in attributes:
+        raise NotImplementedError("representation is not in attributes")
+    
+    file_path_pattern = attributes['representation']['source']['pattern']
+    file_path = file_path_pattern.replace('${epoch}', str(epoch))
+    file_path = os.path.join(content_path, file_path)
+    
+    repr = np.load(file_path)
+    return repr.tolist()
+
+
+"""
+About other attributes (not basic attributes like representation, label, sample...)
+"""
 def load_single_attribute(config, content_path, epoch, attribute):
     attributes = config['dataset']['attributes']
     if attribute not in attributes:
