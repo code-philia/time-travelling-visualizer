@@ -1,6 +1,6 @@
 # Training Dynamic Visualization Tool
 
-> 🏗️ The tool is under renovation, and only part of the datasets are validated to be visualized. Introduction to the original tool and research project and could be found in [PROTOTYPE.md](PROTOTYPE.md).
+> 🏗️ The tool is under renovation, and only part of the datasets are validated to be visualized. Introduction to the original tool and research project and could be found in [PROTOTYPE.md](PROTOTYPE.md), while it could contain some obsolete descriptions like that the old `Vis` and `VisTool` folders no longer exists, and the old `Tool` folder was separated into `tool` and `visualize` sub-projects.
 
 ## How To Start the Tool
 
@@ -71,8 +71,8 @@ We recommend using this dataset to try the new feature.
 
 ```bash
 ~/time-travelling-visualizer$ conda activate venv
-(venv) ~/time-travelling-visualizer$ cd Tool/server/
-(venv) ~/time-travelling-visualizer/Tool/server$ python server.py
+(venv) ~/time-travelling-visualizer$ cd tool/server/
+(venv) ~/time-travelling-visualizer/tool/server$ python server.py
 ```
 
 2. You should see an URL after the server is started (if you start this tool remotely, you may need to set up port forwarding in your IDE, e.g. VS Code). Visit it in your browser.
