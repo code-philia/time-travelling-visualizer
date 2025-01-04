@@ -87,7 +87,7 @@ def update_projection():
     try:
         projection, label_list = load_projection(config, content_path, vis_method, epoch)
     except Exception as e:
-        return make_response(jsonify({'error': 'Error in loading projection'}), 400)
+        return make_response(jsonify({'error_message': 'Error in loading projection'}), 400)
 
     result = jsonify({
         'config': config,
@@ -96,6 +96,37 @@ def update_projection():
         'label_text_list': config['dataset']['classes']
     })
     return make_response(result, 200)
+
+"""
+Api: get background image of one epoch
+
+Request:
+    content_path (str)
+    vis_method (str)
+    epoch (str)
+Response:
+    bgimg (str): base64 encoded image
+"""
+@app.route('/getBackgroundImage', methods = ["POST"])
+@cross_origin()
+def get_background_image():
+    req = request.get_json()
+    content_path = req['content_path']
+    vis_method = req['vis_method']
+    epoch = int(req['epoch'])
+
+    config = read_file_as_json(os.path.join(content_path, 'config.json'))
+
+    try:
+        bgimg = load_background_image_base64(config, content_path, vis_method, epoch)
+    except Exception as e:
+        return make_response(jsonify({'error_message': 'Error in loading background image'}), 400)
+    
+    result = jsonify({
+        'bgimg': bgimg # 'data:image/png;base64,' + img_stream
+    })
+    return make_response(result, 200)
+
 
 """
 Api: get original data of one sample
@@ -118,7 +149,7 @@ def get_sample():
     try:
         data_type, data = load_one_sample(config, content_path, index)
     except Exception as e:
-        return make_response(jsonify({'error': 'Error in loading sample'}), 400)
+        return make_response(jsonify({'error_message': 'Error in loading sample'}), 400)
 
     result = jsonify({
         'type': data_type,
