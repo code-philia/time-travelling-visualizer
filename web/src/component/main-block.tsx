@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { CanvasContainer, Plot2DCanvasContext, Plot2DDataContext } from './canvas/canvas'
 import { useStore } from '../state/store'
 import { CommonPointsGeography, extractConnectedPoints, extractSpriteData, pointsDefaultSize, SpriteData, UmapPointsNeighborRelationship } from './canvas/types';
+import ChartComponent from './canvas/vchart';
 
 function Timeline({ epoch, epochs, onSwitchEpoch }: { epoch: number, epochs: number[], onSwitchEpoch: (epoch: number) => void }) {
     const [nodes, setNodes] = useState<{ value: number, x: number, y: number }[]>([]);
@@ -96,7 +97,7 @@ function Timeline({ epoch, epochs, onSwitchEpoch }: { epoch: number, epochs: num
 export function MainBlock() {
     const { epoch, setEpoch } = useStore(['epoch', 'setEpoch']);
 
-    const { availableEpochs, allEpochsProjectionData, updateUUID } = useStore(["contentPath", "updateUUID", "availableEpochs", "allEpochsProjectionData", "updateUUID"]);
+    const { availableEpochs, allEpochsProjectionData, updateUUID, setAvailableEpochs } = useStore(["availableEpochs", "allEpochsProjectionData", "updateUUID", "setAvailableEpochs"]);
 
     const [canvasContainerTabs, setCanvasContainerTabs] = useState<number[]>([]);
 
@@ -131,9 +132,10 @@ export function MainBlock() {
         if (!allEpochsProjectionData[epoch]) return;
         const res = allEpochsProjectionData[epoch];
 
-        const labelsAsNumber = res.labels.map((label) => parseInt(label));
+        const labelsAsNumber = res.labels;
 
         const positions: [number, number, number][] = [];
+        const labels: number[] = [];
         const colors: [number, number, number][] = [];
         const sizes: number[] = [];
         const alphas: number[] = [];
@@ -142,25 +144,26 @@ export function MainBlock() {
             if (color === undefined) return;
 
             positions.push([point[0], point[1], 0]);
+            labels.push(labelsAsNumber[i]);
             colors.push([color[0] / 255, color[1] / 255, color[2] / 255]);
             sizes.push(pointsDefaultSize);
             alphas.push(1.0);
         });
 
         const data = {
-            positions, colors, sizes, alphas
+            positions, labels, colors, sizes, alphas
         };
         setRawPointsGeography(data);
 
-        setFinalPointsGeography(data);
-        setPlot2DCanvasContext(new Plot2DCanvasContext(data));
+        // setFinalPointsGeography(data);
+        // setPlot2DCanvasContext(new Plot2DCanvasContext(data));
 
-        const spriteData = extractSpriteData(res);
-        setSpriteData(spriteData);
+        // const spriteData = extractSpriteData(res);
+        // setSpriteData(spriteData);
 
-        const neighborhood = extractConnectedPoints(res);
-        setNeighborhood(neighborhood);
-      }, [allEpochsProjectionData, epoch, updateUUID, colorDict, setRawPointsGeography]);
+        // const neighborhood = extractConnectedPoints(res);
+        // setNeighborhood(neighborhood);
+    }, [allEpochsProjectionData, epoch, updateUUID, colorDict, setRawPointsGeography]);
 
     useEffect(() => {
         if (finalPointsGeography === null) return;
@@ -209,12 +212,17 @@ export function MainBlock() {
     // only consider single container for now
     return (
         <div className="canvas-column">
-            <div id="canvas-wrapper">
+            {/* <div id="canvas-wrapper">
                 <CanvasContainer
                     plotDataContext={plot2DDataContext}
                     plotCanvasContext={plot2DCanvasContext}
                     neighborRelationship={neighborhood ?? undefined}
                     eventListeners={{ onHoverPoint, onClickPoint }}
+                />
+            </div> */}
+            <div id="canvas-wrapper" style={{ height: "100%", width: "100%" }}>
+                <ChartComponent
+                    rawPointsGeography={rawPointsGeography}
                 />
             </div>
             <div id="footer">
@@ -223,6 +231,6 @@ export function MainBlock() {
                     <Timeline epoch={epoch} epochs={availableEpochs} onSwitchEpoch={setEpoch} />
                 </div>
             </div>
-        </div>
+        </div >
     )
 }
