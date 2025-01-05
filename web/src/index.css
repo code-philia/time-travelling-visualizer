@@ -218,6 +218,7 @@ body {
 /* Custom Design Blocks */
 
 .label {
+  font-weight: lighter;
   margin-bottom: 0.3em;
 }
 
@@ -231,6 +232,10 @@ body {
 
 .functional-block {
     margin-bottom: 1em;
+}
+
+.functional-block-title {
+    font-weight: bolder;
 }
 
 .full-width {
