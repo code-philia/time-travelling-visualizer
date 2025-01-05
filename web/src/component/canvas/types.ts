@@ -1,10 +1,12 @@
 import { BoundaryProps } from "../../state/types";
 import { UmapProjectionResult } from "../../communication/api";
+import { or } from "three/webgpu";
 
 export const pointsDefaultSize = 20;
 
 export interface CommonPointsGeography {
     positions: [number, number, number][];
+    labels: number[];
     colors: [number, number, number][];
     sizes: number[];
     alphas: number[];
@@ -114,6 +116,7 @@ export class HighlightContext {
         }
 
         const positions = originalPointsData.positions.slice();
+        const labels = originalPointsData.labels.slice();
         const colors = originalPointsData.colors.slice();
         const sizes = originalPointsData.sizes.slice();
         const alphas = originalPointsData.alphas.slice();
@@ -129,7 +132,7 @@ export class HighlightContext {
 
         this.lastHighlightedPoints = highlightedPoints;
         const nextPlotPoints = {
-            positions, colors, sizes, alphas
+            positions, labels, colors, sizes, alphas
         };
 
         // // do check here

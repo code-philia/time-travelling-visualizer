@@ -3,7 +3,7 @@ import { StoreApi, UseBoundStore } from "zustand";
 import { shallow } from "zustand/shallow";
 import { useStoreWithEqualityFn } from "zustand/traditional";
 import { CommonPointsGeography, ProjectionProps } from "../state/types";
-import { UmapProjectionResult } from "../communication/api";
+import { ProjectionResult, UmapProjectionResult } from "../communication/api";
 import { HighlightContext } from "../component/canvas/types";
 
 const initProjectionRes: ProjectionProps = {
@@ -66,9 +66,9 @@ type BaseMutableGlobalStore = {
     dataType: string;
     colorList: number[][];
     labelNameDict: Record<number, string>;
-    timelineData: object | undefined;
+    timelineData: number[] | undefined;
     updateUUID: string;
-    allEpochsProjectionData: Record<number, UmapProjectionResult>;
+    allEpochsProjectionData: Record<number, ProjectionResult>;
     availableEpochs: number[];
     colorDict: Map<number, [number, number, number]>;
     labelDict: Map<number, string>;
@@ -101,11 +101,11 @@ const initMutableGlobalStore: BaseMutableGlobalStore = {
 type MutableGlobalStore = WithSettersOnAttr<BaseMutableGlobalStore>;
 
 type CustomGlobalStore = {
-    setProjectionDataAtEpoch: (epoch: number, data: UmapProjectionResult) => void;
+    setProjectionDataAtEpoch: (epoch: number, data: ProjectionResult) => void;
 }
 function createCustomGlobalStore(set: SetFunction<GlobalStore>): CustomGlobalStore {
     return {
-        setProjectionDataAtEpoch: (epoch: number, data: UmapProjectionResult) => set((state) => ({
+        setProjectionDataAtEpoch: (epoch: number, data: ProjectionResult) => set((state) => ({
             allEpochsProjectionData: {
                 ...state.allEpochsProjectionData,
                 [epoch]: data,
