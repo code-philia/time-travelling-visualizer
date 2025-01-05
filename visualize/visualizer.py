@@ -57,7 +57,6 @@ class Visualizer(VisualizerAbstractClass):
             if self.config["taskType"] == 'classification':
                 # save background image and visualization image
                 self.save_scale_bgimg(i, self.resolution)
-                # self.savefig(i, embedding, path=os.path.join(save_dir, "{}_{}.png".format(self.config["visMethod"], i)))
             else:
                 # only save background image
                 self.save_scale_bgimg_blank(i, self.resolution)
@@ -339,7 +338,7 @@ class Visualizer(VisualizerAbstractClass):
         plt.savefig(path)
     
     # Func: save scale and background image for classification task
-    def save_scale_bgimg(self, epoch, resolution):
+    def save_scale_bgimg(self, epoch, resolution=300):
         '''
         Initialises matplotlib artists and plots. from DeepView and DVI
         '''
@@ -352,6 +351,7 @@ class Visualizer(VisualizerAbstractClass):
         # self.disable_synth = False
 
         x_min, y_min, x_max, y_max = self.get_epoch_plot_measures(epoch)
+        scale = [x_min, y_min, x_max, y_max]
         _, decision_view = self.get_epoch_decision_view(epoch, resolution)
 
         cls_plot.set_data(decision_view)
@@ -359,28 +359,39 @@ class Visualizer(VisualizerAbstractClass):
         ax.set_xlim((x_min, x_max))
         ax.set_ylim((y_min, y_max))
 
-        save_dir = self.data_provider.checkpoint_path(epoch)
-        bgimg_data_path = os.path.join(save_dir, "bgimg_data.npy")
-        np.save(bgimg_data_path, decision_view)
+        save_dir = os.path.join(self.content_path, 'visualize', self.config['visMethod'])
+        # bgimg_data_path = os.path.join(save_dir, "bgimg_data.npy")
+        # np.save(bgimg_data_path, decision_view)
         
-        scale = [x_min, y_min, x_max, y_max]
-        scale_path = os.path.join(save_dir, "scale.npy")
+        scale_dir = os.path.join(save_dir, "scale")
+        os.makedirs(scale_dir, exist_ok=True)
+        scale_path = os.path.join(scale_dir, f"{epoch}.npy")
         np.save(scale_path, scale)
 
-        bgimg_path = os.path.join(save_dir, "bgimg.png")
+        bgimg_dir = os.path.join(save_dir, "bgimg")
+        os.makedirs(bgimg_dir, exist_ok=True)
+        bgimg_path = os.path.join(bgimg_dir, f"{epoch}.png")
         plt.savefig(bgimg_path, format='png',bbox_inches='tight',pad_inches=0.0)
 
     # Func: save scale and background image for other tasks
-    def save_scale_bgimg_blank(self, epoch, resolution):
+    def save_scale_bgimg_blank(self, epoch, resolution=300):
         self._init_plot(only_img=True)
         x_min, y_min, x_max, y_max = self.get_epoch_plot_measures(epoch)
-        save_dir = self.data_provider.checkpoint_path(epoch)
-        scale_path = os.path.join(save_dir, "scale.npy")
-        np.save(scale_path, [x_min, y_min, x_max, y_max])
+        scale = [x_min, y_min, x_max, y_max]
 
         from PIL import Image
         img = Image.new("RGB",(resolution,resolution),(255,255,255))
-        bgimg_path = os.path.join(save_dir, "bgimg.png")
+        
+        save_dir = os.path.join(self.content_path, 'visualize', self.config['visMethod'])
+
+        scale_dir = os.path.join(save_dir, "scale")
+        os.makedirs(scale_dir, exist_ok=True)
+        scale_path = os.path.join(scale_dir, f"{epoch}.npy")
+        np.save(scale_path, scale)
+
+        bgimg_dir = os.path.join(save_dir, "bgimg")
+        os.makedirs(bgimg_dir, exist_ok=True)
+        bgimg_path = os.path.join(bgimg_dir, f"{epoch}.png")
         img.save(bgimg_path)
 
     def get_standard_classes_color(self):
