@@ -4,6 +4,7 @@ html {
 
   --theme-color: #1677ff;
   --theme-background-grey: #f9f9f9;
+  --theme-text-grey-out: #898989;
 }
 
 body {
@@ -50,6 +51,25 @@ body {
     font-family: "Lato", serif;
     font-weight: 400;
     font-style: normal;
+}
+
+/* Global Text Themes */
+
+.alt-text {
+    color: var(--theme-text-grey-out);
+}
+
+.placeholder-block {
+    font-size: smaller;
+    text-align: center;
+    width: 100%;
+    padding: 2em;
+}
+
+/* Resetting antd Styles */
+
+.ant-divider {
+    margin: 0.5em 0;
 }
 
 #app {
@@ -195,24 +215,26 @@ body {
   padding: 0.8em 0.8em 0 0.8em;
 }
 
+/* Custom Design Blocks */
+
 .label {
   margin-bottom: 0.3em;
 }
 
-.component-block {
-  margin-bottom: 1em;
+.component-block:not(:first-child) {
+  margin-top: 1em;
 }
 
-.input-button {
-  margin-top: 0.6em;
+.functional-block:not(:first-child) {
+    margin-top: 1em;
+}
+
+.functional-block {
+    margin-bottom: 1em;
 }
 
 .full-width {
   width: 100%;
-}
-
-.ant-divider {
-  margin: 0.5em 0;
 }
 
 input[type="color"] {
