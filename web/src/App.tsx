@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { LeftSidebar } from "./component/left-sidebar"
 import { MainBlock } from './component/main-block'
 import { RightSidebar } from './component/right-sidebar'
-import { fetchUmapProjectionData } from "./communication/api";
+import { fetchProjectionData, fetchUmapProjectionData } from "./communication/api";
 import { useStore } from "./state/store";
 import { HighlightContext, randomColor } from "./component/canvas/types";
 import { Button } from "antd";
@@ -26,10 +26,9 @@ function App() {
     useEffect(() => {
         (async () => {
             if (isInitialState(contentPath)) return;
-
             if (allEpochsProjectionData[epoch]) return;
 
-            const res = await fetchUmapProjectionData(contentPath, epoch);
+            const res = await fetchProjectionData(contentPath, epoch);
             if (res) {
                 setProjectionDataAtEpoch(epoch, res);
                 // TODO judge before then do setting highlight context later, does this really work normally?
@@ -41,8 +40,6 @@ function App() {
     }, [allEpochsProjectionData, contentPath, epoch, setHighlightContext, setProjectionDataAtEpoch, shouldSetHighlightContext, updateUUID]);
 
     const { setLabelDict, setColorDict } = useStore(["setLabelDict", "setColorDict"]);
-
-
     useEffect(() => {
         // TODO extract this currentEpochData to a useStore
         const currentEpochData = allEpochsProjectionData[epoch];
@@ -51,17 +48,12 @@ function App() {
         const labelDict = new Map<number, string>();
         const colorDict = new Map<number, [number, number, number]>();
 
-        const validLabels = Array.from(new Set(currentEpochData.labels));
+        const label_text_list = currentEpochData.label_text_list;
 
-        validLabels.forEach((classLabel, i) => {
-            labelDict.set(i, classLabel);
+        label_text_list.forEach((labelText, i) => {
+            labelDict.set(i, labelText);
             colorDict.set(i, randomColor(i));
         });
-
-        // TODO backend should provide this
-        labelDict.set(0, 'comment');
-        labelDict.set(1, 'code');
-
         setLabelDict(labelDict);
         setColorDict(colorDict);
     }, [allEpochsProjectionData, epoch, setColorDict, setLabelDict])
