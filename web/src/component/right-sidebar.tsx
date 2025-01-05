@@ -1,6 +1,7 @@
 import { AutoComplete, Divider, Input, List, Tag, RefSelectProps } from 'antd';
 import { useStore } from '../state/store';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { ComponentBlock, FunctionalBlock } from './custom/basic-components';
 
 type SampleTag = {
     num: number;
@@ -195,50 +196,48 @@ export function RightSidebar() {
 
     return (
         <div className="info-column">
-            <div className="functional-block">
-                <div className="component-block">
-                    <div className="label">Search</div>
-                    <AutoComplete
-                        ref={searchElementRef}
-                        options={searchHistoryRender(searchHistoryFiltered)}
-                        value={searchValue}
-                        open={searchHistoryOpen && searchHistoryFiltered.length > 0}
+            <FunctionalBlock label="Search">
+                <AutoComplete
+                    style={{ marginTop: '3px' }}
 
-                        onChange={(value) => { handleSearch(value) }}
-                        onBlur={() => {
-                            addHistory(searchValue);    // TODO only add successful history
+                    ref={searchElementRef}
+                    options={searchHistoryRender(searchHistoryFiltered)}
+                    value={searchValue}
+                    open={false}
+
+                    onChange={(value) => { handleSearch(value) }}
+                    onBlur={() => {
+                        addHistory(searchValue);    // TODO only add successful history
+                        setSearchHistoryOpen(false);
+                    }}
+                    onFocus={() => handleSearch(searchValue)}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                            handleSearch(searchValue, true);
                             setSearchHistoryOpen(false);
-                        }}
-                        onFocus={() => handleSearch(searchValue)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                                handleSearch(searchValue, true);
-                                setSearchHistoryOpen(false);
-                            } else if (e.key === 'Escape') {
-                                searchElementRef.current?.blur();
-                            }
-                        }}
-                        onSelect={() => {
+                        } else if (e.key === 'Escape') {
                             searchElementRef.current?.blur();
-                        }}
-                        onClear={() => {
-                            setSearchHistoryOpen(false);
-                        }}
+                        }
+                    }}
+                    onSelect={() => {
+                        searchElementRef.current?.blur();
+                    }}
+                    onClear={() => {
+                        setSearchHistoryOpen(false);
+                    }}
 
-                        defaultActiveFirstOption={false}
-                        notFoundContent={<div className='alt-text placeholder-block'>No item found</div>}
-                        allowClear
-                    >
-                        <Input onClick={() => {
-                            setSearchHistoryOpen(true);
-                        }}/>
-                    </AutoComplete>
-                </div>
+                    defaultActiveFirstOption={false}
+                    notFoundContent={<div className='alt-text placeholder-block'>No item found</div>}
+                    allowClear
+                >
+                    <Input onClick={() => {
+                        setSearchHistoryOpen(true);
+                    }}/>
+                </AutoComplete>
                 {
                     (allSearchResult.length > 0 || searchValue !== '')
                         &&
-                        <div className="component-block">
-                            <div className='label'>Search Result</div>
+                        <ComponentBlock label="Search Result">
                             {
                                 allSearchResult.length > 0
                                     ?
@@ -253,13 +252,12 @@ export function RightSidebar() {
                                     :
                                     (searchValue && <div className='alt-text placeholder-block'>No item found</div>)
                             }
-                        </div>
+                        </ComponentBlock>
                 }
-            </div>
+            </FunctionalBlock>
             <Divider></Divider>
-            <div className="functional-block">
-                <div className="component-block">
-                    <div className="label">Classes</div>
+            <FunctionalBlock label="Categories">
+                <ComponentBlock label="Classes">
                     <div className="class-list">
                         {
                             Array.from(labelDict.keys()).length
@@ -276,12 +274,11 @@ export function RightSidebar() {
                                 <div className='alt-text placeholder-block'>No class is determined</div>
                         }
                     </div>
-                </div>
-            </div>
+                </ComponentBlock>
+            </FunctionalBlock>
             <Divider />
-            <div className="functional-block">
-                <div className="component-block">
-                    <div className="label">Selected</div>
+            <FunctionalBlock label="Selected">
+                <ComponentBlock>
                     <div className="tag-list">
                         {
                             selectedItems.length
@@ -304,8 +301,8 @@ export function RightSidebar() {
                                 <div className='alt-text placeholder-block'>No selected item</div>
                         }
                     </div>
-                </div>
-            </div>
+                </ComponentBlock>
+            </FunctionalBlock>
             <Divider />
         </div>
     )
