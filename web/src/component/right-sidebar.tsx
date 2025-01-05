@@ -1,8 +1,6 @@
-import { AutoComplete, Divider, Input, List, Tag } from 'antd';
+import { AutoComplete, Divider, Input, List, Tag, RefSelectProps } from 'antd';
 import { useStore } from '../state/store';
-import { useEffect, useRef, useState } from 'react';
-import { Option } from 'antd/es/mentions';
-import { DefaultOptionType } from 'antd/es/select';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 type SampleTag = {
     num: number;
@@ -65,16 +63,6 @@ function hexToRgbArray(hex: string): [number, number, number]  {
 }
 
 export function RightSidebar() {
-    // for color
-    // const labelDict: Map<number, string> = new Map([
-    //     [1, 'code'],
-    //     [2, 'comment'],
-    // ]);
-    // const colorDict: Map<number, [number, number, number]>= new Map([
-    //     [1, [255, 0, 0]],
-    //     [2, [0, 255, 0]],
-    // ]);
-
     // TODO this is too messy all using useStore
     const { labelDict, colorDict, setColorDict } =
         useStore(["labelDict", "colorDict", "setColorDict"]);
@@ -96,39 +84,88 @@ export function RightSidebar() {
     ];
 
     // NOTE always add state as middle dependency
+    const [searchValue, setSearchValue] = useState('');
     const [searchFromOptions, setSearchFromOptions] = useState(searchResultDemo);
-    const [searchResult, setSearchResult] = useState<DefaultOptionType[]>([]);
-    const [searchOpen, setSearchOpen] = useState(false);
 
-    const handleSearch = (text: string) => {
+    const limitOfHistory = 5;
+    const [searchHistory, setSearchHistory] = useState<string[]>([]);
+    const searchHistoryFiltered = searchHistory.filter((item) => item.includes(searchValue));
+    const [searchHistoryOpen, setSearchHistoryOpen] = useState(false);
+    const searchElementRef = useRef<RefSelectProps>(null);
+
+    const [allSearchResult, setAllSearchResult] = useState<SampleTag[]>([]);
+
+    const searchFrom = (text: string, items: SampleTag[], limit: number | null = 3) => {
+        const res: SampleTag[] = [];
+
+        let cnt = 0;
+
+        for (const item of items) {
+            if (item.title.includes(text)) {
+                if (limit !== null && cnt >= limit) {
+                    return res;
+                }
+                res.push(item);
+                cnt++;
+            }
+        }
+
+        return res;
+    }
+
+    const handleSearch = (text: string, byEnter: boolean = false) => {
+        if (text === searchValue) return;
+        setSearchValue(text);
+
         // prevent searching all
         if (!text) {
-            setSearchResult([]);
-            setSearchOpen(false);
+            setAllSearchResult([]);
+            setSearchHistoryOpen(false);
             return;
         }
 
-        const res = searchFromOptions.filter((item) => item.title.includes(text));
-        const renderedRes = res.map(renderOption);
-        setSearchResult(renderedRes);
-        setSearchOpen(true);
+        setSearchHistoryOpen(true);
+
+        const res = searchFrom(text, searchFromOptions, null);
+        setAllSearchResult(res);
+
+        if (byEnter) {
+            addHistory(text);
+        }
     };
-    const renderOption = (tag: SampleTag) => {
+    const addHistory = (text: string) => {
+        if (!text) return;
+
+        const nonDuplicateHistory = searchHistory.filter((item) => item !== text);
+        setSearchHistory([text, ...nonDuplicateHistory].slice(0, limitOfHistory));
+    }
+    const renderSearchHistoryOption = (text: string) => {
         return {
-            value: `${tag.num}`,
-            label: (
-                <div onClick={() => {
-                    highlightContext.switchLocked(tag.num);
-                }}>
-                    <span className="fade-num">{tag.num}.</span>
-                    <span className="inline-margin-left">{tag.title}</span>
-                </div>
-            )
+            value: text,
+            label: text
         }
     }
-    const handleSelect = (value: string) => {
-        highlightContext.switchLocked(parseInt(value));
-    };
+    const searchHistoryRender = (history: string[]) => {
+        return history.map(renderSearchHistoryOption);
+    }
+
+    const searchResultRender = (item: SampleTag) => {
+        return (
+            <List.Item
+                className={"search-result-sample" + (highlightContext.checkLocked(item.num) ? ' locked' : '')}
+                onClick={() => { highlightContext.switchLocked(item.num) }}
+            >
+                <div className="search-result-sample-field">
+                    <span className="field-tag tag-1">index</span>
+                    <span className="field-value">{item.num}</span>
+                </div>
+                <div className="search-result-sample-field">
+                    <span className="field-tag tag-2">text</span>
+                    <span className="field-value">{item.title}</span>
+                </div>
+            </List.Item>
+        )
+    }
 
     // TODO do not directly access result here
     const { highlightContext, epoch, allEpochsProjectionData } = useStore(["highlightContext", "epoch", "allEpochsProjectionData"]);
@@ -162,28 +199,62 @@ export function RightSidebar() {
                 <div className="component-block">
                     <div className="label">Search</div>
                     <AutoComplete
-                        options={searchResult}
-                        onChange={handleSearch}
-                        onSelect={handleSelect}
-                        open={searchOpen}
-                        filterOption={false}
+                        ref={searchElementRef}
+                        options={searchHistoryRender(searchHistoryFiltered)}
+                        value={searchValue}
+                        open={searchHistoryOpen && searchHistoryFiltered.length > 0}
+
+                        onChange={(value) => { handleSearch(value) }}
+                        onBlur={() => {
+                            addHistory(searchValue);    // TODO only add successful history
+                            setSearchHistoryOpen(false);
+                        }}
+                        onFocus={() => handleSearch(searchValue)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                handleSearch(searchValue, true);
+                                setSearchHistoryOpen(false);
+                            } else if (e.key === 'Escape') {
+                                searchElementRef.current?.blur();
+                            }
+                        }}
+                        onSelect={() => {
+                            searchElementRef.current?.blur();
+                        }}
+                        onClear={() => {
+                            setSearchHistoryOpen(false);
+                        }}
+
+                        defaultActiveFirstOption={false}
                         notFoundContent={<div className='alt-text placeholder-block'>No item found</div>}
+                        allowClear
                     >
-                        <Input allowClear />
+                        <Input onClick={() => {
+                            setSearchHistoryOpen(true);
+                        }}/>
                     </AutoComplete>
-                    {/* <List className="margin-before search-result"
-                        size="small"
-                        bordered
-                        dataSource={searchResult}
-                        renderItem={(item) =>
-                            <List.Item
-                                onClick={() => { highlightContext.switchLocked(item.num) }}
-                                style={{ backgroundColor: highlightContext.checkLocked(item.num) ? 'white' : 'unset' }}
-                            >
-                                <span className="fade-num">{item.num}.</span><span className="inline-margin-left">{item.title}</span>
-                            </List.Item>}
-                    /> */}
                 </div>
+                {
+                    (allSearchResult.length > 0 || searchValue !== '')
+                        &&
+                        <div className="component-block">
+                            <div className='label'>Search Result</div>
+                            {
+                                allSearchResult.length > 0
+                                    ?
+                                    (
+                                            <List className="search-result"
+                                                size="small"
+                                                bordered
+                                                dataSource={allSearchResult}
+                                                renderItem={searchResultRender}
+                                            />
+                                    )
+                                    :
+                                    (searchValue && <div className='alt-text placeholder-block'>No item found</div>)
+                            }
+                        </div>
+                }
             </div>
             <Divider></Divider>
             <div className="functional-block">
