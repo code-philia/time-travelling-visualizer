@@ -185,6 +185,36 @@ def get_all_text():
 
 
 """
+Api: get all representation of one epoch
+
+Request:
+    content_path (str)
+    epoch (str)
+Response:
+    representation (list)
+"""
+@app.route('/getRepresentation', methods = ["POST"])
+@cross_origin()
+def get_representation_at_epoch():
+    req = request.get_json()
+    content_path = req['content_path']
+    epoch = int(req['epoch'])
+
+    config = read_file_as_json(os.path.join(content_path, 'config.json'))
+
+    try:
+        repr = load_representation(config, content_path, epoch)
+    except Exception as e:
+        return make_response(jsonify({'error_message': 'Error in loading representation'}), 400)
+    
+    result = jsonify({
+        'representation': repr
+    })
+    return make_response(result, 200)
+
+
+
+"""
 Api: get selected attributes of the dataset
 
 Request:
