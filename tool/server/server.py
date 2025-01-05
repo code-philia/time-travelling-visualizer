@@ -1,16 +1,10 @@
-from attr import dataclass
-from flask import request, Flask, jsonify, make_response,render_template,send_from_directory
-from flask_cors import CORS, cross_origin
 import os
-import gc
 import sys
-import json
-import time
-import pickle
-import shutil
 import base64
 import numpy as np
 from utils import *
+from flask import request, Flask, jsonify, make_response,send_from_directory
+from flask_cors import CORS, cross_origin
 
 sys.path.append('..')
 sys.path.append('.')
@@ -25,14 +19,6 @@ config_file ='/path/to/config.json'
 
 # Check for "--dev" argument
 is_dev_mode = "--dev" in sys.argv
-
-@dataclass
-class TempConfig:
-    TASK_TYPE: str | None = None
-    CONTENT_PATH: str | None = None
-    EPOCH_START: int = 0
-    EPOCH_END: int = 30
-    EPOCH_PERIOD: int = 1
 
 @app.route("/", methods=["GET", "POST"])
 def GUI():
@@ -279,7 +265,6 @@ def get_simple_filter_result():
 """ ===================================================================== """
 # Func: get iteration structure
 def get_tree():
-    # config = TempConfig()
     config = initialize_config(config_file)
 
     json_data = []
@@ -302,7 +287,6 @@ def update_projection_old():
     indicates = list(range(100)) # we now don't use req['selectedPoints'] to filter in backend
 
     # load config from config_file
-    # config = TempConfig(req['taskType'], req['contentPath'])
     config = initialize_config(config_file)
 
     # load visualization result of one epoch
