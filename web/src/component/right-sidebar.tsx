@@ -155,60 +155,75 @@ export function RightSidebar() {
 
     return (
         <div className="info-column">
-            <div className="component-block">
-                <div className="label">Classes</div>
-                <div className="class-list">
-                    {
-                        Array.from(labelDict.keys()).map((labelNum) =>
-                            <ColoredClassLabel
-                                key={labelNum}
-                                label={labelDict.get(labelNum)!}
-                                colorArray={colorDict.get(labelNum)!}
-                                onColorChange={(newColor) => changeLabelColor(labelNum, newColor)}
-                            />
-                        )
-                    }
+            <div className="functional-block">
+                <div className="component-block">
+                    <div className="label">Search</div>
+                    <Input allowClear onInput={searchByToken} onClear={clearSearch}/>
+                    {<List className="margin-before search-result"
+                        size="small"
+                        bordered
+                        dataSource={searchResult}
+                        renderItem={(item) =>
+                            <List.Item
+                                onClick={() => { highlightContext.switchLocked(item.num) }}
+                                style={{ backgroundColor: highlightContext.checkLocked(item.num) ? 'white' : 'unset' }}
+                            >
+                                <span className="fade-num">{item.num}.</span><span className="inline-margin-left">{item.title}</span>
+                            </List.Item>}
+                    />}
+                </div>
+            </div>
+            <Divider></Divider>
+            <div className="functional-block">
+                <div className="component-block">
+                    <div className="label">Classes</div>
+                    <div className="class-list">
+                        {
+                            Array.from(labelDict.keys()).length
+                                ?
+                                Array.from(labelDict.keys()).map((labelNum) =>
+                                    <ColoredClassLabel
+                                        key={labelNum}
+                                        label={labelDict.get(labelNum)!}
+                                        colorArray={colorDict.get(labelNum)!}
+                                        onColorChange={(newColor) => changeLabelColor(labelNum, newColor)}
+                                    />
+                                )
+                                :
+                                <div className='alt-text placeholder-block'>No class is determined</div>
+                        }
+                    </div>
                 </div>
             </div>
             <Divider />
-            <div className="component-block">
-                <div className="label">Search</div>
-                <Input allowClear onInput={searchByToken} onClear={clearSearch}/>
-                {<List className="margin-before search-result"
-                    size="small"
-                    bordered
-                    dataSource={searchResult}
-                    renderItem={(item) =>
-                        <List.Item
-                            onClick={() => { highlightContext.switchLocked(item.num) }}
-                            style={{ backgroundColor: highlightContext.checkLocked(item.num) ? 'white' : 'unset' }}
-                        >
-                            <span className="fade-num">{item.num}.</span><span className="inline-margin-left">{item.title}</span>
-                        </List.Item>}
-                />}
-            </div>
-            <Divider />
-            <div className="component-block">
-                <div className="label">Selected</div>
-                <div className="tag-list">
-                    {
-                        selectedItems.map((item) => (
-                            <Tag className='sample-tag'
-                                closeIcon
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    handleClose(item);
-                                }}
-                                onClose={(e) => {
-                                    e.preventDefault();
-                                    handleClose(item);
-                                }}>
-                                {item.num}. {item.title}
-                            </Tag>
-                        ))
-                    }
+            <div className="functional-block">
+                <div className="component-block">
+                    <div className="label">Selected</div>
+                    <div className="tag-list">
+                        {
+                            selectedItems.length
+                                ?
+                                selectedItems.map((item) => (
+                                    <Tag className='sample-tag'
+                                        closeIcon
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            handleClose(item);
+                                        }}
+                                        onClose={(e) => {
+                                            e.preventDefault();
+                                            handleClose(item);
+                                        }}>
+                                        {item.num}. {item.title}
+                                    </Tag>
+                                ))
+                                :
+                                <div className='alt-text placeholder-block'>No selected item</div>
+                        }
+                    </div>
                 </div>
             </div>
+            <Divider />
         </div>
     )
 }

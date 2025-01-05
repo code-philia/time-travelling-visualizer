@@ -1,4 +1,4 @@
-import { Radio, Button, Input, Flex, Select, InputRef } from "antd"
+import { Radio, Button, Input, Flex, Select, InputRef, Divider } from "antd"
 import { useRef, useState } from "react"
 import { useStore } from '../../state/store';
 import { fetchTimelineData } from "../../communication/api";
@@ -25,53 +25,55 @@ export function OptionsPanel() {
 
     return (
         <div id="control-panel">
-            <div className="component-block">
-                <div className="input label">Data Type</div>
-                <Flex vertical gap="middle">
-                    <Radio.Group
-                        block
-                        options={dataTypeOptions}
-                        defaultValue="Image"
-                        optionType="button"
-                        buttonStyle="solid"
-                        onChange={(e) => setDataType(e.target.value)}
-                    />
-                </Flex>
+            <div className="functional-block">
+                <div className="component-block">
+                    <div className="input label">Data Type</div>
+                    <Flex vertical gap="middle">
+                        <Radio.Group
+                            block
+                            options={dataTypeOptions}
+                            defaultValue="Image"
+                            optionType="button"
+                            buttonStyle="solid"
+                            onChange={(e) => setDataType(e.target.value)}
+                        />
+                    </Flex>
+                </div>
+                <div className="component-block">
+                    <div className="input label">Content Path</div>
+                    <Input ref={inputRef} onChange={(e) => setContentPath(e.target.value)} />
+                </div>
+                <div className="component-block">
+                    <div className="input label">Visualization Method</div>
+                    <Select className="full-width" defaultValue="TrustVis" options={items} />
+                </div>
+                {/* <div className="component-block">
+                    <div className="input label">Options</div>
+                    <Checkbox checked={}>Show Numbers</Checkbox>
+                    <Checkbox >Show Tokens</Checkbox>
+                </div> */}
             </div>
-            <div className="component-block">
-                <div className="input label">Content Path</div>
-                <Input ref={inputRef} onChange={(e) => setContentPath(e.target.value)} />
-            </div>
-            <div className="component-block">
-                <div className="input label">Visualization Method</div>
-                <Select className="full-width" defaultValue="TrustVis" options={items} />
-            </div>
-            {/* <div className="component-block">
-                <div className="input label">Options</div>
-                <Checkbox checked={}>Show Numbers</Checkbox>
-                <Checkbox >Show Tokens</Checkbox>
-            </div> */}
-            <Button className="input-button"
-                onClick={
-                    (_) => {
-                        // TODO wrapped as update entire configuration
-                        if (inputRef.current?.input) {
-                            setValue("contentPath", inputRef.current.input.value);
+            <Divider></Divider>
+            <div className="functional-block">
+                <Button className="input-button" color="primary" variant="solid"
+                    onClick={
+                        (_) => {
+                            // TODO wrapped as update entire configuration
+                            if (inputRef.current?.input) {
+                                setValue("contentPath", inputRef.current.input.value);
+                            }
+                            setValue("command", "update")
+                            setValue("updateUUID", Math.random().toString(36).substring(7))
+                            if (timelineData === undefined) {
+                                fetchTimelineData(contentPath).then((res) => {
+                                    setValue("timelineData", res);
+                                });
+                            }
                         }
-                        setValue("command", "update")
-                        setValue("updateUUID", Math.random().toString(36).substring(7))
-                        if (timelineData === undefined) {
-                            fetchTimelineData(contentPath).then((res) => {
-                                setValue("timelineData", res);
-                            });
-                        }
-                    }
-                }>
-                Load Visualization Result
-            </Button>
-            <Button className="input-button">
-                Load Vector Database
-            </Button>
+                    }>
+                    Load Visualization Result
+                </Button>
+            </div>
             <table id="subjectModeEvalRes">
             </table>
         </div >
