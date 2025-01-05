@@ -62,8 +62,8 @@ body {
 .placeholder-block {
     font-size: smaller;
     text-align: center;
-    width: 100%;
     padding: 2em;
+    margin: auto;
 }
 
 /* Resetting antd Styles */

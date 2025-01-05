@@ -1,6 +1,8 @@
-import { Divider, Input, List, Tag } from 'antd';
+import { AutoComplete, Divider, Input, List, Tag } from 'antd';
 import { useStore } from '../state/store';
 import { useEffect, useRef, useState } from 'react';
+import { Option } from 'antd/es/mentions';
+import { DefaultOptionType } from 'antd/es/select';
 
 type SampleTag = {
     num: number;
@@ -82,50 +84,51 @@ export function RightSidebar() {
     }
 
     // for search
-    // const searchResult: SampleTag[] = [
-    //     {
-    //         num: 1,
-    //         class: 'code'
-    //     },
-    //     {
-    //         num: 2,
-    //         class: 'comment'
-    //     }
-    // ];
+    const searchResultDemo: SampleTag[] = [
+        {
+            num: 1,
+            title: 'code'
+        },
+        {
+            num: 2,
+            title: 'comment'
+        }
+    ];
 
     // NOTE always add state as middle dependency
-    const [searchText, setSearchText] = useState('');
-    const [searchResult, setSearchResult] = useState<SampleTag[]>([]);
+    const [searchFromOptions, setSearchFromOptions] = useState(searchResultDemo);
+    const [searchResult, setSearchResult] = useState<DefaultOptionType[]>([]);
+    const [searchOpen, setSearchOpen] = useState(false);
 
-    // TODO do not directly access result here
-    const searchByToken = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const searchText = e.target.value;
-        if (searchText.length === 0) {
+    const handleSearch = (text: string) => {
+        // prevent searching all
+        if (!text) {
             setSearchResult([]);
+            setSearchOpen(false);
             return;
         }
 
-        if (allEpochsProjectionData[epoch] === undefined) return;
-        const tokensWithIndex = allEpochsProjectionData[epoch].tokens.entries();
-
-        setSearchResult(Array.from(tokensWithIndex).filter(([idx, token]) => token.includes(searchText)).map(([num, title]) => ({ num, title })));
+        const res = searchFromOptions.filter((item) => item.title.includes(text));
+        const renderedRes = res.map(renderOption);
+        setSearchResult(renderedRes);
+        setSearchOpen(true);
     };
-
-    const clearSearch = () => {
-        setSearchResult([]);
+    const renderOption = (tag: SampleTag) => {
+        return {
+            value: `${tag.num}`,
+            label: (
+                <div onClick={() => {
+                    highlightContext.switchLocked(tag.num);
+                }}>
+                    <span className="fade-num">{tag.num}.</span>
+                    <span className="inline-margin-left">{tag.title}</span>
+                </div>
+            )
+        }
+    }
+    const handleSelect = (value: string) => {
+        highlightContext.switchLocked(parseInt(value));
     };
-
-    // for selection
-    // const [selectedItems, setSelectedItems] = useState([
-    //     {
-    //         num: 1,
-    //         class: 'code'
-    //     },
-    //     {
-    //         num: 2,
-    //         class: 'comment'
-    //     }
-    // ]);
 
     // TODO do not directly access result here
     const { highlightContext, epoch, allEpochsProjectionData } = useStore(["highlightContext", "epoch", "allEpochsProjectionData"]);
@@ -158,8 +161,17 @@ export function RightSidebar() {
             <div className="functional-block">
                 <div className="component-block">
                     <div className="label">Search</div>
-                    <Input allowClear onInput={searchByToken} onClear={clearSearch}/>
-                    <List className="margin-before search-result"
+                    <AutoComplete
+                        options={searchResult}
+                        onChange={handleSearch}
+                        onSelect={handleSelect}
+                        open={searchOpen}
+                        filterOption={false}
+                        notFoundContent={<div className='alt-text placeholder-block'>No item found</div>}
+                    >
+                        <Input allowClear />
+                    </AutoComplete>
+                    {/* <List className="margin-before search-result"
                         size="small"
                         bordered
                         dataSource={searchResult}
@@ -170,7 +182,7 @@ export function RightSidebar() {
                             >
                                 <span className="fade-num">{item.num}.</span><span className="inline-margin-left">{item.title}</span>
                             </List.Item>}
-                    />
+                    /> */}
                 </div>
             </div>
             <Divider></Divider>
