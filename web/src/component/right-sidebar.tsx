@@ -159,7 +159,7 @@ export function RightSidebar() {
                 <div className="component-block">
                     <div className="label">Search</div>
                     <Input allowClear onInput={searchByToken} onClear={clearSearch}/>
-                    {<List className="margin-before search-result"
+                    <List className="margin-before search-result"
                         size="small"
                         bordered
                         dataSource={searchResult}
@@ -170,7 +170,7 @@ export function RightSidebar() {
                             >
                                 <span className="fade-num">{item.num}.</span><span className="inline-margin-left">{item.title}</span>
                             </List.Item>}
-                    />}
+                    />
                 </div>
             </div>
             <Divider></Divider>
