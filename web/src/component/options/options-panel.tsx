@@ -16,6 +16,7 @@ const items: DefaultOptionType['items'] = [
 export function OptionsPanel() {
     const [dataType, setDataType] = useState<string>("Image")
     const [contentPath, setContentPath] = useState<string>("/home/yuhuan/projects/cophi/visualizer-original/dev/gcb_tokens")
+    const { setAvailableEpochs } = useStore(["setAvailableEpochs"]);
 
     const { setValue, timelineData } = useStore(["setValue", "timelineData"]);    // TODO now this global store acts as GlobalVisualizationConfiguration
 
@@ -67,6 +68,7 @@ export function OptionsPanel() {
                             if (timelineData === undefined) {
                                 fetchTimelineData(contentPath).then((res) => {
                                     setValue("timelineData", res);
+                                    setAvailableEpochs(res.available_epochs);
                                 });
                             }
                         }
