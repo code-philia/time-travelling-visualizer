@@ -44,15 +44,36 @@ export type UmapProjectionResult = {
     intra_sim_top_k: number[][]
 }
 
-export async function fetchTimelineData(contentPath: string){
-    return fetch(`http://localhost:5000/get_itertaion_structure?path=${contentPath}&method=Trustvis&setting=normal`, {
-        method: 'POST',
+export type ProjectionResult = {
+    config: {};
+    proj: number[][];
+    labels: number[];
+    label_text_list: string[];
+}
+
+export async function fetchTimelineData(contentPath: string) {
+    return fetch(`http://localhost:5010/getIterationStructure?content_path=${contentPath}`, {
+        method: 'GET',
         headers: headers,
         mode: 'cors'
     })
         .then(response => response.json());
 }
 
+
+export async function fetchProjectionData(contentPath: string, iteration: number) {
+    return fetch(`http://localhost:5010/updateProjection`, {
+        method: 'POST',
+        body: JSON.stringify({
+            "content_path": contentPath,
+            "vis_method": "TimeVis",
+            "epoch": iteration
+        }),
+        headers: headers,
+        mode: 'cors'
+    })
+        .then(response => response.json());
+}
 
 export async function fetchUmapProjectionData(contentPath: string, iteration: number): Promise<UmapProjectionResult> {
     const umapTaskType = 'Umap-Neighborhood';
