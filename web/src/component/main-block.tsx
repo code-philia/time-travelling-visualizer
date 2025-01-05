@@ -218,7 +218,7 @@ export function MainBlock() {
                 />
             </div>
             <div id="footer">
-                <div>Epochs</div>
+                <div className="functional-block-title">Epochs</div>
                 <div style={{ overflow: "auto" }}>
                     <Timeline epoch={epoch} epochs={availableEpochs} onSwitchEpoch={setEpoch} />
                 </div>
