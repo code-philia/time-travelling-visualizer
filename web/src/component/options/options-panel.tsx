@@ -3,6 +3,8 @@ import { useRef, useState } from "react"
 import { useStore } from '../../state/store';
 import { fetchTimelineData } from "../../communication/api";
 import { DefaultOptionType } from "antd/es/select";
+import { FunctionalBlock, ComponentBlock } from "../custom/basic-components";
+import { useCheckOptions } from "../custom/basic-hooks";
 
 const items: DefaultOptionType['items'] = [
     {
@@ -11,38 +13,6 @@ const items: DefaultOptionType['items'] = [
         key: '1'
     },
 ];
-
-interface Option {
-    label: string;
-    value: string;
-    disabled?: boolean;
-}
-
-function useCheckOptions<T extends string | number | Option>(options: T[] = []) {
-    const [checked, setChecked] = useState<string[]>([]);
-    return [options, checked, setChecked] as const;
-}
-
-// TODO put these blocks to a universal file
-// TODO add resize/drag/dock-to mouse interaction
-
-function FunctionalBlock(props: { label: string, children?: null | React.ReactNode | React.ReactNode[] }) {
-    return (
-        <div className="functional-block">
-            <div className="functional-block-title">{props.label}</div>
-            {props.children}
-        </div>
-    )
-}
-
-function ComponentBlock(props: { label: string, children?: null | React.ReactNode | React.ReactNode[] }) {
-    return (
-        <div className="component-block">
-            <div className="label">{props.label}</div>
-            {props.children}
-        </div>
-    )
-}
 
 export function OptionsPanel() {
     const [dataType, setDataType] = useState<string>("Image")
