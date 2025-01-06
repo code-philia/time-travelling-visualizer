@@ -12,33 +12,32 @@ function isInitialState(contentPath: string): boolean {
     return contentPath.trim() === "";
 }
 
+function useEpoch() {
+
+}
+
 function App() {
-    const { contentPath, epoch, allEpochsProjectionData, setProjectionDataAtEpoch, updateUUID } = useStore(['contentPath', 'epoch', 'allEpochsProjectionData', 'setProjectionDataAtEpoch', 'updateUUID']);
+    // TODO avoid writing attribute twice
+    const { contentPath, epoch, allEpochsProjectionData, setProjectionDataAtEpoch, updateUUID, backendHost, visMethod }
+        = useStore(['contentPath', 'epoch', 'allEpochsProjectionData', 'setProjectionDataAtEpoch', 'updateUUID', 'backendHost', 'visMethod']);
 
     const { setHighlightContext } = useStore(['setHighlightContext']);
-    let shouldSetHighlightContext = false;
-
-    useEffect(() => {
-        shouldSetHighlightContext = true;
-    }, [contentPath]);
 
     // FIXME this is updating too many things
     useEffect(() => {
         (async () => {
-            if (isInitialState(contentPath)) return;
-
             if (allEpochsProjectionData[epoch]) return;
 
-            const res = await fetchUmapProjectionData(contentPath, epoch);
+            const res = await fetchUmapProjectionData(contentPath, epoch, {
+                method: visMethod,
+                host: backendHost
+            });
             if (res) {
                 setProjectionDataAtEpoch(epoch, res);
-                // TODO judge before then do setting highlight context later, does this really work normally?
-                if (shouldSetHighlightContext) {
-                    setHighlightContext(new HighlightContext());
-                }
+                setHighlightContext(new HighlightContext());
             }
         })();
-    }, [allEpochsProjectionData, contentPath, epoch, setHighlightContext, setProjectionDataAtEpoch, shouldSetHighlightContext, updateUUID]);
+    }, [allEpochsProjectionData, contentPath, epoch, setHighlightContext, setProjectionDataAtEpoch, updateUUID]);
 
     const { setLabelDict, setColorDict } = useStore(["setLabelDict", "setColorDict"]);
 

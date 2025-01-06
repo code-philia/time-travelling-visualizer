@@ -3,6 +3,33 @@ const headers = new Headers();
 headers.append('Content-Type', 'application/json');
 headers.append('Accept', 'application/json');
 
+interface NetworkOptions {
+    host: string;
+}
+
+const defaultNetworkOptions = {
+    host: 'localhost:5000'
+}
+
+function basicUnsafePost(path: string, data: number | string | object, networkOptions: NetworkOptions = defaultNetworkOptions) {
+    const combinedOptions = { ...defaultNetworkOptions, ...networkOptions };
+    const fullPath = `http://${combinedOptions.host}${path}`;
+
+    return Fetch(fullPath, {
+        method: 'POST',
+        headers: headers,
+        mode: 'cors',
+        body: JSON.stringify(data)
+    }).then(response => {
+        if (response.ok) {
+            return response.json();
+        } else {
+            console.error(`POST failed with response`, response);
+            throw new Error(`POST failed with response`);
+        }
+    });
+}
+
 export function updateProjection(contentPath: string, visMethod: string,
     taskType: string, iteration: number, filterIndex: number[] | string): Promise<UmapProjectionResult> {
     const data = {
@@ -54,25 +81,20 @@ export async function fetchTimelineData(contentPath: string){
 }
 
 
-export async function fetchUmapProjectionData(contentPath: string, iteration: number): Promise<UmapProjectionResult> {
-    const umapTaskType = 'Umap-Neighborhood';
+export async function fetchUmapProjectionData(contentPath: string, epoch: number, options: { method?: string, host?: string}): Promise<UmapProjectionResult> {
+    const defaultOptions = {
+        method: '',
+        host: 'localhost:5000'
+    };
+    const combinedOptions = {...defaultOptions, ...options};
 
-    return fetch(`http://localhost:5000/updateProjection`, {
-        method: 'POST',
-        body: JSON.stringify({
-            "path": contentPath,
-            "iteration": iteration,
-            "resolution": 200,
-            "vis_method": 'TrustVis',
-            "setting": 'normal',
-            "contentPath": contentPath,
-            "predicates": {},
-            "taskType": umapTaskType,
-            "selectedPoints": ''
-        }),
-        headers: headers,
-        mode: 'cors'
-    })
+    const data = {
+        "content_path": contentPath,
+        "vis_method": combinedOptions.method,
+        "epoch": `${epoch}`,
+    };
+
+    return basicUnsafePost('/updateProjection', data, { host: combinedOptions.host })
         .then(response => response.json());
 }
 

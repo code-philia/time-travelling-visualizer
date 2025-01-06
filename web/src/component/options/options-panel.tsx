@@ -6,10 +6,20 @@ import { DefaultOptionType } from "antd/es/select";
 import { FunctionalBlock, ComponentBlock } from "../custom/basic-components";
 import { useCheckOptions } from "../custom/basic-hooks";
 
-const items: DefaultOptionType['items'] = [
+const validVisMethods: DefaultOptionType['items'] = [
     {
         value: 'TrustVis',
         label: 'TrustVis',
+        key: '1'
+    },
+    {
+        value: 'DVI',
+        label: 'DVI',
+        key: '1'
+    },
+    {
+        value: 'TimeVis',
+        label: 'TimeVis',
         key: '1'
     },
 ];
@@ -19,6 +29,7 @@ export function OptionsPanel() {
     const [contentPath, setContentPath] = useState<string>("/home/yuhuan/projects/cophi/visualizer-original/dev/gcb_tokens")
 
     const { setValue, timelineData } = useStore(["setValue", "timelineData"]);    // TODO now this global store acts as GlobalVisualizationConfiguration
+    const { visMethod, setVisMethod } = useStore(["visMethod", "setVisMethod"]);
 
     const dataTypeOptions = [{ label: 'Image', value: 'Image', }, { label: 'Text', value: 'Text', },];
 
@@ -52,11 +63,13 @@ export function OptionsPanel() {
                             onChange={(e) => setDataType(e.target.value)}
                         />
                     </Flex>
-                </div>
+                </div> */}
                 <div className="component-block">
                     <div className="input label">Visualization Method</div>
-                    <Select className="full-width" defaultValue="TrustVis" options={items} />
-                </div> */}
+                    <Select className="full-width" value={visMethod} options={validVisMethods}
+                        onChange={(value) => setVisMethod(value)}
+                    />
+                </div>
                 <div className="component-block">
                     <div className="label">Content Path</div>
                     <Input ref={inputRef} onChange={(e) => setContentPath(e.target.value)} />

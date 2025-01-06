@@ -4,7 +4,7 @@ import { Canvas } from '@react-three/fiber'
 import { BoundaryProps } from '../../state/types.ts';
 
 import { PointsRender } from './points-render.tsx'
-import { CommonPointsGeography, UmapPointsNeighborRelationship } from './types.ts';
+import { CommonPointsGeography, PointsNeighborRelationship } from './types.ts';
 import { VisualizerRenderContext } from './visualizer-render-context.tsx';
 import { VisualizerDefaultControl } from './visualizer-default-control.tsx';
 import { VisualizerDefaultCamera } from './camera.tsx';
@@ -37,19 +37,33 @@ export class Plot2DDataContext {
 
 export class Plot2DCanvasContext {
     boundary?: BoundaryProps;
+}
 
-    constructor(geo?: CommonPointsGeography) {
-        if (geo) {
-            const xArr = geo.positions.map(p => p[0]);
-            const yArr = geo.positions.map(p => p[1]);
-            this.boundary = {
-                xMin: Math.min(...xArr),
-                yMin: Math.min(...yArr),
-                xMax: Math.max(...xArr),
-                yMax: Math.max(...yArr),
-            };
-        }
+export function createPlot2DCanvasContextFrom(geo?: CommonPointsGeography): Plot2DCanvasContext {
+    const ctx: Plot2DCanvasContext = {};
+
+    if (geo) {
+        const xArr = geo.positions.map(p => p[0]);
+        const yArr = geo.positions.map(p => p[1]);
+        ctx.boundary = {
+            xMin: Math.min(...xArr),
+            yMin: Math.min(...yArr),
+            xMax: Math.max(...xArr),
+            yMax: Math.max(...yArr),
+        };
     }
+
+    return ctx;
+}
+
+export function isEqPlot2DCanvasContext(ctx1: Plot2DCanvasContext, ctx2: Plot2DCanvasContext): boolean {
+    if (ctx1.boundary === undefined && ctx2.boundary === undefined) return true;
+    if (ctx1.boundary === undefined || ctx2.boundary === undefined) return false;
+
+    return ctx1.boundary.xMin === ctx2.boundary.xMin
+        && ctx1.boundary.yMin === ctx2.boundary.yMin
+        && ctx1.boundary.xMax === ctx2.boundary.xMax
+        && ctx1.boundary.yMax === ctx2.boundary.yMax;
 }
 
 interface CanvasEventListeners {
@@ -57,7 +71,7 @@ interface CanvasEventListeners {
     onClickPoint?: (idx: number) => void;
 }
 
-export const CanvasContainer = memo(({ plotDataContext, plotCanvasContext, eventListeners, neighborRelationship }: { plotDataContext: Plot2DDataContext, plotCanvasContext: Plot2DCanvasContext, eventListeners: CanvasEventListeners, neighborRelationship?: UmapPointsNeighborRelationship }) => {
+export const PlotContainer = memo(({ plotDataContext, plotCanvasContext, eventListeners, neighborRelationship }: { plotDataContext: Plot2DDataContext, plotCanvasContext: Plot2DCanvasContext, eventListeners: CanvasEventListeners, neighborRelationship?: PointsNeighborRelationship }) => {
     const [rc, setRc] = useState<VisualizerRenderContext | null>(null);
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
