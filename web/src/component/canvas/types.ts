@@ -10,7 +10,16 @@ export interface CommonPointsGeography {
     alphas: number[];
 }
 
-export interface UmapPointsNeighborRelationship {
+export function createEmptyCommonPointsGeography(): CommonPointsGeography {
+    return {
+        positions: [],
+        colors: [],
+        sizes: [],
+        alphas: []
+    };
+}
+
+export interface PointsNeighborRelationship {
     interNeighbors: number[][];
     intraNeighbors: number[][];
 }
@@ -31,7 +40,7 @@ export function randomColor(i: number): [number, number, number] {
 }
 
 // TODO these functions should be put into utils
-export function extractConnectedPoints(res: UmapProjectionResult): UmapPointsNeighborRelationship {
+export function extractConnectedPoints(res: UmapProjectionResult): PointsNeighborRelationship {
     return { interNeighbors: res.inter_sim_top_k, intraNeighbors: res.intra_sim_top_k };
 }
 
@@ -54,23 +63,26 @@ export class HighlightContext {
     hoveredIndex: number | undefined = undefined;
     lockedIndices: Set<number> = new Set();
 
-    lastHighlightedPoints: number[] = [];
-    lastPlotPoints: CommonPointsGeography | undefined = undefined;
+    highlightedPoints: number[] = [];
+    plotPoints: CommonPointsGeography | undefined = undefined;
 
-    private selectedChangedListeners: (() => void)[] = [];
+    private highlightChangedListeners: (() => void)[] = [];
+
+    // Operations
 
     updateHovered(idx: number | undefined) {
         this.hoveredIndex = idx;
+        this.notifyHighlightChanged();
     }
 
     addLocked(idx: number) {
         this.lockedIndices.add(idx);
-        this.notifySelectedChanged();
+        this.notifyHighlightChanged();
     }
 
     removeLocked(idx: number) {
         this.lockedIndices.delete(idx);
-        this.notifySelectedChanged();
+        this.notifyHighlightChanged();
     }
 
     switchLocked(idx: number) {
@@ -79,13 +91,15 @@ export class HighlightContext {
         } else {
             this.lockedIndices.add(idx);
         }
-        this.notifySelectedChanged();
+        this.notifyHighlightChanged();
     }
 
     removeAllLocked() {
         this.lockedIndices.clear();
-        this.notifySelectedChanged();
+        this.notifyHighlightChanged();
     }
+
+    // Computations
 
     checkLocked(idx: number) {
         return this.lockedIndices.has(idx);
@@ -108,15 +122,16 @@ export class HighlightContext {
         //     return [false, { ...this.lastPlotPoints }];
         // }
 
-        if (useCache && highlightedPoints.length === this.lastHighlightedPoints.length &&
-            highlightedPoints.every((value, index) => value === this.lastHighlightedPoints[index]) && this.lastPlotPoints) {
-            return [false, { ...this.lastPlotPoints }];
+        if (useCache && highlightedPoints.length === this.highlightedPoints.length &&
+            highlightedPoints.every((value, index) => value === this.highlightedPoints[index]) && this.plotPoints) {
+            return [false, { ...this.plotPoints }];
         }
 
         const positions = originalPointsData.positions.slice();
         const colors = originalPointsData.colors.slice();
         const sizes = originalPointsData.sizes.slice();
         const alphas = originalPointsData.alphas.slice();
+
         if (highlightedPoints.length > 0) {
             alphas.forEach((_, i) => {
                 alphas[i] = 0.2;
@@ -127,7 +142,7 @@ export class HighlightContext {
             });
         }
 
-        this.lastHighlightedPoints = highlightedPoints;
+        this.highlightedPoints = highlightedPoints;
         const nextPlotPoints = {
             positions, colors, sizes, alphas
         };
@@ -141,9 +156,9 @@ export class HighlightContext {
         //     return [false, { ...this.lastPlotPoints }];
         // }
 
-        this.lastPlotPoints = nextPlotPoints;
+        this.plotPoints = nextPlotPoints;
 
-        return [true, { ...this.lastPlotPoints }];
+        return [true, { ...this.plotPoints }];
     }
 
     tryUpdateHighlight(originalPointsData: CommonPointsGeography, useCache = false): CommonPointsGeography | undefined {
@@ -151,16 +166,16 @@ export class HighlightContext {
         return changed ? newPointsData : undefined;
     }
 
-    addSelectedChangedListener(listener: () => void) {
-        this.selectedChangedListeners.push(listener);
+    addHighlightChangedListener(listener: () => void) {
+        this.highlightChangedListeners.push(listener);
     }
 
-    removeSelectedChangedListener(listener: () => void) {
-        this.selectedChangedListeners = this.selectedChangedListeners.filter((l) => l !== listener);
+    removeHighlightChangedListener(listener: () => void) {
+        this.highlightChangedListeners = this.highlightChangedListeners.filter((l) => l !== listener);
     }
 
-    private notifySelectedChanged() {
-        this.selectedChangedListeners.forEach((listener) => listener());
+    private notifyHighlightChanged() {
+        this.highlightChangedListeners.forEach((listener) => listener());
     }
 }
 export type SpriteData = {

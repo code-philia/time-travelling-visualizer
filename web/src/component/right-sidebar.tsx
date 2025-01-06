@@ -188,9 +188,9 @@ export function RightSidebar() {
         };
 
         listener();
-        highlightContext.addSelectedChangedListener(listener);
+        highlightContext.addHighlightChangedListener(listener);
         return () => {
-            highlightContext.removeSelectedChangedListener(listener);
+            highlightContext.removeHighlightChangedListener(listener);
         };
     }, [allEpochsProjectionData, epoch, highlightContext, labelDict]);
 

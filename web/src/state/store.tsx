@@ -74,6 +74,9 @@ type BaseMutableGlobalStore = {
     labelDict: Map<number, string>;
     highlightContext: HighlightContext;
     rawPointsGeography: CommonPointsGeography | null;
+
+    // settings
+    backendHost: string;
 }
 
 const initMutableGlobalStore: BaseMutableGlobalStore = {
@@ -96,6 +99,9 @@ const initMutableGlobalStore: BaseMutableGlobalStore = {
     labelDict: new Map(),
     highlightContext: new HighlightContext(),
     rawPointsGeography: null,
+
+    // settings
+    backendHost: 'localhost:5010'
 };
 
 type MutableGlobalStore = WithSettersOnAttr<BaseMutableGlobalStore>;
@@ -133,10 +139,10 @@ const useGlobalStore = create<GlobalStore>((set) => ({
 }));    // don't use "as xxx" here so that we can check
 
 // comparison-based update
-export const useShallow = <T, K extends keyof T>(
+export function useShallow<T, K extends keyof T>(
     store: UseBoundStore<StoreApi<T>>,
     keys: K[]
-): Pick<T, K> => {
+): Pick<T, K> {
     return useStoreWithEqualityFn(
         store,
         (state) =>
@@ -151,6 +157,14 @@ export const useShallow = <T, K extends keyof T>(
     );
 };
 
+export function useShallowAll<T>(store: UseBoundStore<StoreApi<T>>): T {
+    return useStoreWithEqualityFn(store, (state) => state, shallow);
+};
+
 export const useStore = <K extends keyof GlobalStore>(keys: K[]) => {
     return useShallow(useGlobalStore, keys);
 };
+
+export const useStoreAll = () => {
+    return useShallowAll(useGlobalStore);
+}
