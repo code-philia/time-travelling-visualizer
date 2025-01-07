@@ -88,6 +88,23 @@ export const PlotContainer = memo(({ plotDataContext, plotCanvasContext, eventLi
     }, [])
 
     useEffect(() => {
+        const ob = new ResizeObserver(() => {
+            setRc(new VisualizerRenderContext(
+                plotCanvasContext.boundary!,
+                'white',
+                canvasRef.current!
+            ));
+        });
+
+        if (canvasRef.current) {
+            ob.observe(canvasRef.current);
+            return () => {
+                ob.disconnect();
+            };
+        }
+    }, [plotCanvasContext.boundary]);
+
+    useEffect(() => {
         if (plotCanvasContext.boundary === undefined) return;
         setRc(new VisualizerRenderContext(
             plotCanvasContext.boundary!,

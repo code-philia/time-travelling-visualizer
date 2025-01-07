@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from 'react'
 import { PlotContainer, Plot2DCanvasContext, Plot2DDataContext, createPlot2DCanvasContextFrom } from './canvas/canvas'
-import { useStore } from '../state/store'
-import { CommonPointsGeography, extractConnectedPoints, extractSpriteData, pointsDefaultSize, createEmptyCommonPointsGeography } from './canvas/types';
-import { UmapProjectionResult } from '../communication/api';
+import { useDefaultStore } from '../state/store'
+import { CommonPointsGeography, extractConnectedPoints, pointsDefaultSize, createEmptyCommonPointsGeography } from './canvas/types';
+import { BriefProjectionResult } from '../communication/api';
+import { useSetUpProjections } from '../state/state-actions';
 
 function Timeline({ epoch, epochs, onSwitchEpoch }: { epoch: number, epochs: number[], onSwitchEpoch: (epoch: number) => void }) {
     // Set the initial epoch from the passed epochs array
@@ -10,7 +11,7 @@ function Timeline({ epoch, epochs, onSwitchEpoch }: { epoch: number, epochs: num
         if (epochs.length > 0) {
             onSwitchEpoch(epochs[0]);
         }
-    }, [epochs, onSwitchEpoch]);
+    }, [epochs]);
 
     const nodes = useMemo(() => {
         if (epochs.length > 0) {
@@ -100,20 +101,30 @@ function Timeline({ epoch, epochs, onSwitchEpoch }: { epoch: number, epochs: num
 };
 
 export function MainBlock() {
-    const { epoch, setEpoch } = useStore(['epoch', 'setEpoch']);
+    const { showNumber, showText } = useDefaultStore(['showNumber', 'showText']);
 
-    const { availableEpochs, allEpochsProjectionData } = useStore(["contentPath", "updateUUID", "availableEpochs", "allEpochsProjectionData", "updateUUID"]);
+    const { epoch, setEpoch } = useDefaultStore(['epoch', 'setEpoch']);
 
-    const { colorDict } = useStore(['colorDict']);
+    const { availableEpochs, allEpochsProjectionData, textData } = useDefaultStore(["contentPath", "updateUUID", "availableEpochs", "allEpochsProjectionData", "updateUUID", "textData"]);
 
-    const { highlightContext } = useStore(['highlightContext']);
+    const setUpProjections = useSetUpProjections();
+
+    useEffect(() => {
+        if (availableEpochs.length > 0) {
+            setEpoch(availableEpochs[0]);
+        }
+    }, [availableEpochs, setEpoch]);
+
+    const { colorDict } = useDefaultStore(['colorDict']);
+
+    const { highlightContext } = useDefaultStore(['highlightContext']);
 
     // TODO all shared data are using useStore now. Decouple some of them
     // const highlightContext = useRef(new HighlightContext());
 
     // only set a finally computed attribute as state
     const [finalPointsGeography, setFinalPointsGeography] = useState<CommonPointsGeography>(createEmptyCommonPointsGeography());
-    const currentEpochData = allEpochsProjectionData[epoch] as UmapProjectionResult | undefined;    // add guard
+    const currentEpochData = allEpochsProjectionData[epoch] as BriefProjectionResult | undefined;    // add guard
     const originalPointsGeography = useMemo(() => {
         const positions: [number, number, number][] = [];
         const colors: [number, number, number][] = [];
@@ -125,23 +136,57 @@ export function MainBlock() {
 
         if (!currentEpochData) return data;
 
-        const labelsAsNumber = currentEpochData.labels.map((label) => parseInt(label));
         currentEpochData.proj.forEach((point, i) => {
-            const color = colorDict.get(labelsAsNumber[i]);
-            if (color === undefined) return;
-
             positions.push([point[0], point[1], 0]);
-            colors.push([color[0] / 255, color[1] / 255, color[2] / 255]);
+            colors.push([0, 0, 0]);
             sizes.push(pointsDefaultSize);
             alphas.push(1.0);
         });
 
         return data;
-    }, [currentEpochData, colorDict]);
+    }, [allEpochsProjectionData[epoch], allEpochsProjectionData, epoch]);
+
+    const appliedColorPointsGeography = useMemo(() => {
+        const { positions, sizes, alphas } = originalPointsGeography;
+        const colors: [number, number, number][] = originalPointsGeography.colors.slice();
+
+        const data = {
+            positions, sizes, alphas, colors
+        };
+
+        if (!currentEpochData) return data;
+
+        const labelsAsNumber = currentEpochData.labels.map((label) => parseInt(label));
+        currentEpochData.proj.forEach((point, i) => {
+            const color = colorDict.get(labelsAsNumber[i]);
+            if (color === undefined) return;
+
+            colors[i] = ([color[0] / 255, color[1] / 255, color[2] / 255]);
+        });
+
+        return data;
+    }, [originalPointsGeography, currentEpochData, colorDict]);
 
     const spriteData = useMemo(() => {
-        return currentEpochData ? extractSpriteData(currentEpochData) : undefined;
-    }, [currentEpochData]);
+        const renderedTextData: string[] = [];
+
+        if (showNumber || showText) {
+            textData.forEach((text, i) => {
+                let renderedText = "";
+                if (showNumber) {
+                    renderedText += `${i}. `;
+                }
+                if (showText) {
+                    renderedText += text;
+                }
+                renderedTextData.push(renderedText);
+            });
+        }
+
+        return {
+            labels: renderedTextData
+        }
+    }, [showNumber, showText, textData]);
 
     const neighborhood = useMemo(() => {
         return currentEpochData ? extractConnectedPoints(currentEpochData) : undefined;
@@ -158,7 +203,7 @@ export function MainBlock() {
     // for immediate update highlight from outside control
     useEffect(() => {
         const listener = () => {
-            const displayedPoints = highlightContext.tryUpdateHighlight(originalPointsGeography, false);     // TODO can this be moved into the HighlightContext?
+            const displayedPoints = highlightContext.tryUpdateHighlight(appliedColorPointsGeography, false);     // TODO can this be moved into the HighlightContext?
             if (displayedPoints) setFinalPointsGeography(displayedPoints);
         };
 
@@ -167,7 +212,7 @@ export function MainBlock() {
         return () => {
             highlightContext.removeHighlightChangedListener(listener);
         };
-    }, [highlightContext, originalPointsGeography]);
+    }, [highlightContext, appliedColorPointsGeography]);
 
     const onHoverPoint = (idx: number | undefined) => highlightContext.updateHovered(idx);
 
@@ -193,7 +238,10 @@ export function MainBlock() {
             <div id="footer">
                 <div className="functional-block-title">Epochs</div>
                 <div style={{ overflow: "auto" }}>
-                    <Timeline epoch={epoch} epochs={availableEpochs} onSwitchEpoch={setEpoch} />
+                    <Timeline epoch={epoch} epochs={availableEpochs} onSwitchEpoch={(epoch) => {
+                        setUpProjections();
+                        setEpoch(epoch);
+                    }} />
                 </div>
             </div>
         </div>

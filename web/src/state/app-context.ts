@@ -1,6 +1,6 @@
 // As application layer
 
-import { useStoreAll } from "./store";
+import { useDefaultStoreAll } from "./store";
 
 class AppContext {
     // async fetch() {

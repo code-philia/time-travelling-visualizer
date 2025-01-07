@@ -1,5 +1,5 @@
 import { BoundaryProps } from "../../state/types";
-import { UmapProjectionResult } from "../../communication/api";
+import { BriefProjectionResult } from "../../communication/api";
 
 export const pointsDefaultSize = 20;
 
@@ -40,39 +40,48 @@ export function randomColor(i: number): [number, number, number] {
 }
 
 // TODO these functions should be put into utils
-export function extractConnectedPoints(res: UmapProjectionResult): PointsNeighborRelationship {
-    return { interNeighbors: res.inter_sim_top_k, intraNeighbors: res.intra_sim_top_k };
+export function extractConnectedPoints(res: BriefProjectionResult): PointsNeighborRelationship {
+    return { interNeighbors: [], intraNeighbors: [] };
 }
 
-export function extractSpriteData(res: UmapProjectionResult): SpriteData {
-    return {
-        labels: res.tokens
-    };
-}
+// export function extractSpriteData(res: BriefProjectionResult): SpriteData {
+//     return {
+//         labels: res.tokens
+//     };
+// }
 
-export function extractBoundary(res: UmapProjectionResult): BoundaryProps {
-    return {
-        xMin: res.bounding.x_min,
-        yMin: res.bounding.y_min,
-        xMax: res.bounding.x_max,
-        yMax: res.bounding.y_max,
-    };
-}
+// export function extractBoundary(res: BriefProjectionResult): BoundaryProps {
+//     return {
+//         xMin: res.bounding.x_min,
+//         yMin: res.bounding.y_min,
+//         xMax: res.bounding.x_max,
+//         yMax: res.bounding.y_max,
+//     };
+// }
 
+// FIXME move this to another state management file or so
 export class HighlightContext {
     hoveredIndex: number | undefined = undefined;
     lockedIndices: Set<number> = new Set();
 
-    highlightedPoints: number[] = [];
+    // TODO derive into different styles, accept from outside
+    highlightedPoints: { pri: number[], sec: number[] } = {
+        pri: [],
+        sec: []
+    };
     plotPoints: CommonPointsGeography | undefined = undefined;
+
+    neighborPoints: number[][] = [];
 
     private highlightChangedListeners: (() => void)[] = [];
 
     // Operations
 
     updateHovered(idx: number | undefined) {
-        this.hoveredIndex = idx;
-        this.notifyHighlightChanged();
+        if (this.hoveredIndex !== idx) {
+            this.hoveredIndex = idx;
+            this.notifyHighlightChanged();
+        }
     }
 
     addLocked(idx: number) {
@@ -99,18 +108,52 @@ export class HighlightContext {
         this.notifyHighlightChanged();
     }
 
+    setNeighborPoints(neighborPoints: number[][]) {
+        this.neighborPoints = neighborPoints;
+        this.notifyHighlightChanged();
+    }
+
     // Computations
 
     checkLocked(idx: number) {
         return this.lockedIndices.has(idx);
     }
 
-    computeHighlightedPoints() {
-        const highlightedPoints = Array.from(this.lockedIndices);
+    computeHighlightedPoints(): { pri: number[], sec: number[] } {
+        const highlightedPoints = new Set(this.lockedIndices);
         if (this.hoveredIndex !== undefined) {
-            highlightedPoints.push(this.hoveredIndex);
+            highlightedPoints.add(this.hoveredIndex);
         }
-        return highlightedPoints;
+
+        const secondaryHighlightedPoints = new Set<number>();
+        const baseHighlightedPoints = Array.from(highlightedPoints);
+        baseHighlightedPoints.forEach((i) => {
+            const neighbors = this.neighborPoints[i];
+            if (neighbors !== undefined) {
+                neighbors
+                    .filter((neighbor) => !highlightedPoints.has(neighbor))
+                    .forEach((neighbor) => {
+                        secondaryHighlightedPoints.add(neighbor);
+                    });
+            }
+        })
+
+        return {
+            pri: [...highlightedPoints.values()],
+            sec: [...secondaryHighlightedPoints.values()]
+        }
+    }
+
+    private highlightedPointsSame(newHighlightedPoints: typeof this.highlightedPoints): boolean {
+        const groups = ['pri', 'sec'] as const;
+
+        for (const group of groups) {
+            if (newHighlightedPoints[group].length !== this.highlightedPoints[group].length) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     doHighlight(originalPointsData: CommonPointsGeography, useCache = true): [boolean, CommonPointsGeography] {
@@ -122,8 +165,7 @@ export class HighlightContext {
         //     return [false, { ...this.lastPlotPoints }];
         // }
 
-        if (useCache && highlightedPoints.length === this.highlightedPoints.length &&
-            highlightedPoints.every((value, index) => value === this.highlightedPoints[index]) && this.plotPoints) {
+        if (useCache && this.highlightedPointsSame(highlightedPoints) && this.plotPoints) {
             return [false, { ...this.plotPoints }];
         }
 
@@ -132,12 +174,17 @@ export class HighlightContext {
         const sizes = originalPointsData.sizes.slice();
         const alphas = originalPointsData.alphas.slice();
 
-        if (highlightedPoints.length > 0) {
+        if (highlightedPoints.pri.length + highlightedPoints.sec.length > 0) {
             alphas.forEach((_, i) => {
+                sizes[i] = pointsDefaultSize * 1.0;
                 alphas[i] = 0.2;
             });
-            highlightedPoints.forEach((i) => {
-                sizes[i] = pointsDefaultSize * 1.5;
+            highlightedPoints.pri.forEach((i) => {
+                sizes[i] = pointsDefaultSize * 1.8;
+                alphas[i] = 1.0;
+            });
+            highlightedPoints.sec.forEach((i) => {
+                sizes[i] = pointsDefaultSize * 1.0;
                 alphas[i] = 1.0;
             });
         }

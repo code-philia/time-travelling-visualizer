@@ -1,37 +1,37 @@
-import { Fetch } from './connection';
-const headers = new Headers();
-headers.append('Content-Type', 'application/json');
-headers.append('Accept', 'application/json');
+import { basicUnsafeGetWithJsonResponse, basicUnsafePostWithJsonResponse, Fetch } from './connection';
 
-interface NetworkOptions {
-    host: string;
+// TODO add check functions
+export interface ProjectionAttributeSource {
+    type: 'folder';
+    pattern: string;
 }
 
-const defaultNetworkOptions = {
-    host: 'localhost:5000'
+const supportedProjectionAttributeSuffixes = ['npy', 'png'] as const;
+export type ProjectionAttributeSuffix = typeof supportedProjectionAttributeSuffixes[number];
+
+export interface ProjectionAttribute {
+    dataType: 'npy' | 'png';
+    source: ProjectionAttributeSource;
 }
 
-function basicUnsafePost(path: string, data: number | string | object, networkOptions: NetworkOptions = defaultNetworkOptions) {
-    const combinedOptions = { ...defaultNetworkOptions, ...networkOptions };
-    const fullPath = `http://${combinedOptions.host}${path}`;
-
-    return Fetch(fullPath, {
-        method: 'POST',
-        headers: headers,
-        mode: 'cors',
-        body: JSON.stringify(data)
-    }).then(response => {
-        if (response.ok) {
-            return response.json();
-        } else {
-            console.error(`POST failed with response`, response);
-            throw new Error(`POST failed with response`);
+export interface BriefProjectionResult {
+    config: {
+        dataset: {
+            taskType: string,
+            attributes?: { [keys: string]: ProjectionAttribute }
         }
-    });
+    }
+    proj: number[][];
+    labels: string[];
+    label_text_list: string[];
+}
+
+export function fetchTrainingProcessStructure(contentPath: string, options?: { host?: string }) {
+    return basicUnsafeGetWithJsonResponse(`/getIterationStructure?content_path=${contentPath}`, options);
 }
 
 export function updateProjection(contentPath: string, visMethod: string,
-    taskType: string, iteration: number, filterIndex: number[] | string): Promise<UmapProjectionResult> {
+    taskType: string, iteration: number, filterIndex: number[] | string): Promise<BriefProjectionResult> {
     const data = {
         path: contentPath,
         iteration: iteration,
@@ -43,48 +43,21 @@ export function updateProjection(contentPath: string, visMethod: string,
         TaskType: taskType,
         selectedPoints: filterIndex,
     }
-    return Fetch('updateProjection', {
-        method: 'POST',
-        headers: headers,
-        mode: 'cors',
-        body: JSON.stringify(data)
-    })
+    return basicUnsafePostWithJsonResponse('/updateProjection', data);
 }
 
-export type UmapProjectionResult = {
-    proj: number[][];
-    labels: string[];
-    label_text_list: string[];
-    bounding: {
-        x_min: number;
-        y_min: number;
-        x_max: number;
-        y_max: number;
-    };
-    structure: {
-        value: number;
-        name: string;
-        pid: string;
-    }[];
-    tokens: string[];
-    inter_sim_top_k: number[][],
-    intra_sim_top_k: number[][]
+export function isUmapProjectionResult() {
+
 }
 
-export async function fetchTimelineData(contentPath: string){
-    return fetch(`http://localhost:5000/get_itertaion_structure?path=${contentPath}&method=Trustvis&setting=normal`, {
-        method: 'POST',
-        headers: headers,
-        mode: 'cors'
-    })
-        .then(response => response.json());
+export async function fetchTimelineData(contentPath: string) {
+    return basicUnsafePostWithJsonResponse(`/get_itertaion_structure?path=${contentPath}&method=Trustvis&setting=normal`, {});
 }
 
 
-export async function fetchUmapProjectionData(contentPath: string, epoch: number, options: { method?: string, host?: string}): Promise<UmapProjectionResult> {
+export async function fetchUmapProjectionData(contentPath: string, epoch: number, options: { method?: string, host?: string}): Promise<BriefProjectionResult> {
     const defaultOptions = {
         method: '',
-        host: 'localhost:5000'
     };
     const combinedOptions = {...defaultOptions, ...options};
 
@@ -94,8 +67,7 @@ export async function fetchUmapProjectionData(contentPath: string, epoch: number
         "epoch": `${epoch}`,
     };
 
-    return basicUnsafePost('/updateProjection', data, { host: combinedOptions.host })
-        .then(response => response.json());
+    return basicUnsafePostWithJsonResponse('/updateProjection', data, { host: combinedOptions.host });
 }
 
 
@@ -115,4 +87,23 @@ function getOriginalData(contentPath: string, dataType: string, index: number, i
         mode: 'cors'
     };
     return Fetch(`sprite${dataType}`, data);
+}
+
+export function getAttributeResource(contentPath: string, epoch: number, attributeName: string, options?: { host?: string }) {
+    const data = {
+        "content_path": contentPath,
+        "epoch": `${epoch}`,
+        "attributes": [attributeName]
+    };
+
+    return basicUnsafePostWithJsonResponse('/getAttributes', data, options);
+}
+
+// TODO this is an API sugar
+export function getText(contentPath: string, options?: { host?: string }) {
+    const data = {
+        "content_path": contentPath
+    };
+
+    return basicUnsafePostWithJsonResponse('/getAllText', data, options);
 }

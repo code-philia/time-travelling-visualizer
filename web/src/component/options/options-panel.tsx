@@ -1,35 +1,40 @@
 import { Radio, Button, Input, Flex, Select, InputRef, Divider, Checkbox } from "antd"
-import { useRef, useState } from "react"
-import { useStore } from '../../state/store';
+import { useEffect, useRef, useState } from "react"
+import { useDefaultStore } from '../../state/store';
 import { fetchTimelineData } from "../../communication/api";
 import { DefaultOptionType } from "antd/es/select";
 import { FunctionalBlock, ComponentBlock } from "../custom/basic-components";
 import { useCheckOptions } from "../custom/basic-hooks";
+import { useSetUpDicts, useSetUpProjections, useSetUpTrainingProcess } from "../../state/state-actions";
 
 const validVisMethods: DefaultOptionType['items'] = [
     {
         value: 'TrustVis',
         label: 'TrustVis',
-        key: '1'
     },
     {
         value: 'DVI',
         label: 'DVI',
-        key: '1'
     },
     {
         value: 'TimeVis',
         label: 'TimeVis',
-        key: '1'
     },
 ];
 
 export function OptionsPanel() {
-    const [dataType, setDataType] = useState<string>("Image")
-    const [contentPath, setContentPath] = useState<string>("/home/yuhuan/projects/cophi/visualizer-original/dev/gcb_tokens")
+    const { showNumber, showText, setShowNumber, setShowText } = useDefaultStore(["showNumber", "showText", "setShowNumber", "setShowText"])
+    const { revealNeighborSameType, revealNeighborCrossType, setRevealNeighborSameType, setRevealNeighborCrossType } = useDefaultStore(["revealNeighborSameType", "revealNeighborCrossType", "setRevealNeighborSameType", "setRevealNeighborCrossType"]);
 
-    const { setValue, timelineData } = useStore(["setValue", "timelineData"]);    // TODO now this global store acts as GlobalVisualizationConfiguration
-    const { visMethod, setVisMethod } = useStore(["visMethod", "setVisMethod"]);
+    const [ dataType, setDataType ] = useState<string>("Image")
+    const { contentPath, setContentPath } = useDefaultStore(["contentPath", "setContentPath"]);
+
+    const { setValue, timelineData } = useDefaultStore(["setValue", "timelineData"]);    // TODO now this global store acts as GlobalVisualizationConfiguration
+    const { visMethod, setVisMethod } = useDefaultStore(["visMethod", "setVisMethod"]);
+
+    const setUpTrainingProcess = useSetUpTrainingProcess();
+    const setUpProjections = useSetUpProjections();
+    const setUpDicts = useSetUpDicts();
 
     const dataTypeOptions = [{ label: 'Image', value: 'Image', }, { label: 'Text', value: 'Text', },];
 
@@ -44,6 +49,61 @@ export function OptionsPanel() {
     const [revealNeighborOptions, revealNeighborChecked, setRevealNeighborChecked] = useCheckOptions([
         'same-type', 'cross-type'
     ]);
+
+    useEffect(() => {
+        const options = [];
+        if (showNumber) {
+            options.push('number');
+        }
+        if (showText) {
+            options.push('text');
+        }
+        setDisplayOnPlotChecked(options);
+    }, [setDisplayOnPlotChecked, showNumber, showText]);
+
+    useEffect(() => {
+        setShowNumber(displayOnPlotChecked.includes('number'));
+        setShowText(displayOnPlotChecked.includes('text'));
+    }, [displayOnPlotChecked, setShowNumber, setShowText]);
+
+    useEffect(() => {
+        const options = [];
+        if (revealNeighborSameType) {
+            options.push('same-type');
+        }
+        if (revealNeighborCrossType) {
+            options.push('cross-type');
+        }
+        setRevealNeighborChecked(options);
+    }, [setRevealNeighborChecked, revealNeighborSameType, revealNeighborCrossType]);
+
+    useEffect(() => {
+        setRevealNeighborSameType(revealNeighborChecked.includes('same-type'));
+        setRevealNeighborCrossType(revealNeighborChecked.includes('cross-type'));
+    }, [revealNeighborChecked, setRevealNeighborSameType, setRevealNeighborCrossType]);
+
+    const { highlightContext, neighborSameType, neighborCrossType } = useDefaultStore(['highlightContext', 'neighborSameType', 'neighborCrossType']);
+
+    useEffect(() => {
+        // TODO this is data processing (or business) fair, move it to another module
+        const neighborPoints: number[][][] = [];
+        if (revealNeighborSameType) {
+            neighborPoints.push(neighborSameType);
+        }
+        if (revealNeighborCrossType) {
+            neighborPoints.push(neighborCrossType);
+        }
+
+        const mergedNeighborPoints = neighborPoints.reduce((a, b) => {
+            const base = a.length >= b.length ? a : b;
+            const guest = a.length >= b.length ? b : a;
+            return base.map((v, i) => {
+                return [...v, ...(guest[i] ?? [])];
+            });
+        }, []);
+
+        highlightContext.setNeighborPoints(mergedNeighborPoints);
+    }, [revealNeighborSameType, revealNeighborCrossType, highlightContext, neighborSameType, neighborCrossType]);
 
     const inputRef = useRef<InputRef>(null);
 
@@ -72,7 +132,7 @@ export function OptionsPanel() {
                 </div>
                 <div className="component-block">
                     <div className="label">Content Path</div>
-                    <Input ref={inputRef} onChange={(e) => setContentPath(e.target.value)} />
+                    <Input ref={inputRef} value={contentPath} onChange={(e) => setContentPath(e.target.value)} />
                 </div>
                 {/* <div className="component-block">
                     <div className="input label">Options</div>
@@ -87,13 +147,12 @@ export function OptionsPanel() {
                                 if (inputRef.current?.input) {
                                     setValue("contentPath", inputRef.current.input.value);
                                 }
-                                setValue("command", "update")
-                                setValue("updateUUID", Math.random().toString(36).substring(7))
-                                if (timelineData === undefined) {
-                                    fetchTimelineData(contentPath).then((res) => {
-                                        setValue("timelineData", res);
-                                    });
-                                }
+                                setValue("command", "update");
+                                setValue("updateUUID", Math.random().toString(36).substring(7));
+
+                                (async () => {
+                                    await setUpTrainingProcess();
+                                })();
                             }
                         }>
                         Load Visualization

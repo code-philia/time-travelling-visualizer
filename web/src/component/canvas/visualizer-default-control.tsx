@@ -2,8 +2,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { ContextOnlyProps, VisualizerRenderContext } from './visualizer-render-context';
 import { MapControls } from '@react-three/drei';
 import { OrthographicCamera, Vector3, EventListener, WebGLRenderer, Vector4, Spherical, MOUSE } from 'three';
-import { MapControls as MapControlsImpl } from 'three-stdlib';
-import { useEffect, useRef } from 'react';
+import React, { ComponentRef, useEffect, useRef } from 'react';
 
 type ControlState = {
     target: Vector3;
@@ -65,19 +64,10 @@ function addResizeObserver(camera: OrthographicCamera, renderer: WebGLRenderer) 
 export function VisualizerDefaultControl({ visualizerRenderContext, onResize }: ContextOnlyProps & { onResize: () => void }) {
     const rc = visualizerRenderContext;
 
-    const mapControlsRef = useRef<MapControlsImpl>(null);
-    const controlState = useRef<ControlState | null>(null);
+    const mapControlsRef = useRef<ComponentRef<typeof MapControls>>(null);
 
     const gl = useThree((state) => state.gl);
     const camera = useThree((state) => state.camera);
-
-    useEffect(
-        () => {
-            if (mapControlsRef.current !== null) {
-                rc.setControls(mapControlsRef.current);
-            }
-        }
-    , [rc]);
 
     // TODO add test for resting the camera
     useEffect(() => {
