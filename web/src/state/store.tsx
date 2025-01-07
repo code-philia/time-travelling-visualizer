@@ -177,6 +177,22 @@ export function useShallowAll<T>(store: UseBoundStore<StoreApi<T>>): T {
     return useStoreWithEqualityFn(store, (state) => state, shallow);
 };
 
+export function useOnSetOperation<T, K extends keyof T>(
+    store: UseBoundStore<StoreApi<T>>,
+    keys: K[]
+): Pick<T, K> {
+    const selector = (state: T) =>
+        keys.reduce(
+            (prev, curr) => {
+                prev[curr] = state[curr];
+                return prev;
+            },
+            {} as Pick<T, K>
+        );
+
+    return store(selector);
+}
+
 export const useDefaultStore = <K extends keyof GlobalStore>(keys: K[]) => {
     return useShallow(useGlobalStore, keys);
 };

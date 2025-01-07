@@ -4,7 +4,8 @@ import { HighlightContext, randomColor } from "../component/canvas/types";
 import { useDefaultStore } from "./store";
 
 export function useSetUpTrainingProcess() {
-    const { contentPath, setAvailableEpochs, backendHost, setTextData } = useDefaultStore(['contentPath', 'setAvailableEpochs', 'backendHost', 'setTextData']);
+    const { contentPath, backendHost, setAvailableEpochs, setTextData, setEpoch, setHighlightContext } =
+        useDefaultStore(['contentPath', 'setAvailableEpochs', 'backendHost', 'setTextData', 'setEpoch', 'setHighlightContext']);
 
     const setUpTrainingProcess = useCallback(async () => {
         const res = await fetchTrainingProcessStructure(contentPath, {
@@ -12,23 +13,45 @@ export function useSetUpTrainingProcess() {
         });
         setAvailableEpochs(res['available_epochs']);
 
+        if (res['available_epochs'].length > 0) {
+            setEpoch(res['available_epochs'][0]);
+        }
+
         const text = await getText(contentPath, {
             host: backendHost
         });
         setTextData(text['text_list'] ?? []);
 
-    }, [backendHost, contentPath, setAvailableEpochs, setTextData]);
+        setHighlightContext(new HighlightContext());
+
+    }, [backendHost, contentPath, setAvailableEpochs, setTextData, setEpoch]);
 
     return setUpTrainingProcess;
 }
 
-export function useSetUpProjections() {
+export function useSetUpProjection() {
     // TODO avoid writing attribute twice
-    const { contentPath, epoch, setProjectionDataAtEpoch, backendHost, visMethod, setHighlightContext, setLabelDict, setColorDict, setNeighborSameType, setNeighborCrossType }
-        = useDefaultStore(['contentPath', 'epoch', 'setProjectionDataAtEpoch', 'updateUUID', 'backendHost', 'visMethod', 'setHighlightContext', 'setTextData', 'setLabelDict', 'setColorDict', 'setAvailableEpochs', 'setNeighborSameType', 'setNeighborCrossType']);
+    const { contentPath, allEpochsProjectionData, setAllEpochsProjectionData, backendHost, visMethod, setHighlightContext, setLabelDict, setColorDict, setNeighborSameType, setNeighborCrossType }
+        = useDefaultStore([
+            'contentPath',
+            'allEpochsProjectionData','setProjectionDataAtEpoch',
+            'updateUUID',
+            'backendHost',
+            'visMethod',
+            'setHighlightContext',
+            'setTextData',
+            'setLabelDict',
+            'setColorDict',
+            'setAvailableEpochs',
+            'setNeighborSameType',
+            'setNeighborCrossType',
+            'setAllEpochsProjectionData'
+        ]);
 
-    // FIXME this is updating too many things
-    const setUpProjections = useCallback(async () => {
+    // TODO add cache
+
+    // FIXME this is updating too many things, even depending on too many things
+    const setUpProjections = useCallback(async (epoch: number) => {
         let res = undefined;
         try {
             res = await fetchUmapProjectionData(contentPath, epoch, {
@@ -39,10 +62,6 @@ export function useSetUpProjections() {
             console.warn(e);
         }
         if (res) {
-            setProjectionDataAtEpoch(epoch, res);
-
-            setHighlightContext(new HighlightContext());
-
             const sameTypeNeighbor = await getAttributeResource(contentPath, epoch, 'intra_similarity', {
                 host: backendHost
             });
@@ -56,6 +75,10 @@ export function useSetUpProjections() {
             // FIXME add validation of number[][]
             setNeighborSameType(sameTypeNeighbor['intra_similarity']);
             setNeighborCrossType(crossTypeNeighbor['inter_similarity']);
+
+            const newData = { ...allEpochsProjectionData };
+            newData[epoch] = res; // the latest epoch may have been updated in UI, but not yet in store
+            setAllEpochsProjectionData(newData);
 
             // TODO Do an immediate setup dict. Don't know how to fix it because outer setDict cannot see the updated projection data
             const labelDict = new Map<number, string>();
@@ -75,7 +98,7 @@ export function useSetUpProjections() {
             setLabelDict(labelDict);
             setColorDict(colorDict);
         }
-    }, [backendHost, contentPath, epoch, setColorDict, setHighlightContext, setLabelDict, setNeighborCrossType, setNeighborSameType, setProjectionDataAtEpoch, visMethod]);
+    }, [allEpochsProjectionData, backendHost, contentPath, setAllEpochsProjectionData, setColorDict, setHighlightContext, setLabelDict, setNeighborCrossType, setNeighborSameType, visMethod]);
 
     return setUpProjections;
 }
