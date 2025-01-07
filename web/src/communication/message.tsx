@@ -1,4 +1,4 @@
-import { useStore } from '../state/store';
+import { useDefaultStore } from '../state/store';
 import { useEffect } from 'react';
 
 const validCommands = [
@@ -7,7 +7,7 @@ const validCommands = [
 ];
 
 export function MessageHandler() {
-    const { setValue } = useStore(['setValue']);
+    const { setValue } = useDefaultStore(['setValue']);
 
     function handleMessageData(message: any) {
         if (!message) {

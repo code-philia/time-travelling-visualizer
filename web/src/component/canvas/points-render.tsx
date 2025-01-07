@@ -1,5 +1,5 @@
 import { ThreeEvent } from '@react-three/fiber';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { BufferAttribute } from 'three';
 import { isCircleHovered, VisualizerRenderContext } from './visualizer-render-context';
 import { CommonPointsGeography } from './types';
@@ -130,7 +130,7 @@ export function PointsRender({ rawPointsData, visualizerRenderContext, eventList
     }, [eventListeners, rawPointsData.positions, rawPointsData.sizes, rc]);
 
     return (
-        <points onPointerMove={handlePointerMove} onClick={handleClick} frustumCulled={false}>
+        <points onPointerMove={handlePointerMove} onClick={handleClick} frustumCulled={false} key={`${geo.sizes.length}`}>
             <bufferGeometry>
                 <bufferAttribute ref={positionRef} attach="attributes-position" count={numPoints} array={geo.positions} itemSize={3} />
                 <bufferAttribute ref={colorRef} attach="attributes-color" count={numPoints} array={geo.colors} itemSize={3} />

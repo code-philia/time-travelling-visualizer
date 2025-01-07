@@ -1,5 +1,6 @@
 import os
 import json
+import re
 from secrets import token_urlsafe
 import time
 import csv
@@ -65,7 +66,7 @@ def load_background_image_base64(config, content_path, vis_method, epoch):
     with open(bgimg_path, 'rb') as img_f:
         img_stream = img_f.read()
         img_stream = base64.b64encode(img_stream).decode()
-    
+
     return 'data:image/png;base64,' + img_stream
 
 # Func: load one sample from content_path
@@ -113,12 +114,13 @@ def get_all_texts(config, content_path):
 
     text_list = []
     if sampleConfig['source']['type'] == 'folder':
+        # FIXME strange pattern match
         parent_directory = os.path.dirname(sampleConfig['source']['pattern'])
         parent_directory = os.path.join(content_path, parent_directory)
 
         files_and_folders = os.listdir(parent_directory)
-        numbered_files = [f for f in files_and_folders if f.endswith('.txt') and f[:-4].isdigit()]
-        numbered_files.sort(key=lambda f: int(f[:-4]))
+        numbered_files = [f for f in files_and_folders if f.endswith('.txt') and f[-5].isdigit()]
+        numbered_files.sort(key=lambda f: int(re.search(r'[0-9]+', f)[0]))
 
         # TODO: if we know index of samples, we can directly read the file by index
         for file_name in numbered_files:
@@ -159,11 +161,11 @@ def load_representation(config, content_path, epoch):
     attributes = config['dataset']['attributes']
     if 'representation' not in attributes:
         raise NotImplementedError("representation is not in attributes")
-    
+
     file_path_pattern = attributes['representation']['source']['pattern']
     file_path = file_path_pattern.replace('${epoch}', str(epoch))
     file_path = os.path.join(content_path, file_path)
-    
+
     repr = np.load(file_path)
     return repr.tolist()
 

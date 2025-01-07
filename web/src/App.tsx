@@ -1,70 +1,10 @@
-import { useEffect } from "react";
 import { LeftSidebar } from "./component/left-sidebar"
 import { MainBlock } from './component/main-block'
 import { RightSidebar } from './component/right-sidebar'
-import { fetchUmapProjectionData } from "./communication/api";
-import { useStore } from "./state/store";
-import { HighlightContext, randomColor } from "./component/canvas/types";
 import { Button } from "antd";
-import { SettingOutlined, SettingTwoTone } from "@ant-design/icons";
-
-function isInitialState(contentPath: string): boolean {
-    return contentPath.trim() === "";
-}
-
-function useEpoch() {
-
-}
+import { SettingOutlined } from "@ant-design/icons";
 
 function App() {
-    // TODO avoid writing attribute twice
-    const { contentPath, epoch, allEpochsProjectionData, setProjectionDataAtEpoch, updateUUID, backendHost, visMethod }
-        = useStore(['contentPath', 'epoch', 'allEpochsProjectionData', 'setProjectionDataAtEpoch', 'updateUUID', 'backendHost', 'visMethod']);
-
-    const { setHighlightContext } = useStore(['setHighlightContext']);
-
-    // FIXME this is updating too many things
-    useEffect(() => {
-        (async () => {
-            if (allEpochsProjectionData[epoch]) return;
-
-            const res = await fetchUmapProjectionData(contentPath, epoch, {
-                method: visMethod,
-                host: backendHost
-            });
-            if (res) {
-                setProjectionDataAtEpoch(epoch, res);
-                setHighlightContext(new HighlightContext());
-            }
-        })();
-    }, [allEpochsProjectionData, contentPath, epoch, setHighlightContext, setProjectionDataAtEpoch, updateUUID]);
-
-    const { setLabelDict, setColorDict } = useStore(["setLabelDict", "setColorDict"]);
-
-
-    useEffect(() => {
-        // TODO extract this currentEpochData to a useStore
-        const currentEpochData = allEpochsProjectionData[epoch];
-        if (!currentEpochData) return;
-
-        const labelDict = new Map<number, string>();
-        const colorDict = new Map<number, [number, number, number]>();
-
-        const validLabels = Array.from(new Set(currentEpochData.labels));
-
-        validLabels.forEach((classLabel, i) => {
-            labelDict.set(i, classLabel);
-            colorDict.set(i, randomColor(i));
-        });
-
-        // TODO backend should provide this
-        labelDict.set(0, 'comment');
-        labelDict.set(1, 'code');
-
-        setLabelDict(labelDict);
-        setColorDict(colorDict);
-    }, [allEpochsProjectionData, epoch, setColorDict, setLabelDict])
-
     return (
         <div id='app'>
             <header className='app-header natural-diffuse-shadow strong-down-shadow'>

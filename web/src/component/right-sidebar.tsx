@@ -1,5 +1,5 @@
 import { AutoComplete, Divider, Input, List, Tag, RefSelectProps } from 'antd';
-import { useStore } from '../state/store';
+import { useDefaultStore } from '../state/store';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ComponentBlock, FunctionalBlock } from './custom/basic-components';
 
@@ -65,8 +65,8 @@ function hexToRgbArray(hex: string): [number, number, number]  {
 
 export function RightSidebar() {
     // TODO this is too messy all using useStore
-    const { labelDict, colorDict, setColorDict } =
-        useStore(["labelDict", "colorDict", "setColorDict"]);
+    const { labelDict, colorDict, setColorDict, textData } =
+        useDefaultStore(["labelDict", "colorDict", "setColorDict", "textData" ]);
 
     function changeLabelColor(i: number, newColor: [number, number, number]) {
         setColorDict(new Map([...colorDict, [i, newColor]]));
@@ -86,7 +86,7 @@ export function RightSidebar() {
 
     // NOTE always add state as middle dependency
     const [searchValue, setSearchValue] = useState('');
-    const [searchFromOptions, setSearchFromOptions] = useState(searchResultDemo);
+    const { textData: searchFromOptions } = useDefaultStore(['textData']);
 
     const limitOfHistory = 5;
     const [searchHistory, setSearchHistory] = useState<string[]>([]);
@@ -127,7 +127,12 @@ export function RightSidebar() {
 
         setSearchHistoryOpen(true);
 
-        const res = searchFrom(text, searchFromOptions, null);
+        const res = searchFrom(text, searchFromOptions.map((v, i) => {
+            return {
+                num: i,
+                title: v
+            }
+        }), null);
         setAllSearchResult(res);
 
         if (byEnter) {
@@ -169,7 +174,7 @@ export function RightSidebar() {
     }
 
     // TODO do not directly access result here
-    const { highlightContext, epoch, allEpochsProjectionData } = useStore(["highlightContext", "epoch", "allEpochsProjectionData"]);
+    const { highlightContext, epoch, allEpochsProjectionData } = useDefaultStore(["highlightContext", "epoch", "allEpochsProjectionData"]);
     const [selectedItems, setSelectedItems] = useState<SampleTag[]>([]);
 
     const handleClose = (item: SampleTag) => {
@@ -180,7 +185,8 @@ export function RightSidebar() {
         const listener = () => {
             if (allEpochsProjectionData[epoch] === undefined) return;
 
-            const tokens = allEpochsProjectionData[epoch].tokens;
+            // TODO wrap "allEpochsProjectionData" as a delayed get object
+            const tokens = textData;
             setSelectedItems(Array.from(highlightContext.lockedIndices).map((num) => ({
                 num,
                 title: tokens[num]!
@@ -192,7 +198,7 @@ export function RightSidebar() {
         return () => {
             highlightContext.removeHighlightChangedListener(listener);
         };
-    }, [allEpochsProjectionData, epoch, highlightContext, labelDict]);
+    }, [allEpochsProjectionData, epoch, highlightContext, labelDict, textData]);
 
     return (
         <div className="info-column">
