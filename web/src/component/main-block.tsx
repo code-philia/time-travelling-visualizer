@@ -3,7 +3,7 @@ import { PlotContainer, Plot2DCanvasContext, Plot2DDataContext, createPlot2DCanv
 import { useDefaultStore } from '../state/store'
 import { CommonPointsGeography, extractConnectedPoints, pointsDefaultSize, createEmptyCommonPointsGeography } from './canvas/types';
 import { BriefProjectionResult } from '../communication/api';
-import { useSetUpProjections } from '../state/state-actions';
+import { useSetUpProjection } from '../state/state-actions';
 
 function Timeline({ epoch, epochs, onSwitchEpoch }: { epoch: number, epochs: number[], onSwitchEpoch: (epoch: number) => void }) {
     // Set the initial epoch from the passed epochs array
@@ -107,7 +107,7 @@ export function MainBlock() {
 
     const { availableEpochs, allEpochsProjectionData, textData } = useDefaultStore(["contentPath", "updateUUID", "availableEpochs", "allEpochsProjectionData", "updateUUID", "textData"]);
 
-    const setUpProjections = useSetUpProjections();
+    const setUpProjections = useSetUpProjection();
 
     useEffect(() => {
         if (availableEpochs.length > 0) {
@@ -124,7 +124,7 @@ export function MainBlock() {
 
     // only set a finally computed attribute as state
     const [finalPointsGeography, setFinalPointsGeography] = useState<CommonPointsGeography>(createEmptyCommonPointsGeography());
-    const currentEpochData = allEpochsProjectionData[epoch] as BriefProjectionResult | undefined;    // add guard
+    const currentEpochData = useMemo(() => allEpochsProjectionData[epoch] as BriefProjectionResult | undefined, [allEpochsProjectionData, epoch]);
     const originalPointsGeography = useMemo(() => {
         const positions: [number, number, number][] = [];
         const colors: [number, number, number][] = [];
@@ -138,17 +138,16 @@ export function MainBlock() {
 
         currentEpochData.proj.forEach((point, i) => {
             positions.push([point[0], point[1], 0]);
-            colors.push([0, 0, 0]);
             sizes.push(pointsDefaultSize);
             alphas.push(1.0);
         });
 
         return data;
-    }, [allEpochsProjectionData[epoch], allEpochsProjectionData, epoch]);
+    }, [currentEpochData]);
 
     const appliedColorPointsGeography = useMemo(() => {
         const { positions, sizes, alphas } = originalPointsGeography;
-        const colors: [number, number, number][] = originalPointsGeography.colors.slice();
+        const colors: [number, number, number][] = [];
 
         const data = {
             positions, sizes, alphas, colors
@@ -200,6 +199,29 @@ export function MainBlock() {
         return new Plot2DDataContext(finalPointsGeography, spriteData);
     }, [finalPointsGeography, spriteData]);
 
+    const { revealNeighborSameType, revealNeighborCrossType, neighborSameType, neighborCrossType } = useDefaultStore(['revealNeighborSameType', 'revealNeighborCrossType', 'neighborSameType', 'neighborCrossType']);
+
+    useEffect(() => {
+        // TODO this is data processing (or business) fair, move it to another module, and should be done immediately together with some atomic update operation
+        const neighborPoints: number[][][] = [];
+        if (revealNeighborSameType) {
+            neighborPoints.push(neighborSameType);
+        }
+        if (revealNeighborCrossType) {
+            neighborPoints.push(neighborCrossType);
+        }
+
+        const mergedNeighborPoints = neighborPoints.reduce((a, b) => {
+            const base = a.length >= b.length ? a : b;
+            const guest = a.length >= b.length ? b : a;
+            return base.map((v, i) => {
+                return [...v, ...(guest[i] ?? [])];
+            });
+        }, []);
+
+        highlightContext.setNeighborPoints(mergedNeighborPoints);
+    }, [revealNeighborSameType, revealNeighborCrossType, highlightContext, neighborSameType, neighborCrossType]);
+
     // for immediate update highlight from outside control
     useEffect(() => {
         const listener = () => {
@@ -239,8 +261,9 @@ export function MainBlock() {
                 <div className="functional-block-title">Epochs</div>
                 <div style={{ overflow: "auto" }}>
                     <Timeline epoch={epoch} epochs={availableEpochs} onSwitchEpoch={(epoch) => {
-                        setUpProjections();
-                        setEpoch(epoch);
+                        setUpProjections(epoch).then(
+                            () => setEpoch(epoch)
+                        );
                     }} />
                 </div>
             </div>

@@ -5,7 +5,7 @@ import { fetchTimelineData } from "../../communication/api";
 import { DefaultOptionType } from "antd/es/select";
 import { FunctionalBlock, ComponentBlock } from "../custom/basic-components";
 import { useCheckOptions } from "../custom/basic-hooks";
-import { useSetUpDicts, useSetUpProjections, useSetUpTrainingProcess } from "../../state/state-actions";
+import { useSetUpDicts, useSetUpProjection, useSetUpTrainingProcess } from "../../state/state-actions";
 
 const validVisMethods: DefaultOptionType['items'] = [
     {
@@ -33,7 +33,7 @@ export function OptionsPanel() {
     const { visMethod, setVisMethod } = useDefaultStore(["visMethod", "setVisMethod"]);
 
     const setUpTrainingProcess = useSetUpTrainingProcess();
-    const setUpProjections = useSetUpProjections();
+    const setUpProjections = useSetUpProjection();
     const setUpDicts = useSetUpDicts();
 
     const dataTypeOptions = [{ label: 'Image', value: 'Image', }, { label: 'Text', value: 'Text', },];
@@ -81,29 +81,6 @@ export function OptionsPanel() {
         setRevealNeighborSameType(revealNeighborChecked.includes('same-type'));
         setRevealNeighborCrossType(revealNeighborChecked.includes('cross-type'));
     }, [revealNeighborChecked, setRevealNeighborSameType, setRevealNeighborCrossType]);
-
-    const { highlightContext, neighborSameType, neighborCrossType } = useDefaultStore(['highlightContext', 'neighborSameType', 'neighborCrossType']);
-
-    useEffect(() => {
-        // TODO this is data processing (or business) fair, move it to another module
-        const neighborPoints: number[][][] = [];
-        if (revealNeighborSameType) {
-            neighborPoints.push(neighborSameType);
-        }
-        if (revealNeighborCrossType) {
-            neighborPoints.push(neighborCrossType);
-        }
-
-        const mergedNeighborPoints = neighborPoints.reduce((a, b) => {
-            const base = a.length >= b.length ? a : b;
-            const guest = a.length >= b.length ? b : a;
-            return base.map((v, i) => {
-                return [...v, ...(guest[i] ?? [])];
-            });
-        }, []);
-
-        highlightContext.setNeighborPoints(mergedNeighborPoints);
-    }, [revealNeighborSameType, revealNeighborCrossType, highlightContext, neighborSameType, neighborCrossType]);
 
     const inputRef = useRef<InputRef>(null);
 
