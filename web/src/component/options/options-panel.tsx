@@ -1,5 +1,5 @@
-import { Radio, Button, Input, Flex, Select, InputRef, Divider, Checkbox } from "antd"
-import { useEffect, useRef, useState } from "react"
+import { Radio, Button, Input, Flex, Select, InputRef, Divider, Checkbox } from "antd";
+import { useEffect, useRef, useState } from "react";
 import { useDefaultStore } from '../../state/store';
 import { fetchTimelineData } from "../../communication/api";
 import { DefaultOptionType } from "antd/es/select";
@@ -23,10 +23,10 @@ const validVisMethods: DefaultOptionType['items'] = [
 ];
 
 export function OptionsPanel() {
-    const { showNumber, showText, setShowNumber, setShowText } = useDefaultStore(["showNumber", "showText", "setShowNumber", "setShowText"])
+    const { showNumber, showText, setShowNumber, setShowText } = useDefaultStore(["showNumber", "showText", "setShowNumber", "setShowText"]);
     const { revealNeighborSameType, revealNeighborCrossType, setRevealNeighborSameType, setRevealNeighborCrossType } = useDefaultStore(["revealNeighborSameType", "revealNeighborCrossType", "setRevealNeighborSameType", "setRevealNeighborCrossType"]);
 
-    const [ dataType, setDataType ] = useState<string>("Image")
+    const [ dataType, setDataType ] = useState<string>("Image");
     const { contentPath, setContentPath } = useDefaultStore(["contentPath", "setContentPath"]);
 
     const { setValue, timelineData } = useDefaultStore(["setValue", "timelineData"]);    // TODO now this global store acts as GlobalVisualizationConfiguration
@@ -153,5 +153,5 @@ export function OptionsPanel() {
             </FunctionalBlock>
             <Divider />
         </div >
-    )
+    );
 }
