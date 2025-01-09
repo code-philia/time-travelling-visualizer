@@ -1,9 +1,9 @@
 import { memo, useEffect, useRef, useState } from 'react';
-import { Canvas } from '@react-three/fiber'
+import { Canvas } from '@react-three/fiber';
 
 import { BoundaryProps } from '../../state/types.ts';
 
-import { PointsRender } from './points-render.tsx'
+import { PointsRender } from './points-render.tsx';
 import { CommonPointsGeography, PointsNeighborRelationship } from './types.ts';
 import { VisualizerRenderContext } from './visualizer-render-context.tsx';
 import { VisualizerDefaultControl } from './visualizer-default-control.tsx';
@@ -85,7 +85,7 @@ export const PlotContainer = memo(({ plotDataContext, plotCanvasContext, eventLi
         viewUpdateEvent.current.callback = () => {
             spriteRenderRef.current?.repaint();
         };
-    }, [])
+    }, []);
 
     useEffect(() => {
         const ob = new ResizeObserver(() => {
