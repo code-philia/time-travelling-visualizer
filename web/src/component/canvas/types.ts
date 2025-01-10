@@ -1,6 +1,5 @@
 import { BoundaryProps } from "../../state/types";
-import { UmapProjectionResult } from "../../communication/api";
-import { or } from "three/webgpu";
+import { BriefProjectionResult } from "../../communication/api";
 
 export const pointsDefaultSize = 20;
 
@@ -12,7 +11,17 @@ export interface CommonPointsGeography {
     alphas: number[];
 }
 
-export interface UmapPointsNeighborRelationship {
+export function createEmptyCommonPointsGeography(): CommonPointsGeography {
+    return {
+        positions: [],
+        labels: [],
+        colors: [],
+        sizes: [],
+        alphas: []
+    };
+}
+
+export interface PointsNeighborRelationship {
     interNeighbors: number[][];
     intraNeighbors: number[][];
 }
@@ -33,46 +42,58 @@ export function randomColor(i: number): [number, number, number] {
 }
 
 // TODO these functions should be put into utils
-export function extractConnectedPoints(res: UmapProjectionResult): UmapPointsNeighborRelationship {
-    return { interNeighbors: res.inter_sim_top_k, intraNeighbors: res.intra_sim_top_k };
+export function extractConnectedPoints(res: BriefProjectionResult): PointsNeighborRelationship {
+    return { interNeighbors: [], intraNeighbors: [] };
 }
 
-export function extractSpriteData(res: UmapProjectionResult): SpriteData {
-    return {
-        labels: res.tokens
-    };
-}
+// export function extractSpriteData(res: BriefProjectionResult): SpriteData {
+//     return {
+//         labels: res.tokens
+//     };
+// }
 
-export function extractBoundary(res: UmapProjectionResult): BoundaryProps {
-    return {
-        xMin: res.bounding.x_min,
-        yMin: res.bounding.y_min,
-        xMax: res.bounding.x_max,
-        yMax: res.bounding.y_max,
-    };
-}
+// export function extractBoundary(res: BriefProjectionResult): BoundaryProps {
+//     return {
+//         xMin: res.bounding.x_min,
+//         yMin: res.bounding.y_min,
+//         xMax: res.bounding.x_max,
+//         yMax: res.bounding.y_max,
+//     };
+// }
 
+// FIXME move this to another state management file or so
 export class HighlightContext {
     hoveredIndex: number | undefined = undefined;
     lockedIndices: Set<number> = new Set();
 
-    lastHighlightedPoints: number[] = [];
-    lastPlotPoints: CommonPointsGeography | undefined = undefined;
+    // TODO derive into different styles, accept from outside
+    highlightedPoints: { pri: number[], sec: number[] } = {
+        pri: [],
+        sec: []
+    };
+    plotPoints: CommonPointsGeography | undefined = undefined;
 
-    private selectedChangedListeners: (() => void)[] = [];
+    neighborPoints: number[][] = [];
+
+    private highlightChangedListeners: (() => void)[] = [];
+
+    // Operations
 
     updateHovered(idx: number | undefined) {
-        this.hoveredIndex = idx;
+        if (this.hoveredIndex !== idx) {
+            this.hoveredIndex = idx;
+            this.notifyHighlightChanged();
+        }
     }
 
     addLocked(idx: number) {
         this.lockedIndices.add(idx);
-        this.notifySelectedChanged();
+        this.notifyHighlightChanged();
     }
 
     removeLocked(idx: number) {
         this.lockedIndices.delete(idx);
-        this.notifySelectedChanged();
+        this.notifyHighlightChanged();
     }
 
     switchLocked(idx: number) {
@@ -81,24 +102,60 @@ export class HighlightContext {
         } else {
             this.lockedIndices.add(idx);
         }
-        this.notifySelectedChanged();
+        this.notifyHighlightChanged();
     }
 
     removeAllLocked() {
         this.lockedIndices.clear();
-        this.notifySelectedChanged();
+        this.notifyHighlightChanged();
     }
+
+    setNeighborPoints(neighborPoints: number[][]) {
+        this.neighborPoints = neighborPoints;
+        this.notifyHighlightChanged();
+    }
+
+    // Computations
 
     checkLocked(idx: number) {
         return this.lockedIndices.has(idx);
     }
 
-    computeHighlightedPoints() {
-        const highlightedPoints = Array.from(this.lockedIndices);
+    computeHighlightedPoints(): { pri: number[], sec: number[] } {
+        const highlightedPoints = new Set(this.lockedIndices);
         if (this.hoveredIndex !== undefined) {
-            highlightedPoints.push(this.hoveredIndex);
+            highlightedPoints.add(this.hoveredIndex);
         }
-        return highlightedPoints;
+
+        const secondaryHighlightedPoints = new Set<number>();
+        const baseHighlightedPoints = Array.from(highlightedPoints);
+        baseHighlightedPoints.forEach((i) => {
+            const neighbors = this.neighborPoints[i];
+            if (neighbors !== undefined) {
+                neighbors
+                    .filter((neighbor) => !highlightedPoints.has(neighbor))
+                    .forEach((neighbor) => {
+                        secondaryHighlightedPoints.add(neighbor);
+                    });
+            }
+        })
+
+        return {
+            pri: [...highlightedPoints.values()],
+            sec: [...secondaryHighlightedPoints.values()]
+        }
+    }
+
+    private highlightedPointsSame(newHighlightedPoints: typeof this.highlightedPoints): boolean {
+        const groups = ['pri', 'sec'] as const;
+
+        for (const group of groups) {
+            if (newHighlightedPoints[group].length !== this.highlightedPoints[group].length) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     doHighlight(originalPointsData: CommonPointsGeography, useCache = true): [boolean, CommonPointsGeography] {
@@ -110,9 +167,8 @@ export class HighlightContext {
         //     return [false, { ...this.lastPlotPoints }];
         // }
 
-        if (useCache && highlightedPoints.length === this.lastHighlightedPoints.length &&
-            highlightedPoints.every((value, index) => value === this.lastHighlightedPoints[index]) && this.lastPlotPoints) {
-            return [false, { ...this.lastPlotPoints }];
+        if (useCache && this.highlightedPointsSame(highlightedPoints) && this.plotPoints) {
+            return [false, { ...this.plotPoints }];
         }
 
         const positions = originalPointsData.positions.slice();
@@ -120,17 +176,23 @@ export class HighlightContext {
         const colors = originalPointsData.colors.slice();
         const sizes = originalPointsData.sizes.slice();
         const alphas = originalPointsData.alphas.slice();
-        if (highlightedPoints.length > 0) {
+
+        if (highlightedPoints.pri.length + highlightedPoints.sec.length > 0) {
             alphas.forEach((_, i) => {
+                sizes[i] = pointsDefaultSize * 1.0;
                 alphas[i] = 0.2;
             });
-            highlightedPoints.forEach((i) => {
-                sizes[i] = pointsDefaultSize * 1.5;
+            highlightedPoints.pri.forEach((i) => {
+                sizes[i] = pointsDefaultSize * 1.8;
+                alphas[i] = 1.0;
+            });
+            highlightedPoints.sec.forEach((i) => {
+                sizes[i] = pointsDefaultSize * 1.0;
                 alphas[i] = 1.0;
             });
         }
 
-        this.lastHighlightedPoints = highlightedPoints;
+        this.highlightedPoints = highlightedPoints;
         const nextPlotPoints = {
             positions, labels, colors, sizes, alphas
         };
@@ -144,9 +206,9 @@ export class HighlightContext {
         //     return [false, { ...this.lastPlotPoints }];
         // }
 
-        this.lastPlotPoints = nextPlotPoints;
+        this.plotPoints = nextPlotPoints;
 
-        return [true, { ...this.lastPlotPoints }];
+        return [true, { ...this.plotPoints }];
     }
 
     tryUpdateHighlight(originalPointsData: CommonPointsGeography, useCache = false): CommonPointsGeography | undefined {
@@ -154,16 +216,16 @@ export class HighlightContext {
         return changed ? newPointsData : undefined;
     }
 
-    addSelectedChangedListener(listener: () => void) {
-        this.selectedChangedListeners.push(listener);
+    addHighlightChangedListener(listener: () => void) {
+        this.highlightChangedListeners.push(listener);
     }
 
-    removeSelectedChangedListener(listener: () => void) {
-        this.selectedChangedListeners = this.selectedChangedListeners.filter((l) => l !== listener);
+    removeHighlightChangedListener(listener: () => void) {
+        this.highlightChangedListeners = this.highlightChangedListeners.filter((l) => l !== listener);
     }
 
-    private notifySelectedChanged() {
-        this.selectedChangedListeners.forEach((listener) => listener());
+    private notifyHighlightChanged() {
+        this.highlightChangedListeners.forEach((listener) => listener());
     }
 }
 export type SpriteData = {

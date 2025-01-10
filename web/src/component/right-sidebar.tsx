@@ -1,6 +1,7 @@
-import { Divider, Input, List, Tag } from 'antd';
-import { useStore } from '../state/store';
-import { useEffect, useRef, useState } from 'react';
+import { AutoComplete, Divider, Input, List, Tag, RefSelectProps } from 'antd';
+import { useDefaultStore } from '../state/store';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ComponentBlock, FunctionalBlock } from './custom/basic-components';
 
 type SampleTag = {
     num: number;
@@ -63,72 +64,117 @@ function hexToRgbArray(hex: string): [number, number, number]  {
 }
 
 export function RightSidebar() {
-    // for color
-    // const labelDict: Map<number, string> = new Map([
-    //     [1, 'code'],
-    //     [2, 'comment'],
-    // ]);
-    // const colorDict: Map<number, [number, number, number]>= new Map([
-    //     [1, [255, 0, 0]],
-    //     [2, [0, 255, 0]],
-    // ]);
-
     // TODO this is too messy all using useStore
-    const { labelDict, colorDict, setColorDict } =
-        useStore(["labelDict", "colorDict", "setColorDict"]);
+    const { labelDict, colorDict, setColorDict, textData } =
+        useDefaultStore(["labelDict", "colorDict", "setColorDict", "textData" ]);
 
     function changeLabelColor(i: number, newColor: [number, number, number]) {
         setColorDict(new Map([...colorDict, [i, newColor]]));
     }
 
     // for search
-    // const searchResult: SampleTag[] = [
-    //     {
-    //         num: 1,
-    //         class: 'code'
-    //     },
-    //     {
-    //         num: 2,
-    //         class: 'comment'
-    //     }
-    // ];
+    const searchResultDemo: SampleTag[] = [
+        {
+            num: 1,
+            title: 'code'
+        },
+        {
+            num: 2,
+            title: 'comment'
+        }
+    ];
 
     // NOTE always add state as middle dependency
-    const [searchText, setSearchText] = useState('');
-    const [searchResult, setSearchResult] = useState<SampleTag[]>([]);
+    const [searchValue, setSearchValue] = useState('');
+    const { textData: searchFromOptions } = useDefaultStore(['textData']);
 
-    // TODO do not directly access result here
-    const searchByToken = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const searchText = e.target.value;
-        if (searchText.length === 0) {
-            setSearchResult([]);
+    const limitOfHistory = 5;
+    const [searchHistory, setSearchHistory] = useState<string[]>([]);
+    const searchHistoryFiltered = searchHistory.filter((item) => item.includes(searchValue));
+    const [searchHistoryOpen, setSearchHistoryOpen] = useState(false);
+    const searchElementRef = useRef<RefSelectProps>(null);
+
+    const [allSearchResult, setAllSearchResult] = useState<SampleTag[]>([]);
+
+    const searchFrom = (text: string, items: SampleTag[], limit: number | null = 3) => {
+        const res: SampleTag[] = [];
+
+        let cnt = 0;
+
+        for (const item of items) {
+            if (item.title.includes(text)) {
+                if (limit !== null && cnt >= limit) {
+                    return res;
+                }
+                res.push(item);
+                cnt++;
+            }
+        }
+
+        return res;
+    }
+
+    const handleSearch = (text: string, byEnter: boolean = false) => {
+        if (text === searchValue) return;
+        setSearchValue(text);
+
+        // prevent searching all
+        if (!text) {
+            setAllSearchResult([]);
+            setSearchHistoryOpen(false);
             return;
         }
 
-        if (allEpochsProjectionData[epoch] === undefined) return;
-        const tokensWithIndex = allEpochsProjectionData[epoch].tokens.entries();
+        setSearchHistoryOpen(true);
 
-        setSearchResult(Array.from(tokensWithIndex).filter(([idx, token]) => token.includes(searchText)).map(([num, title]) => ({ num, title })));
+        const res = searchFrom(text, searchFromOptions.map((v, i) => {
+            return {
+                num: i,
+                title: v
+            }
+        }), null);
+        setAllSearchResult(res);
+
+        if (byEnter) {
+            addHistory(text);
+        }
     };
+    const addHistory = (text: string) => {
+        if (!text) return;
 
-    const clearSearch = () => {
-        setSearchResult([]);
-    };
+        const nonDuplicateHistory = searchHistory.filter((item) => item !== text);
+        setSearchHistory([text, ...nonDuplicateHistory].slice(0, limitOfHistory));
+    }
+    const renderSearchHistoryOption = (text: string) => {
+        return {
+            value: text,
+            label: text
+        }
+    }
+    const searchHistoryRender = (history: string[]) => {
+        return history.map(renderSearchHistoryOption);
+    }
 
-    // for selection
-    // const [selectedItems, setSelectedItems] = useState([
-    //     {
-    //         num: 1,
-    //         class: 'code'
-    //     },
-    //     {
-    //         num: 2,
-    //         class: 'comment'
-    //     }
-    // ]);
+    const searchResultRender = (item: SampleTag) => {
+        return (
+            <List.Item
+                className={"search-result-sample" + (highlightContext.checkLocked(item.num) ? ' locked' : '')}
+                onClick={() => { highlightContext.switchLocked(item.num) }}
+            >
+                <div className="search-result-sample-field">
+                    <span className="field-tag tag-1">index</span>
+                    <span className="field-value">{item.num}</span>
+                </div>
+                <div className="search-result-sample-field">
+                    <span className="field-tag tag-2">text</span>
+                    <span className="field-value">{item.title}</span>
+                </div>
+            </List.Item>
+        )
+    }
 
     // TODO do not directly access result here
-    const { highlightContext, epoch, allEpochsProjectionData } = useStore(["highlightContext", "epoch", "allEpochsProjectionData"]);
+    const { highlightContext, epoch, allEpochsProjectionData } = useDefaultStore(["highlightContext", "epoch", "allEpochsProjectionData"]);
     const [selectedItems, setSelectedItems] = useState<SampleTag[]>([]);
 
     const handleClose = (item: SampleTag) => {
@@ -139,7 +185,8 @@ export function RightSidebar() {
         const listener = () => {
             if (allEpochsProjectionData[epoch] === undefined) return;
 
-            const tokens = allEpochsProjectionData[epoch].tokens;
+            // TODO wrap "allEpochsProjectionData" as a delayed get object
+            const tokens = textData;
             setSelectedItems(Array.from(highlightContext.lockedIndices).map((num) => ({
                 num,
                 title: tokens[num]!
@@ -147,36 +194,76 @@ export function RightSidebar() {
         };
 
         listener();
-        highlightContext.addSelectedChangedListener(listener);
+        highlightContext.addHighlightChangedListener(listener);
         return () => {
-            highlightContext.removeSelectedChangedListener(listener);
+            highlightContext.removeHighlightChangedListener(listener);
         };
-    }, [allEpochsProjectionData, epoch, highlightContext, labelDict]);
+    }, [allEpochsProjectionData, epoch, highlightContext, labelDict, textData]);
 
     return (
         <div className="info-column">
-            <div className="functional-block">
-                <div className="component-block">
-                    <div className="label">Search</div>
-                    <Input allowClear onInput={searchByToken} onClear={clearSearch}/>
-                    {<List className="margin-before search-result"
-                        size="small"
-                        bordered
-                        dataSource={searchResult}
-                        renderItem={(item) =>
-                            <List.Item
-                                onClick={() => { highlightContext.switchLocked(item.num) }}
-                                style={{ backgroundColor: highlightContext.checkLocked(item.num) ? 'white' : 'unset' }}
-                            >
-                                <span className="fade-num">{item.num}.</span><span className="inline-margin-left">{item.title}</span>
-                            </List.Item>}
-                    />}
-                </div>
-            </div>
+            <FunctionalBlock label="Search">
+                <AutoComplete
+                    style={{ marginTop: '3px' }}
+
+                    ref={searchElementRef}
+                    options={searchHistoryRender(searchHistoryFiltered)}
+                    value={searchValue}
+                    open={false}
+
+                    onChange={(value) => { handleSearch(value) }}
+                    onBlur={() => {
+                        addHistory(searchValue);    // TODO only add successful history
+                        setSearchHistoryOpen(false);
+                    }}
+                    onFocus={() => handleSearch(searchValue)}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                            handleSearch(searchValue, true);
+                            setSearchHistoryOpen(false);
+                        } else if (e.key === 'Escape') {
+                            searchElementRef.current?.blur();
+                        }
+                    }}
+                    onSelect={() => {
+                        searchElementRef.current?.blur();
+                    }}
+                    onClear={() => {
+                        setSearchHistoryOpen(false);
+                    }}
+
+                    defaultActiveFirstOption={false}
+                    notFoundContent={<div className='alt-text placeholder-block'>No item found</div>}
+                    allowClear
+                >
+                    <Input onClick={() => {
+                        setSearchHistoryOpen(true);
+                    }}/>
+                </AutoComplete>
+                {
+                    (allSearchResult.length > 0 || searchValue !== '')
+                        &&
+                        <ComponentBlock label="Search Result">
+                            {
+                                allSearchResult.length > 0
+                                    ?
+                                    (
+                                            <List className="search-result"
+                                                size="small"
+                                                bordered
+                                                dataSource={allSearchResult}
+                                                renderItem={searchResultRender}
+                                            />
+                                    )
+                                    :
+                                    (searchValue && <div className='alt-text placeholder-block'>No item found</div>)
+                            }
+                        </ComponentBlock>
+                }
+            </FunctionalBlock>
             <Divider></Divider>
-            <div className="functional-block">
-                <div className="component-block">
-                    <div className="label">Classes</div>
+            <FunctionalBlock label="Categories">
+                <ComponentBlock label="Classes">
                     <div className="class-list">
                         {
                             Array.from(labelDict.keys()).length
@@ -193,12 +280,11 @@ export function RightSidebar() {
                                 <div className='alt-text placeholder-block'>No class is determined</div>
                         }
                     </div>
-                </div>
-            </div>
+                </ComponentBlock>
+            </FunctionalBlock>
             <Divider />
-            <div className="functional-block">
-                <div className="component-block">
-                    <div className="label">Selected</div>
+            <FunctionalBlock label="Selected">
+                <ComponentBlock>
                     <div className="tag-list">
                         {
                             selectedItems.length
@@ -221,8 +307,8 @@ export function RightSidebar() {
                                 <div className='alt-text placeholder-block'>No selected item</div>
                         }
                     </div>
-                </div>
-            </div>
+                </ComponentBlock>
+            </FunctionalBlock>
             <Divider />
         </div>
     )

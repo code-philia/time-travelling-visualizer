@@ -1,63 +1,10 @@
-import { useEffect } from "react";
 import { LeftSidebar } from "./component/left-sidebar"
 import { MainBlock } from './component/main-block'
 import { RightSidebar } from './component/right-sidebar'
-import { fetchProjectionData, fetchUmapProjectionData } from "./communication/api";
-import { useStore } from "./state/store";
-import { HighlightContext, randomColor } from "./component/canvas/types";
 import { Button } from "antd";
-import { SettingOutlined, SettingTwoTone } from "@ant-design/icons";
-
-function isInitialState(contentPath: string): boolean {
-    return contentPath.trim() === "";
-}
+import { SettingOutlined } from "@ant-design/icons";
 
 function App() {
-    const { contentPath, epoch, allEpochsProjectionData, setProjectionDataAtEpoch, updateUUID } = useStore(['contentPath', 'epoch', 'allEpochsProjectionData', 'setProjectionDataAtEpoch', 'updateUUID']);
-
-    const { setHighlightContext } = useStore(['setHighlightContext']);
-    let shouldSetHighlightContext = false;
-
-    useEffect(() => {
-        shouldSetHighlightContext = true;
-    }, [contentPath]);
-
-    // FIXME this is updating too many things
-    useEffect(() => {
-        (async () => {
-            if (isInitialState(contentPath)) return;
-            if (allEpochsProjectionData[epoch]) return;
-
-            const res = await fetchProjectionData(contentPath, epoch);
-            if (res) {
-                setProjectionDataAtEpoch(epoch, res);
-                // TODO judge before then do setting highlight context later, does this really work normally?
-                if (shouldSetHighlightContext) {
-                    setHighlightContext(new HighlightContext());
-                }
-            }
-        })();
-    }, [allEpochsProjectionData, contentPath, epoch, setHighlightContext, setProjectionDataAtEpoch, shouldSetHighlightContext, updateUUID]);
-
-    const { setLabelDict, setColorDict } = useStore(["setLabelDict", "setColorDict"]);
-    useEffect(() => {
-        // TODO extract this currentEpochData to a useStore
-        const currentEpochData = allEpochsProjectionData[epoch];
-        if (!currentEpochData) return;
-
-        const labelDict = new Map<number, string>();
-        const colorDict = new Map<number, [number, number, number]>();
-
-        const label_text_list = currentEpochData.label_text_list;
-
-        label_text_list.forEach((labelText, i) => {
-            labelDict.set(i, labelText);
-            colorDict.set(i, randomColor(i));
-        });
-        setLabelDict(labelDict);
-        setColorDict(colorDict);
-    }, [allEpochsProjectionData, epoch, setColorDict, setLabelDict])
-
     return (
         <div id='app'>
             <header className='app-header natural-diffuse-shadow strong-down-shadow'>

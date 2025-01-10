@@ -24,20 +24,22 @@ function repaintSprite(canvas: HTMLCanvasElement, rawPointsData: CommonPointsGeo
     ctx.font = `${scale * initFontSize}px "Segoe UI", Tahoma, Geneva, Verdana, sans-serif`;
 
     rawPointsData.positions.forEach((pos, i) => {
+        const label = spriteData.labels[i];
+        if (label === undefined) return;
+
         const [x, y] = pos;
         const [sx, sy] = worldPositionToScreenPosition(
             [x, y],
             camera,
             canvasElement.getBoundingClientRect()
         );
-        const label = spriteData.labels[i];
 
         const pixelRate = 2;
         const offsetRight = (initFontSize / 2 + pointsDefaultSize) / 2;
         const offsetDown = (pointsDefaultSize) / 2;
 
         ctx.fillStyle = `rgba(0, 0, 0, ${rawPointsData.alphas[i]})`;
-        ctx.fillText(`${i}. ${label}`, sx * pixelRate + offsetRight * scale, sy * pixelRate + offsetDown * scale);
+        ctx.fillText(label, sx * pixelRate + offsetRight * scale, sy * pixelRate + offsetDown * scale);
     });
 }
 
