@@ -8,9 +8,9 @@
             "name": "Launch Visualizer Backend",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/Tool/server/server.py",
+            "program": "${workspaceFolder}/tool/server/server.py",
             "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}/Tool/server"
+            "cwd": "${workspaceFolder}/tool/server"
         },
         {
             "type": "starlark",

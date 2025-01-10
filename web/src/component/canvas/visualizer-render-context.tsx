@@ -1,5 +1,4 @@
 import { OrthographicCamera, Vector4 } from "three";
-import { MapControls } from "three-stdlib";
 import { BoundaryProps } from "../../state/types";
 
 type WebElementRect = {
@@ -15,7 +14,6 @@ export class VisualizerRenderContext {
 
     // camera and control instances
     camera?: OrthographicCamera;
-    controls?: MapControls;
 
     // computed attributes
     aspect: number;
@@ -55,11 +53,6 @@ export class VisualizerRenderContext {
     setCamera(camera: OrthographicCamera) {
         this.camera = camera;
         return camera;
-    }
-
-    setControls(controls: MapControls) {
-        this.controls = controls;
-        return controls;
     }
 }
 

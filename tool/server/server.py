@@ -70,10 +70,8 @@ def update_projection():
 
     config = read_file_as_json(os.path.join(content_path, 'config.json'))
 
-    try:
-        projection, label_list = load_projection(config, content_path, vis_method, epoch)
-    except Exception as e:
-        return make_response(jsonify({'error_message': 'Error in loading projection'}), 400)
+    # NOTE dont't hide exception to backend output
+    projection, label_list = load_projection(config, content_path, vis_method, epoch)
 
     result = jsonify({
         'config': config,
@@ -107,7 +105,7 @@ def get_background_image():
         bgimg = load_background_image_base64(config, content_path, vis_method, epoch)
     except Exception as e:
         return make_response(jsonify({'error_message': 'Error in loading background image'}), 400)
-    
+
     result = jsonify({
         'bgimg': bgimg # 'data:image/png;base64,' + img_stream
     })
@@ -192,7 +190,7 @@ def get_representation_at_epoch():
         repr = load_representation(config, content_path, epoch)
     except Exception as e:
         return make_response(jsonify({'error_message': 'Error in loading representation'}), 400)
-    
+
     result = jsonify({
         'representation': repr
     })

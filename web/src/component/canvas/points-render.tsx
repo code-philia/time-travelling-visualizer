@@ -1,5 +1,5 @@
 import { ThreeEvent } from '@react-three/fiber';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { BufferAttribute } from 'three';
 import { isCircleHovered, VisualizerRenderContext } from './visualizer-render-context';
 import { CommonPointsGeography } from './types';
@@ -53,15 +53,27 @@ export function PointsRender({ rawPointsData, visualizerRenderContext, eventList
 
     const numPoints = rawPointsData.positions.length;
 
+    // check and preprocess points
+
     const positions: number[] = [];
     const colors: number[] = [];
 
-    for (let i = 0; i < numPoints; ++i) {
-        const rawPos = rawPointsData.positions[i];
-        const rawColor = rawPointsData.colors[i];
+    let shouldRender = true;
 
-        positions.push(rawPos[0], rawPos[1], 0);
-        colors.push(rawColor[0], rawColor[1], rawColor[2]);
+    if (!(
+        rawPointsData.colors.length === numPoints &&
+        rawPointsData.sizes.length === numPoints &&
+        rawPointsData.alphas.length === numPoints
+    )) {
+        shouldRender = false;
+    } else {
+        for (let i = 0; i < numPoints; ++i) {
+            const rawPos = rawPointsData.positions[i];
+            const rawColor = rawPointsData.colors[i];
+
+            positions.push(rawPos[0], rawPos[1], 0);
+            colors.push(rawColor[0], rawColor[1], rawColor[2]);
+        }
     }
 
     const geo = {
@@ -129,8 +141,13 @@ export function PointsRender({ rawPointsData, visualizerRenderContext, eventList
         };
     }, [eventListeners, rawPointsData.positions, rawPointsData.sizes, rc]);
 
+    if (!shouldRender) {
+        return null;
+    }
+
+    // TODO force update based on geo.sizes.length is unsafe. use another update notifier implementation
     return (
-        <points onPointerMove={handlePointerMove} onClick={handleClick} frustumCulled={false}>
+        <points onPointerMove={handlePointerMove} onClick={handleClick} frustumCulled={false} key={`${geo.sizes.length}`}>
             <bufferGeometry>
                 <bufferAttribute ref={positionRef} attach="attributes-position" count={numPoints} array={geo.positions} itemSize={3} />
                 <bufferAttribute ref={colorRef} attach="attributes-color" count={numPoints} array={geo.colors} itemSize={3} />

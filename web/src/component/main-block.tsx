@@ -1,44 +1,50 @@
 import { useState, useEffect, useMemo } from 'react'
-import { CanvasContainer, Plot2DCanvasContext, Plot2DDataContext } from './canvas/canvas'
-import { useStore } from '../state/store'
-import { CommonPointsGeography, extractConnectedPoints, extractSpriteData, pointsDefaultSize, SpriteData, UmapPointsNeighborRelationship } from './canvas/types';
-import ChartComponent from './canvas/vchart';
+import { PlotContainer, Plot2DCanvasContext, Plot2DDataContext, createPlot2DCanvasContextFrom } from './canvas/canvas'
+import { useDefaultStore } from '../state/store'
+import { CommonPointsGeography, extractConnectedPoints, pointsDefaultSize, createEmptyCommonPointsGeography } from './canvas/types';
+import { BriefProjectionResult } from '../communication/api';
+import { useSetUpProjection } from '../state/state-actions';
 
 function Timeline({ epoch, epochs, onSwitchEpoch }: { epoch: number, epochs: number[], onSwitchEpoch: (epoch: number) => void }) {
-    const [nodes, setNodes] = useState<{ value: number, x: number, y: number }[]>([]);
-    const [svgDimensions, setSvgDimensions] = useState({ width: 0, height: 0 });
-
     // Set the initial epoch from the passed epochs array
     useEffect(() => {
         if (epochs.length > 0) {
             onSwitchEpoch(epochs[0]);
         }
-    }, [epochs, onSwitchEpoch]);
+    }, [epochs]);
+
+    const nodes = useMemo(() => {
+        if (epochs.length > 0) {
+            return epochs.map((epoch, index) => ({
+                value: epoch,
+                x: index * 40,
+                y: 30,
+            }));
+        }
+        return [];
+    }, [epochs]);
 
     // Convert epochs into a list of nodes with x and y positions
-    useEffect(() => {
-        if (epochs.length > 0) {
-            const newNodes = epochs.map((epoch, index) => ({
-                value: epoch,
-                x: index * 40, // Simple linear positioning (adjust as needed)
-                y: 30, // All nodes on the same horizontal line
-            }));
-            setNodes(newNodes);
-
-            // Calculate the bounds for all elements (nodes and links)
-            const minX = Math.min(...newNodes.map(node => node.x)) - 20; // Add padding
-            const maxX = Math.max(...newNodes.map(node => node.x)) + 20; // Add padding
-            const minY = Math.min(...newNodes.map(node => node.y)) - 35; // Add padding
-            const maxY = Math.max(...newNodes.map(node => node.y)) + 35; // Add padding
+    const svgDimensions = useMemo(() => {
+        if (nodes.length > 0) {
+            // Calculate the bounds for all elements (nodes and links) with padding
+            const minX = Math.min(...nodes.map(node => node.x)) - 20;
+            const maxX = Math.max(...nodes.map(node => node.x)) + 20;
+            const minY = Math.min(...nodes.map(node => node.y)) - 35;
+            const maxY = Math.max(...nodes.map(node => node.y)) + 35;
 
             // Set the SVG dimensions to fit all nodes
-            setSvgDimensions({
+            return {
                 width: maxX - minX,
                 height: maxY - minY,
-            });
-            console.log(maxX - minX, maxY - minY);
+            }
+        } else {
+            return {
+                width: 0,
+                height: 0,
+            }
         }
-    }, [epochs]);
+    }, [nodes]);
 
     // Render nodes and links (simple lines between nodes)
     return (
@@ -46,7 +52,7 @@ function Timeline({ epoch, epochs, onSwitchEpoch }: { epoch: number, epochs: num
             width={svgDimensions.width}
             height={svgDimensions.height}
             // viewBox={`0 0 ${svgDimensions.width} ${svgDimensions.height}`}
-            className="timeLinesvg"
+            className="timeline-svg"
         >
             <g transform="translate(20, 0)">
                 {/* Links (lines between nodes) */}
@@ -95,140 +101,171 @@ function Timeline({ epoch, epochs, onSwitchEpoch }: { epoch: number, epochs: num
 };
 
 export function MainBlock() {
-    const { epoch, setEpoch } = useStore(['epoch', 'setEpoch']);
+    const { showNumber, showText } = useDefaultStore(['showNumber', 'showText']);
 
-    const { availableEpochs, allEpochsProjectionData, updateUUID, setAvailableEpochs } = useStore(["availableEpochs", "allEpochsProjectionData", "updateUUID", "setAvailableEpochs"]);
+    const { epoch, setEpoch } = useDefaultStore(['epoch', 'setEpoch']);
 
-    const [canvasContainerTabs, setCanvasContainerTabs] = useState<number[]>([]);
+    const { availableEpochs, allEpochsProjectionData, textData } = useDefaultStore(["contentPath", "updateUUID", "availableEpochs", "allEpochsProjectionData", "updateUUID", "textData"]);
 
-    const { rawPointsGeography, setRawPointsGeography } = useStore(['rawPointsGeography', 'setRawPointsGeography']);
-    const { colorDict } = useStore(['colorDict']);
-    const [finalPointsGeography, setFinalPointsGeography] = useState<CommonPointsGeography | null>(null);
-    const [spriteData, setSpriteData] = useState<SpriteData | null>(null);
+    const setUpProjections = useSetUpProjection();
 
-    const { highlightContext } = useStore(['highlightContext']);
+    useEffect(() => {
+        if (availableEpochs.length > 0) {
+            setEpoch(availableEpochs[0]);
+        }
+    }, [availableEpochs, setEpoch]);
 
-    // FIXME move this to new file
-    const [neighborhood, setNeighborhood] = useState<UmapPointsNeighborRelationship | null>(null);
+    const { colorDict } = useDefaultStore(['colorDict']);
+
+    const { highlightContext } = useDefaultStore(['highlightContext']);
 
     // TODO all shared data are using useStore now. Decouple some of them
     // const highlightContext = useRef(new HighlightContext());
-    const [plot2DDataContext, setPlot2DDataContext] = useState<Plot2DDataContext>(new Plot2DDataContext());
-    const [plot2DCanvasContext, setPlot2DCanvasContext] = useState<Plot2DCanvasContext>(new Plot2DCanvasContext());
 
-    // FIXME this is useless, when to implement it?
-    useEffect(() => {
-        if (!canvasContainerTabs.includes(epoch)) {
-            setCanvasContainerTabs((prev) => {
-                if (!prev.includes(epoch)) {
-                    return [...prev, epoch];
-                }
-                return prev;
-            });
-        }
-    }, [epoch, canvasContainerTabs]);
-
-    useEffect(() => {
-        if (!allEpochsProjectionData[epoch]) return;
-        const res = allEpochsProjectionData[epoch];
-
-        const labelsAsNumber = res.labels;
-
+    // only set a finally computed attribute as state
+    const [finalPointsGeography, setFinalPointsGeography] = useState<CommonPointsGeography>(createEmptyCommonPointsGeography());
+    const currentEpochData = useMemo(() => allEpochsProjectionData[epoch] as BriefProjectionResult | undefined, [allEpochsProjectionData, epoch]);
+    const originalPointsGeography = useMemo(() => {
         const positions: [number, number, number][] = [];
         const labels: number[] = [];
         const colors: [number, number, number][] = [];
         const sizes: number[] = [];
         const alphas: number[] = [];
-        res.proj.forEach((point, i) => {
-            const color = colorDict.get(labelsAsNumber[i]);
-            if (color === undefined) return;
+        const data = {
+            positions, labels, colors, sizes, alphas
+        };
 
+        if (!currentEpochData) return data;
+
+        currentEpochData.proj.forEach((point, i) => {
             positions.push([point[0], point[1], 0]);
-            labels.push(labelsAsNumber[i]);
-            colors.push([color[0] / 255, color[1] / 255, color[2] / 255]);
+            // labels.push(labelsAsNumber[i]);
+            // colors.push([color[0] / 255, color[1] / 255, color[2] / 255]);
             sizes.push(pointsDefaultSize);
             alphas.push(1.0);
         });
 
+        return data;
+    }, [currentEpochData]);
+
+    const appliedColorPointsGeography = useMemo(() => {
+        const { positions, sizes, alphas } = originalPointsGeography;
+        const colors: [number, number, number][] = [];
+        const labels: number[] = [];
+
         const data = {
-            positions, labels, colors, sizes, alphas
+            positions, labels, sizes, alphas, colors
         };
-        setRawPointsGeography(data);
 
-        // setFinalPointsGeography(data);
-        // setPlot2DCanvasContext(new Plot2DCanvasContext(data));
+        if (!currentEpochData) return data;
 
-        // const spriteData = extractSpriteData(res);
-        // setSpriteData(spriteData);
+        const labelsAsNumber = currentEpochData.labels.map((label) => parseInt(label));
+        currentEpochData.proj.forEach((point, i) => {
+            const color = colorDict.get(labelsAsNumber[i]);
+            if (color === undefined) return;
 
-        // const neighborhood = extractConnectedPoints(res);
-        // setNeighborhood(neighborhood);
-    }, [allEpochsProjectionData, epoch, updateUUID, colorDict, setRawPointsGeography]);
+            colors[i] = ([color[0] / 255, color[1] / 255, color[2] / 255]);
+        });
+
+        return data;
+    }, [originalPointsGeography, currentEpochData, colorDict]);
+
+    const spriteData = useMemo(() => {
+        const renderedTextData: string[] = [];
+
+        if (showNumber || showText) {
+            textData.forEach((text, i) => {
+                let renderedText = "";
+                if (showNumber) {
+                    renderedText += `${i}. `;
+                }
+                if (showText) {
+                    renderedText += text;
+                }
+                renderedTextData.push(renderedText);
+            });
+        }
+
+        return {
+            labels: renderedTextData
+        }
+    }, [showNumber, showText, textData]);
+
+    const neighborhood = useMemo(() => {
+        return currentEpochData ? extractConnectedPoints(currentEpochData) : undefined;
+    }, [currentEpochData]);
+
+    const plot2DCanvasContext = useMemo(() => {
+        return createPlot2DCanvasContextFrom(originalPointsGeography);
+    }, [originalPointsGeography]);
+
+    const plot2DDataContext = useMemo(() => {
+        return new Plot2DDataContext(finalPointsGeography, spriteData);
+    }, [finalPointsGeography, spriteData]);
+
+    const { revealNeighborSameType, revealNeighborCrossType, neighborSameType, neighborCrossType } = useDefaultStore(['revealNeighborSameType', 'revealNeighborCrossType', 'neighborSameType', 'neighborCrossType']);
 
     useEffect(() => {
-        if (finalPointsGeography === null) return;
-        setPlot2DDataContext(new Plot2DDataContext(finalPointsGeography, spriteData ?? undefined));
-    }, [finalPointsGeography, spriteData]);
+        // TODO this is data processing (or business) fair, move it to another module, and should be done immediately together with some atomic update operation
+        const neighborPoints: number[][][] = [];
+        if (revealNeighborSameType) {
+            neighborPoints.push(neighborSameType);
+        }
+        if (revealNeighborCrossType) {
+            neighborPoints.push(neighborCrossType);
+        }
+
+        const mergedNeighborPoints = neighborPoints.reduce((a, b) => {
+            const base = a.length >= b.length ? a : b;
+            const guest = a.length >= b.length ? b : a;
+            return base.map((v, i) => {
+                return [...v, ...(guest[i] ?? [])];
+            });
+        }, []);
+
+        highlightContext.setNeighborPoints(mergedNeighborPoints);
+    }, [revealNeighborSameType, revealNeighborCrossType, highlightContext, neighborSameType, neighborCrossType]);
 
     // for immediate update highlight from outside control
     useEffect(() => {
-        if (rawPointsGeography === null) return;
         const listener = () => {
-            const displayedPoints = highlightContext.tryUpdateHighlight(rawPointsGeography, false);     // TODO can this be moved into the HighlightContext?
+            const displayedPoints = highlightContext.tryUpdateHighlight(appliedColorPointsGeography, false);     // TODO can this be moved into the HighlightContext?
             if (displayedPoints) setFinalPointsGeography(displayedPoints);
         };
 
         listener();
-        highlightContext.addSelectedChangedListener(listener);
+        highlightContext.addHighlightChangedListener(listener);
         return () => {
-            highlightContext.removeSelectedChangedListener(listener);
+            highlightContext.removeHighlightChangedListener(listener);
         };
-    }, [highlightContext, rawPointsGeography]);
+    }, [highlightContext, appliedColorPointsGeography]);
 
-    const onHoverPoint = useMemo(() =>
-    ((idx: number | undefined) => {
-        if (rawPointsGeography === null) return;
+    const onHoverPoint = (idx: number | undefined) => highlightContext.updateHovered(idx);
 
-        highlightContext.updateHovered(idx);
-
-        const displayedPoints = highlightContext.tryUpdateHighlight(rawPointsGeography);
-        if (displayedPoints) setFinalPointsGeography(displayedPoints);
-    }), [highlightContext, rawPointsGeography]);
-
-    const onClickPoint = useMemo(() =>
-    ((idx: number) => {
-        if (rawPointsGeography === null) return;
-
+    const onClickPoint = (idx: number) => {
         if (highlightContext.lockedIndices.has(idx)) {
             highlightContext.removeLocked(idx);
         } else {
             highlightContext.addLocked(idx);
         }
-
-        const displayedPoints = highlightContext.tryUpdateHighlight(rawPointsGeography);     // TODO can this be moved into the HighlightContext?
-        if (displayedPoints) setFinalPointsGeography(displayedPoints);
-    }), [highlightContext, rawPointsGeography]);
+    };
 
     // only consider single container for now
     return (
         <div className="canvas-column">
-            {/* <div id="canvas-wrapper">
-                <CanvasContainer
-                    plotDataContext={plot2DDataContext}
-                    plotCanvasContext={plot2DCanvasContext}
-                    neighborRelationship={neighborhood ?? undefined}
-                    eventListeners={{ onHoverPoint, onClickPoint }}
-                />
-            </div> */}
             <div id="canvas-wrapper" style={{ height: "100%", width: "100%" }}>
                 <ChartComponent
                     rawPointsGeography={rawPointsGeography}
                 />
             </div>
             <div id="footer">
-                <div>Epochs</div>
+                <div className="functional-block-title">Epochs</div>
                 <div style={{ overflow: "auto" }}>
-                    <Timeline epoch={epoch} epochs={availableEpochs} onSwitchEpoch={setEpoch} />
+                    <Timeline epoch={epoch} epochs={availableEpochs} onSwitchEpoch={(epoch) => {
+                        setUpProjections(epoch).then(
+                            () => setEpoch(epoch)
+                        );
+                    }} />
                 </div>
             </div>
         </div >

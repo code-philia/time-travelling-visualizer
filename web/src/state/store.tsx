@@ -3,7 +3,7 @@ import { StoreApi, UseBoundStore } from "zustand";
 import { shallow } from "zustand/shallow";
 import { useStoreWithEqualityFn } from "zustand/traditional";
 import { CommonPointsGeography, ProjectionProps } from "../state/types";
-import { ProjectionResult, UmapProjectionResult } from "../communication/api";
+import { BriefProjectionResult } from "../communication/api";
 import { HighlightContext } from "../component/canvas/types";
 
 const initProjectionRes: ProjectionProps = {
@@ -68,12 +68,23 @@ type BaseMutableGlobalStore = {
     labelNameDict: Record<number, string>;
     timelineData: number[] | undefined;
     updateUUID: string;
-    allEpochsProjectionData: Record<number, ProjectionResult>;
+    allEpochsProjectionData: Record<number, BriefProjectionResult>;
     availableEpochs: number[];
     colorDict: Map<number, [number, number, number]>;
     labelDict: Map<number, string>;
     highlightContext: HighlightContext;
     rawPointsGeography: CommonPointsGeography | null;
+
+    textData: string[];
+
+    // settings
+    backendHost: string;
+    showNumber: boolean;
+    showText: boolean;
+    revealNeighborSameType: boolean;
+    revealNeighborCrossType: boolean;
+    neighborSameType: number[][];
+    neighborCrossType: number[][];
 }
 
 const initMutableGlobalStore: BaseMutableGlobalStore = {
@@ -96,16 +107,27 @@ const initMutableGlobalStore: BaseMutableGlobalStore = {
     labelDict: new Map(),
     highlightContext: new HighlightContext(),
     rawPointsGeography: null,
+
+    textData: [],
+
+    // settings
+    backendHost: 'localhost:5010',
+    showNumber: true,
+    showText: true,
+    revealNeighborSameType: false,
+    revealNeighborCrossType: false,
+    neighborSameType: [],
+    neighborCrossType: [],
 };
 
 type MutableGlobalStore = WithSettersOnAttr<BaseMutableGlobalStore>;
 
 type CustomGlobalStore = {
-    setProjectionDataAtEpoch: (epoch: number, data: ProjectionResult) => void;
+    setProjectionDataAtEpoch: (epoch: number, data: BriefProjectionResult) => void;
 }
 function createCustomGlobalStore(set: SetFunction<GlobalStore>): CustomGlobalStore {
     return {
-        setProjectionDataAtEpoch: (epoch: number, data: ProjectionResult) => set((state) => ({
+        setProjectionDataAtEpoch: (epoch: number, data: BriefProjectionResult) => set((state) => ({
             allEpochsProjectionData: {
                 ...state.allEpochsProjectionData,
                 [epoch]: data,
@@ -133,10 +155,10 @@ const useGlobalStore = create<GlobalStore>((set) => ({
 }));    // don't use "as xxx" here so that we can check
 
 // comparison-based update
-export const useShallow = <T, K extends keyof T>(
+export function useShallow<T, K extends keyof T>(
     store: UseBoundStore<StoreApi<T>>,
     keys: K[]
-): Pick<T, K> => {
+): Pick<T, K> {
     return useStoreWithEqualityFn(
         store,
         (state) =>
@@ -151,6 +173,30 @@ export const useShallow = <T, K extends keyof T>(
     );
 };
 
-export const useStore = <K extends keyof GlobalStore>(keys: K[]) => {
+export function useShallowAll<T>(store: UseBoundStore<StoreApi<T>>): T {
+    return useStoreWithEqualityFn(store, (state) => state, shallow);
+};
+
+export function useOnSetOperation<T, K extends keyof T>(
+    store: UseBoundStore<StoreApi<T>>,
+    keys: K[]
+): Pick<T, K> {
+    const selector = (state: T) =>
+        keys.reduce(
+            (prev, curr) => {
+                prev[curr] = state[curr];
+                return prev;
+            },
+            {} as Pick<T, K>
+        );
+
+    return store(selector);
+}
+
+export const useDefaultStore = <K extends keyof GlobalStore>(keys: K[]) => {
     return useShallow(useGlobalStore, keys);
 };
+
+export const useDefaultStoreAll = () => {
+    return useShallowAll(useGlobalStore);
+}

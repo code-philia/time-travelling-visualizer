@@ -62,8 +62,15 @@ body {
 .placeholder-block {
     font-size: smaller;
     text-align: center;
-    width: 100%;
     padding: 2em;
+    margin: auto;
+}
+
+.placeholder-block-thin {
+    font-size: smaller;
+    text-align: center;
+    padding: 0.3em 2em;
+    margin: auto;
 }
 
 /* Resetting antd Styles */
@@ -217,7 +224,40 @@ body {
 
 /* Custom Design Blocks */
 
+.search-result-sample {
+    gap: 8px;
+    align-items: center;
+}
+
+.search-result-sample-field {
+    display: flex;
+    align-items: center;
+}
+
+.field-tag {
+    display: inline-block;
+    font-size: 10px;
+    padding: 0.5px 3px;
+    border-radius: 6px;
+    color: white;
+}
+
+.tag-1 {
+    background-color: #13b652;
+}
+
+.tag-2 {
+    background-color: #268feb;
+}
+
+.field-value {
+    display: inline-block;
+    font-size: 12px;
+    margin-left: 2px;
+}
+
 .label {
+  font-weight: lighter;
   margin-bottom: 0.3em;
 }
 
@@ -231,6 +271,10 @@ body {
 
 .functional-block {
     margin-bottom: 1em;
+}
+
+.functional-block-title {
+    font-weight: bolder;
 }
 
 .full-width {
@@ -264,6 +308,13 @@ input[type="color"] {
   border: 0;
   padding: 0;
   margin: 0;
+}
+
+::-moz-color-swatch {
+    border-radius: 0.5em;
+    border: 0;
+    padding: 0;
+    margin: 0;
 }
 
 .class-item input[type="color"] {
@@ -320,12 +371,13 @@ input[type="color"] {
 
 .ant-list.search-result .ant-list-item {
   cursor: pointer;
-  padding: 2px 16px;
+  padding: 4px 12px;
   justify-content: flex-start;
+  background-color: white;
 }
 
 .ant-list.search-result .ant-list-item:hover{
-  background-color: white;
+  background-color: #268feb30;
 }
 
 .tag-list {
