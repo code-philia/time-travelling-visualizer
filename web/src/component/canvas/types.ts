@@ -3,6 +3,30 @@ import { BriefProjectionResult } from "../../communication/api";
 
 export const pointsDefaultSize = 20;
 
+export interface VChartData {
+    positions: [number, number, number][];
+    labels: number[];
+    colors: [number, number, number][];
+    neighborSameType: number[][];
+    neighborCrossType: number[][];
+    predictionProps: number[][];
+    bgimg: string;
+    scale: number[];
+}
+
+export function createEmptyVChartData(): VChartData {
+    return {
+        positions: [],
+        labels: [],
+        colors: [],
+        neighborSameType: [],
+        neighborCrossType: [],
+        predictionProps: [],
+        bgimg: '',
+        scale: []
+    };
+}
+
 export interface CommonPointsGeography {
     positions: [number, number, number][];
     labels: number[];
