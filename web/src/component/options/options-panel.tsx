@@ -37,11 +37,12 @@ export function OptionsPanel() {
     const setUpDicts = useSetUpDicts();
 
     const dataTypeOptions = [{ label: 'Image', value: 'Image', }, { label: 'Text', value: 'Text', },];
+    const { showBgimg, setShowBgimg } = useDefaultStore(["showBgimg", "setShowBgimg"]);
 
     // display options
 
     const [displayNormalInfoOptions, displayNormalInfoChecked, setDisplayNormalInfoChecked] = useCheckOptions([
-        { label: 'Metadata', value: 'metadata' },
+        { label: 'Metadata', value: 'metadata' }, { label: 'Bgimg', value: 'bgimg' }
     ]);
     const [displayOnPlotOptions, displayOnPlotChecked, setDisplayOnPlotChecked] = useCheckOptions([
         'number', 'text'
@@ -65,6 +66,10 @@ export function OptionsPanel() {
         setShowNumber(displayOnPlotChecked.includes('number'));
         setShowText(displayOnPlotChecked.includes('text'));
     }, [displayOnPlotChecked, setShowNumber, setShowText]);
+
+    useEffect(() => {
+        setShowBgimg(displayNormalInfoChecked.includes('bgimg'));
+    }, [displayNormalInfoChecked, setShowBgimg]);
 
     useEffect(() => {
         const options = [];

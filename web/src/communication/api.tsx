@@ -88,6 +88,15 @@ function getOriginalData(contentPath: string, dataType: string, index: number, i
     return Fetch(`sprite${dataType}`, data);
 }
 
+export function getBgimg(contentPath: string, visMethod: string, epoch: number, options?: { host?: string }) {
+    const data = {
+        "content_path": contentPath,
+        "vis_method": visMethod,
+        "epoch": `${epoch}`
+    };
+    return basicUnsafePostWithJsonResponse('/getBackgroundImage', data, options);
+}
+
 export function getAttributeResource(contentPath: string, epoch: number, attributeName: string, options?: { host?: string }) {
     const data = {
         "content_path": contentPath,
