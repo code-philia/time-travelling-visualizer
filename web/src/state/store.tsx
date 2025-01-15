@@ -85,6 +85,17 @@ type BaseMutableGlobalStore = {
     revealNeighborCrossType: boolean;
     neighborSameType: number[][];
     neighborCrossType: number[][];
+    predictionProps: number[][];
+    showBgimg: boolean;
+
+    // filter
+    filterState: boolean;
+    filterType: 'label' | 'prediction';
+    filterValue: string;
+
+    // bgimg
+    bgimg: string;
+    scale: number[];
 }
 
 const initMutableGlobalStore: BaseMutableGlobalStore = {
@@ -118,6 +129,17 @@ const initMutableGlobalStore: BaseMutableGlobalStore = {
     revealNeighborCrossType: false,
     neighborSameType: [],
     neighborCrossType: [],
+    predictionProps: [],
+    showBgimg: false,
+
+    // filter
+    filterState: false,
+    filterType: 'label',
+    filterValue: '',
+
+    // bgimg
+    bgimg: '',
+    scale: [],
 };
 
 type MutableGlobalStore = WithSettersOnAttr<BaseMutableGlobalStore>;
