@@ -102,7 +102,7 @@ export function RightSidebar() {
         let cnt = 0;
 
         for (const item of items) {
-            if (item.title.includes(text)) {
+            if (item.title.toLowerCase().includes(text.toLowerCase())) {
                 if (limit !== null && cnt >= limit) {
                     return res;
                 }

@@ -3,6 +3,9 @@ import { MainBlock } from './component/main-block'
 import { RightSidebar } from './component/right-sidebar'
 import { Button } from "antd";
 import { SettingOutlined } from "@ant-design/icons";
+import BottomPanel from "./component/bottom-panel";
+
+import './index.css'
 
 function App() {
     return (
@@ -23,9 +26,12 @@ function App() {
                 </div>
             </header>
             <div className='app-body'>
-                <LeftSidebar />
-                <MainBlock />
-                <RightSidebar />
+                <div className='app-body-upper-part'>
+                    <LeftSidebar />
+                    <MainBlock />
+                    <RightSidebar />
+                </div>
+                <BottomPanel></BottomPanel>
             </div>
         </div>
     )
