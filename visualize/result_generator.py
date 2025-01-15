@@ -8,10 +8,10 @@ import numpy as np
 import base64
 
 # ---------------------
-# Visualizer:
+# ResultGenerator:
 # use projector to get and save background image
 # ---------------------
-class VisualizerAbstractClass(ABC):
+class ResultGeneratorAbstractClass(ABC):
     @abstractmethod
     def __init__(self, data_provider, projector, * args, **kawargs):
         pass
@@ -33,7 +33,7 @@ class VisualizerAbstractClass(ABC):
     def savefig(self, *args, **kwargs):
         pass
 
-class Visualizer(VisualizerAbstractClass):
+class ResultGenerator(ResultGeneratorAbstractClass):
     def __init__(self, config, data_provider, projector, cmap='tab10'):
         self.config = config
         self.data_provider = data_provider
@@ -411,7 +411,7 @@ class Visualizer(VisualizerAbstractClass):
         # color = np.concatenate((color, np.zeros((1,3))), axis=0)
         return color
 
-class DenseALvisualizer(Visualizer):
+class DenseALResultGenerator(ResultGenerator):
     def __init__(self, data_provider, projector, resolution, cmap='tab10'):
         super().__init__(data_provider, projector, resolution, cmap)
     

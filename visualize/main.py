@@ -4,7 +4,7 @@ import logging
 import argparse
 
 import torch
-from visualizer import Visualizer
+from result_generator import ResultGenerator
 from strategy.projector import DVIProjector, TimeVisProjector
 from strategy.DVIStrategy import DeepVisualInsight
 from strategy.TimeVisStrategy import TimeVis
@@ -30,11 +30,11 @@ def init_visualize_component(config, params):
     
     if config['visMethod'] == "DVI":
         projector = DVIProjector(config, params)
-        visualizer = Visualizer(config, dataProvider, projector)
+        visualizer = ResultGenerator(config, dataProvider, projector)
         strategy = DeepVisualInsight(config, params)
     elif config['visMethod'] == "TimeVis":
         projector = TimeVisProjector(config, params)
-        visualizer = Visualizer(config, dataProvider, projector)
+        visualizer = ResultGenerator(config, dataProvider, projector)
         strategy = TimeVis(config, params)
     else:
         raise NotImplementedError
