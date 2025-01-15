@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { fetchTrainingProcessStructure, fetchUmapProjectionData, getAttributeResource, getText } from "../communication/api";
+import { fetchTrainingProcessStructure, fetchUmapProjectionData, getAttributeResource, getBgimg, getText } from "../communication/api";
 import { HighlightContext, randomColor } from "../component/canvas/types";
 import { useDefaultStore } from "./store";
 
@@ -17,10 +17,10 @@ export function useSetUpTrainingProcess() {
             setEpoch(res['available_epochs'][0]);
         }
 
-        const text = await getText(contentPath, {
-            host: backendHost
-        });
-        setTextData(text['text_list'] ?? []);
+        // const text = await getText(contentPath, {
+        //     host: backendHost
+        // });
+        // setTextData(text['text_list'] ?? []);
 
         setHighlightContext(new HighlightContext());
 
@@ -31,10 +31,11 @@ export function useSetUpTrainingProcess() {
 
 export function useSetUpProjection() {
     // TODO avoid writing attribute twice
-    const { contentPath, allEpochsProjectionData, setAllEpochsProjectionData, backendHost, visMethod, setHighlightContext, setLabelDict, setColorDict, setNeighborSameType, setNeighborCrossType }
+    const { contentPath, allEpochsProjectionData, setAllEpochsProjectionData, backendHost, visMethod,
+        setHighlightContext, setLabelDict, setColorDict, setNeighborSameType, setNeighborCrossType, setPredictionProps, setBgimg, setScale }
         = useDefaultStore([
             'contentPath',
-            'allEpochsProjectionData','setProjectionDataAtEpoch',
+            'allEpochsProjectionData', 'setProjectionDataAtEpoch',
             'updateUUID',
             'backendHost',
             'visMethod',
@@ -45,7 +46,10 @@ export function useSetUpProjection() {
             'setAvailableEpochs',
             'setNeighborSameType',
             'setNeighborCrossType',
-            'setAllEpochsProjectionData'
+            'setAllEpochsProjectionData',
+            'setPredictionProps',
+            'setBgimg',
+            'setScale'
         ]);
 
     // TODO add cache
@@ -62,20 +66,44 @@ export function useSetUpProjection() {
             console.warn(e);
         }
         if (res) {
-            const sameTypeNeighbor = await getAttributeResource(contentPath, epoch, 'intra_similarity', {
-                host: backendHost
-            });
-            const crossTypeNeighbor = await getAttributeResource(contentPath, epoch, 'inter_similarity', {
-                host: backendHost
-            });
+            const config = res.config;
 
-            // console.log(sameTypeNeighbor);
-            // console.log(crossTypeNeighbor);
+            // part 1: relationship between points
+            if (config.dataset.taskType == 'Umap-Neighborhood') {
+                const sameTypeNeighbor = await getAttributeResource(contentPath, epoch, 'intra_similarity', {
+                    host: backendHost
+                });
+                const crossTypeNeighbor = await getAttributeResource(contentPath, epoch, 'inter_similarity', {
+                    host: backendHost
+                });
+                setNeighborSameType(sameTypeNeighbor['intra_similarity']);
+                setNeighborCrossType(crossTypeNeighbor['inter_similarity']);
+            }
+            else {
+                setNeighborSameType([]);
+                setNeighborCrossType([]);
+            }
 
-            // FIXME add validation of number[][]
-            setNeighborSameType(sameTypeNeighbor['intra_similarity']);
-            setNeighborCrossType(crossTypeNeighbor['inter_similarity']);
+            // part 2: for classification task, acquire prediction, bgimg and scale
+            if (config.dataset.taskType == 'classification') {
+                const predRes = await getAttributeResource(contentPath, epoch, 'prediction', {
+                    host: backendHost
+                });
+                setPredictionProps(predRes['prediction']);
 
+                const bgimgRes = await getBgimg(contentPath, visMethod, epoch, {
+                    host: backendHost
+                });
+                setBgimg(bgimgRes['bgimg']);
+                setScale(bgimgRes['scale']);
+            }
+            else {
+                setPredictionProps([]);
+                setBgimg('');
+                setScale([]);
+            }
+
+            // part 3: process projection data
             const newData = { ...allEpochsProjectionData };
             newData[epoch] = res; // the latest epoch may have been updated in UI, but not yet in store
             setAllEpochsProjectionData(newData);
@@ -84,16 +112,21 @@ export function useSetUpProjection() {
             const labelDict = new Map<number, string>();
             const colorDict = new Map<number, [number, number, number]>();
 
-            const validLabels = Array.from(new Set(res.labels));
-
-            validLabels.forEach((classLabel, i) => {
-                labelDict.set(i, classLabel);
-                colorDict.set(i, randomColor(i));
+            // Here we construct labelDict from res.label_text_list (e.g. [comment, code])
+            // and randomly asssign a color to each label !
+            const label_text_list = res.label_text_list;
+            const colorList = [[31, 119, 180], [255, 127, 14], [44, 160, 44], [214, 39, 40], [148, 103, 189], [140, 86, 75], [227, 119, 194], [127, 127, 127], [188, 189, 34], [23, 190, 207]];
+            label_text_list.forEach((label, i) => {
+                labelDict.set(i, label);
+                // colorDict.set(i, randomColor(i));
+                colorDict.set(i, [colorList[i][0], colorList[i][1], colorList[i][2]]);
             });
 
-            // TODO backend should provide this
-            labelDict.set(0, 'comment');
-            labelDict.set(1, 'code');
+            // const validLabels = Array.from(new Set(res.labels));
+            // validLabels.forEach((classLabel, i) => {
+            //     labelDict.set(i, classLabel);
+            //     colorDict.set(i, randomColor(i));
+            // });
 
             setLabelDict(labelDict);
             setColorDict(colorDict);

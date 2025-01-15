@@ -4,6 +4,7 @@ import { useDefaultStore } from '../state/store'
 import { CommonPointsGeography, extractConnectedPoints, pointsDefaultSize, createEmptyCommonPointsGeography } from './canvas/types';
 import { BriefProjectionResult } from '../communication/api';
 import { useSetUpProjection } from '../state/state-actions';
+import ChartComponent from './canvas/vchart';
 
 function Timeline({ epoch, epochs, onSwitchEpoch }: { epoch: number, epochs: number[], onSwitchEpoch: (epoch: number) => void }) {
     // Set the initial epoch from the passed epochs array
@@ -115,9 +116,13 @@ export function MainBlock() {
         }
     }, [availableEpochs, setEpoch]);
 
-    const { colorDict } = useDefaultStore(['colorDict']);
+    const { colorDict, labelDict } = useDefaultStore(['colorDict', 'labelDict']);
 
     const { highlightContext } = useDefaultStore(['highlightContext']);
+
+    const { revealNeighborSameType, revealNeighborCrossType, neighborSameType, neighborCrossType } = useDefaultStore(['revealNeighborSameType', 'revealNeighborCrossType', 'neighborSameType', 'neighborCrossType']);
+
+    const { predictionProps, bgimg, scale } = useDefaultStore(['predictionProps', 'bgimg', 'scale']);
 
     // TODO all shared data are using useStore now. Decouple some of them
     // const highlightContext = useRef(new HighlightContext());
@@ -128,19 +133,18 @@ export function MainBlock() {
     const originalPointsGeography = useMemo(() => {
         const positions: [number, number, number][] = [];
         const labels: number[] = [];
-        const colors: [number, number, number][] = [];
         const sizes: number[] = [];
         const alphas: number[] = [];
         const data = {
-            positions, labels, colors, sizes, alphas
+            positions, labels, sizes, alphas
         };
 
         if (!currentEpochData) return data;
 
+        const labelsAsNumber = currentEpochData.labels.map((label) => parseInt(label));
         currentEpochData.proj.forEach((point, i) => {
             positions.push([point[0], point[1], 0]);
-            // labels.push(labelsAsNumber[i]);
-            // colors.push([color[0] / 255, color[1] / 255, color[2] / 255]);
+            labels.push(labelsAsNumber[i]);
             sizes.push(pointsDefaultSize);
             alphas.push(1.0);
         });
@@ -149,9 +153,8 @@ export function MainBlock() {
     }, [currentEpochData]);
 
     const appliedColorPointsGeography = useMemo(() => {
-        const { positions, sizes, alphas } = originalPointsGeography;
+        const { positions, labels, sizes, alphas } = originalPointsGeography;
         const colors: [number, number, number][] = [];
-        const labels: number[] = [];
 
         const data = {
             positions, labels, sizes, alphas, colors
@@ -169,6 +172,29 @@ export function MainBlock() {
 
         return data;
     }, [originalPointsGeography, currentEpochData, colorDict]);
+
+    // construct data for vchart
+    const vchartData = useMemo(() => {
+        const positions: [number, number, number][] = [];
+        const labels: number[] = [];
+        const colors: [number, number, number][] = [];
+
+        const data = {
+            positions, labels, colors, neighborSameType, neighborCrossType, predictionProps, bgimg, scale
+        };
+
+        if (!currentEpochData) return data;
+
+        const labelsAsNumber = currentEpochData.labels.map((label) => parseInt(label));
+        currentEpochData.proj.forEach((point, i) => {
+            positions.push([point[0], point[1], 0]);
+            labels.push(labelsAsNumber[i]);
+            const color = colorDict.get(labelsAsNumber[i]);
+            if (color === undefined) return;
+            colors[i] = ([color[0] / 255, color[1] / 255, color[2] / 255]);
+        });
+        return data;
+    }, [currentEpochData, colorDict, neighborSameType, neighborCrossType, predictionProps, bgimg, scale]);
 
     const spriteData = useMemo(() => {
         const renderedTextData: string[] = [];
@@ -191,19 +217,17 @@ export function MainBlock() {
         }
     }, [showNumber, showText, textData]);
 
-    const neighborhood = useMemo(() => {
-        return currentEpochData ? extractConnectedPoints(currentEpochData) : undefined;
-    }, [currentEpochData]);
+    // const neighborhood = useMemo(() => {
+    //     return currentEpochData ? extractConnectedPoints(currentEpochData) : undefined;
+    // }, [currentEpochData]);
 
-    const plot2DCanvasContext = useMemo(() => {
-        return createPlot2DCanvasContextFrom(originalPointsGeography);
-    }, [originalPointsGeography]);
+    // const plot2DCanvasContext = useMemo(() => {
+    //     return createPlot2DCanvasContextFrom(originalPointsGeography);
+    // }, [originalPointsGeography]);
 
-    const plot2DDataContext = useMemo(() => {
-        return new Plot2DDataContext(finalPointsGeography, spriteData);
-    }, [finalPointsGeography, spriteData]);
-
-    const { revealNeighborSameType, revealNeighborCrossType, neighborSameType, neighborCrossType } = useDefaultStore(['revealNeighborSameType', 'revealNeighborCrossType', 'neighborSameType', 'neighborCrossType']);
+    // const plot2DDataContext = useMemo(() => {
+    //     return new Plot2DDataContext(finalPointsGeography, spriteData);
+    // }, [finalPointsGeography, spriteData]);
 
     useEffect(() => {
         // TODO this is data processing (or business) fair, move it to another module, and should be done immediately together with some atomic update operation
@@ -255,7 +279,7 @@ export function MainBlock() {
         <div className="canvas-column">
             <div id="canvas-wrapper" style={{ height: "100%", width: "100%" }}>
                 <ChartComponent
-                    rawPointsGeography={rawPointsGeography}
+                    vchartData={vchartData}
                 />
             </div>
             <div id="footer">
