@@ -189,6 +189,7 @@ def load_single_attribute(config, content_path, epoch, attribute):
 
     return attr_data
 
+# FIXME this is not accepting specification from "dataType" field
 def read_from_file(file_path):
     _, file_extension = os.path.splitext(file_path)
 
@@ -203,6 +204,12 @@ def read_from_file(file_path):
             result = data
         else:
             raise ValueError(f"Unsupported data type in .pth file: {type(data)}")
+    elif file_extension == '.json':
+        try:
+            with open(file_path, 'r') as f:
+                result = json.load(f)
+        except Exception as e:
+            raise ValueError(f"Error in reading json file from {file_path}: {e}")
     else:
         raise ValueError(f"Unsupported file extension: {file_extension}")
 
