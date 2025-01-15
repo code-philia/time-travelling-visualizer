@@ -105,13 +105,13 @@ const initMutableGlobalStore: BaseMutableGlobalStore = {
     // FIXME should use an object to apply user settings (like color) to original data, computing final point geography, and setting cache
     colorDict: new Map(),
     labelDict: new Map(),
-    highlightContext: new HighlightContext(),
+    highlightContext: new HighlightContext(0),
     rawPointsGeography: null,
 
     textData: [],
 
     // settings
-    backendHost: 'localhost:5010',
+    backendHost: 'localhost:58225',
     showNumber: true,
     showText: true,
     revealNeighborSameType: false,

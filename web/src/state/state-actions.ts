@@ -20,9 +20,10 @@ export function useSetUpTrainingProcess() {
         const text = await getText(contentPath, {
             host: backendHost
         });
-        setTextData(text['text_list'] ?? []);
+        const textData = text['text_list'] ?? [];
+        setTextData(textData);
 
-        setHighlightContext(new HighlightContext());
+        setHighlightContext(new HighlightContext(textData.length));
 
     }, [backendHost, contentPath, setAvailableEpochs, setTextData, setEpoch]);
 

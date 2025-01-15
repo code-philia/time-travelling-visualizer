@@ -61,13 +61,20 @@ export function extractConnectedPoints(res: BriefProjectionResult): PointsNeighb
 
 // FIXME move this to another state management file or so
 export class HighlightContext {
+    readonly validSampleCount: number;
+
     hoveredIndex: number | undefined = undefined;
     lockedIndices: Set<number> = new Set();
 
+    constructor(count: number) {
+        this.validSampleCount = count;
+    }
+
     // TODO derive into different styles, accept from outside
-    highlightedPoints: { pri: number[], sec: number[] } = {
+    highlightedPoints: { pri: number[], sec: number[], locked: number[] } = {
         pri: [],
-        sec: []
+        sec: [],
+        locked: []
     };
     plotPoints: CommonPointsGeography | undefined = undefined;
 
@@ -77,7 +84,16 @@ export class HighlightContext {
 
     // Operations
 
+    isValidIndex(idx: number | undefined): boolean {
+        if (idx !== undefined && (idx > this.validSampleCount || idx < 0)) {
+            return false;
+        }
+        return true;
+    }
+
     updateHovered(idx: number | undefined) {
+        if (!this.isValidIndex(idx)) return;
+
         if (this.hoveredIndex !== idx) {
             this.hoveredIndex = idx;
             this.notifyHighlightChanged();
@@ -85,16 +101,22 @@ export class HighlightContext {
     }
 
     addLocked(idx: number) {
+        if (!this.isValidIndex(idx)) return;
+
         this.lockedIndices.add(idx);
         this.notifyHighlightChanged();
     }
 
     removeLocked(idx: number) {
+        if (!this.isValidIndex(idx)) return;
+
         this.lockedIndices.delete(idx);
         this.notifyHighlightChanged();
     }
 
     switchLocked(idx: number) {
+        if (!this.isValidIndex(idx)) return;
+
         if (this.lockedIndices.has(idx)) {
             this.lockedIndices.delete(idx);
         } else {
@@ -119,15 +141,18 @@ export class HighlightContext {
         return this.lockedIndices.has(idx);
     }
 
-    computeHighlightedPoints(): { pri: number[], sec: number[] } {
-        const highlightedPoints = new Set(this.lockedIndices);
+    computeHighlightedPoints(): { pri: number[], sec: number[], locked: number[] } {
+        const lockedPoints = this.lockedIndices;
+
+        const highlightedPoints = new Set<number>();
         if (this.hoveredIndex !== undefined) {
             highlightedPoints.add(this.hoveredIndex);
         }
 
         const secondaryHighlightedPoints = new Set<number>();
         const baseHighlightedPoints = Array.from(highlightedPoints);
-        baseHighlightedPoints.forEach((i) => {
+
+        const addNeighbor = (i: number) => {
             const neighbors = this.neighborPoints[i];
             if (neighbors !== undefined) {
                 neighbors
@@ -136,16 +161,20 @@ export class HighlightContext {
                         secondaryHighlightedPoints.add(neighbor);
                     });
             }
-        })
+        };
+
+        baseHighlightedPoints.forEach(addNeighbor);
+        lockedPoints.forEach(addNeighbor);
 
         return {
             pri: [...highlightedPoints.values()],
-            sec: [...secondaryHighlightedPoints.values()]
+            sec: [...secondaryHighlightedPoints.values()],
+            locked: [...lockedPoints]
         }
     }
 
     private highlightedPointsSame(newHighlightedPoints: typeof this.highlightedPoints): boolean {
-        const groups = ['pri', 'sec'] as const;
+        const groups = ['pri', 'sec', 'locked'] as const;
 
         for (const group of groups) {
             if (newHighlightedPoints[group].length !== this.highlightedPoints[group].length) {
@@ -174,7 +203,7 @@ export class HighlightContext {
         const sizes = originalPointsData.sizes.slice();
         const alphas = originalPointsData.alphas.slice();
 
-        if (highlightedPoints.pri.length + highlightedPoints.sec.length > 0) {
+        if (highlightedPoints.pri.length + highlightedPoints.sec.length + highlightedPoints.locked.length > 0) {
             alphas.forEach((_, i) => {
                 sizes[i] = pointsDefaultSize * 1.0;
                 alphas[i] = 0.2;
@@ -185,6 +214,11 @@ export class HighlightContext {
             });
             highlightedPoints.sec.forEach((i) => {
                 sizes[i] = pointsDefaultSize * 1.0;
+                alphas[i] = 1.0;
+            });
+            highlightedPoints.locked.forEach((i) => {
+                sizes[i] = pointsDefaultSize * 1.8;
+                colors[i] = [255, 0, 0];
                 alphas[i] = 1.0;
             });
         }

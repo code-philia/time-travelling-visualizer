@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 
 import { BoundaryProps } from '../../state/types.ts';
@@ -73,19 +73,16 @@ interface CanvasEventListeners {
 
 export const PlotContainer = memo(({ plotDataContext, plotCanvasContext, eventListeners, neighborRelationship }: { plotDataContext: Plot2DDataContext, plotCanvasContext: Plot2DCanvasContext, eventListeners: CanvasEventListeners, neighborRelationship?: PointsNeighborRelationship }) => {
     const [rc, setRc] = useState<VisualizerRenderContext | null>(null);
+    const [controlUpdateCount, setControlUpdateCount] = useState(0);
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
     // for real-time subtitle update
     const spriteRenderRef = useRef<{ repaint: () => void }>(null);
-    const viewUpdateEvent = useRef(new EventDispatcher());
-
-    // one-time after mounted
-    useEffect(() => {
-        viewUpdateEvent.current.callback = () => {
-            spriteRenderRef.current?.repaint();
-        };
-    }, []);
+    const viewUpdateEvent = new EventDispatcher();
+    viewUpdateEvent.callback = () => {
+        spriteRenderRef.current?.repaint();
+    }
 
     useEffect(() => {
         const ob = new ResizeObserver(() => {
@@ -116,6 +113,22 @@ export const PlotContainer = memo(({ plotDataContext, plotCanvasContext, eventLi
     const shouldRenderPoints = rc !== null && plotDataContext.geo !== undefined;
     const shouldRenderSprites = shouldRenderPoints && plotDataContext.sprite;
 
+    const camera = useMemo(() => (
+        rc &&
+        <VisualizerDefaultCamera
+            initWorldWidth={rc.initWorldWidth}
+            initWorldHeight={rc.initWorldHeight}
+            centerX={rc.centerX}
+            centerY={rc.centerY}
+            onRender={viewUpdateEvent.dispatch}
+            onBind={(camera) => rc.setCamera(camera)}
+        />
+    ), [rc?.centerX, rc?.centerY, viewUpdateEvent]);
+    const control = useMemo(() => (
+        rc &&
+        <VisualizerDefaultControl />
+    ), [rc?.centerX, rc?.centerY]);
+
     return (
         <div
             id="canvas-container"
@@ -133,20 +146,13 @@ export const PlotContainer = memo(({ plotDataContext, plotCanvasContext, eventLi
                     <PointsRender
                         rawPointsData={plotDataContext.geo!}
                         visualizerRenderContext={rc}
-                        eventListeners={{ ...eventListeners, onReload: viewUpdateEvent.current.dispatch }}
+                        eventListeners={{ ...eventListeners, onReload: viewUpdateEvent.dispatch }}
                     />
                 )}
 
                 {/* Camera and Controls */}
-                {rc && (
-                    <>
-                        <VisualizerDefaultCamera visualizerRenderContext={rc} />
-                        <VisualizerDefaultControl
-                            visualizerRenderContext={rc}
-                            onResize={viewUpdateEvent.current.dispatch}
-                        />
-                    </>
-                )}
+                {camera}
+                {control}
             </Canvas>
 
             {/* Sprite Rendering */}
