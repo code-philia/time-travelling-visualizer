@@ -69,6 +69,11 @@ def load_background_image_base64(config, content_path, vis_method, epoch):
 
     return 'data:image/png;base64,' + img_stream
 
+def load_scale(config, content_path, vis_method, epoch):
+    scale_path = os.path.join(content_path, "visualize", vis_method, "scale", f"{epoch}.npy")
+    scale = np.load(scale_path)
+    return scale.tolist()
+
 # Func: load one sample from content_path
 def load_one_sample(config, content_path, index):
     attributes = config['dataset']['attributes']
