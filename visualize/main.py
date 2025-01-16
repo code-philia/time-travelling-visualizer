@@ -45,20 +45,25 @@ def init_visualize_component(config, params):
 def run(args):
     # step 0: initialize config
     # these are the common config from frontend
+    with open(os.path.join(args.content_path,'config.json'), 'r') as f:
+        dataset_config = json.load(f)
+    
     config = {}
     config["contentPath"] = args.content_path
     config["visMethod"] = args.vis_method
+    config["taskType"] = dataset_config['dataset']['taskType']
+    config["classes"] = dataset_config['dataset']['classes']
+    
+    # TODO: where to get these parameters ?
     config["epochStart"] = 1
     config["epochEnd"] = 1
     config["epochPeriod"] = 1
-    config["taskType"] = "classification"
-    config["classes"] = [" negative","positive"]
-    config["net"] = "Bert_FNN"
-    config["gpu"] = 2
-    config["resolution"] = 200
+    config["net"] = "ResNet34"  # 模型定义的类，我们需要通过该名称创建原始模型实例， 如：subject_model = ResNet34()
+    config["gpu"] = 2           # gpu 编号，只用一个
+    config["resolution"] = 300
     
     # these are the parameters for training visualize model, read from single config file
-    with open('./visualize_config.json', 'r') as f:
+    with open('./params.json', 'r') as f:
         all_params = json.load(f)
     params = all_params[config["visMethod"]]
     

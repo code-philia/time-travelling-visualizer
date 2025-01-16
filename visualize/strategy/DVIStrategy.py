@@ -21,7 +21,7 @@ class DeepVisualInsight(StrategyAbstractClass):
         self.initialize_model()
 
     def initialize_model(self):
-        self.device = torch.device("cuda:{}".format(self.params["GPU"]) if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cuda:{}".format(self.config["gpu"]) if torch.cuda.is_available() else "cpu")
         self.data_provider = DataProvider(self.config, self.device)
         self.visualize_model = VisModel(self.params['ENCODER_DIMS'], self.params['DECODER_DIMS']).to(self.device)
         
