@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { fetchTrainingProcessStructure, fetchUmapProjectionData, getAttributeResource, getBgimg, getText } from "../communication/api";
+import { fetchTrainingProcessStructure, fetchUmapProjectionData, getAttributeResource, getBgimg, getText, visualizeTrainingProcess } from "../communication/api";
 import { HighlightContext, randomColor } from "../component/canvas/types";
 import { useDefaultStore } from "./store";
 
@@ -147,4 +147,21 @@ export function useSetUpDicts() {
     }, [allEpochsProjectionData, epoch]);
 
     return setUpDicts;
+}
+
+export function useTrainVisualizer() {
+    const { contentPath, backendHost, visMethod }
+        = useDefaultStore([
+            'contentPath',
+            'backendHost',
+            'visMethod'
+        ]);
+    const trainVisualizer = useCallback(async () => {
+        const res = await visualizeTrainingProcess(contentPath, {
+            method: visMethod,
+            host: backendHost
+        });
+    }, [backendHost, contentPath]);
+
+    return trainVisualizer;
 }
