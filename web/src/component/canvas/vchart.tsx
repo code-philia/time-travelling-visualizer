@@ -56,22 +56,18 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
             if (y > y_max) y_max = y;
         });
 
-        // if (Array.isArray(vchartData?.scale) && vchartData?.scale.length > 0) {
-        //     x_min = vchartData?.scale[0];
-        //     y_min = vchartData?.scale[1];
-        //     x_max = vchartData?.scale[2];
-        //     y_max = vchartData?.scale[3];
-        // }
-        // else {
-        //     x_min = x_min - PADDING;
-        //     y_min = y_min - PADDING;
-        //     x_max = x_max + PADDING;
-        //     y_max = y_max + PADDING;
-        // }
-        x_min = x_min - PADDING;
-        y_min = y_min - PADDING;
-        x_max = x_max + PADDING;
-        y_max = y_max + PADDING;
+        if (Array.isArray(vchartData?.scale) && vchartData?.scale.length > 0) {
+            x_min = vchartData?.scale[0];
+            y_min = vchartData?.scale[1];
+            x_max = vchartData?.scale[2];
+            y_max = vchartData?.scale[3];
+        }
+        else {
+            x_min = x_min - PADDING;
+            y_min = y_min - PADDING;
+            x_max = x_max + PADDING;
+            y_max = y_max + PADDING;
+        }
 
         const bgimg = showBgimg ? vchartData?.bgimg : 'rgb(255, 255, 255)';
 
@@ -107,15 +103,10 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
             yField: 'y',
             seriesField: 'label',
 
+            // ================= background =================
             background: {
                 image: bgimg,
             },
-
-            // ================= background =================
-            // TODO
-            // background: {
-            //     image: svgImage,
-            // },
 
             // ================= points =================
             point: {
@@ -154,75 +145,103 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
             // ================= zoom =================
             dataZoom: [
                 {
+                    visible: true,
                     orient: 'left',
                     filterMode: 'axis',
-                    backgroundChart: {
-                        area: {
-                            style: {
-                                visible: false
-                            }
-                        },
-                        line: {
-                            style: {
-                                visible: false
-                            }
+
+                    // style
+                    showBackgroundChart: false,
+                    startHandler: {
+                        style: {
+                            size: 13,
                         }
                     },
-                    selectedBackgroundChart: {
-                        area: {
-                            style: {
-                                visible: false
-                            }
-                        },
-                        line: {
-                            style: {
-                                visible: false
-                            }
+                    endHandler: {
+                        style: {
+                            size: 13,
                         }
+                    },
+                    background: {
+                        size: 15,
+                        style: {
+                            cornerRadius: 20
+                        }
+                    },
+                    selectedBackground: {
+                        style: {
+                            fill: 'rgb(22,119,255)',
+                            fillOpacity: 0.5
+                        }
+                    },
+
+                    // func
+                    roamZoom: {
+                        enable: true,
+                        focus: true,
+                        rate: 5
+                    },
+                    roamDrag: {
+                        enable: true,
+                        reverse: true,
+                        rate: 1
                     }
                 },
                 {
+                    visible: true,
                     orient: 'bottom',
                     filterMode: 'axis',
-                    backgroundChart: {
-                        area: {
-                            style: {
-                                visible: false
-                            }
-                        },
-                        line: {
-                            style: {
-                                visible: false
-                            }
+
+                    // style
+                    showBackgroundChart: false,
+                    startHandler: {
+                        style: {
+                            size: 13,
                         }
                     },
-                    selectedBackgroundChart: {
-                        area: {
-                            style: {
-                                visible: false
-                            }
-                        },
-                        line: {
-                            style: {
-                                visible: false
-                            }
+                    endHandler: {
+                        style: {
+                            size: 13,
                         }
+                    },
+                    background: {
+                        size: 15,
+                        style: {
+                            cornerRadius: 20
+                        }
+                    },
+                    selectedBackground: {
+                        style: {
+                            fill: 'rgb(22,119,255)',
+                            fillOpacity: 0.5
+                        }
+                    },
+
+                    // func
+                    roamZoom: {
+                        enable: true,
+                        focus: true,
+                        rate: 5
+                    },
+                    roamDrag: {
+                        enable: true,
+                        reverse: true,
+                        rate: 1
                     }
                 }
             ],
 
-            brush: {
-                visible: true,
-                brushType: 'rect',
-                inBrush: {
-                    colorAlpha: 1
-                },
-                outOfBrush: {
-                    colorAlpha: 0.2
-                },
-                // 开启后默认关联所有axis/dataZoom
-                zoomAfterBrush: true
-            },
+            // brush: {
+            //     visible: true,
+            //     brushType: 'rect',
+            //     inBrush: {
+            //         colorAlpha: 1
+            //     },
+            //     outOfBrush: {
+            //         colorAlpha: 0.2
+            //     },
+            //     // 开启后默认关联所有axis/dataZoom
+            //     zoomAfterBrush: true
+            // },
             // ================= tooltip =================
             tooltip: {
                 lockAfterClick: false,

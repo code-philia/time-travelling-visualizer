@@ -161,7 +161,7 @@ export function useTrainVisualizer() {
             method: visMethod,
             host: backendHost
         });
-    }, [backendHost, contentPath]);
+    }, [backendHost, contentPath, visMethod]);
 
     return trainVisualizer;
 }
