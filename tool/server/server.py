@@ -8,6 +8,9 @@ from flask_cors import CORS, cross_origin
 
 sys.path.append('..')
 sys.path.append('.')
+sys.path.append('../..')
+
+# from visualize.visualizer import Visualizer
 
 # flask for API server
 app = Flask(__name__, static_url_path='/static', static_folder='../frontend')
@@ -261,6 +264,36 @@ def get_simple_filter_result():
     return make_response(result, 200)
 
 
+"""
+Api: trigger visualize model training and projection process
+
+Request:
+    content_path (str)
+    vis_method (str)
+Response:
+    error_message (str): error message if training failed
+"""
+@app.route('/visualizeTrainingProcess', methods = ["POST"])
+@cross_origin()
+def visualize_training_process():
+    req = request.get_json()
+    content_path = req['content_path']
+    vis_method = req['vis_method']
+    
+    config = read_file_as_json(os.path.join(content_path, 'config.json'))
+    visualizer = Visualizer(config, content_path, vis_method)
+    error_message = visualizer.visualize()
+    
+    if error_message == 'success':
+        error_code = 200
+    else:
+        error_code = 400
+        
+    result = jsonify({
+        'error_message': error_message
+    })
+
+    return make_response(result, error_code)
 
 """ ===================================================================== """
 # Func: get iteration structure

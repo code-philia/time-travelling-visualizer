@@ -70,6 +70,16 @@ export async function fetchUmapProjectionData(contentPath: string, epoch: number
     return basicUnsafePostWithJsonResponse('/updateProjection', data, { host: combinedOptions.host });
 }
 
+export function visualizeTrainingProcess(contentPath: string, options?: { method?: string, host?: string }) {
+    const combinedOptions = { ...options };
+
+    const data = {
+        "content_path": contentPath,
+        "vis_method": combinedOptions.method
+    };
+    return basicUnsafePostWithJsonResponse('/visualizeTrainingProcess', data, options);
+}
+
 function getOriginalData(contentPath: string, dataType: string, index: number, iteration: number) {
     if (index === null) {
         return;
