@@ -359,7 +359,7 @@ class ResultGenerator(ResultGeneratorAbstractClass):
         ax.set_xlim((x_min, x_max))
         ax.set_ylim((y_min, y_max))
 
-        save_dir = os.path.join(self.content_path, 'visualize', self.config['visMethod'])
+        save_dir = os.path.join(self.config['contentPath'], 'visualize', self.config['visMethod'])
         # bgimg_data_path = os.path.join(save_dir, "bgimg_data.npy")
         # np.save(bgimg_data_path, decision_view)
         
@@ -382,7 +382,7 @@ class ResultGenerator(ResultGeneratorAbstractClass):
         from PIL import Image
         img = Image.new("RGB",(resolution,resolution),(255,255,255))
         
-        save_dir = os.path.join(self.content_path, 'visualize', self.config['visMethod'])
+        save_dir = os.path.join(self.config['contentPath'], 'visualize', self.config['visMethod'])
 
         scale_dir = os.path.join(save_dir, "scale")
         os.makedirs(scale_dir, exist_ok=True)
