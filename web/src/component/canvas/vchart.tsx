@@ -16,6 +16,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
     const { filterValue, filterType } = useDefaultStore(["filterValue", "filterType"]);
     const { filterState } = useDefaultStore(["filterState"]);
     const { showBgimg } = useDefaultStore(["showBgimg"]);
+    const { showNumber, showText, textData } = useDefaultStore(["showNumber", "showText", "textData"])
     console.log('vchart', filterValue, filterType, filterState);
 
     // When vchartData changes, update chart
@@ -25,7 +26,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
         }
 
         // create data
-        let samples: { x: number; y: number; label: number; pred: number; label_desc: string; pred_desc: string; confidence: number }[] = []
+        let samples: { index: number, x: number; y: number; label: number; pred: number; label_desc: string; pred_desc: string; confidence: number; textSample: string }[] = []
         let x_min = Infinity, y_min = Infinity, x_max = -Infinity, y_max = -Infinity;
 
         vchartData?.positions.map((p, i) => {
@@ -41,13 +42,15 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
             }
 
             samples.push({
+                index: i,
                 x: x,
                 y: y,
                 label: vchartData?.labels[i],
                 label_desc: labelDict.get(vchartData?.labels[i]) ?? '',
                 pred: pred,
                 pred_desc: labelDict.get(pred) ?? labelDict.get(vchartData?.labels[i]) ?? '',
-                confidence: confidence
+                confidence: confidence,
+                textSample: textData[i] ?? ''
             });
 
             if (x < x_min) x_min = x;
@@ -118,7 +121,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                 },
                 style: {
                     size: 8,
-                    fill: (datum: { x: number; y: number; label: number; label_desc: string | undefined }) => {
+                    fill: (datum: { label: number; }) => {
                         const color = colorDict.get(datum.label) ?? [0, 0, 0];
                         return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
                     },
@@ -127,6 +130,39 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                     }
                 }
             },
+
+            // ================= label on canvas =================
+            label: [
+                {
+                    visible: true,
+                    style: {
+                        visible: () => {
+                            return showNumber || showText;
+                        },
+                        type: 'text',
+                        fontFamily: 'Console',
+                        // fontStyle: 'italic',
+                        // fontWeight: 'bold',
+                        text: (datum: { index: any; textSample: string; label: number; }) => {
+                            if (showText && showNumber) {
+                                return `${datum.index}.${datum.textSample == '' ? labelDict.get(datum.label) : datum.textSample}`;
+                            }
+                            else if (showText) {
+                                return datum.textSample == '' ? labelDict.get(datum.label) : datum.textSample;
+                            }
+                            else if (showNumber) {
+                                return `${datum.index}`;
+                            }
+                        },
+
+                        fill: (datum: { label: number; }) => {
+                            const color = colorDict.get(datum.label) ?? [0, 0, 0];
+                            return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
+                        },
+                        fillOpacity: 0.6
+                    }
+                }
+            ],
 
             // ================= axes =================
             axes: [
@@ -411,7 +447,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
         }
 
         vchartRef.current.renderSync();
-    }, [vchartData, filterState, showBgimg]);
+    }, [vchartData, filterState, showBgimg, showNumber, showText]);
 
     return <div
         ref={chartRef}

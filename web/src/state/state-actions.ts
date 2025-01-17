@@ -32,7 +32,7 @@ export function useSetUpTrainingProcess() {
 export function useSetUpProjection() {
     // TODO avoid writing attribute twice
     const { contentPath, allEpochsProjectionData, setAllEpochsProjectionData, backendHost, visMethod,
-        setHighlightContext, setLabelDict, setColorDict, setNeighborSameType, setNeighborCrossType, setPredictionProps, setBgimg, setScale }
+        setHighlightContext, setTextData, setLabelDict, setColorDict, setNeighborSameType, setNeighborCrossType, setPredictionProps, setBgimg, setScale }
         = useDefaultStore([
             'contentPath',
             'allEpochsProjectionData', 'setProjectionDataAtEpoch',
@@ -78,10 +78,16 @@ export function useSetUpProjection() {
                 });
                 setNeighborSameType(sameTypeNeighbor['intra_similarity']);
                 setNeighborCrossType(crossTypeNeighbor['inter_similarity']);
+
+                const text = await getText(contentPath, {
+                    host: backendHost
+                });
+                setTextData(text['text_list'] ?? []);
             }
             else {
                 setNeighborSameType([]);
                 setNeighborCrossType([]);
+                setTextData([]);
             }
 
             // part 2: for classification task, acquire prediction, bgimg and scale
