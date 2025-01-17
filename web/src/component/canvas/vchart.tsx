@@ -31,7 +31,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
         vchartData?.positions.map((p, i) => {
             const x = parseFloat(p[0].toFixed(3));
             const y = parseFloat(p[1].toFixed(3));
-            let confidence = 0.0;
+            let confidence = 1.0;
             let pred = vchartData?.labels[i];
             if (vchartData?.predictionProps && vchartData.predictionProps.length > 0) {
                 let props = vchartData.predictionProps[i];
@@ -117,9 +117,13 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                     }
                 },
                 style: {
+                    size: 8,
                     fill: (datum: { x: number; y: number; label: number; label_desc: string | undefined }) => {
                         const color = colorDict.get(datum.label) ?? [0, 0, 0];
                         return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
+                    },
+                    fillOpacity: (datum: { confidence: number; }) => {
+                        return datum.confidence;
                     }
                 }
             },
