@@ -256,3 +256,10 @@ export type SpriteData = {
     labels: string[];
 };
 
+export type Edge = {
+    from: number;
+    to: number;
+    type: string; // sameType, crossType
+    status: string; // connect, disconnect, maintain
+};
+

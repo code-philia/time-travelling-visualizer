@@ -85,6 +85,8 @@ type BaseMutableGlobalStore = {
     revealNeighborCrossType: boolean;
     neighborSameType: number[][];
     neighborCrossType: number[][];
+    lastNeighborSameType: number[][];
+    lastNeighborCrossType: number[][];
     predictionProps: number[][];
     showBgimg: boolean;
 
@@ -96,6 +98,9 @@ type BaseMutableGlobalStore = {
     // bgimg
     bgimg: string;
     scale: number[];
+
+    // hovered
+    hoveredIndex: -1
 }
 
 const initMutableGlobalStore: BaseMutableGlobalStore = {
@@ -129,6 +134,8 @@ const initMutableGlobalStore: BaseMutableGlobalStore = {
     revealNeighborCrossType: false,
     neighborSameType: [],
     neighborCrossType: [],
+    lastNeighborCrossType: [],
+    lastNeighborSameType: [],
     predictionProps: [],
     showBgimg: false,
 
@@ -140,6 +147,9 @@ const initMutableGlobalStore: BaseMutableGlobalStore = {
     // bgimg
     bgimg: '',
     scale: [],
+
+    // hovered
+    hoveredIndex: -1
 };
 
 type MutableGlobalStore = WithSettersOnAttr<BaseMutableGlobalStore>;
