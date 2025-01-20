@@ -32,7 +32,7 @@ export function useSetUpTrainingProcess() {
 export function useSetUpProjection() {
     // TODO avoid writing attribute twice
     const { contentPath, allEpochsProjectionData, setAllEpochsProjectionData, backendHost, visMethod,
-        setHighlightContext, setTextData, setLabelDict, setColorDict, setNeighborSameType, setNeighborCrossType, setPredictionProps, setBgimg, setScale }
+        setHighlightContext, setTextData, setLabelDict, setColorDict, setNeighborSameType, setNeighborCrossType, setLastNeighborSameType, setLastNeighborCrossType, setPredictionProps, setBgimg, setScale }
         = useDefaultStore([
             'contentPath',
             'allEpochsProjectionData', 'setProjectionDataAtEpoch',
@@ -46,6 +46,8 @@ export function useSetUpProjection() {
             'setAvailableEpochs',
             'setNeighborSameType',
             'setNeighborCrossType',
+            'setLastNeighborSameType',
+            'setLastNeighborCrossType',
             'setAllEpochsProjectionData',
             'setPredictionProps',
             'setBgimg',
@@ -66,9 +68,13 @@ export function useSetUpProjection() {
             console.warn(e);
         }
         if (res) {
+            // part 1: process projection data
+            const newData = { ...allEpochsProjectionData };
+            newData[epoch] = res; // the latest epoch may have been updated in UI, but not yet in store
+            setAllEpochsProjectionData(newData);
             const config = res.config;
 
-            // part 1: relationship between points
+            // part 2: relationship between points
             if (config.dataset.taskType == 'Umap-Neighborhood') {
                 const sameTypeNeighbor = await getAttributeResource(contentPath, epoch, 'intra_similarity', {
                     host: backendHost
@@ -76,21 +82,27 @@ export function useSetUpProjection() {
                 const crossTypeNeighbor = await getAttributeResource(contentPath, epoch, 'inter_similarity', {
                     host: backendHost
                 });
-                setNeighborSameType(sameTypeNeighbor['intra_similarity']);
-                setNeighborCrossType(crossTypeNeighbor['inter_similarity']);
+                setNeighborSameType(sameTypeNeighbor['intra_similarity'].slice(0, 5));
+                setNeighborCrossType(crossTypeNeighbor['inter_similarity'].slice(0, 5));
+
+                if (epoch > 1) {
+                    const lastSameTypeNeighbor = await getAttributeResource(contentPath, epoch - 1, 'intra_similarity', {
+                        host: backendHost
+                    });
+                    const lastCrossTypeNeighbor = await getAttributeResource(contentPath, epoch - 1, 'inter_similarity', {
+                        host: backendHost
+                    });
+                    setLastNeighborSameType(lastSameTypeNeighbor['intra_similarity'].slice(0, 5));
+                    setLastNeighborCrossType(lastCrossTypeNeighbor['inter_similarity'].slice(0, 5));
+                }
 
                 const text = await getText(contentPath, {
                     host: backendHost
                 });
                 setTextData(text['text_list'] ?? []);
             }
-            else {
-                setNeighborSameType([]);
-                setNeighborCrossType([]);
-                setTextData([]);
-            }
 
-            // part 2: for classification task, acquire prediction, bgimg and scale
+            // part 3: for classification task, acquire prediction, bgimg and scale
             if (config.dataset.taskType == 'classification') {
                 const predRes = await getAttributeResource(contentPath, epoch, 'prediction', {
                     host: backendHost
@@ -108,11 +120,6 @@ export function useSetUpProjection() {
                 setBgimg('');
                 setScale([]);
             }
-
-            // part 3: process projection data
-            const newData = { ...allEpochsProjectionData };
-            newData[epoch] = res; // the latest epoch may have been updated in UI, but not yet in store
-            setAllEpochsProjectionData(newData);
 
             // TODO Do an immediate setup dict. Don't know how to fix it because outer setDict cannot see the updated projection data
             const labelDict = new Map<number, string>();

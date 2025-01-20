@@ -1,9 +1,8 @@
 // ChartComponent.tsx
 import { memo, useEffect, useRef } from 'react';
 import VChart from '@visactor/vchart';
-import { VChartData } from './types';
+import { VChartData, Edge } from './types';
 import { useDefaultStore } from "../../state/store";
-
 const PADDING = 1;
 
 
@@ -17,7 +16,9 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
     const { filterState } = useDefaultStore(["filterState"]);
     const { showBgimg } = useDefaultStore(["showBgimg"]);
     const { showNumber, showText, textData } = useDefaultStore(["showNumber", "showText", "textData"])
-    console.log('vchart', filterValue, filterType, filterState);
+    const { neighborSameType, neighborCrossType, lastNeighborSameType, lastNeighborCrossType } = useDefaultStore(["neighborSameType", "neighborCrossType", "lastNeighborSameType", "lastNeighborCrossType"]);
+    const { revealNeighborCrossType, revealNeighborSameType } = useDefaultStore(["revealNeighborCrossType", "revealNeighborSameType"]);
+    const { hoveredIndex, setHoveredIndex } = useDefaultStore(["hoveredIndex", "setHoveredIndex"]);
 
     // When vchartData changes, update chart
     useEffect(() => {
@@ -26,7 +27,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
         }
 
         // create data
-        let samples: { index: number, x: number; y: number; label: number; pred: number; label_desc: string; pred_desc: string; confidence: number; textSample: string }[] = []
+        let samples: { pointId: number, x: number; y: number; label: number; pred: number; label_desc: string; pred_desc: string; confidence: number; textSample: string }[] = []
         let x_min = Infinity, y_min = Infinity, x_max = -Infinity, y_max = -Infinity;
 
         vchartData?.positions.map((p, i) => {
@@ -42,7 +43,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
             }
 
             samples.push({
-                index: i,
+                pointId: i,
                 x: x,
                 y: y,
                 label: vchartData?.labels[i],
@@ -72,12 +73,24 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
             y_max = y_max + PADDING;
         }
 
+
+
+        const edges = createEdges(neighborSameType, neighborCrossType, lastNeighborSameType, lastNeighborCrossType);
+        const endpoints: { edgeId: number, x: number, y: number, type: string, status: string }[] = [];
+        console.log('samples.length: ', samples.length);
+        console.log('edges.length: ', edges.length);
+        edges.forEach((edge, index) => {
+            console.log('edge.from: ', edge.from);
+            endpoints.push({ edgeId: index, x: samples[edge.from].x, y: samples[edge.from].y, type: edge.type, status: edge.status });
+            endpoints.push({ edgeId: index, x: samples[edge.to].x, y: samples[edge.to].y, type: edge.type, status: edge.status });
+        });
+
         const bgimg = showBgimg ? vchartData?.bgimg : 'rgb(255, 255, 255)';
 
         // create spec
         const spec = {
             // ================= meta data =================
-            type: 'scatter', // chart type
+            type: 'common', // chart type
             data: [
                 {
                     id: 'points',
@@ -100,69 +113,233 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                             }
                         }
                     ]
+                },
+                {
+                    id: 'edges',
+                    values: endpoints,
+                    transforms: [
+                        {
+                            type: 'filter',
+                            options: {
+                                callback: (datum: { type: string; }) => {
+                                    if (revealNeighborCrossType && datum.type === 'crossType') {
+                                        return true;
+                                    }
+                                    if (revealNeighborSameType && datum.type === 'sameType') {
+                                        return true;
+                                    }
+                                }
+                            }
+                        }
+                    ]
                 }
             ],
-            xField: 'x',
-            yField: 'y',
-            seriesField: 'label',
+
+            series: [
+                {
+                    id: 'point-series',
+                    type: 'scatter',
+                    dataId: 'points',
+                    xField: 'x',
+                    yField: 'y',
+                    seriesField: 'label',
+                    point: {
+                        state: {
+                            hover: {
+                                scaleX: 2,
+                                scaleY: 2
+                            }
+                        },
+                        style: {
+                            size: 8,
+                            fill: (datum: { label: number; }) => {
+                                const color = colorDict.get(datum.label) ?? [0, 0, 0];
+                                return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
+                            },
+                            fillOpacity: (datum: { confidence: number; }) => {
+                                return datum.confidence;
+                            }
+                        }
+                    },
+                    label: [
+                        {
+                            visible: true,
+                            style: {
+                                visible: () => {
+                                    return showNumber || showText;
+                                },
+                                type: 'text',
+                                fontFamily: 'Console',
+                                // fontStyle: 'italic',
+                                // fontWeight: 'bold',
+                                text: (datum: { pointId: any; textSample: string; label: number; }) => {
+                                    if (showText && showNumber) {
+                                        return `${datum.pointId}.${datum.textSample == '' ? labelDict.get(datum.label) : datum.textSample}`;
+                                    }
+                                    else if (showText) {
+                                        return datum.textSample == '' ? labelDict.get(datum.label) : datum.textSample;
+                                    }
+                                    else if (showNumber) {
+                                        return `${datum.pointId}`;
+                                    }
+                                },
+
+                                fill: (datum: { label: number; }) => {
+                                    const color = colorDict.get(datum.label) ?? [0, 0, 0];
+                                    return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
+                                },
+                                fillOpacity: 0.6
+                            }
+                        }
+                    ],
+                    tooltip: {
+                        lockAfterClick: false,
+                        dimension: {
+                            visible: false
+                        },
+                        mark: {
+                            title: {
+                                visiable: true,
+                                value: 'Info'
+                            },
+                            content: [
+                                {
+                                    key: 'Label',
+                                    value: (datum: { label_desc: string; }) => datum.label_desc,
+                                    shapeType: 'circle',
+                                    shapeSize: 8
+                                },
+                                {
+                                    key: 'Prediction',
+                                    value: (datum: { pred_desc: string }) => datum.pred_desc,
+                                    shapeType: 'circle',
+                                    shapeSize: 8,
+                                    shapeFill: (datum: { pred: number }) => {
+                                        const color = colorDict.get(datum.pred) ?? [0, 0, 0];
+                                        return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
+                                    }
+                                },
+                                {
+                                    key: 'Confidance',
+                                    value: (datum: { confidence: number }) => `${datum.confidence.toFixed(2)}`,
+                                    shapeType: 'square',
+                                    shapeSize: 8,
+                                    shapeHollow: false,
+                                    shapeFill: (datum: { label: number, pred: number }) => {
+                                        if (datum.label == datum.pred) {
+                                            return 'rgb(20, 227, 58)';
+                                        }
+                                        else {
+                                            return 'rgb(255, 0, 0)';
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        style: {
+                            panel: {
+                                padding: {
+                                    top: 10,
+                                    bottom: 15,
+                                    left: 10,
+                                    right: 10
+                                },
+                                backgroundColor: '#fff',
+                                border: {
+                                    color: '#eee',
+                                    width: 1,
+                                    radius: 10
+                                },
+                                shadow: {
+                                    x: 0,
+                                    y: 0,
+                                    blur: 10,
+                                    spread: 5,
+                                    color: '#eee'
+                                }
+                            },
+                            titleLabel: {
+                                fontSize: 20,
+                                fontFamily: 'Times New Roman',
+                                fill: 'brown',
+                                fontWeight: 'bold',
+                                textAlign: 'center',
+                                lineHeight: 24
+                            },
+                            keyLabel: {
+                                fontSize: 16,
+                                fontFamily: 'Times New Roman',
+                                fill: 'black',
+                                textAlign: 'center',
+                                lineHeight: 15,
+                                spacing: 10
+                            },
+                            valueLabel: {
+                                fontSize: 14,
+                                fill: 'black',
+                                textAlign: 'center',
+                                lineHeight: 15,
+                                spacing: 10
+                            }
+                        }
+                    }
+                },
+                {
+                    id: 'edges-series',
+                    type: 'line',
+                    dataId: 'edges',
+                    seriesField: 'edgeId',
+                    xField: 'x',
+                    yField: 'y',
+                    line: {
+                        style: {
+                            stroke: (datum: { status: string; }) => {
+                                if (datum.status == 'maintain') {
+                                    return 'rgb(113, 113, 113)';
+                                }
+                                else if (datum.status == 'connect') {
+                                    return 'rgb(94, 242, 121)';
+                                }
+                                else if (datum.status == 'disconnect') {
+                                    return 'rgb(242, 129, 129)';
+                                }
+                                return 'rgb(113, 113, 113)';
+                            },
+                            lineDash: (datum: { status: string; }) => {
+                                if (datum.status == 'maintain') {
+                                    return [0, 0];
+                                }
+                                else if (datum.status == 'connect') {
+                                    return [0, 0];
+                                }
+                                else if (datum.status == 'disconnect') {
+                                    return [2, 4];
+                                }
+                                return [0, 0];
+                            },
+                            lineWidth: (datum: { status: string; }) => {
+                                if (datum.status == 'maintain') {
+                                    return 1;
+                                }
+                                else if (datum.status == 'connect') {
+                                    return 2;
+                                }
+                                else if (datum.status == 'disconnect') {
+                                    return 2;
+                                }
+                                return 1;
+                            },
+                            fillOpacity: 0.6
+                        }
+                    },
+                    point: { visible: false }
+                }
+            ],
 
             // ================= background =================
             background: {
                 image: bgimg,
             },
-
-            // ================= points =================
-            point: {
-                state: {
-                    hover: {
-                        scaleX: 2,
-                        scaleY: 2
-                    }
-                },
-                style: {
-                    size: 8,
-                    fill: (datum: { label: number; }) => {
-                        const color = colorDict.get(datum.label) ?? [0, 0, 0];
-                        return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
-                    },
-                    fillOpacity: (datum: { confidence: number; }) => {
-                        return datum.confidence;
-                    }
-                }
-            },
-
-            // ================= label on canvas =================
-            label: [
-                {
-                    visible: true,
-                    style: {
-                        visible: () => {
-                            return showNumber || showText;
-                        },
-                        type: 'text',
-                        fontFamily: 'Console',
-                        // fontStyle: 'italic',
-                        // fontWeight: 'bold',
-                        text: (datum: { index: any; textSample: string; label: number; }) => {
-                            if (showText && showNumber) {
-                                return `${datum.index}.${datum.textSample == '' ? labelDict.get(datum.label) : datum.textSample}`;
-                            }
-                            else if (showText) {
-                                return datum.textSample == '' ? labelDict.get(datum.label) : datum.textSample;
-                            }
-                            else if (showNumber) {
-                                return `${datum.index}`;
-                            }
-                        },
-
-                        fill: (datum: { label: number; }) => {
-                            const color = colorDict.get(datum.label) ?? [0, 0, 0];
-                            return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
-                        },
-                        fillOpacity: 0.6
-                    }
-                }
-            ],
 
             // ================= axes =================
             axes: [
@@ -181,8 +358,6 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                     grid: { visible: false }
                 }
             ],
-
-            // ================= zoom =================
             dataZoom: [
                 {
                     visible: true,
@@ -269,125 +444,6 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                     }
                 }
             ],
-
-            // brush: {
-            //     visible: true,
-            //     brushType: 'rect',
-            //     inBrush: {
-            //         colorAlpha: 1
-            //     },
-            //     outOfBrush: {
-            //         colorAlpha: 0.2
-            //     },
-            //     // 开启后默认关联所有axis/dataZoom
-            //     zoomAfterBrush: true
-            // },
-            // ================= tooltip =================
-            tooltip: {
-                lockAfterClick: false,
-                dimension: {
-                    visible: false
-                },
-                mark: {
-                    title: {
-                        visiable: true,
-                        value: 'Info'
-                    },
-                    content: [
-                        {
-                            key: 'Label',
-                            value: (datum: { label_desc: string; }) => datum.label_desc,
-                            shapeType: 'circle',
-                            shapeSize: 8
-                        },
-                        {
-                            key: 'Prediction',
-                            value: (datum: { pred_desc: string }) => datum.pred_desc,
-                            shapeType: 'circle',
-                            shapeSize: 8,
-                            shapeFill: (datum: { pred: number }) => {
-                                const color = colorDict.get(datum.pred) ?? [0, 0, 0];
-                                return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
-                            }
-                        },
-                        {
-                            key: 'Confidance',
-                            value: (datum: { confidence: number }) => `${datum.confidence.toFixed(2)}`,
-                            shapeType: 'square',
-                            shapeSize: 8,
-                            shapeHollow: false,
-                            shapeFill: (datum: { label: number, pred: number }) => {
-                                if (datum.label == datum.pred) {
-                                    return 'rgb(20, 227, 58)';
-                                }
-                                else {
-                                    return 'rgb(255, 0, 0)';
-                                }
-                            }
-                        }
-                    ]
-                },
-                style: {
-                    panel: {
-                        padding: {
-                            top: 10,
-                            bottom: 15,
-                            left: 10,
-                            right: 10
-                        },
-                        backgroundColor: '#fff',
-                        border: {
-                            color: '#eee',
-                            width: 1,
-                            radius: 10
-                        },
-                        shadow: {
-                            x: 0,
-                            y: 0,
-                            blur: 10,
-                            spread: 5,
-                            color: '#eee'
-                        }
-                    },
-                    titleLabel: {
-                        fontSize: 20,
-                        fontFamily: 'Times New Roman',
-                        fill: 'brown',
-                        fontWeight: 'bold',
-                        textAlign: 'center',
-                        lineHeight: 24
-                    },
-                    keyLabel: {
-                        fontSize: 16,
-                        fontFamily: 'Times New Roman',
-                        fill: 'black',
-                        textAlign: 'center',
-                        lineHeight: 15,
-                        spacing: 10
-                    },
-                    valueLabel: {
-                        fontSize: 14,
-                        fill: 'black',
-                        textAlign: 'center',
-                        lineHeight: 15,
-                        spacing: 10
-                    }
-                }
-            },
-
-            // customMark: {
-            //     type: 'image',
-            //     style: {
-            //         image: 'https://lf9-dp-fe-cms-tos.byteorg.com/obj/bit-cloud/Monday-icon-vchart-demo.svg',
-            //         width: 20,
-            //         height: 20,
-            //         x: 0,
-            //         y: 0,
-            //         opacity: 0.2
-            //     }
-            // },
-
-            // ================= legend =================
             legends: [
                 {
                     visible: true,
@@ -433,7 +489,6 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                     }
                 }
             ],
-
             direction: 'horizontal'
         };
 
@@ -447,7 +502,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
         }
 
         vchartRef.current.renderSync();
-    }, [vchartData, filterState, showBgimg, showNumber, showText]);
+    }, [vchartData, filterState, showBgimg, showNumber, showText, revealNeighborCrossType, revealNeighborSameType]);
 
     return <div
         ref={chartRef}
@@ -465,4 +520,73 @@ function softmax(arr: number[]): number[] {
     const expValues = arr.map(val => Math.exp(val));
     const sumExpValues = expValues.reduce((acc, val) => acc + val, 0);
     return expValues.map(val => val / sumExpValues);
+}
+
+function createEdges(
+    currentSameType: number[][],
+    currentCrossType: number[][],
+    previousSameType: number[][],
+    previousCrossType: number[][]
+): Edge[] {
+    const edges: Edge[] = [];
+    const allNodes = new Set<number>();
+
+    // Collect all nodes
+    [currentSameType, currentCrossType, previousSameType, previousCrossType].forEach(matrix => {
+        matrix.forEach((neighbors, node) => {
+            allNodes.add(node);
+            neighbors.forEach(neighbor => allNodes.add(neighbor));
+        });
+    });
+
+    allNodes.forEach(node => {
+        const currentNeighborsSameType = new Set(currentSameType[node] || []);
+        const currentNeighborsCrossType = new Set(currentCrossType[node] || []);
+        const previousNeighborsSameType = new Set(previousSameType[node] || []);
+        const previousNeighborsCrossType = new Set(previousCrossType[node] || []);
+
+        // Check sameType neighbors
+        currentNeighborsSameType.forEach(neighbor => {
+            if (previousNeighborsSameType.has(neighbor)) {
+                if (node != neighbor) {
+                    edges.push({ from: node, to: neighbor, type: 'sameType', status: 'maintain' });
+                }
+            } else {
+                if (node != neighbor) {
+                    edges.push({ from: node, to: neighbor, type: 'sameType', status: 'connect' });
+                }
+            }
+        });
+
+        previousNeighborsSameType.forEach(neighbor => {
+            if (!currentNeighborsSameType.has(neighbor)) {
+                if (node != neighbor) {
+                    edges.push({ from: node, to: neighbor, type: 'sameType', status: 'disconnect' });
+                }
+            }
+        });
+
+        // Check crossType neighbors
+        currentNeighborsCrossType.forEach(neighbor => {
+            if (previousNeighborsCrossType.has(neighbor)) {
+                if (node != neighbor) {
+                    edges.push({ from: node, to: neighbor, type: 'crossType', status: 'maintain' });
+                }
+            } else {
+                if (node != neighbor) {
+                    edges.push({ from: node, to: neighbor, type: 'crossType', status: 'connect' });
+                }
+            }
+        });
+
+        previousNeighborsCrossType.forEach(neighbor => {
+            if (!currentNeighborsCrossType.has(neighbor)) {
+                if (node != neighbor) {
+                    edges.push({ from: node, to: neighbor, type: 'crossType', status: 'disconnect' });
+                }
+            }
+        });
+    });
+
+    return edges;
 }
