@@ -73,17 +73,16 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
             y_max = y_max + PADDING;
         }
 
-
-
         const edges = createEdges(neighborSameType, neighborCrossType, lastNeighborSameType, lastNeighborCrossType);
-        const endpoints: { edgeId: number, x: number, y: number, type: string, status: string }[] = [];
-        console.log('samples.length: ', samples.length);
-        console.log('edges.length: ', edges.length);
+        const endpoints: { edgeId: number, from: number, to: number, x: number, y: number, type: string, status: string }[] = [];
         edges.forEach((edge, index) => {
-            console.log('edge.from: ', edge.from);
-            endpoints.push({ edgeId: index, x: samples[edge.from].x, y: samples[edge.from].y, type: edge.type, status: edge.status });
-            endpoints.push({ edgeId: index, x: samples[edge.to].x, y: samples[edge.to].y, type: edge.type, status: edge.status });
+            endpoints.push({ edgeId: index, from: edge.from, to: edge.to, x: samples[edge.from].x, y: samples[edge.from].y, type: edge.type, status: edge.status });
+            endpoints.push({ edgeId: index, from: edge.from, to: edge.to, x: samples[edge.to].x, y: samples[edge.to].y, type: edge.type, status: edge.status });
         });
+        console.log(endpoints);
+        console.log(hoveredIndex);
+        console.log(revealNeighborCrossType);
+        console.log(revealNeighborSameType);
 
         const bgimg = showBgimg ? vchartData?.bgimg : 'rgb(255, 255, 255)';
 
@@ -121,13 +120,21 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                         {
                             type: 'filter',
                             options: {
-                                callback: (datum: { type: string; }) => {
+                                callback: (datum: { from: number, to: number, type: string; }) => {
+                                    if (datum.from !== hoveredIndex && datum.to !== hoveredIndex) {
+                                        // console.log('pointId ', datum.pointId);
+                                        // console.log('hoverIndex ', hoveredIndex);
+                                        return false;
+                                    }
+                                    console.log('found same:', hoveredIndex);
                                     if (revealNeighborCrossType && datum.type === 'crossType') {
                                         return true;
                                     }
                                     if (revealNeighborSameType && datum.type === 'sameType') {
                                         return true;
                                     }
+                                    console.log('not found');
+                                    return false;
                                 }
                             }
                         }
@@ -170,7 +177,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                                 },
                                 type: 'text',
                                 fontFamily: 'Console',
-                                // fontStyle: 'italic',
+                                fontStyle: 'italic',
                                 // fontWeight: 'bold',
                                 text: (datum: { pointId: any; textSample: string; label: number; }) => {
                                     if (showText && showNumber) {
@@ -329,7 +336,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                                 }
                                 return 1;
                             },
-                            fillOpacity: 0.6
+                            fillOpacity: 0.4
                         }
                     },
                     point: { visible: false }
@@ -368,16 +375,16 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                     showBackgroundChart: false,
                     startHandler: {
                         style: {
-                            size: 13,
+                            size: 6,
                         }
                     },
                     endHandler: {
                         style: {
-                            size: 13,
+                            size: 6,
                         }
                     },
                     background: {
-                        size: 15,
+                        size: 8,
                         style: {
                             cornerRadius: 20
                         }
@@ -410,16 +417,16 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                     showBackgroundChart: false,
                     startHandler: {
                         style: {
-                            size: 13,
+                            size: 6,
                         }
                     },
                     endHandler: {
                         style: {
-                            size: 13,
+                            size: 6,
                         }
                     },
                     background: {
-                        size: 15,
+                        size: 8,
                         style: {
                             cornerRadius: 20
                         }
@@ -496,13 +503,17 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
         if (!vchartRef.current) {
             const vchart = new VChart(spec, { dom: chartRef.current });
             vchartRef.current = vchart;
+            vchartRef.current.on('pointerover', { id: 'point-series' }, e => {
+                console.log('Enter point', e);
+                setHoveredIndex(e.datum?.pointId);
+            });
         }
         else {
             vchartRef.current.updateSpec(spec);
         }
 
         vchartRef.current.renderSync();
-    }, [vchartData, filterState, showBgimg, showNumber, showText, revealNeighborCrossType, revealNeighborSameType]);
+    }, [vchartData, filterState, showBgimg, showNumber, showText, revealNeighborCrossType, revealNeighborSameType, hoveredIndex]);
 
     return <div
         ref={chartRef}
