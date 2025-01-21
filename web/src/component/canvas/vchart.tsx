@@ -122,8 +122,6 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                             options: {
                                 callback: (datum: { from: number, to: number, type: string; }) => {
                                     if (datum.from !== hoveredIndex && datum.to !== hoveredIndex) {
-                                        // console.log('pointId ', datum.pointId);
-                                        // console.log('hoverIndex ', hoveredIndex);
                                         return false;
                                     }
                                     console.log('found same:', hoveredIndex);
@@ -344,6 +342,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
             ],
 
             // ================= background =================
+            // TODO
             background: {
                 image: bgimg,
             },
@@ -448,7 +447,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                         enable: true,
                         reverse: true,
                         rate: 1
-                    }
+                    },
                 }
             ],
             legends: [
@@ -504,8 +503,10 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
             const vchart = new VChart(spec, { dom: chartRef.current });
             vchartRef.current = vchart;
             vchartRef.current.on('pointerover', { id: 'point-series' }, e => {
-                console.log('Enter point', e);
                 setHoveredIndex(e.datum?.pointId);
+            });
+            vchartRef.current.on('pointerout', { id: 'point-series' }, e => {
+                setHoveredIndex(-1);
             });
         }
         else {
