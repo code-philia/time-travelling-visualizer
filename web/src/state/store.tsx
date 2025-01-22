@@ -83,6 +83,7 @@ type BaseMutableGlobalStore = {
     showText: boolean;
     revealNeighborSameType: boolean;
     revealNeighborCrossType: boolean;
+    showMetadata: boolean;
     neighborSameType: number[][];
     neighborCrossType: number[][];
     lastNeighborSameType: number[][];
@@ -132,6 +133,7 @@ const initMutableGlobalStore: BaseMutableGlobalStore = {
     showText: true,
     revealNeighborSameType: false,
     revealNeighborCrossType: false,
+    showMetadata: false,
     neighborSameType: [],
     neighborCrossType: [],
     lastNeighborCrossType: [],
