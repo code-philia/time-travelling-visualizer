@@ -79,10 +79,6 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
             endpoints.push({ edgeId: index, from: edge.from, to: edge.to, x: samples[edge.from].x, y: samples[edge.from].y, type: edge.type, status: edge.status });
             endpoints.push({ edgeId: index, from: edge.from, to: edge.to, x: samples[edge.to].x, y: samples[edge.to].y, type: edge.type, status: edge.status });
         });
-        console.log(endpoints);
-        console.log(hoveredIndex);
-        console.log(revealNeighborCrossType);
-        console.log(revealNeighborSameType);
 
         const bgimg = showBgimg ? vchartData?.bgimg : 'rgb(255, 255, 255)';
 
@@ -150,10 +146,10 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                     seriesField: 'label',
                     point: {
                         state: {
-                            hover: {
-                                scaleX: 2,
-                                scaleY: 2
-                            }
+                            // hover: {
+                            //     scaleX: 2,
+                            //     scaleY: 2
+                            // }
                         },
                         style: {
                             size: 8,
@@ -196,98 +192,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                                 fillOpacity: 0.6
                             }
                         }
-                    ],
-                    tooltip: {
-                        lockAfterClick: false,
-                        dimension: {
-                            visible: false
-                        },
-                        mark: {
-                            title: {
-                                visiable: true,
-                                value: 'Info'
-                            },
-                            content: [
-                                {
-                                    key: 'Label',
-                                    value: (datum: { label_desc: string; }) => datum.label_desc,
-                                    shapeType: 'circle',
-                                    shapeSize: 8
-                                },
-                                {
-                                    key: 'Prediction',
-                                    value: (datum: { pred_desc: string }) => datum.pred_desc,
-                                    shapeType: 'circle',
-                                    shapeSize: 8,
-                                    shapeFill: (datum: { pred: number }) => {
-                                        const color = colorDict.get(datum.pred) ?? [0, 0, 0];
-                                        return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
-                                    }
-                                },
-                                {
-                                    key: 'Confidance',
-                                    value: (datum: { confidence: number }) => `${datum.confidence.toFixed(2)}`,
-                                    shapeType: 'square',
-                                    shapeSize: 8,
-                                    shapeHollow: false,
-                                    shapeFill: (datum: { label: number, pred: number }) => {
-                                        if (datum.label == datum.pred) {
-                                            return 'rgb(20, 227, 58)';
-                                        }
-                                        else {
-                                            return 'rgb(255, 0, 0)';
-                                        }
-                                    }
-                                }
-                            ]
-                        },
-                        style: {
-                            panel: {
-                                padding: {
-                                    top: 10,
-                                    bottom: 15,
-                                    left: 10,
-                                    right: 10
-                                },
-                                backgroundColor: '#fff',
-                                border: {
-                                    color: '#eee',
-                                    width: 1,
-                                    radius: 10
-                                },
-                                shadow: {
-                                    x: 0,
-                                    y: 0,
-                                    blur: 10,
-                                    spread: 5,
-                                    color: '#eee'
-                                }
-                            },
-                            titleLabel: {
-                                fontSize: 20,
-                                fontFamily: 'Times New Roman',
-                                fill: 'brown',
-                                fontWeight: 'bold',
-                                textAlign: 'center',
-                                lineHeight: 24
-                            },
-                            keyLabel: {
-                                fontSize: 16,
-                                fontFamily: 'Times New Roman',
-                                fill: 'black',
-                                textAlign: 'center',
-                                lineHeight: 15,
-                                spacing: 10
-                            },
-                            valueLabel: {
-                                fontSize: 14,
-                                fill: 'black',
-                                textAlign: 'center',
-                                lineHeight: 15,
-                                spacing: 10
-                            }
-                        }
-                    }
+                    ]
                 },
                 {
                     id: 'edges-series',
@@ -374,23 +279,27 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                     showBackgroundChart: false,
                     startHandler: {
                         style: {
-                            size: 6,
+                            fill: 'rgb(22,119,255)',
+                            symbolType: 'diamond',
+                            size: 5,
                         }
                     },
                     endHandler: {
                         style: {
-                            size: 6,
+                            fill: 'rgb(22,119,255)',
+                            symbolType: 'diamond',
+                            size: 5,
                         }
                     },
                     background: {
-                        size: 8,
+                        size: 1,
                         style: {
                             cornerRadius: 20
                         }
                     },
                     selectedBackground: {
                         style: {
-                            fill: 'rgb(22,119,255)',
+                            fill: 'rgb(215, 217, 220)',
                             fillOpacity: 0.5
                         }
                     },
@@ -416,23 +325,27 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                     showBackgroundChart: false,
                     startHandler: {
                         style: {
-                            size: 6,
+                            fill: 'rgb(22,119,255)',
+                            symbolType: 'diamond',
+                            size: 5,
                         }
                     },
                     endHandler: {
                         style: {
-                            size: 6,
+                            fill: 'rgb(22,119,255)',
+                            symbolType: 'diamond',
+                            size: 5,
                         }
                     },
                     background: {
-                        size: 8,
+                        size: 1,
                         style: {
                             cornerRadius: 20
                         }
                     },
                     selectedBackground: {
                         style: {
-                            fill: 'rgb(22,119,255)',
+                            fill: 'rgb(215, 217, 220)',
                             fillOpacity: 0.5
                         }
                     },
@@ -452,6 +365,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
             ],
             legends: [
                 {
+                    seriesId: 'point-series',
                     visible: true,
                     orient: 'right',
                     position: 'start',
@@ -495,6 +409,99 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                     }
                 }
             ],
+
+            tooltip: {
+                seriesId: 'point-series',
+                lockAfterClick: false,
+                dimension: {
+                    visible: false
+                },
+                mark: {
+                    title: {
+                        visiable: true,
+                        value: 'Info'
+                    },
+                    content: [
+                        {
+                            key: 'Label',
+                            value: (datum: { label_desc: string; }) => datum.label_desc,
+                            shapeType: 'circle',
+                            shapeSize: 8
+                        },
+                        {
+                            key: 'Prediction',
+                            value: (datum: { pred_desc: string }) => datum.pred_desc,
+                            shapeType: 'circle',
+                            shapeSize: 8,
+                            shapeFill: (datum: { pred: number }) => {
+                                const color = colorDict.get(datum.pred) ?? [0, 0, 0];
+                                return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
+                            }
+                        },
+                        {
+                            key: 'Confidance',
+                            value: (datum: { confidence: number }) => `${datum.confidence.toFixed(2)}`,
+                            shapeType: 'square',
+                            shapeSize: 8,
+                            shapeHollow: false,
+                            shapeFill: (datum: { label: number, pred: number }) => {
+                                if (datum.label == datum.pred) {
+                                    return 'rgb(20, 227, 58)';
+                                }
+                                else {
+                                    return 'rgb(255, 0, 0)';
+                                }
+                            }
+                        }
+                    ]
+                },
+                style: {
+                    panel: {
+                        padding: {
+                            top: 10,
+                            bottom: 15,
+                            left: 10,
+                            right: 10
+                        },
+                        backgroundColor: '#fff',
+                        border: {
+                            color: '#eee',
+                            width: 1,
+                            radius: 10
+                        },
+                        shadow: {
+                            x: 0,
+                            y: 0,
+                            blur: 10,
+                            spread: 5,
+                            color: '#eee'
+                        }
+                    },
+                    titleLabel: {
+                        fontSize: 20,
+                        fontFamily: 'Times New Roman',
+                        fill: 'brown',
+                        fontWeight: 'bold',
+                        textAlign: 'center',
+                        lineHeight: 24
+                    },
+                    keyLabel: {
+                        fontSize: 16,
+                        fontFamily: 'Times New Roman',
+                        fill: 'black',
+                        textAlign: 'center',
+                        lineHeight: 15,
+                        spacing: 10
+                    },
+                    valueLabel: {
+                        fontSize: 14,
+                        fill: 'black',
+                        textAlign: 'center',
+                        lineHeight: 15,
+                        spacing: 10
+                    }
+                }
+            },
             direction: 'horizontal'
         };
 
