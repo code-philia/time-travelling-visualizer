@@ -14,7 +14,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
     const { labelDict, colorDict } = useDefaultStore(["labelDict", "colorDict"]);
     const { filterValue, filterType } = useDefaultStore(["filterValue", "filterType"]);
     const { filterState } = useDefaultStore(["filterState"]);
-    const { showBgimg } = useDefaultStore(["showBgimg"]);
+    const { showMetadata, showBgimg } = useDefaultStore(["showMetadata", "showBgimg"]);
     const { showNumber, showText, textData } = useDefaultStore(["showNumber", "showText", "textData"])
     const { neighborSameType, neighborCrossType, lastNeighborSameType, lastNeighborCrossType } = useDefaultStore(["neighborSameType", "neighborCrossType", "lastNeighborSameType", "lastNeighborCrossType"]);
     const { revealNeighborCrossType, revealNeighborSameType } = useDefaultStore(["revealNeighborCrossType", "revealNeighborSameType"]);
@@ -146,10 +146,16 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                     seriesField: 'label',
                     point: {
                         state: {
-                            // hover: {
-                            //     scaleX: 2,
-                            //     scaleY: 2
-                            // }
+                            hover: {
+                                scaleX: 2,
+                                scaleY: 2,
+                                fillOpacity: 1
+                            },
+                            hover_reverse: {
+                                scaleX: 1,
+                                scaleY: 1,
+                                fillOpacity: 0.3
+                            }
                         },
                         style: {
                             size: 8,
@@ -274,6 +280,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                     visible: true,
                     orient: 'left',
                     filterMode: 'axis',
+                    showDetail: false,
 
                     // style
                     showBackgroundChart: false,
@@ -320,6 +327,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                     visible: true,
                     orient: 'bottom',
                     filterMode: 'axis',
+                    showDetail: false,
 
                     // style
                     showBackgroundChart: false,
@@ -413,9 +421,8 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
             tooltip: {
                 seriesId: 'point-series',
                 lockAfterClick: false,
-                dimension: {
-                    visible: false
-                },
+                activeType: 'mark',
+                trigger: 'click',
                 mark: {
                     title: {
                         visiable: true,
@@ -456,6 +463,14 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                     ]
                 },
                 style: {
+                    fillOpacity: () => {
+                        if (showMetadata) {
+                            return 1;
+                        }
+                        else {
+                            return 0;
+                        }
+                    },
                     panel: {
                         padding: {
                             top: 10,
@@ -521,7 +536,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
         }
 
         vchartRef.current.renderSync();
-    }, [vchartData, filterState, showBgimg, showNumber, showText, revealNeighborCrossType, revealNeighborSameType, hoveredIndex]);
+    }, [vchartData, filterState, showBgimg, showMetadata, showNumber, showText, revealNeighborCrossType, revealNeighborSameType, hoveredIndex]);
 
     return <div
         ref={chartRef}
