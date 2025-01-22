@@ -38,7 +38,7 @@ export function OptionsPanel() {
     const trainVisualizer = useTrainVisualizer();
 
     const dataTypeOptions = [{ label: 'Image', value: 'Image', }, { label: 'Text', value: 'Text', },];
-    const { showBgimg, setShowBgimg } = useDefaultStore(["showBgimg", "setShowBgimg"]);
+    const { setShowMetadata, setShowBgimg } = useDefaultStore(["setShowMetadata", "setShowBgimg"]);
 
     // display options
 
@@ -71,6 +71,10 @@ export function OptionsPanel() {
     useEffect(() => {
         setShowBgimg(displayNormalInfoChecked.includes('bgimg'));
     }, [displayNormalInfoChecked, setShowBgimg]);
+
+    useEffect(() => {
+        setShowMetadata(displayNormalInfoChecked.includes('metadata'));
+    }, [displayNormalInfoChecked, setShowMetadata]);
 
     useEffect(() => {
         const options = [];
