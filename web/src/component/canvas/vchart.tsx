@@ -20,7 +20,9 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
     const { revealNeighborCrossType, revealNeighborSameType } = useDefaultStore(["revealNeighborCrossType", "revealNeighborSameType"]);
     const { hoveredIndex, setHoveredIndex } = useDefaultStore(["hoveredIndex", "setHoveredIndex"]);
 
-    // When vchartData changes, update chart
+    /*
+        Main update logic
+    */
     useEffect(() => {
         if (!chartRef.current) {
             return;
@@ -73,13 +75,6 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
             y_max = y_max + PADDING;
         }
 
-        const edges = createEdges(neighborSameType, neighborCrossType, lastNeighborSameType, lastNeighborCrossType);
-        const endpoints: { edgeId: number, from: number, to: number, x: number, y: number, type: string, status: string }[] = [];
-        edges.forEach((edge, index) => {
-            endpoints.push({ edgeId: index, from: edge.from, to: edge.to, x: samples[edge.from].x, y: samples[edge.from].y, type: edge.type, status: edge.status });
-            endpoints.push({ edgeId: index, from: edge.from, to: edge.to, x: samples[edge.to].x, y: samples[edge.to].y, type: edge.type, status: edge.status });
-        });
-
         const bgimg = showBgimg ? vchartData?.bgimg : 'rgb(255, 255, 255)';
 
         // create spec
@@ -111,28 +106,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                 },
                 {
                     id: 'edges',
-                    values: endpoints,
-                    transforms: [
-                        {
-                            type: 'filter',
-                            options: {
-                                callback: (datum: { from: number, to: number, type: string; }) => {
-                                    if (datum.from !== hoveredIndex && datum.to !== hoveredIndex) {
-                                        return false;
-                                    }
-                                    console.log('found same:', hoveredIndex);
-                                    if (revealNeighborCrossType && datum.type === 'crossType') {
-                                        return true;
-                                    }
-                                    if (revealNeighborSameType && datum.type === 'sameType') {
-                                        return true;
-                                    }
-                                    console.log('not found');
-                                    return false;
-                                }
-                            }
-                        }
-                    ]
+                    values: [] // dynamically set
                 }
             ],
 
@@ -154,16 +128,16 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                             hover_reverse: {
                                 scaleX: 1,
                                 scaleY: 1,
-                                fillOpacity: 0.3
+                                fillOpacity: 0.2
                             },
                             as_neighbor: {
-                                scaleX: 1.5,
-                                scaleY: 1.5,
-                                fillOpacity: 0.6
+                                scaleX: 1.6,
+                                scaleY: 1.6,
+                                fillOpacity: 0.5
                             }
                         },
                         style: {
-                            size: 8,
+                            size: 10,
                             fill: (datum: { label: number; }) => {
                                 const color = colorDict.get(datum.label) ?? [0, 0, 0];
                                 return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
@@ -427,7 +401,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                 seriesId: 'point-series',
                 lockAfterClick: false,
                 activeType: 'mark',
-                trigger: 'click',
+                trigger: 'hover',
                 mark: {
                     title: {
                         visiable: true,
@@ -529,6 +503,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
         if (!vchartRef.current) {
             const vchart = new VChart(spec, { dom: chartRef.current });
             vchartRef.current = vchart;
+
             vchartRef.current.on('pointerover', { id: 'point-series' }, e => {
                 setHoveredIndex(e.datum?.pointId);
             });
@@ -541,8 +516,12 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
         }
 
         vchartRef.current.renderSync();
-    }, [vchartData, filterState, showBgimg, showMetadata, showNumber, showText, revealNeighborCrossType, revealNeighborSameType, hoveredIndex]);
+    }, [vchartData, filterState, showBgimg, showMetadata, showNumber, showText]);
 
+    /*
+        Highlight neighbor points
+        triggered by hoveredIndex changed
+    */
     useEffect(() => {
         if (!vchartRef.current) {
             return;
@@ -605,6 +584,58 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
         });
 
     }, [hoveredIndex]);
+
+
+    /*
+        Show neighborhood relationship
+        triggered by hoveredIndex and showNeighbor options changed
+    */
+    useEffect(() => {
+        if (!vchartRef.current) {
+            return;
+        }
+
+        // create data
+        let samples: { pointId: number, x: number; y: number; label: number; pred: number; label_desc: string; pred_desc: string; confidence: number; textSample: string }[] = []
+        vchartData?.positions.map((p, i) => {
+            const x = parseFloat(p[0].toFixed(3));
+            const y = parseFloat(p[1].toFixed(3));
+            let confidence = 1.0;
+            let pred = vchartData?.labels[i];
+            if (vchartData?.predictionProps && vchartData.predictionProps.length > 0) {
+                let props = vchartData.predictionProps[i];
+                let softmaxValues = softmax(props);
+                confidence = Math.max(...softmaxValues);
+                pred = softmaxValues.indexOf(confidence);
+            }
+
+            samples.push({
+                pointId: i,
+                x: x,
+                y: y,
+                label: vchartData?.labels[i],
+                label_desc: labelDict.get(vchartData?.labels[i]) ?? '',
+                pred: pred,
+                pred_desc: labelDict.get(pred) ?? labelDict.get(vchartData?.labels[i]) ?? '',
+                confidence: confidence,
+                textSample: textData[i] ?? ''
+            });
+        });
+
+        const edges = createEdges(neighborSameType, neighborCrossType, lastNeighborSameType, lastNeighborCrossType);
+        const endpoints: { edgeId: number, from: number, to: number, x: number, y: number, type: string, status: string }[] = [];
+        edges.forEach((edge, index) => {
+            if (edge.from === hoveredIndex || edge.to === hoveredIndex) {
+                if ((revealNeighborCrossType && edge.type === 'crossType') || (revealNeighborSameType && edge.type === 'sameType')) {
+                    endpoints.push({ edgeId: index, from: edge.from, to: edge.to, x: samples[edge.from].x, y: samples[edge.from].y, type: edge.type, status: edge.status });
+                    endpoints.push({ edgeId: index, from: edge.from, to: edge.to, x: samples[edge.to].x, y: samples[edge.to].y, type: edge.type, status: edge.status });
+                }
+            }
+        });
+        vchartRef.current?.updateDataSync('edges', endpoints);
+
+    }, [revealNeighborCrossType, revealNeighborSameType, hoveredIndex]);
+
 
     return <div
         ref={chartRef}
