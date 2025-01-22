@@ -155,6 +155,11 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                                 scaleX: 1,
                                 scaleY: 1,
                                 fillOpacity: 0.3
+                            },
+                            as_neighbor: {
+                                scaleX: 1.5,
+                                scaleY: 1.5,
+                                fillOpacity: 0.6
                             }
                         },
                         style: {
@@ -537,6 +542,69 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
 
         vchartRef.current.renderSync();
     }, [vchartData, filterState, showBgimg, showMetadata, showNumber, showText, revealNeighborCrossType, revealNeighborSameType, hoveredIndex]);
+
+    useEffect(() => {
+        if (!vchartRef.current) {
+            return;
+        }
+
+        if (hoveredIndex === -1) {
+            vchartRef.current?.updateState({
+                as_neighbor: {
+                    filter: () => {
+                        return false;
+                    }
+                }
+            });
+            return;
+        }
+
+        // create data
+        let samples: { pointId: number, x: number; y: number; label: number; pred: number; label_desc: string; pred_desc: string; confidence: number; textSample: string }[] = []
+        vchartData?.positions.map((p, i) => {
+            const x = parseFloat(p[0].toFixed(3));
+            const y = parseFloat(p[1].toFixed(3));
+            let confidence = 1.0;
+            let pred = vchartData?.labels[i];
+            if (vchartData?.predictionProps && vchartData.predictionProps.length > 0) {
+                let props = vchartData.predictionProps[i];
+                let softmaxValues = softmax(props);
+                confidence = Math.max(...softmaxValues);
+                pred = softmaxValues.indexOf(confidence);
+            }
+
+            samples.push({
+                pointId: i,
+                x: x,
+                y: y,
+                label: vchartData?.labels[i],
+                label_desc: labelDict.get(vchartData?.labels[i]) ?? '',
+                pred: pred,
+                pred_desc: labelDict.get(pred) ?? labelDict.get(vchartData?.labels[i]) ?? '',
+                confidence: confidence,
+                textSample: textData[i] ?? ''
+            });
+        });
+
+        const edges = createEdges(neighborSameType, neighborCrossType, lastNeighborSameType, lastNeighborCrossType);
+        const selectedNeighbors: number[] = [];
+        edges.forEach((edge, _) => {
+            if (edge.from == hoveredIndex) {
+                selectedNeighbors.push(edge.to);
+            }
+            if (edge.to == hoveredIndex) {
+                selectedNeighbors.push(edge.from);
+            }
+        });
+        vchartRef.current?.updateState({
+            as_neighbor: {
+                filter: datum => {
+                    return selectedNeighbors.includes(datum.pointId);
+                }
+            }
+        });
+
+    }, [hoveredIndex]);
 
     return <div
         ref={chartRef}
