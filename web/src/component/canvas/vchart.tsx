@@ -112,6 +112,38 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
 
             series: [
                 {
+                    id: 'background-series',
+                    interactive: false,
+                    persent: true,
+                    type: 'area',
+                    data: {
+                        values: [
+                            { xx: x_min - 1, yy: y_min - 1 },
+                            { xx: x_max + 1, yy: y_min - 1 },
+                            { xx: x_max + 1, yy: y_max + 1 },
+                            { xx: x_min - 1, yy: y_max + 1 },
+                            { xx: x_min - 1, yy: y_min - 1 },
+                        ]
+                    },
+                    xField: 'xx',
+                    yField: 'yy',
+                    point: {
+                        visible: false,
+                    },
+                    area: {
+                        interactive: false,
+                        style: {
+                            fill: 'white',
+                        }
+                    },
+                    hover: {
+                        enable: false,
+                    },
+                    select: {
+                        enable: false,
+                    }
+                },
+                {
                     id: 'point-series',
                     type: 'scatter',
                     dataId: 'points',
@@ -241,17 +273,17 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
             axes: [
                 {
                     orient: 'left',
-                    min: y_max,
-                    max: y_min,
+                    min: y_min,
+                    max: y_max,
                     type: 'linear',
-                    grid: { visible: false }
+                    grid: { visible: true }
                 },
                 {
                     orient: 'bottom',
                     min: x_min,
                     max: x_max,
                     type: 'linear',
-                    grid: { visible: false }
+                    grid: { visible: true }
                 }
             ],
             dataZoom: [
@@ -632,7 +664,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                 }
             }
         });
-        vchartRef.current?.updateDataSync('edges', endpoints);
+        vchartRef.current?.updateData('edges', endpoints);
 
     }, [revealNeighborCrossType, revealNeighborSameType, hoveredIndex]);
 
