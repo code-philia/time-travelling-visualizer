@@ -49,9 +49,7 @@ export function useSetUpProjection() {
             'setLastNeighborSameType',
             'setLastNeighborCrossType',
             'setAllEpochsProjectionData',
-            'setPredictionProps',
-            'setBgimg',
-            'setScale'
+            'setPredictionProps'
         ]);
 
     // TODO add cache
@@ -102,23 +100,15 @@ export function useSetUpProjection() {
                 setTextData(text['text_list'] ?? []);
             }
 
-            // part 3: for classification task, acquire prediction, bgimg and scale
+            // part 3: for classification task, acquire prediction
             if (config.dataset.taskType == 'classification') {
                 const predRes = await getAttributeResource(contentPath, epoch, 'prediction', {
                     host: backendHost
                 });
                 setPredictionProps(predRes['prediction']);
-
-                const bgimgRes = await getBgimg(contentPath, visMethod, epoch, {
-                    host: backendHost
-                });
-                setBgimg(bgimgRes['bgimg']);
-                setScale(bgimgRes['scale']);
             }
             else {
                 setPredictionProps([]);
-                setBgimg('');
-                setScale([]);
             }
 
             // TODO Do an immediate setup dict. Don't know how to fix it because outer setDict cannot see the updated projection data
