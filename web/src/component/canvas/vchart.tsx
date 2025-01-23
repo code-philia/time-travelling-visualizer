@@ -75,8 +75,6 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
             y_max = y_max + PADDING;
         }
 
-        const bgimg = showBgimg ? vchartData?.bgimg : 'rgb(255, 255, 255)';
-
         // create spec
         const spec = {
             // ================= meta data =================
@@ -265,9 +263,6 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
 
             // ================= background =================
             // TODO
-            background: {
-                image: bgimg,
-            },
 
             // ================= axes =================
             axes: [

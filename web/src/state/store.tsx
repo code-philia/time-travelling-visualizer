@@ -96,10 +96,6 @@ type BaseMutableGlobalStore = {
     filterType: 'label' | 'prediction';
     filterValue: string;
 
-    // bgimg
-    bgimg: string;
-    scale: number[];
-
     // hovered
     hoveredIndex: -1
 }
@@ -145,10 +141,6 @@ const initMutableGlobalStore: BaseMutableGlobalStore = {
     filterState: false,
     filterType: 'label',
     filterValue: '',
-
-    // bgimg
-    bgimg: '',
-    scale: [],
 
     // hovered
     hoveredIndex: -1
