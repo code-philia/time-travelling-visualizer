@@ -249,10 +249,10 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                                     return 1;
                                 }
                                 else if (datum.status == 'connect') {
-                                    return 2;
+                                    return 1;
                                 }
                                 else if (datum.status == 'disconnect') {
-                                    return 2;
+                                    return 1;
                                 }
                                 return 1;
                             },
@@ -664,7 +664,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                 }
             }
         });
-        vchartRef.current?.updateData('edges', endpoints);
+        vchartRef.current?.updateDataSync('edges', endpoints);
 
     }, [revealNeighborCrossType, revealNeighborSameType, hoveredIndex]);
 
