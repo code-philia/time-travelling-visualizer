@@ -1,7 +1,7 @@
 // ChartComponent.tsx
 import { memo, useEffect, useRef } from 'react';
 import VChart from '@visactor/vchart';
-import { VChartData } from './types';
+import { Edge, VChartData } from './types';
 import { useDefaultStore } from "../../state/store";
 import { convexHull, createEdges, softmax } from './utils';
 const PADDING = 1;
@@ -21,6 +21,9 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
     const { neighborSameType, neighborCrossType, lastNeighborSameType, lastNeighborCrossType } = useDefaultStore(["neighborSameType", "neighborCrossType", "lastNeighborSameType", "lastNeighborCrossType"]);
     const { revealNeighborCrossType, revealNeighborSameType } = useDefaultStore(["revealNeighborCrossType", "revealNeighborSameType"]);
     const { hoveredIndex, setHoveredIndex } = useDefaultStore(["hoveredIndex", "setHoveredIndex"]);
+    const { highlightContext } = useDefaultStore(["highlightContext"]);
+
+    const edgesRef = useRef<Edge[]>([]);
 
     /*
         Main update logic
@@ -63,7 +66,9 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
             if (x > x_max) x_max = x;
             if (y > y_max) y_max = y;
         });
+        edgesRef.current = createEdges(neighborSameType, neighborCrossType, lastNeighborSameType, lastNeighborCrossType);
 
+        // set canvas scale
         if (Array.isArray(vchartData?.scale) && vchartData?.scale.length > 0) {
             x_min = vchartData?.scale[0];
             y_min = vchartData?.scale[1];
@@ -608,36 +613,8 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
             return;
         }
 
-        // create data
-        let samples: { pointId: number, x: number; y: number; label: number; pred: number; label_desc: string; pred_desc: string; confidence: number; textSample: string }[] = []
-        vchartData?.positions.map((p, i) => {
-            const x = parseFloat(p[0].toFixed(3));
-            const y = parseFloat(p[1].toFixed(3));
-            let confidence = 1.0;
-            let pred = vchartData?.labels[i];
-            if (vchartData?.predictionProps && vchartData.predictionProps.length > 0) {
-                let props = vchartData.predictionProps[i];
-                let softmaxValues = softmax(props);
-                confidence = Math.max(...softmaxValues);
-                pred = softmaxValues.indexOf(confidence);
-            }
-
-            samples.push({
-                pointId: i,
-                x: x,
-                y: y,
-                label: vchartData?.labels[i],
-                label_desc: labelDict.get(vchartData?.labels[i]) ?? '',
-                pred: pred,
-                pred_desc: labelDict.get(pred) ?? labelDict.get(vchartData?.labels[i]) ?? '',
-                confidence: confidence,
-                textSample: textData[i] ?? ''
-            });
-        });
-
-        const edges = createEdges(neighborSameType, neighborCrossType, lastNeighborSameType, lastNeighborCrossType);
         const selectedNeighbors: number[] = [];
-        edges.forEach((edge, _) => {
+        edgesRef.current.forEach((edge, _) => {
             if (edge.from == hoveredIndex) {
                 selectedNeighbors.push(edge.to);
             }
@@ -654,7 +631,6 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
         });
 
     }, [hoveredIndex]);
-
 
     /*
         Show neighborhood relationship
@@ -749,7 +725,6 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
         let region: { xx: number, yy: number, class: number }[] = [];
         for (const key in convexHulls) {
             if (convexHulls.hasOwnProperty(key)) {
-                console.log(convexHulls[key]);
                 convexHulls[key].forEach((point, _) => {
                     region.push({ xx: point[0], yy: point[1], class: parseInt(key) });
                 });
