@@ -245,6 +245,13 @@ export function MainBlock() {
 
         listener();
         highlightContext.addHighlightChangedListener(listener);
+
+        // for debug
+        // highlightContext.addRevealed(8);
+        // highlightContext.addRevealed(45);
+        // highlightContext.addRevealed(22);
+        // highlightContext.addRevealed(37);
+
         return () => {
             highlightContext.removeHighlightChangedListener(listener);
         };

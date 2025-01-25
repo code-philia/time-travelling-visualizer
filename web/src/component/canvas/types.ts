@@ -65,16 +65,18 @@ export class HighlightContext {
 
     hoveredIndex: number | undefined = undefined;
     lockedIndices: Set<number> = new Set();
+    revealedIndices: Set<number> = new Set();
 
     constructor(count: number) {
         this.validSampleCount = count;
     }
 
     // TODO derive into different styles, accept from outside
-    highlightedPoints: { pri: number[], sec: number[], locked: number[] } = {
+    highlightedPoints: { pri: number[], sec: number[], locked: number[], revealed: number[] } = {
         pri: [],
         sec: [],
-        locked: []
+        locked: [],
+        revealed: []
     };
     plotPoints: CommonPointsGeography | undefined = undefined;
 
@@ -114,6 +116,20 @@ export class HighlightContext {
         this.notifyHighlightChanged();
     }
 
+    addRevealed(idx: number) {
+        if (!this.isValidIndex(idx)) return;
+
+        this.revealedIndices.add(idx);
+        this.notifyHighlightChanged();
+    }
+
+    removeRevealed(idx: number) {
+        if (!this.isValidIndex(idx)) return;
+
+        this.revealedIndices.delete(idx);
+        this.notifyHighlightChanged();
+    }
+
     switchLocked(idx: number) {
         if (!this.isValidIndex(idx)) return;
 
@@ -141,8 +157,9 @@ export class HighlightContext {
         return this.lockedIndices.has(idx);
     }
 
-    computeHighlightedPoints(): { pri: number[], sec: number[], locked: number[] } {
+    computeHighlightedPoints(): { pri: number[], sec: number[], locked: number[], revealed: number[] } {
         const lockedPoints = this.lockedIndices;
+        const revealedPoints = this.revealedIndices;
 
         const highlightedPoints = new Set<number>();
         if (this.hoveredIndex !== undefined) {
@@ -169,7 +186,8 @@ export class HighlightContext {
         return {
             pri: [...highlightedPoints.values()],
             sec: [...secondaryHighlightedPoints.values()],
-            locked: [...lockedPoints]
+            locked: [...lockedPoints],
+            revealed: [...revealedPoints]
         }
     }
 
@@ -216,9 +234,14 @@ export class HighlightContext {
                 sizes[i] = pointsDefaultSize * 1.0;
                 alphas[i] = 1.0;
             });
+            highlightedPoints.revealed.forEach((i) => {
+                sizes[i] = pointsDefaultSize * 1.0;
+                alphas[i] = 1.0;
+            });
             highlightedPoints.locked.forEach((i) => {
                 sizes[i] = pointsDefaultSize * 1.8;
-                colors[i] = [255, 0, 0];
+                // colors[i] = [0.086, 0.467, 1.0];    // #1677FF
+                colors[i] = [1.0, 0, 0];
                 alphas[i] = 1.0;
             });
         }
