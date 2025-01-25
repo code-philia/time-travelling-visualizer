@@ -3,8 +3,9 @@ import { memo, useEffect, useRef } from 'react';
 import VChart from '@visactor/vchart';
 import { VChartData } from './types';
 import { useDefaultStore } from "../../state/store";
-import { createEdges, softmax } from './utils';
+import { convexHull, createEdges, softmax } from './utils';
 const PADDING = 1;
+const THRESHOLD = 0.986;
 
 
 export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | null }) => {
@@ -106,6 +107,10 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                 {
                     id: 'edges',
                     values: [] // dynamically set
+                },
+                {
+                    id: 'regions',
+                    values: [] // dynamically set
                 }
             ],
 
@@ -141,6 +146,91 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                     select: {
                         enable: false,
                     }
+                },
+                {
+                    id: 'regions-series',
+                    interactive: false,
+                    stack: false,
+                    type: 'area',
+                    dataId: 'regions',
+                    xField: 'xx',
+                    yField: 'yy',
+                    seriesField: 'class',
+                    point: {
+                        visible: false,
+                    },
+                    line: {
+                        interactive: false,
+                        visible: false,
+                        style: {
+                            curveType: 'catmullRomClosed',
+                        }
+                    },
+                    area: {
+                        interactive: false,
+                        style: {
+                            fill: (datum: { class: number }) => {
+                                const color = colorDict.get(datum.class) ?? [0, 0, 0];
+                                return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
+                            },
+                        }
+                    },
+                    hover: {
+                        enable: false,
+                    },
+                    select: {
+                        enable: false,
+                    }
+                },
+                {
+                    id: 'edges-series',
+                    type: 'line',
+                    dataId: 'edges',
+                    seriesField: 'edgeId',
+                    xField: 'x',
+                    yField: 'y',
+                    line: {
+                        style: {
+                            stroke: (datum: { status: string; }) => {
+                                if (datum.status == 'maintain') {
+                                    return 'rgb(113, 113, 113)';
+                                }
+                                else if (datum.status == 'connect') {
+                                    return 'rgb(94, 242, 121)';
+                                }
+                                else if (datum.status == 'disconnect') {
+                                    return 'rgb(242, 129, 129)';
+                                }
+                                return 'rgb(113, 113, 113)';
+                            },
+                            lineDash: (datum: { status: string; }) => {
+                                if (datum.status == 'maintain') {
+                                    return [0, 0];
+                                }
+                                else if (datum.status == 'connect') {
+                                    return [0, 0];
+                                }
+                                else if (datum.status == 'disconnect') {
+                                    return [2, 4];
+                                }
+                                return [0, 0];
+                            },
+                            lineWidth: (datum: { status: string; }) => {
+                                if (datum.status == 'maintain') {
+                                    return 1;
+                                }
+                                else if (datum.status == 'connect') {
+                                    return 1;
+                                }
+                                else if (datum.status == 'disconnect') {
+                                    return 1;
+                                }
+                                return 1;
+                            },
+                            fillOpacity: 0.4
+                        }
+                    },
+                    point: { visible: false }
                 },
                 {
                     id: 'point-series',
@@ -209,61 +299,13 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                             }
                         }
                     ]
-                },
-                {
-                    id: 'edges-series',
-                    type: 'line',
-                    dataId: 'edges',
-                    seriesField: 'edgeId',
-                    xField: 'x',
-                    yField: 'y',
-                    line: {
-                        style: {
-                            stroke: (datum: { status: string; }) => {
-                                if (datum.status == 'maintain') {
-                                    return 'rgb(113, 113, 113)';
-                                }
-                                else if (datum.status == 'connect') {
-                                    return 'rgb(94, 242, 121)';
-                                }
-                                else if (datum.status == 'disconnect') {
-                                    return 'rgb(242, 129, 129)';
-                                }
-                                return 'rgb(113, 113, 113)';
-                            },
-                            lineDash: (datum: { status: string; }) => {
-                                if (datum.status == 'maintain') {
-                                    return [0, 0];
-                                }
-                                else if (datum.status == 'connect') {
-                                    return [0, 0];
-                                }
-                                else if (datum.status == 'disconnect') {
-                                    return [2, 4];
-                                }
-                                return [0, 0];
-                            },
-                            lineWidth: (datum: { status: string; }) => {
-                                if (datum.status == 'maintain') {
-                                    return 1;
-                                }
-                                else if (datum.status == 'connect') {
-                                    return 1;
-                                }
-                                else if (datum.status == 'disconnect') {
-                                    return 1;
-                                }
-                                return 1;
-                            },
-                            fillOpacity: 0.4
-                        }
-                    },
-                    point: { visible: false }
                 }
             ],
 
             // ================= background =================
-            // TODO
+            markArea: [
+                {}
+            ], // dynamically generated
 
             // ================= axes =================
             axes: [
@@ -544,7 +586,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
         }
 
         vchartRef.current.renderSync();
-    }, [vchartData, filterState, showBgimg, showMetadata, showNumber, showText]);
+    }, [vchartData, filterState, showMetadata, showNumber, showText]);
 
     /*
         Highlight neighbor points
@@ -663,6 +705,61 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
         vchartRef.current?.updateDataSync('edges', endpoints);
 
     }, [revealNeighborCrossType, revealNeighborSameType, hoveredIndex]);
+
+    /*
+        Show classification border
+        triggered by showBgimg
+    */
+    useEffect(() => {
+        if (!vchartRef.current) {
+            return;
+        }
+        let filteredPoints: { [key: number]: number[][] } = {};
+        vchartData?.positions.map((p, i) => {
+            const x = parseFloat(p[0].toFixed(3));
+            const y = parseFloat(p[1].toFixed(3));
+            let confidence = 1.0;
+            let pred = vchartData?.labels[i];
+            if (vchartData?.predictionProps && vchartData.predictionProps.length > 0) {
+                let props = vchartData.predictionProps[i];
+                let softmaxValues = softmax(props);
+                confidence = Math.max(...softmaxValues);
+                pred = softmaxValues.indexOf(confidence);
+            }
+            if (confidence >= THRESHOLD) {
+                if (!filteredPoints[pred]) {
+                    filteredPoints[pred] = [];
+                }
+                filteredPoints[pred].push([x, y]);
+            }
+        });
+
+        let convexHulls: { [key: number]: number[][] } = {};
+        for (const key in filteredPoints) {
+            if (filteredPoints.hasOwnProperty(key)) {
+                convexHulls[key] = convexHull(filteredPoints[key]);
+            }
+        }
+
+        let region: { xx: number, yy: number, class: number }[] = [];
+        for (const key in convexHulls) {
+            if (convexHulls.hasOwnProperty(key)) {
+                console.log(convexHulls[key]);
+                convexHulls[key].forEach((point, _) => {
+                    region.push({ xx: point[0], yy: point[1], class: parseInt(key) });
+                });
+            }
+        }
+        // region = [
+        //     { xx: 0, yy: 0, class: 0 },
+        //     { xx: 0, yy: 2, class: 0 },
+        //     { xx: 2, yy: 2, class: 0 },
+        //     { xx: 2, yy: 0, class: 0 },
+        //     { xx: 0, yy: 0, class: 0 },
+        // ];
+        vchartRef.current.updateData('regions', region);
+
+    }, [showBgimg, vchartData]);
 
 
     return <div
