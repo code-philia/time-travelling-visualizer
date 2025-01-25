@@ -23,6 +23,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
     const { hoveredIndex, setHoveredIndex } = useDefaultStore(["hoveredIndex", "setHoveredIndex"]);
     const { highlightContext } = useDefaultStore(["highlightContext"]);
 
+    const samplesRef = useRef<{ pointId: number, x: number; y: number; label: number; pred: number; label_desc: string; pred_desc: string; confidence: number; textSample: string }[]>([]);
     const edgesRef = useRef<Edge[]>([]);
 
     /*
@@ -34,7 +35,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
         }
 
         // create data
-        let samples: { pointId: number, x: number; y: number; label: number; pred: number; label_desc: string; pred_desc: string; confidence: number; textSample: string }[] = []
+        samplesRef.current = [];
         let x_min = Infinity, y_min = Infinity, x_max = -Infinity, y_max = -Infinity;
 
         vchartData?.positions.map((p, i) => {
@@ -49,7 +50,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                 pred = softmaxValues.indexOf(confidence);
             }
 
-            samples.push({
+            samplesRef.current.push({
                 pointId: i,
                 x: x,
                 y: y,
@@ -89,7 +90,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
             data: [
                 {
                     id: 'points',
-                    values: samples,
+                    values: samplesRef.current,
                     transforms: [
                         {
                             type: 'filter',
@@ -641,40 +642,12 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
             return;
         }
 
-        // create data
-        let samples: { pointId: number, x: number; y: number; label: number; pred: number; label_desc: string; pred_desc: string; confidence: number; textSample: string }[] = []
-        vchartData?.positions.map((p, i) => {
-            const x = parseFloat(p[0].toFixed(3));
-            const y = parseFloat(p[1].toFixed(3));
-            let confidence = 1.0;
-            let pred = vchartData?.labels[i];
-            if (vchartData?.predictionProps && vchartData.predictionProps.length > 0) {
-                let props = vchartData.predictionProps[i];
-                let softmaxValues = softmax(props);
-                confidence = Math.max(...softmaxValues);
-                pred = softmaxValues.indexOf(confidence);
-            }
-
-            samples.push({
-                pointId: i,
-                x: x,
-                y: y,
-                label: vchartData?.labels[i],
-                label_desc: labelDict.get(vchartData?.labels[i]) ?? '',
-                pred: pred,
-                pred_desc: labelDict.get(pred) ?? labelDict.get(vchartData?.labels[i]) ?? '',
-                confidence: confidence,
-                textSample: textData[i] ?? ''
-            });
-        });
-
-        const edges = createEdges(neighborSameType, neighborCrossType, lastNeighborSameType, lastNeighborCrossType);
         const endpoints: { edgeId: number, from: number, to: number, x: number, y: number, type: string, status: string }[] = [];
-        edges.forEach((edge, index) => {
+        edgesRef.current.forEach((edge, index) => {
             if (edge.from === hoveredIndex || edge.to === hoveredIndex) {
                 if ((revealNeighborCrossType && edge.type === 'crossType') || (revealNeighborSameType && edge.type === 'sameType')) {
-                    endpoints.push({ edgeId: index, from: edge.from, to: edge.to, x: samples[edge.from].x, y: samples[edge.from].y, type: edge.type, status: edge.status });
-                    endpoints.push({ edgeId: index, from: edge.from, to: edge.to, x: samples[edge.to].x, y: samples[edge.to].y, type: edge.type, status: edge.status });
+                    endpoints.push({ edgeId: index, from: edge.from, to: edge.to, x: samplesRef.current[edge.from].x, y: samplesRef.current[edge.from].y, type: edge.type, status: edge.status });
+                    endpoints.push({ edgeId: index, from: edge.from, to: edge.to, x: samplesRef.current[edge.to].x, y: samplesRef.current[edge.to].y, type: edge.type, status: edge.status });
                 }
             }
         });
