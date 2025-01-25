@@ -158,6 +158,7 @@ export function RightSidebar() {
     const searchResultRender = (item: SampleTag) => {
         return (
             <List.Item
+                key={item.num}
                 className={"search-result-sample" + (highlightContext.checkLocked(item.num) ? ' locked' : '')}
                 onClick={() => { highlightContext.switchLocked(item.num) }}
             >
