@@ -118,11 +118,9 @@ export function useSetUpProjection() {
             // Here we construct labelDict from res.label_text_list (e.g. [comment, code])
             // and randomly asssign a color to each label !
             const label_text_list = res.label_text_list;
-            const colorList = [[31, 119, 180], [255, 127, 14], [44, 160, 44], [214, 39, 40], [148, 103, 189], [140, 86, 75], [227, 119, 194], [127, 127, 127], [188, 189, 34], [23, 190, 207]];
             label_text_list.forEach((label, i) => {
                 labelDict.set(i, label);
-                // colorDict.set(i, randomColor(i));
-                colorDict.set(i, [colorList[i][0], colorList[i][1], colorList[i][2]]);
+                colorDict.set(i, randomColor(i));
             });
 
             // const validLabels = Array.from(new Set(res.labels));
