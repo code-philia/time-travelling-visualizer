@@ -114,7 +114,7 @@ export function VisualizerDefaultCamera({ initWorldWidth, initWorldHeight, cente
 
     // make map control z-axis up
     return useMemo(() => (
-        <OrthographicCamera
+        <OrthographicCamera key={crypto.randomUUID()}   // FIXME force refresh will reduce performance
             top={initWorldHeight / 2}
             bottom={-initWorldHeight / 2}
             left={-initWorldWidth / 2}
