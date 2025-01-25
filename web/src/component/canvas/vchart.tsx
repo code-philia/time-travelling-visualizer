@@ -714,6 +714,11 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
         if (!vchartRef.current) {
             return;
         }
+        if (!showBgimg) {
+            vchartRef.current?.updateDataSync('regions', []);
+            return;
+        }
+
         let filteredPoints: { [key: number]: number[][] } = {};
         vchartData?.positions.map((p, i) => {
             const x = parseFloat(p[0].toFixed(3));
@@ -750,13 +755,6 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                 });
             }
         }
-        // region = [
-        //     { xx: 0, yy: 0, class: 0 },
-        //     { xx: 0, yy: 2, class: 0 },
-        //     { xx: 2, yy: 2, class: 0 },
-        //     { xx: 2, yy: 0, class: 0 },
-        //     { xx: 0, yy: 0, class: 0 },
-        // ];
         vchartRef.current.updateData('regions', region);
 
     }, [showBgimg, vchartData]);
