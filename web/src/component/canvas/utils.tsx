@@ -75,16 +75,41 @@ export function createEdges(
     return edges;
 }
 
+// Calculate Euclidean distance between two points
+function euclideanDistance(p1: number[], p2: number[]): number {
+    return Math.sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2);
+}
+
+// Calculate the centroid of the points
+function calculateCentroid(points: number[][]): number[] {
+    const xSum = points.reduce((sum, p) => sum + p[0], 0);
+    const ySum = points.reduce((sum, p) => sum + p[1], 0);
+    return [xSum / points.length, ySum / points.length];
+}
 
 export function convexHull(points: number[][]): number[][] {
     points.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
 
+    // Step 1: Filter outliers
+    const centroid = calculateCentroid(points);
+    const distances = points.map(p => euclideanDistance(p, centroid));
+
+    // calculate mean and standard deviation
+    const mean = distances.reduce((sum, dist) => sum + dist, 0) / distances.length;
+    const stdDev = Math.sqrt(distances.reduce((sum, dist) => sum + (dist - mean) ** 2, 0) / distances.length);
+
+    // dynamic threshold: mean + 2 * standard deviation
+    const threshold = mean + 2 * stdDev;
+    const filteredPoints = points.filter(p => euclideanDistance(p, centroid) <= threshold);
+
+
+    // Step 2: Calculate convex hull
     function cross(o: number[], a: number[], b: number[]): number {
         return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
     }
 
     const lower: number[][] = [];
-    for (const p of points) {
+    for (const p of filteredPoints) {
         while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) {
             lower.pop();
         }
@@ -92,8 +117,8 @@ export function convexHull(points: number[][]): number[][] {
     }
 
     const upper: number[][] = [];
-    for (let i = points.length - 1; i >= 0; i--) {
-        const p = points[i];
+    for (let i = filteredPoints.length - 1; i >= 0; i--) {
+        const p = filteredPoints[i];
         while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) {
             upper.pop();
         }
@@ -103,6 +128,7 @@ export function convexHull(points: number[][]): number[][] {
     lower.pop();
     const hull = [...upper, ...lower];
 
+    // Step 3: Expand hull
     const centerX = hull.reduce((sum, p) => sum + p[0], 0) / hull.length;
     const centerY = hull.reduce((sum, p) => sum + p[1], 0) / hull.length;
 
