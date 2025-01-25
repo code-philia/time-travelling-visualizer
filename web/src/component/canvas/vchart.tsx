@@ -5,7 +5,7 @@ import { VChartData } from './types';
 import { useDefaultStore } from "../../state/store";
 import { convexHull, createEdges, softmax } from './utils';
 const PADDING = 1;
-const THRESHOLD = 0.986;
+const THRESHOLD = 0.99;
 
 
 export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | null }) => {

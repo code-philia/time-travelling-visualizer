@@ -103,5 +103,16 @@ export function convexHull(points: number[][]): number[][] {
     lower.pop();
     const hull = [...upper, ...lower];
 
-    return hull;
+    const centerX = hull.reduce((sum, p) => sum + p[0], 0) / hull.length;
+    const centerY = hull.reduce((sum, p) => sum + p[1], 0) / hull.length;
+
+    const expandedHull = hull.map(p => {
+        const dx = p[0] - centerX;
+        const dy = p[1] - centerY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const scale = (distance + 0.3) / distance;
+        return [centerX + dx * scale, centerY + dy * scale];
+    });
+
+    return expandedHull;
 }
