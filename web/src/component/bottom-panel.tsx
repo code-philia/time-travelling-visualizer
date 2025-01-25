@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { HTMLAttributes, useEffect, useState } from 'react';
 import { Tabs, Button, TabPaneProps, TabsProps } from 'antd';
-import { UpOutlined, DownOutlined } from '@ant-design/icons';
+import { UpOutlined, DownOutlined, SyncOutlined } from '@ant-design/icons';
 import styled from 'styled-components';
 import { useDefaultStore } from '../state/store';
 
@@ -8,16 +8,16 @@ const BottomPanelContainer = styled.div<{ expanded: boolean }>`
     display: flex;
     border-top: 1px solid var(--layout-border-color);
     background-color: white;
-    height: ${props => props.expanded ? '300px' : '0px'};
+    height: ${props => props.expanded ? '320px' : '0px'};
     transition: height 0.3s ease;
     z-index: 1000;
 `;
 
-const TabsContainer = styled.div<{ isExpanded: boolean }>`
+const TabsContainer = styled.div<{ expanded: boolean }>`
     flex: 1 1 auto;
     padding: 0 1em;
-    display: ${props => props.isExpanded ? 'block' : 'none'};
-    overflow-y: auto;
+    display: ${props => props.expanded ? 'block' : 'none'};
+    overflow-y: hidden;
 `;
 
 interface BottomPanelProps {
@@ -114,21 +114,57 @@ function extractSpans(text: string, tokens: string[]) {
 };
 
 interface ReactiveCodePreProps {
+    label?: string;
     text: string;
     tokens: string[];
     highlightedIndex?: number | null;
     onChangeHighlightIndex?: (index: number | null) => void;
-    label?: string;
-    lockedIndex?: number | null;
+    lockedIndices?: number[];
+    onChangeLockedIndices?: (indices: number[]) => void;
+    affiliatedIndices?: number[];
 }
 
-function ReactiveTokensOverviewBlock({ text, tokens, highlightedIndex, onChangeHighlightIndex, label }: ReactiveCodePreProps) {
+function ReactiveTokensOverviewBlock({ text, tokens, highlightedIndex, onChangeHighlightIndex, label, lockedIndices = [], affiliatedIndices = [], onChangeLockedIndices }: ReactiveCodePreProps) {
     const spans = extractSpans(text, tokens);
+
+    const lockedIndicesSet = new Set<number | undefined>(lockedIndices);
+    const affiliatedIndicesSet = new Set<number | undefined>(affiliatedIndices);
+
+    const spanClassList = spans.map((span) => {
+        const classList = ['overview-token'];
+        if (span.active) {
+            classList.push('active');
+        }
+        if (highlightedIndex === span.index) {
+            classList.push('highlighted');
+        }
+        if (lockedIndicesSet.has(span.index)) {
+            classList.push('locked');
+        }
+        if (affiliatedIndicesSet.has(span.index)) {
+            classList.push('affiliated');
+        }
+        return classList;
+    });
+
+    // const hl = highlightedIndex ?? -1;
+    // if (hl >= 0 && hl < spans.length) {
+    //     for (let i = 0; i < spans.length; i++) {
+    //         if (spans[i].index === hl) {
+    //             spanClassList[i].push('highlighted');
+    //         }
+    // }
+    // for (const i of lockedIndices) {
+    //     spanClassList[i].push('locked');
+    // }
+    // for (const i of affiliatedIndices) {
+    //     spanClassList[i].push('affiliated');
+    // }
+
     const renderedSpans = spans.map((span, i) => {
-        const className = span.active ? ' active' : '';
         return (
             <span
-                className={'overview-token' + className + (highlightedIndex === span.index ? ' highlighted' : '')}
+                className={spanClassList[i].join(' ')}
                 key={i}
                 onMouseOver={span.active ? () => onChangeHighlightIndex?.(span.index ?? null) : undefined}
                 onMouseLeave={span.active ? () => onChangeHighlightIndex?.(null) : undefined}
@@ -150,8 +186,43 @@ function ReactiveTokensOverviewBlock({ text, tokens, highlightedIndex, onChangeH
     );
 }
 
+function ChangeIndicator({ value, ...attr }: { value: number } & HTMLAttributes<HTMLDivElement>) {
+    const barLength = Math.min(1, Math.abs(value) / 3) * 75;
+    const valueSign = value < 0 ? '' : '+';
+    const valueText = valueSign + value.toFixed(2);
+
+    return (
+        <div className="change-indicator" {...attr}>
+            {value < 0 && <div className="change-indicator-bar decrease" style={{ width: barLength + 'px' }}></div>}
+            <div className="change-indicator-base-line"></div>
+            {value > 0 && <div className="change-indicator-bar increase" style={{ width: barLength + 'px' }}></div>}
+            <div
+                className="change-indicator-value-text"
+                style={
+                    value < 0
+                        ? { right: `calc(50% + ${(barLength + 5) + 'px'})` }
+                        : value > 0
+                            ? { left: `calc(50% + ${(barLength + 5) + 'px'})` }
+                            : { left: `calc(50% + 2px)` }
+                }
+            >{ valueText }</div>
+        </div>
+    )
+}
+
+function SampleChangeIndicator({ tag, value }: { tag?: string, value: number }) {
+    return (
+        <div className="sample-change-indicator">
+            <div className="sample-change-indicator-left-section">
+                {tag && <span className="loss-attribution-sample-tag indicated">{tag}</span>}
+            </div>
+            <ChangeIndicator value={value}></ChangeIndicator>
+        </div>
+    )
+}
+
 export function BottomPanel({ defaultActiveTab = '1' }: BottomPanelProps) {
-    const [isExpanded, setIsExpanded] = useState(true);
+    const [isExpanded, setIsExpanded] = useState(false);
     const [activeTab, setActiveTab] = useState(defaultActiveTab);
 
     const togglePanel = () => {
@@ -172,7 +243,8 @@ export function BottomPanel({ defaultActiveTab = '1' }: BottomPanelProps) {
     const textGroupLengths = textGroups.map((key) => demoTokens[key as keyof typeof demoTokens].length);
 
     const [highlightedIndex, setHighlightedIndex] = useState<number | null>(null);
-    const [lockedIndex, setLockedIndex] = useState<number | null>(null);
+    const [lockedIndices, setLockedIndices] = useState<number[]>([]);
+    const [affilatedIndices, setAffiliatedIndices] = useState<number[]>([]);
 
     useEffect(() => {
         const listener = () => {
@@ -210,17 +282,57 @@ export function BottomPanel({ defaultActiveTab = '1' }: BottomPanelProps) {
                             highlightedIndex={remappedIndex}
                             onChangeHighlightIndex={onChangeHighlightIndex}
                             label={key}
+                            lockedIndices={i === 0 ? [1] : [2]}
+                            affiliatedIndices={i === 0 ? [8] : [9, 32, 23]}
+                            // affiliatedIndices={i === 0 ? [] : [1, 2, 3, 5, 7, 9, 12, 20, 30, 32]}
                         />
                     );
                 })
             }
+            <div>
+                <div className='loss-attribution-block'>
+                    <div className="loss-attribution-block-title">
+                        <span className="loss-attribution-block-title-text">Loss Attribution</span>
+                        <Button color="primary" variant="text" className="loss-attribution-block-title-button">
+                            <SyncOutlined style={{ fontSize: '10px' }}></SyncOutlined>
+                            <span style={{ transform: 'translateY(-1px)' }}>compute</span>
+                        </Button>
+                    </div>
+                    <div className="loss-attribution-block-content">
+                        <div>
+                            Compared to last epoch, the loss between
+                            <span className="loss-attribution-sample-tag highlighted">1. Read</span>
+                            and
+                            <span className="loss-attribution-sample-tag highlighted">15. Ġread</span>
+                            has changed:
+                        </div>
+                        <div>
+                            <SampleChangeIndicator value={-0.43}></SampleChangeIndicator>
+                        </div>
+                        <div>
+                            The loss is changed most significantly with:
+                        </div>
+                        <div>
+                            <SampleChangeIndicator tag={'8. Ġbytes'} value={-1.57}></SampleChangeIndicator>
+                            <SampleChangeIndicator tag={'45. Ġread'} value={-0.86}></SampleChangeIndicator>
+                            <SampleChangeIndicator tag={'22. num'} value={+0.5}></SampleChangeIndicator>
+                            <SampleChangeIndicator tag={'37. Ġwhile'} value={+1.32}></SampleChangeIndicator>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
         </div>
     )
 
     const tabItems: TabsProps['items'] = [
         {
             key: '1',
-            label: 'Tokens Overview',
+            label: (
+                <div>
+                    Tokens Overview
+                </div>
+            ),
             children: tokensOverviewTab
         }
     ];
@@ -234,7 +346,7 @@ export function BottomPanel({ defaultActiveTab = '1' }: BottomPanelProps) {
                 className={isExpanded ? "bottom-panel-collapse-button" : "bottom-panel-collapse-button expand"}
                 color="primary" variant="filled"
             />
-            <TabsContainer isExpanded={isExpanded}>
+            <TabsContainer expanded={isExpanded}>
                 <Tabs
                     activeKey={activeTab}
                     onChange={setActiveTab}
