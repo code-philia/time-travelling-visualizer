@@ -476,6 +476,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
             tooltip: {
                 seriesId: 'point-series',
                 lockAfterClick: false,
+                visible: showMetadata,
                 activeType: 'mark',
                 trigger: 'hover',
                 mark: {

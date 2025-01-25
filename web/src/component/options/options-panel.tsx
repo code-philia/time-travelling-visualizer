@@ -43,7 +43,7 @@ export function OptionsPanel() {
     // display options
 
     const [displayNormalInfoOptions, displayNormalInfoChecked, setDisplayNormalInfoChecked] = useCheckOptions([
-        { label: 'Metadata', value: 'metadata' }, { label: 'Bgimg', value: 'bgimg' }
+        { label: 'metadata', value: 'metadata' }, { label: 'background', value: 'bgimg' }
     ]);
     const [displayOnPlotOptions, displayOnPlotChecked, setDisplayOnPlotChecked] = useCheckOptions([
         'number', 'text'
