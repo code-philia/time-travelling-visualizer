@@ -1,5 +1,5 @@
 // ChartComponent.tsx
-import { memo, useEffect, useRef } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import VChart from '@visactor/vchart';
 import { Edge, VChartData } from './types';
 import { useDefaultStore } from "../../state/store";
@@ -7,6 +7,10 @@ import { convexHull, createEdges, softmax } from './utils';
 const PADDING = 1;
 const THRESHOLD = 0.9;
 
+type SampleTag = {
+    num: number;
+    title: string;
+}
 
 export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | null }) => {
     const chartRef = useRef<HTMLDivElement>(null);
@@ -21,10 +25,30 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
     const { neighborSameType, neighborCrossType, lastNeighborSameType, lastNeighborCrossType } = useDefaultStore(["neighborSameType", "neighborCrossType", "lastNeighborSameType", "lastNeighborCrossType"]);
     const { revealNeighborCrossType, revealNeighborSameType } = useDefaultStore(["revealNeighborCrossType", "revealNeighborSameType"]);
     const { hoveredIndex, setHoveredIndex } = useDefaultStore(["hoveredIndex", "setHoveredIndex"]);
-    const { highlightContext } = useDefaultStore(["highlightContext"]);
+    const { highlightContext, setHighlightContext } = useDefaultStore(["highlightContext", "setHighlightContext"]);
 
     const samplesRef = useRef<{ pointId: number, x: number; y: number; label: number; pred: number; label_desc: string; pred_desc: string; confidence: number; textSample: string }[]>([]);
     const edgesRef = useRef<Edge[]>([]);
+
+    const [selectedItems, setSelectedItems] = useState<SampleTag[]>([]);
+
+
+    useEffect(() => {
+        const listener = () => {
+            const tokens = textData;
+            setSelectedItems(Array.from(highlightContext.lockedIndices).map((num) => ({
+                num,
+                title: tokens[num]!
+            })));
+        };
+
+        listener();
+        highlightContext.addHighlightChangedListener(listener);
+        return () => {
+            highlightContext.removeHighlightChangedListener(listener);
+        };
+    }, [vchartData]);
+
 
     /*
         Main update logic
@@ -261,6 +285,11 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                                 scaleX: 1.6,
                                 scaleY: 1.6,
                                 fillOpacity: 0.5
+                            },
+                            locked: {
+                                scaleX: 2,
+                                scaleY: 2,
+                                fillOpacity: 1
                             }
                         },
                         style: {
@@ -587,6 +616,15 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
             vchartRef.current.on('pointerout', { id: 'point-series' }, e => {
                 setHoveredIndex(-1);
             });
+            vchartRef.current.on('click', { id: 'point-series' }, e => {
+                console.log('Clicked: ', e.datum?.pointId);
+                if (highlightContext.lockedIndices.has(e.datum?.pointId)) {
+                    highlightContext.removeLocked(e.datum?.pointId);
+                } else {
+                    highlightContext.addLocked(e.datum?.pointId);
+                }
+                setHighlightContext(highlightContext);
+            });
         }
         else {
             vchartRef.current.updateSpec(spec);
@@ -595,17 +633,15 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
         vchartRef.current.renderSync();
     }, [vchartData, filterState, showMetadata, showNumber, showText]);
 
-    /*
-        Highlight neighbor points
-        triggered by hoveredIndex changed
-    */
-    useEffect(() => {
-        if (!vchartRef.current) {
-            return;
-        }
 
-        if (hoveredIndex === -1) {
+    function updateHighlight() {
+        if (highlightContext.lockedIndices.size === 0 && hoveredIndex === -1) {
             vchartRef.current?.updateState({
+                locked: {
+                    filter: () => {
+                        return false;
+                    }
+                },
                 as_neighbor: {
                     filter: () => {
                         return false;
@@ -617,10 +653,10 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
 
         const selectedNeighbors: number[] = [];
         edgesRef.current.forEach((edge, _) => {
-            if (edge.from == hoveredIndex) {
+            if (edge.from == hoveredIndex || highlightContext.lockedIndices.has(edge.from)) {
                 selectedNeighbors.push(edge.to);
             }
-            if (edge.to == hoveredIndex) {
+            if (edge.to == hoveredIndex || highlightContext.lockedIndices.has(edge.to)) {
                 selectedNeighbors.push(edge.from);
             }
         });
@@ -632,11 +668,28 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
             }
         });
 
-    }, [hoveredIndex]);
+        vchartRef.current?.updateState({
+            locked: {
+                filter: datum => {
+                    return highlightContext.lockedIndices.has(datum.pointId);
+                }
+            }
+        });
+    }
+
+    /*
+    Highlight locked points
+    */
+    useEffect(() => {
+        if (!vchartRef.current) {
+            return;
+        }
+        console.log('Locked: ', highlightContext.lockedIndices);
+        updateHighlight();
+    }, [vchartData, highlightContext, hoveredIndex]);
 
     /*
         Show neighborhood relationship
-        triggered by hoveredIndex and showNeighbor options changed
     */
     useEffect(() => {
         if (!vchartRef.current) {
@@ -645,7 +698,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
 
         const endpoints: { edgeId: number, from: number, to: number, x: number, y: number, type: string, status: string }[] = [];
         edgesRef.current.forEach((edge, index) => {
-            if (edge.from === hoveredIndex || edge.to === hoveredIndex) {
+            if (edge.from === hoveredIndex || edge.to === hoveredIndex || highlightContext.lockedIndices.has(edge.from) || highlightContext.lockedIndices.has(edge.to)) {
                 if ((revealNeighborCrossType && edge.type === 'crossType') || (revealNeighborSameType && edge.type === 'sameType')) {
                     endpoints.push({ edgeId: index, from: edge.from, to: edge.to, x: samplesRef.current[edge.from].x, y: samplesRef.current[edge.from].y, type: edge.type, status: edge.status });
                     endpoints.push({ edgeId: index, from: edge.from, to: edge.to, x: samplesRef.current[edge.to].x, y: samplesRef.current[edge.to].y, type: edge.type, status: edge.status });
@@ -654,7 +707,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
         });
         vchartRef.current?.updateDataSync('edges', endpoints);
 
-    }, [revealNeighborCrossType, revealNeighborSameType, hoveredIndex]);
+    }, [revealNeighborCrossType, revealNeighborSameType, hoveredIndex, highlightContext, vchartData]);
 
     /*
         Show classification border
