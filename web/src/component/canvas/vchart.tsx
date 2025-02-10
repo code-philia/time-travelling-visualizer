@@ -337,11 +337,6 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                 }
             ],
 
-            // ================= background =================
-            markArea: [
-                {}
-            ], // dynamically generated
-
             // ================= axes =================
             axes: [
                 {
