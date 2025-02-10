@@ -124,7 +124,7 @@ const initMutableGlobalStore: BaseMutableGlobalStore = {
     textData: [],
 
     // settings
-    backendHost: 'localhost:58225',
+    backendHost: 'localhost:5010',
     showNumber: true,
     showText: true,
     revealNeighborSameType: false,

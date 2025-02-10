@@ -20,7 +20,7 @@
     "js-cookie": "^3.0.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "styled-components": "^6.1.14",
+    "styled-components": "^6.1.15",
     "three": "^0.169.0",
     "zustand": "^5.0.1"
   },
