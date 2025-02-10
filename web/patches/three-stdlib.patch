@@ -1,0 +1,25 @@
+diff --git a/controls/OrbitControls.js b/controls/OrbitControls.js
+index a73a73fa47da789b643759f42e979e9051e58268..b53f556972ffbcbfd9e521deb1d3d625070c8d3e 100644
+--- a/controls/OrbitControls.js
++++ b/controls/OrbitControls.js
+@@ -184,7 +184,19 @@ class OrbitControls extends EventDispatcher {
+         quatInverse.copy(quat).invert();
+         offset.copy(position).sub(scope.target);
+         offset.applyQuaternion(quat);
+-        spherical.setFromVector3(offset);
++
++        // spherical.setFromVector3(offset);
++        // console.log(offset, spherical);
++
++        // fix unexpected rotation from conversion on small loss
++        if (offset.x === 0 && offset.y === 0) {
++          spherical.theta = 0;
++          spherical.phi = offset.z >= 0 ? 0 : Math.PI;
++          spherical.r = Math.abs(offset.z);
++        } else {
++          spherical.setFromVector3(offset);
++        }
++
+         if (scope.autoRotate && state === STATE.NONE) {
+           rotateLeft(getAutoRotationAngle());
+         }

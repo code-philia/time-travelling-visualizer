@@ -5,6 +5,13 @@
     "version": "2.0.0",
     "configurations": [
         {
+            "type": "chrome",
+            "request": "launch",
+            "name": "Launch Visualizer Web",
+            "url": "http://localhost:5173",
+            "webRoot": "${workspaceFolder}/web"
+        },
+        {
             "name": "Launch Visualizer Backend",
             "type": "debugpy",
             "request": "launch",

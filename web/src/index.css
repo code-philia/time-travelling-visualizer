@@ -5,6 +5,9 @@ html {
   --theme-color: #1677ff;
   --theme-background-grey: #f9f9f9;
   --theme-text-grey-out: #898989;
+  --layout-border-color: #cccccc;
+  --token-active-color: #e9e9e9;
+  --token-highlight-color: #b1d0fc;
 }
 
 body {
@@ -85,8 +88,6 @@ body {
 
   display: flex;
   flex-direction: column;
-
-  --layout-border-color: #cccccc;
 }
 
 .app-header {
@@ -130,9 +131,88 @@ body {
 .app-body {
     flex: 1 1 auto;
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
 
     min-height: 0;
+}
+
+.app-body-upper-part {
+    flex: 1 1 auto;
+    display: flex;
+
+    min-height: 0;
+}
+
+.bottom-panel {
+    position: relative;
+}
+
+.bottom-panel-collapse-button {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    margin: auto;
+
+    padding: 1px;
+    width: 2em;
+    height: fit-content;
+
+    box-sizing: border-box;
+    background-color: var(--theme-color);
+    cursor: pointer;
+
+    z-index: 1001;
+}
+
+.bottom-panel-collapse-button.expand {
+    top: -16px;
+}
+
+.bottom-panel-collapse-button .ant-btn-icon {
+    font-size: 6px !important;
+}
+
+.bottom-panel-collapse-button .anticon {
+    font-size: 6px !important;
+}
+
+.tokens-overview-container {
+    display: flex;
+    justify-content: safe center;
+    padding: 0.5em;
+}
+
+.tokens-overview-block {
+    max-width: 30vw;    
+    flex: 1 0 0;
+    display: flex;
+    flex-direction: column;
+    margin: 0.5em 1em;
+}
+
+.tokens-overview-block-title {
+    font-weight: bolder;
+}
+
+.tokens-overview-pre {
+    flex: 1;
+    background-color: var(--theme-background-grey);
+    padding: 0 0.5em;
+    margin-top: 0.5em;
+    border-radius: 0.5em;
+}
+
+.tokens-overview-pre code {
+    text-wrap: wrap;
+}
+
+.overview-token.active {
+    background-color: var(--token-active-color);
+}
+
+.overview-token.active.highlighted {
+    background-color: var(--token-highlight-color);
 }
 
 .user-column, .info-column {

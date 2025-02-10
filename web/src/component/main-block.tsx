@@ -14,6 +14,20 @@ function Timeline({ epoch, epochs, onSwitchEpoch }: { epoch: number, epochs: num
         }
     }, [epochs]);
 
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            const currentIndex = epochs.indexOf(epoch);
+            if (event.key === 'ArrowRight' && currentIndex < epochs.length - 1) {
+                onSwitchEpoch(epochs[currentIndex + 1]);
+            } else if (event.key === 'ArrowLeft' && currentIndex > 0) {
+                onSwitchEpoch(epochs[currentIndex - 1]);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [epochs, epoch, onSwitchEpoch]);
+
     const nodes = useMemo(() => {
         if (epochs.length > 0) {
             return epochs.map((epoch, index) => ({
@@ -259,6 +273,13 @@ export function MainBlock() {
 
         listener();
         highlightContext.addHighlightChangedListener(listener);
+
+        // for debug
+        // highlightContext.addRevealed(8);
+        // highlightContext.addRevealed(45);
+        // highlightContext.addRevealed(22);
+        // highlightContext.addRevealed(37);
+
         return () => {
             highlightContext.removeHighlightChangedListener(listener);
         };

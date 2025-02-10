@@ -102,7 +102,7 @@ export function RightSidebar() {
         let cnt = 0;
 
         for (const item of items) {
-            if (item.title.includes(text)) {
+            if (item.title.toLowerCase().includes(text.toLowerCase())) {
                 if (limit !== null && cnt >= limit) {
                     return res;
                 }
@@ -158,6 +158,7 @@ export function RightSidebar() {
     const searchResultRender = (item: SampleTag) => {
         return (
             <List.Item
+                key={item.num}
                 className={"search-result-sample" + (highlightContext.checkLocked(item.num) ? ' locked' : '')}
                 onClick={() => { highlightContext.switchLocked(item.num) }}
             >

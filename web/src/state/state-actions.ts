@@ -17,13 +17,6 @@ export function useSetUpTrainingProcess() {
             setEpoch(res['available_epochs'][0]);
         }
 
-        // const text = await getText(contentPath, {
-        //     host: backendHost
-        // });
-        // setTextData(text['text_list'] ?? []);
-
-        setHighlightContext(new HighlightContext());
-
     }, [backendHost, contentPath, setAvailableEpochs, setTextData, setEpoch]);
 
     return setUpTrainingProcess;
@@ -32,7 +25,7 @@ export function useSetUpTrainingProcess() {
 export function useSetUpProjection() {
     // TODO avoid writing attribute twice
     const { contentPath, allEpochsProjectionData, setAllEpochsProjectionData, backendHost, visMethod,
-        setHighlightContext, setTextData, setLabelDict, setColorDict, setNeighborSameType, setNeighborCrossType, setLastNeighborSameType, setLastNeighborCrossType, setPredictionProps, setBgimg, setScale }
+        setHighlightContext, setTextData, setLabelDict, setColorDict, setNeighborSameType, setNeighborCrossType, setLastNeighborSameType, setLastNeighborCrossType, setPredictionProps }
         = useDefaultStore([
             'contentPath',
             'allEpochsProjectionData', 'setProjectionDataAtEpoch',
