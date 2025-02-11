@@ -1,50 +1,111 @@
 ---
-title: Welcome
-permalink: /docs/home/
+title: Setup & Quickstart
+permalink: /docs/setup/
 redirect_from: /docs/index.html
 ---
 
-## Getting started
+# Training Dynamic Visualization Tool
 
-[GitHub Pages](https://pages.github.com) can automatically generate and serve the website for you.
-Let's say you have a username/organisation `my-org` and project `my-proj`; if you locate Jekyll source under `docs` folder of master branch in your repo `github.com/my-org/my-proj`, the website will be served on `my-org.github.io/my-proj`.
-The good thing about coupling your documentation with the source repo is, whenever you merge features with regarding content to master branch, it will also be published on the webpage instantly.
+> 🏗️ The tool is under renovation, and only part of the datasets are validated to be visualized. Introduction to the original tool and research project and could be found in [PROTOTYPE.md](PROTOTYPE.md), while it could contain some obsolete descriptions like that the old `Vis` and `VisTool` folders no longer exists, and the old `Tool` folder was separated into `tool` and `visualize` sub-projects.
 
-1. Just [download the source](https://github.com/aksakalli/jekyll-doc-theme/archive/gh-pages.zip) into your repo under `docs` folder.
-2. Edit site settings in  `_config.yml` file according to your project. !!! `baseurl` should be your website's relative URI like `/my-proj` !!!
-3. Replace `favicon.ico` and `assets/img/logonav.png` with your own logo.
+## How To Start the Tool
 
-## Writing content
+### Prepare the Project
 
-### Docs
-
-Docs are [collections](https://jekyllrb.com/docs/collections/) of pages stored under `_docs` folder. To create a new page:
-
-**1.** Create a new Markdown as `_docs/my-page.md` and write [front matter](https://jekyllrb.com/docs/frontmatter/) & content such as:
-
-```
----
-title: My Page
-permalink: /docs/my-page/
----
-
-Hello World!
+```bash
+$ git clone <https://github.com/code-philia/time-travelling-visualizer.git>
+$ cd time-travelling-visualizer
 ```
 
-**2.** Add the pagename to `_data/docs.yml` file in order to list in docs navigation panel:
+### Switch Git Branch
 
+To try our latest features, switch to the following branch:
+
+```bash
+$ git checkout feat/visactor
 ```
-- title: My Group Title
-  docs:
-  - my-page
+
+#### Create a virtual environment
+
+We recommend to [create a venv](https://docs.python.org/3/library/venv.html) with pyhont 3.10 before installing all the dependencies, especially when your device has enough storage.
+
+#### Install PyTorch
+
+Refer to the [PyTorch official guide](https://pytorch.org/get-started/locally/). Installation methods vary by platform, and PyTorch versions depend on your GPU and the appropriate CUDA or ROCm version.
+
+#### Install All Dependencies
+
+Run the following command to install all required dependencies:
+
+```bash
+$ pip install -r requirements.all.txt
+```
+and
+```bash
+$ cd web
+$ npm run install
 ```
 
-### Blog posts
 
-Add a new Markdown file such as `2017-05-09-my-post.md` and write the content similar to other post examples.
+### Download The Sample Dataset
 
-### Pages
+We recommend using this dataset to try the new feature.
 
-The homepage is located under `index.html` file. You can change the content or design completely different welcome page for your taste. (You can use [bootstrap components](http://getbootstrap.com/components/))
+- **bash/zsh:**
 
-In order to add a new page, create a new `.html` or `.md` (markdown) file under root directory and link it in `_includes/topnav.html`.
+  ```bash
+  $ wget https://harkxa.sn.files.1drv.com/y4moeyNzEN8YAThWfZ3KqdgMTMOiw8bPpfla5qSeJoEXMydGUCpFU1bcQPDMUtzlbeZnP4len61rozjPqxn30PWHMe5696VvAP0vctH7LyA11Usc8571J30qCTFJ27UOOLEo8PMhxzUPWwYtJVEqyiiYkV0MSg9pGHT33aOFi8F2_L85gltRCL_QnxB1g2D6pPagaqRi9wyC6uxsgARbA1kbQ -O gcb_tokens.zip
+  unzip gcb_tokens.zip
+  ```
+
+- **PowerShell:**
+
+  ```powershell
+  Invoke-WebRequest https://harkxa.sn.files.1drv.com/y4moeyNzEN8YAThWfZ3KqdgMTMOiw8bPpfla5qSeJoEXMydGUCpFU1bcQPDMUtzlbeZnP4len61rozjPqxn30PWHMe5696VvAP0vctH7LyA11Usc8571J30qCTFJ27UOOLEo8PMhxzUPWwYtJVEqyiiYkV0MSg9pGHT33aOFi8F2_L85gltRCL_QnxB1g2D6pPagaqRi9wyC6uxsgARbA1kbQ -OutFile gcb_tokens.zip
+  Expand-Archive gcb_tokens.zip -DestinationPath .
+  ```
+
+### Run the Tool
+
+**1. Start the backend server**
+
+If you are using a virtual environment, be sure it is activated. Then run the following command:
+
+```bash
+~/time-travelling-visualizer$ conda activate venv
+(venv) ~/time-travelling-visualizer$ cd tool/server/
+(venv) ~/time-travelling-visualizer/tool/server$ python server.py
+```
+Observe if the server starts on port 5010 (usually it does). If not, modify it in the next step.
+```bash
+WARNING: This is a development server. Do not use it in a production deployment. Use a production MSGT server instead.
+* Running on all addresses (0,0,0,0)
+* Running on http://127.0.0.1[5010]
+* Running on http://192.168.98.170:5010
+Press CTRLHC to quit
+```
+
+**2. Start the frontend interface**
+
+If the server did not start on port 5010 in the previous step, modify line 125 in the `web/src/state/store.tsx` file:
+```
+124 // settings
+125 backendHost: 'localhost:5010', // modify here
+```
+Change the port after localhost to the corresponding port (e.g., 5011, 5012). After modification, execute the following in the project root directory:
+```bash
+(venv) ~/time-travelling-visualizer$ cd web
+(venv) ~/time-travelling-visualizer/web$ npm run dev
+```
+This will start a frontend server. Open the following URL like `http://localhost:5175/` in your browser.
+```
+  ➜  Local:   http://localhost:5175/
+  ➜  Network: use --host to expose
+  ➜  press h + enter to show help
+```
+
+**3. Use the tool**
+
+Fill in the **Content Path** field the absolute path to the extracted dataset and click **Load Visualization Result**. For **Visualization Method** select **DVI** of **TimeVis**.
+
+You should now see the visualized charts, and the terminal will display access logs.

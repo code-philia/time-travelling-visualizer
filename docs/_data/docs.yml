@@ -1,10 +1,10 @@
-- title: Getting Started
+- title: Guide of Tool Usage
   docs:
-  - home
-  - themes
-  - customization
+  - setup
+  - training
+  - functionality
 
-- title: Examples
+- title: Training Process Examples
   docs:
   - cheatsheet
   - font-awesome
