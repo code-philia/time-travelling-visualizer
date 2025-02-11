@@ -93,19 +93,10 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
         });
         edgesRef.current = createEdges(neighborSameType, neighborCrossType, lastNeighborSameType, lastNeighborCrossType);
 
-        // set canvas scale
-        if (Array.isArray(vchartData?.scale) && vchartData?.scale.length > 0) {
-            x_min = vchartData?.scale[0];
-            y_min = vchartData?.scale[1];
-            x_max = vchartData?.scale[2];
-            y_max = vchartData?.scale[3];
-        }
-        else {
-            x_min = x_min - PADDING;
-            y_min = y_min - PADDING;
-            x_max = x_max + PADDING;
-            y_max = y_max + PADDING;
-        }
+        x_min = x_min - PADDING;
+        y_min = y_min - PADDING;
+        x_max = x_max + PADDING;
+        y_max = y_max + PADDING;
 
         // create spec
         const spec = {
@@ -754,7 +745,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
         }
         vchartRef.current.updateData('regions', region);
 
-    }, [showBgimg, vchartData]);
+    }, [showBgimg, filterState, showMetadata, showNumber, showText, vchartData]);
 
 
     return <div
