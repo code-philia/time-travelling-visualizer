@@ -9,9 +9,7 @@ export interface VChartData {
     colors: [number, number, number][];
     neighborSameType: number[][];
     neighborCrossType: number[][];
-    predictionProps: number[][];
-    bgimg: string;
-    scale: number[];
+    predictionProps: number[][]
 }
 
 export function createEmptyVChartData(): VChartData {
@@ -21,9 +19,7 @@ export function createEmptyVChartData(): VChartData {
         colors: [],
         neighborSameType: [],
         neighborCrossType: [],
-        predictionProps: [],
-        bgimg: '',
-        scale: []
+        predictionProps: []
     };
 }
 
