@@ -1,6 +1,6 @@
 ---
 title: Setup & Quickstart
-permalink: /docs/setup/
+permalink: /docs/home/
 redirect_from: /docs/index.html
 ---
 
