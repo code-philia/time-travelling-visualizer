@@ -4,20 +4,15 @@ permalink: /docs/home/
 redirect_from: /docs/index.html
 ---
 
-# Training Dynamic Visualization Tool
-
 > 🏗️ The tool is under renovation, and only part of the datasets are validated to be visualized. Introduction to the original tool and research project and could be found in [PROTOTYPE.md](PROTOTYPE.md), while it could contain some obsolete descriptions like that the old `Vis` and `VisTool` folders no longer exists, and the old `Tool` folder was separated into `tool` and `visualize` sub-projects.
 
-## How To Start the Tool
 
-### Prepare the Project
+#### Prepare the Project
 
 ```bash
 $ git clone <https://github.com/code-philia/time-travelling-visualizer.git>
 $ cd time-travelling-visualizer
 ```
-
-### Switch Git Branch
 
 To try our latest features, switch to the following branch:
 
@@ -25,15 +20,17 @@ To try our latest features, switch to the following branch:
 $ git checkout feat/visactor
 ```
 
-#### Create a virtual environment
+#### Setup the Environment
 
-We recommend to [create a venv](https://docs.python.org/3/library/venv.html) with pyhont 3.10 before installing all the dependencies, especially when your device has enough storage.
+**1. Create a virtual environment**
 
-#### Install PyTorch
+We recommend to [create a venv](https://docs.python.org/3/library/venv.html) with **pyhont 3.10** before installing all the dependencies, especially when your device has enough storage.
+
+**2. Install PyTorch**
 
 Refer to the [PyTorch official guide](https://pytorch.org/get-started/locally/). Installation methods vary by platform, and PyTorch versions depend on your GPU and the appropriate CUDA or ROCm version.
 
-#### Install All Dependencies
+**3. Install All Dependencies**
 
 Run the following command to install all required dependencies:
 
@@ -46,8 +43,7 @@ $ cd web
 $ npm run install
 ```
 
-
-### Download The Sample Dataset
+#### Download The Sample Dataset
 
 We recommend using this dataset to try the new feature.
 
@@ -65,7 +61,7 @@ We recommend using this dataset to try the new feature.
   Expand-Archive gcb_tokens.zip -DestinationPath .
   ```
 
-### Run the Tool
+#### Run the Tool
 
 **1. Start the backend server**
 
