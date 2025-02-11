@@ -181,6 +181,7 @@ body {
     display: flex;
     justify-content: safe center;
     padding: 0.5em;
+    overflow-y: auto;
 }
 
 .tokens-overview-block {
@@ -205,6 +206,7 @@ body {
 
 .tokens-overview-pre code {
     text-wrap: wrap;
+    cursor: pointer;
 }
 
 .overview-token.active {
@@ -213,6 +215,109 @@ body {
 
 .overview-token.active.highlighted {
     background-color: var(--token-highlight-color);
+}
+
+.overview-token.affiliated {
+    background-color: rgb(199, 240, 255);
+}
+
+.overview-token.locked {
+    /* background-color: rgb(244, 66, 34); */
+    background-color: var(--theme-color);
+    color: white;
+}
+
+.loss-attribution-block {
+    width: 250px;
+    padding: 0 2em;
+}
+
+.loss-attribution-block-title {
+    color: var(--theme-color);
+    font-weight: bolder;
+}
+
+.loss-attribution-block-title-text {
+    display: inline-block;
+    margin-right: 0.3em;
+}
+
+.loss-attribution-block-title-button {
+    font-size: smaller;
+    padding: 3px;
+    height: 2em;
+    gap: 2px;
+}
+
+.loss-attribution-block-content {
+    font-size: smaller;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8em;
+}
+
+.loss-attribution-sample-tag {
+    display: inline-block;
+    padding: 1px 3px;
+    background-color: var(--token-active-color);
+    border-radius: 2px;
+    margin: 0 2px;
+    font-size: smaller;
+}
+
+.loss-attribution-sample-tag.highlighted {
+    background-color: var(--theme-color);
+    color: white;
+}
+
+.loss-attribution-sample-tag.indicated {
+    background-color: rgb(230, 246, 253);
+}
+
+.change-indicator {
+    width: 151px;
+    height: 22px;
+    position: relative;
+}
+
+.change-indicator-base-line {
+    position: absolute;
+    left: calc(50% - 0.5px);
+    width: 1px;
+    height: 100%;
+    background-color: #000000;
+}
+
+.change-indicator-bar {
+    position: absolute;
+    top: 20%;
+    height: 60%;
+}
+
+.change-indicator-bar.decrease {
+    right: calc(50% + 0.5px);
+    background-color: #2ce485;
+}
+
+.change-indicator-bar.increase {
+    left: calc(50% + 0.5px);
+    background-color: #e4412c;
+}
+
+.change-indicator-value-text {
+    position: absolute;
+    font-size: smaller;
+    transform: translateY(2px);
+}
+
+.sample-change-indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.sample-change-indicator-left-section {
+    width: 60px;
 }
 
 .user-column, .info-column {
@@ -323,7 +428,8 @@ body {
 }
 
 .tag-1 {
-    background-color: #13b652;
+    /* background-color: #13b652; */
+    background-color: #268feb;
 }
 
 .tag-2 {
