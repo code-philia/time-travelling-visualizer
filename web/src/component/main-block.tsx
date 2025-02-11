@@ -122,7 +122,7 @@ export function MainBlock() {
 
     const { revealNeighborSameType, revealNeighborCrossType, neighborSameType, neighborCrossType } = useDefaultStore(['revealNeighborSameType', 'revealNeighborCrossType', 'neighborSameType', 'neighborCrossType']);
 
-    const { predictionProps, bgimg, scale } = useDefaultStore(['predictionProps', 'bgimg', 'scale']);
+    const { predictionProps } = useDefaultStore(['predictionProps']);
 
     // TODO all shared data are using useStore now. Decouple some of them
     // const highlightContext = useRef(new HighlightContext());
@@ -180,7 +180,7 @@ export function MainBlock() {
         const colors: [number, number, number][] = [];
 
         const data = {
-            positions, labels, colors, neighborSameType, neighborCrossType, predictionProps, bgimg, scale
+            positions, labels, colors, neighborSameType, neighborCrossType, predictionProps
         };
 
         if (!currentEpochData) return data;
@@ -194,7 +194,7 @@ export function MainBlock() {
             colors[i] = ([color[0] / 255, color[1] / 255, color[2] / 255]);
         });
         return data;
-    }, [currentEpochData, colorDict, neighborSameType, neighborCrossType, predictionProps, bgimg, scale]);
+    }, [currentEpochData]);
 
     const spriteData = useMemo(() => {
         const renderedTextData: string[] = [];

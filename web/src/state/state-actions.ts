@@ -69,7 +69,6 @@ export function useSetUpProjection() {
             // part 1: process projection data
             const newData = { ...allEpochsProjectionData };
             newData[epoch] = res; // the latest epoch may have been updated in UI, but not yet in store
-            setAllEpochsProjectionData(newData);
             const config = res.config;
 
             // part 2: relationship between points
@@ -131,6 +130,7 @@ export function useSetUpProjection() {
 
             setLabelDict(labelDict);
             setColorDict(colorDict);
+            setAllEpochsProjectionData(newData);
         }
     }, [allEpochsProjectionData, backendHost, contentPath, setAllEpochsProjectionData, setColorDict, setHighlightContext, setLabelDict, setNeighborCrossType, setNeighborSameType, visMethod]);
 
