@@ -1,6 +1,6 @@
 import { Radio, Button, Input, Flex, Select, InputRef, Divider, Checkbox } from "antd";
 import { useEffect, useRef, useState } from "react";
-import { useDefaultStore } from '../../state/store';
+import { useDefaultStore } from '../../state/state-store';
 import { fetchTimelineData } from "../../communication/api";
 import { DefaultOptionType } from "antd/es/select";
 import { FunctionalBlock, ComponentBlock } from "../custom/basic-components";

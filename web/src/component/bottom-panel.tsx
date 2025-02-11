@@ -2,7 +2,7 @@ import { HTMLAttributes, useEffect, useState } from 'react';
 import { Tabs, Button, TabPaneProps, TabsProps } from 'antd';
 import { UpOutlined, DownOutlined, SyncOutlined } from '@ant-design/icons';
 import styled from 'styled-components';
-import { useDefaultStore } from '../state/store';
+import { useDefaultStore } from '../state/state-store';
 
 const BottomPanelContainer = styled.div<{ expanded: boolean }>`
     display: flex;

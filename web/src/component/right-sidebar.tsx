@@ -1,5 +1,5 @@
 import { AutoComplete, Divider, Input, List, Tag, RefSelectProps } from 'antd';
-import { useDefaultStore } from '../state/store';
+import { useDefaultStore } from '../state/state-store';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ComponentBlock, FunctionalBlock } from './custom/basic-components';
 

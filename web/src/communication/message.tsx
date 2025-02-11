@@ -1,4 +1,4 @@
-import { useDefaultStore } from '../state/store';
+import { useDefaultStore } from '../state/state-store';
 import { useEffect } from 'react';
 
 const validCommands = [

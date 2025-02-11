@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { StoreApi, UseBoundStore } from "zustand";
 import { shallow } from "zustand/shallow";
 import { useStoreWithEqualityFn } from "zustand/traditional";
-import { CommonPointsGeography, ProjectionProps } from "../state/types";
+import { CommonPointsGeography, ProjectionProps } from "./types";
 import { BriefProjectionResult } from "../communication/api";
 import { HighlightContext } from "../component/canvas/types";
 
