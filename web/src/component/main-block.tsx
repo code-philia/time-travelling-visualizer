@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { PlotContainer, Plot2DCanvasContext, Plot2DDataContext, createPlot2DCanvasContextFrom } from './canvas/canvas'
-import { useDefaultStore } from '../state/store'
+import { useDefaultStore } from '../state/state-store'
 import { CommonPointsGeography, extractConnectedPoints, pointsDefaultSize, createEmptyCommonPointsGeography } from './canvas/types';
 import { BriefProjectionResult } from '../communication/api';
 import { useSetUpProjection } from '../state/state-actions';

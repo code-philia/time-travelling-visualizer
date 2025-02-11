@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { fetchTrainingProcessStructure, fetchUmapProjectionData, getAttributeResource, getText } from "../communication/api";
 import { HighlightContext, randomColor } from "../component/canvas/types";
-import { useDefaultStore } from "./store";
+import { useDefaultStore } from "./state-store";
 
 export function useSetUpTrainingProcess() {
     const { contentPath, backendHost, setAvailableEpochs, setTextData, setEpoch, setHighlightContext } =
