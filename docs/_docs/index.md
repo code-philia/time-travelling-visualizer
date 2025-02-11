@@ -4,9 +4,6 @@ permalink: /docs/home/
 redirect_from: /docs/index.html
 ---
 
-> 🏗️ The tool is under renovation, and only part of the datasets are validated to be visualized. Introduction to the original tool and research project and could be found in [PROTOTYPE.md](PROTOTYPE.md), while it could contain some obsolete descriptions like that the old `Vis` and `VisTool` folders no longer exists, and the old `Tool` folder was separated into `tool` and `visualize` sub-projects.
-
-
 #### Prepare the Project
 
 ```bash
