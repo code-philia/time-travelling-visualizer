@@ -7,9 +7,9 @@ description: >
 lang: en-US
 
 baseurl: "/time-travelling-visualizer" # the subpath of your site, e.g. /blog/
-url: https://Weiyu-Kong.github.io/time-travelling-visualizer # the base hostname & protocol for your site
-git_address: https://github.com/Weiyu-Kong/time-travelling-visualizer
-git_edit_address: https://github.com/Weiyu-Kong/time-travelling-visualizer/blob/feat/doc
+url: https://code-philia.github.io/time-travelling-visualizer # the base hostname & protocol for your site
+git_address: https://github.com/code-philia/time-travelling-visualizer
+git_edit_address: https://github.com/code-philia/time-travelling-visualizer/blob/feat/doc
 
 # theme options from https://bootswatch.com/3/
 # comment out this to use default Bootstrap
