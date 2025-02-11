@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: docs
+        working-directory: docs  # 确保所有步骤在 docs 目录下执行
 
     steps:
       - name: Checkout repository
@@ -22,11 +22,32 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.3'
-          bundler-cache: true
+          bundler-cache: true  # 自动缓存依赖
           cache-version: 0
           working-directory: '${{ github.workspace }}/docs'
+
+      # 关键修复：显式安装依赖（确保 Gemfile 存在且包含 bootstrap）
+      - name: Install dependencies
+        run: |
+          bundle config path vendor/bundle  # 指定依赖安装路径
+          bundle install
+
+      # 关键修复：确保 Jekyll 能访问主题文件
+      - name: Build the site
+        run: |
+          bundle exec jekyll build --trace  # 启用详细错误追踪
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: docs/_site/
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v2
