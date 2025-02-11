@@ -1,0 +1,49 @@
+name: Build and Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - "feat/doc"
+    paths:
+      - "docs/**"  # Only trigger the workflow when changes are made in the docs directory
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: docs  # Set the default working directory for the build job
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+          cache-version: 0
+          working-directory: '${{ github.workspace }}/docs'  # Set the working directory for the Ruby setup
+
+      - name: Install dependencies
+        run: bundle install
+
+      - name: Build the site
+        run: bundle exec jekyll build
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/_site/  # Specify the path to the built site
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+
+    steps:
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v2
