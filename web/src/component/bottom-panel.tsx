@@ -4,19 +4,19 @@ import { UpOutlined, DownOutlined, SyncOutlined } from '@ant-design/icons';
 import styled from 'styled-components';
 import { useDefaultStore } from '../state/state-store';
 
-const BottomPanelContainer = styled.div<{ expanded: boolean }>`
+const BottomPanelContainer = styled.div<{ $expanded: boolean }>`
     display: flex;
     border-top: 1px solid var(--layout-border-color);
     background-color: white;
-    height: ${props => props.expanded ? '320px' : '0px'};
+    height: ${props => props.$expanded ? '320px' : '0px'};
     transition: height 0.3s ease;
     z-index: 1000;
 `;
 
-const TabsContainer = styled.div<{ expanded: boolean }>`
+const TabsContainer = styled.div<{ $expanded: boolean }>`
     flex: 1 1 auto;
     padding: 0 1em;
-    display: ${props => props.expanded ? 'block' : 'none'};
+    display: ${props => props.$expanded ? 'block' : 'none'};
     overflow-y: hidden;
 `;
 
@@ -453,7 +453,7 @@ export function BottomPanel({ defaultActiveTab = '1' }: BottomPanelProps) {
     ];
 
     return (
-        <BottomPanelContainer className="bottom-panel" expanded={isExpanded}>
+        <BottomPanelContainer className="bottom-panel" $expanded={isExpanded}>
             <Button
                 type="text"
                 icon={isExpanded ? <DownOutlined /> : <UpOutlined />}
@@ -461,7 +461,7 @@ export function BottomPanel({ defaultActiveTab = '1' }: BottomPanelProps) {
                 className={isExpanded ? "bottom-panel-collapse-button" : "bottom-panel-collapse-button expand"}
                 color="primary" variant="filled"
             />
-            <TabsContainer expanded={isExpanded}>
+            <TabsContainer $expanded={isExpanded}>
                 <Tabs
                     activeKey={activeTab}
                     onChange={setActiveTab}
