@@ -2,7 +2,7 @@
 import { memo, useEffect, useRef, useState } from 'react';
 import VChart from '@visactor/vchart';
 import { Edge, VChartData } from './types';
-import { useDefaultStore } from "../../state/store";
+import { useDefaultStore } from "../../state/state-store";
 import { convexHull, createEdges, softmax } from './utils';
 const PADDING = 1;
 const THRESHOLD = 0.9;
@@ -611,7 +611,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                 } else {
                     highlightContext.addLocked(e.datum?.pointId);
                 }
-                setHighlightContext(highlightContext);
+                // setHighlightContext(highlightContext);
             });
         }
         else {

@@ -139,6 +139,9 @@ type BaseMutableGlobalStore = {
     rawPointsGeography: CommonPointsGeography | null;
 
     textData: string[];
+    attentionData: number[][];
+    originalTextData: Record<string, string>;
+    inherentLabelData: number[];
 
     // settings
     backendHost: string;
@@ -189,7 +192,11 @@ const initMutableGlobalStore: BaseMutableGlobalStore = {
     highlightContext: new HighlightContext(0),
     rawPointsGeography: null,
 
+    // FIXME we should use null for not loaded data
     textData: [],
+    attentionData: [],
+    originalTextData: {},
+    inherentLabelData: [],
 
     // settings
     backendHost: 'localhost:58225',
