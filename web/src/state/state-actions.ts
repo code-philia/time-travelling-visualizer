@@ -79,8 +79,8 @@ export function useSetUpProjection() {
                 const crossTypeNeighbor = await getAttributeResource(contentPath, epoch, 'inter_similarity', {
                     host: backendHost
                 });
-                setNeighborSameType(sameTypeNeighbor['intra_similarity'].slice(0, 5));
-                setNeighborCrossType(crossTypeNeighbor['inter_similarity'].slice(0, 5));
+                setNeighborSameType(sameTypeNeighbor['intra_similarity']);
+                setNeighborCrossType(crossTypeNeighbor['inter_similarity']);
 
                 if (epoch > 1) {
                     const lastSameTypeNeighbor = await getAttributeResource(contentPath, epoch - 1, 'intra_similarity', {
@@ -89,8 +89,8 @@ export function useSetUpProjection() {
                     const lastCrossTypeNeighbor = await getAttributeResource(contentPath, epoch - 1, 'inter_similarity', {
                         host: backendHost
                     });
-                    setLastNeighborSameType(lastSameTypeNeighbor['intra_similarity'].slice(0, 5));
-                    setLastNeighborCrossType(lastCrossTypeNeighbor['inter_similarity'].slice(0, 5));
+                    setLastNeighborSameType(lastSameTypeNeighbor['intra_similarity']);
+                    setLastNeighborCrossType(lastCrossTypeNeighbor['inter_similarity']);
                 }
 
                 const text = await getText(contentPath, {
