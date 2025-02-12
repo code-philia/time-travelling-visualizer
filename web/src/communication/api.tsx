@@ -55,11 +55,11 @@ export async function fetchTimelineData(contentPath: string) {
 }
 
 
-export async function fetchUmapProjectionData(contentPath: string, epoch: number, options: { method?: string, host?: string}): Promise<BriefProjectionResult> {
+export async function fetchUmapProjectionData(contentPath: string, epoch: number, options: { method?: string, host?: string }): Promise<BriefProjectionResult> {
     const defaultOptions = {
         method: '',
     };
-    const combinedOptions = {...defaultOptions, ...options};
+    const combinedOptions = { ...defaultOptions, ...options };
 
     const data = {
         "content_path": contentPath,
@@ -70,6 +70,15 @@ export async function fetchUmapProjectionData(contentPath: string, epoch: number
     return basicUnsafePostWithJsonResponse('/updateProjection', data, { host: combinedOptions.host });
 }
 
+export function visualizeTrainingProcess(contentPath: string, options?: { method?: string, host?: string }) {
+    const combinedOptions = { ...options };
+
+    const data = {
+        "content_path": contentPath,
+        "vis_method": combinedOptions.method
+    };
+    return basicUnsafePostWithJsonResponse('/visualizeTrainingProcess', data, options);
+}
 
 function getOriginalData(contentPath: string, dataType: string, index: number, iteration: number) {
     if (index === null) {
@@ -87,6 +96,15 @@ function getOriginalData(contentPath: string, dataType: string, index: number, i
         mode: 'cors'
     };
     return Fetch(`sprite${dataType}`, data);
+}
+
+export function getBgimg(contentPath: string, visMethod: string, epoch: number, options?: { host?: string }) {
+    const data = {
+        "content_path": contentPath,
+        "vis_method": visMethod,
+        "epoch": `${epoch}`
+    };
+    return basicUnsafePostWithJsonResponse('/getBackgroundImage', data, options);
 }
 
 export function getAttributeResource(contentPath: string, epoch: number, attributeName: string, options?: { host?: string }) {

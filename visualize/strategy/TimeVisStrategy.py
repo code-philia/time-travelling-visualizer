@@ -1,4 +1,5 @@
 import os
+import shutil
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
@@ -21,7 +22,7 @@ class TimeVis(StrategyAbstractClass):
         self.initialize_model()
         
     def initialize_model(self):
-        self.device = torch.device("cuda:{}".format(self.params["GPU"]) if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cuda:{}".format(self.config["gpu"]) if torch.cuda.is_available() else "cpu")
         self.data_provider = DataProvider(self.config, self.device)
         self.visualize_model = VisModel(self.params['ENCODER_DIMS'], self.params['DECODER_DIMS']).to(self.device)
         
@@ -76,6 +77,10 @@ class TimeVis(StrategyAbstractClass):
         trainer.train(PATIENT, MAX_EPOCH)
 
         self.save_vis_model(self.visualize_model, trainer.loss, trainer.optimizer)
+        
+        selected_idxs_path = os.path.join(self.config["contentPath"],  "selected_idxs")
+        if os.path.exists(selected_idxs_path):
+            shutil.rmtree(selected_idxs_path)
 
     def save_vis_model(self, model, loss = None, optimizer = None):
         save_model = {
@@ -83,4 +88,5 @@ class TimeVis(StrategyAbstractClass):
             "state_dict": model.state_dict(),
             "optimizer": optimizer.state_dict()
         }
-        torch.save(save_model, os.path.join(self.config["contentPath"], "Model", "TimeVis_model.pth"))
+        os.makedirs(os.path.join(self.config["contentPath"],"visualize", self.config["visMethod"], "vismodel"), exist_ok=True)
+        torch.save(save_model, os.path.join(self.config["contentPath"],"visualize", self.config["visMethod"], "vismodel", "1.pth"))

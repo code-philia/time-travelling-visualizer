@@ -1,6 +1,5 @@
 {
     "DVI": {
-        "GPU": 2,
         "BOUNDARY": {
             "B_N_EPOCHS": 0,
             "L_BOUND": 0.4
@@ -9,7 +8,7 @@
         "LAMBDA1": 1.0,
         "LAMBDA2": 1.0,
         "ENCODER_DIMS": [
-            768,
+            512,
             256,
             256,
             256,
@@ -22,7 +21,7 @@
             256,
             256,
             256,
-            768
+            512
         ],
         "N_NEIGHBORS": 15,
         "MAX_EPOCH": 5,
@@ -38,7 +37,7 @@
         "LAMBDA1": 1.0,
         "LAMBDA2": 0.3,
         "ENCODER_DIMS": [
-            768,
+            512,
             256,
             256,
             256,
@@ -51,7 +50,7 @@
             256,
             256,
             256,
-            768
+            512
         ],
         "N_NEIGHBORS": 15,
         "MAX_EPOCH": 5,

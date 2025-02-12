@@ -40,6 +40,7 @@ class ProjectorAbstractClass(ABC):
 class Projector(ProjectorAbstractClass):
     def __init__(self, config, params):
         self.content_path = config['contentPath']
+        self.vis_method = config['visMethod']
         self.vis_model_name = config['visMethod'] + "_model"
         gpu_id = config['gpu']
         self.device = torch.device("cuda:{}".format(gpu_id) if torch.cuda.is_available() else "cpu")
@@ -218,7 +219,7 @@ class DVIProjector(Projector):
 
     def load(self, iteration):
         print("DVIPROJECTOR", self.vis_model_name)
-        file_path = os.path.join(self.content_path, "Model", "Epoch_{}".format(iteration), "{}.pth".format(self.vis_model_name))
+        file_path = os.path.join(self.content_path,"visualize", self.vis_method, "vismodel", f"{iteration}.pth")
         save_model = torch.load(file_path, map_location="cpu")
         self.vis_model.load_state_dict(save_model["state_dict"])
         self.vis_model.to(self.device)
@@ -231,7 +232,7 @@ class TimeVisProjector(Projector):
         super().__init__(config, params)
 
     def load(self, iteration):
-        file_path = os.path.join(self.content_path, "Model", "{}.pth".format(self.vis_model_name))
+        file_path = os.path.join(self.content_path,"visualize", self.vis_method, "vismodel", "1.pth")
         save_model = torch.load(file_path, map_location="cpu")
         self.vis_model.load_state_dict(save_model["state_dict"])
         self.vis_model.to(self.device)

@@ -8,6 +8,9 @@ from flask_cors import CORS, cross_origin
 
 sys.path.append('..')
 sys.path.append('.')
+sys.path.append('../..')
+
+# from visualize.visualizer import Visualizer
 
 # flask for API server
 app = Flask(__name__, static_url_path='/static', static_folder='../frontend')
@@ -75,8 +78,8 @@ def update_projection():
 
     result = jsonify({
         'config': config,
-        'proj': projection[:min(100,len(projection))],
-        'labels': label_list[:min(100,len(label_list))],
+        'proj': projection[:min(5000,len(projection))],
+        'labels': label_list[:min(5000,len(label_list))],
         'label_text_list': config['dataset']['classes']
     })
     return make_response(result, 200)
@@ -103,11 +106,13 @@ def get_background_image():
 
     try:
         bgimg = load_background_image_base64(config, content_path, vis_method, epoch)
+        scale = load_scale(config, content_path, vis_method, epoch)
     except Exception as e:
         return make_response(jsonify({'error_message': 'Error in loading background image'}), 400)
 
     result = jsonify({
-        'bgimg': bgimg # 'data:image/png;base64,' + img_stream
+        'bgimg': bgimg, # 'data:image/png;base64,' + img_stream
+        'scale' : scale
     })
     return make_response(result, 200)
 
@@ -259,6 +264,36 @@ def get_simple_filter_result():
     return make_response(result, 200)
 
 
+"""
+Api: trigger visualize model training and projection process
+
+Request:
+    content_path (str)
+    vis_method (str)
+Response:
+    error_message (str): error message if training failed
+"""
+@app.route('/visualizeTrainingProcess', methods = ["POST"])
+@cross_origin()
+def visualize_training_process():
+    req = request.get_json()
+    content_path = req['content_path']
+    vis_method = req['vis_method']
+    
+    config = read_file_as_json(os.path.join(content_path, 'config.json'))
+    visualizer = Visualizer(config, content_path, vis_method)
+    error_message = visualizer.visualize()
+    
+    if error_message == 'success':
+        error_code = 200
+    else:
+        error_code = 400
+        
+    result = jsonify({
+        'error_message': error_message
+    })
+
+    return make_response(result, error_code)
 
 """ ===================================================================== """
 # Func: get iteration structure

@@ -31,10 +31,5 @@ class StrategyAbstractClass(ABC):
             "state_dict": model.state_dict(),
             "optimizer": optimizer.state_dict()
         }
-        torch.save(save_model, os.path.join(self.config["contentPath"],"Model",f"Epoch_{epoch}", self.config["visMethod"]+"_model.pth"))
-
-    def check_vis_model(self):
-        for epoch in range(self.config.EPOCH_START, self.config.EPOCH_END + 1, self.config.EPOCH_PERIOD):
-            model_path = os.path.join(self.config["contentPath"],"Model",f"Epoch_{epoch}", self.config["visMethod"]+"_model.pth")
-            if not os.path.isfile(model_path):
-                raise FileExistsError("Visualization model not found at {}".format(model_path))
+        os.makedirs(os.path.join(self.config["contentPath"],"visualize", self.config["visMethod"], "vismodel"), exist_ok=True)
+        torch.save(save_model, os.path.join(self.config["contentPath"],"visualize", self.config["visMethod"], "vismodel", f"{epoch}.pth"))
