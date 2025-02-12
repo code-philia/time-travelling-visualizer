@@ -2,10 +2,11 @@ import { useCallback } from "react";
 import { fetchTrainingProcessStructure, fetchUmapProjectionData, getAttributeResource, getBgimg, getText, visualizeTrainingProcess } from "../communication/api";
 import { HighlightContext, randomColor } from "../component/canvas/types";
 import { useDefaultStore } from "./state-store";
+import { get } from "@visactor/vchart/esm/util";
 
 export function useSetUpTrainingProcess() {
-    const { contentPath, backendHost, setAvailableEpochs, setTextData, setEpoch, setHighlightContext } =
-        useDefaultStore(['contentPath', 'setAvailableEpochs', 'backendHost', 'setTextData', 'setEpoch', 'setHighlightContext']);
+    const { contentPath, backendHost, setAvailableEpochs, setTextData, setAttentionData, setOriginalTextData, setInherentLabelData, setEpoch, setHighlightContext } =
+        useDefaultStore(['contentPath', 'setAvailableEpochs', 'backendHost', 'setTextData', 'setAttentionData', 'setOriginalTextData', 'setInherentLabelData', 'setEpoch', 'setHighlightContext']);
 
     const setUpTrainingProcess = useCallback(async () => {
         const res = await fetchTrainingProcessStructure(contentPath, {
@@ -17,12 +18,29 @@ export function useSetUpTrainingProcess() {
             setEpoch(res['available_epochs'][0]);
         }
 
-        // const text = await getText(contentPath, {
-        //     host: backendHost
-        // });
-        // setTextData(text['text_list'] ?? []);
+        // FIXME should this block here?
+        const text = await getText(contentPath, {
+            host: backendHost
+        });
+        setTextData(text['text_list'] ?? []);
 
-        setHighlightContext(new HighlightContext(textData.length));
+        // FIXME extract the common pattern of getting each label, and reuse
+        const attention = await getAttributeResource(contentPath, 1, 'attention', {
+            host: backendHost
+        });
+        setAttentionData(attention['attention'] ?? []);
+
+        const fullTextForEachLabel = await getAttributeResource(contentPath, 1, 'originalText', {
+            host: backendHost
+        });
+        setOriginalTextData(fullTextForEachLabel['originalText'] ?? []);
+        
+        const inherentLabels = await getAttributeResource(contentPath, 1, 'label', {
+            host: backendHost
+        });
+        setInherentLabelData(inherentLabels['label'] ?? []);
+
+        setHighlightContext(new HighlightContext(text['text_list'].length));
 
     }, [backendHost, contentPath, setAvailableEpochs, setTextData, setEpoch]);
 
@@ -32,7 +50,7 @@ export function useSetUpTrainingProcess() {
 export function useSetUpProjection() {
     // TODO avoid writing attribute twice
     const { contentPath, allEpochsProjectionData, setAllEpochsProjectionData, backendHost, visMethod,
-        setHighlightContext, setTextData, setLabelDict, setColorDict, setNeighborSameType, setNeighborCrossType, setLastNeighborSameType, setLastNeighborCrossType, setPredictionProps, setBgimg, setScale }
+        setHighlightContext, setTextData, setLabelDict, setColorDict, setNeighborSameType, setNeighborCrossType, setLastNeighborSameType, setLastNeighborCrossType, setPredictionProps }
         = useDefaultStore([
             'contentPath',
             'allEpochsProjectionData', 'setProjectionDataAtEpoch',

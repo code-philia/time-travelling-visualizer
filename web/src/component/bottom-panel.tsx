@@ -304,17 +304,25 @@ export function BottomPanel({ defaultActiveTab = '1' }: BottomPanelProps) {
     };
 
     const { highlightContext } = useDefaultStore(['highlightContext', 'textData']);
-    const demoTokens = {
-        "docstring": ['<s>', 'Read', 's', 'Ġexactly', 'Ġthe', 'Ġspecified', 'Ġnumber', 'Ġof', 'Ġbytes', 'Ġfrom', 'Ġthe', 'Ġsocket', '</s>'],
-        "code": ['<s>', 'def', 'Ġread', '_', 'ex', 'actly', 'Ġ(', 'Ġself', 'Ġ,', 'Ġnum', '_', 'bytes', 'Ġ)', 'Ġ:', 'Ġoutput', 'Ġ=', 'Ġb', "''", 'Ġremaining', 'Ġ=', 'Ġnum', '_', 'bytes', 'Ġwhile', 'Ġremaining', 'Ġ>', 'Ġ0', 'Ġ:', 'Ġoutput', 'Ġ+=', 'Ġself', 'Ġ.', 'Ġread', 'Ġ(', 'Ġremaining', 'Ġ)', 'Ġremaining', 'Ġ=', 'Ġnum', '_', 'bytes', 'Ġ-', 'Ġlen', 'Ġ(', 'Ġoutput', 'Ġ)', 'Ġreturn', 'Ġoutput', '</s>']
-    };
-    const demoText = {
-        "docstring": "Reads exactly the specified number of bytes from the socket",
-        "code": "def read_exactly(self, num_bytes):\n    output = b''\n    remaining = num_bytes\n    while remaining > 0:\n        output += self.read(remaining)\n        remaining = num_bytes - len(output)\n    return output"
-    };
 
-    const textGroups = Array.from(Object.keys(demoTokens));
-    const textGroupLengths = textGroups.map((key) => demoTokens[key as keyof typeof demoTokens].length);
+    const defaultGroupNames = ['docstring', 'code'] as const;
+
+    // assemble tokens
+    const { textData, inherentLabelData } = useDefaultStore(['textData', 'inherentLabelData']);
+    const groupedTokens: Record<string, string[]> = {};
+    defaultGroupNames.forEach((groupName, i) => {
+        groupedTokens[groupName] = [];
+        inherentLabelData.forEach((groupId, j) => {
+            if (groupId === i) {
+                groupedTokens[groupName].push(textData[j]);
+            }
+        }); 
+    });
+
+    const { originalTextData: originalText } = useDefaultStore(['originalTextData']);
+
+    const textGroups = Array.from(Object.keys(groupedTokens));
+    const textGroupLengths = textGroups.map((key) => groupedTokens[key as keyof typeof groupedTokens].length);
 
     const [highlightedIndex, setHighlightedIndex] = useState<number | null>(null);
     const [lockedIndices, setLockedIndices] = useState<number[]>([]);
@@ -352,10 +360,10 @@ export function BottomPanel({ defaultActiveTab = '1' }: BottomPanelProps) {
                         const remap = resolveCurrentIndexAndTokenIndexInGroup(i, textGroupLengths);
                         if (!(remap)) return null;
 
-                        if (!(key in demoTokens)) return null;
+                        if (!(key in groupedTokens)) return null;
 
-                        const text = demoText[key as keyof typeof demoText];
-                        const tokens = demoTokens[key as keyof typeof demoText];
+                        const text = originalText[key as typeof defaultGroupNames[number]];
+                        const tokens = groupedTokens[key as typeof defaultGroupNames[number]];
 
                         const remappedHighlightedIndex = highlightedIndex === null ? null : remap.to(highlightedIndex);
                         const onChangeHighlightIndex = (index: number | null) => {
