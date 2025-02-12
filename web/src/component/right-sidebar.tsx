@@ -317,7 +317,9 @@ export function RightSidebar() {
                                         onClose={(e) => {
                                             e.preventDefault();
                                             handleClose(item);
-                                        }}>
+                                        }}
+                                        key={item.num}
+                                    >
                                         {item.num}. {item.title}
                                     </Tag>
                                 ))
