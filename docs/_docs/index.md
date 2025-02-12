@@ -42,21 +42,11 @@ $ npm run install
 
 #### Download The Sample Dataset
 
-We recommend using this dataset to try the new feature.
-
-- **bash/zsh:**
-
-  ```bash
-  $ wget https://harkxa.sn.files.1drv.com/y4moeyNzEN8YAThWfZ3KqdgMTMOiw8bPpfla5qSeJoEXMydGUCpFU1bcQPDMUtzlbeZnP4len61rozjPqxn30PWHMe5696VvAP0vctH7LyA11Usc8571J30qCTFJ27UOOLEo8PMhxzUPWwYtJVEqyiiYkV0MSg9pGHT33aOFi8F2_L85gltRCL_QnxB1g2D6pPagaqRi9wyC6uxsgARbA1kbQ -O gcb_tokens.zip
-  unzip gcb_tokens.zip
-  ```
-
-- **PowerShell:**
-
-  ```powershell
-  Invoke-WebRequest https://harkxa.sn.files.1drv.com/y4moeyNzEN8YAThWfZ3KqdgMTMOiw8bPpfla5qSeJoEXMydGUCpFU1bcQPDMUtzlbeZnP4len61rozjPqxn30PWHMe5696VvAP0vctH7LyA11Usc8571J30qCTFJ27UOOLEo8PMhxzUPWwYtJVEqyiiYkV0MSg9pGHT33aOFi8F2_L85gltRCL_QnxB1g2D6pPagaqRi9wyC6uxsgARbA1kbQ -OutFile gcb_tokens.zip
-  Expand-Archive gcb_tokens.zip -DestinationPath .
-  ```
+Here is the demo of our latest dataset, available for download to serve as a reference.
+```bash
+gcb_tokens: https://pan.sjtu.edu.cn/web/share/463e08ccc5bbfdc5d8480242f1085ca1
+ResNet30-Cifar10: https://pan.sjtu.edu.cn/web/share/2f05f20c7d969004b872769fea4b46b8
+```
 
 #### Run the Tool
 
