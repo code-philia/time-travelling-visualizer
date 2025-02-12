@@ -1,4 +1,4 @@
-import { AutoComplete, Divider, Input, List, Tag, RefSelectProps } from 'antd';
+import { AutoComplete, Divider, Input, List, Tag, RefSelectProps, Button } from 'antd';
 import { useDefaultStore } from '../state/state-store';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ComponentBlock, FunctionalBlock } from './custom/basic-components';
@@ -40,7 +40,7 @@ const ColoredClassLabel: React.FC<LabelProps> = ({ label, colorArray, onColorCha
             <input
                 type="color"
                 value={rgbArrToHex(colorArray)}
-                onChange={ (e) => onColorChange(hexToRgbArray((e.target as HTMLInputElement).value)) }
+                onChange={(e) => onColorChange(hexToRgbArray((e.target as HTMLInputElement).value))}
             />
             <span style={{ color: rgbArrToHex(colorArray) }}>
                 {label}
@@ -54,7 +54,7 @@ function rgbArrToHex(rgbArray: number[]) {
     return '#' + rgbArray.map(c => c.toString(16).padStart(2, '0')).join('');
 }
 
-function hexToRgbArray(hex: string): [number, number, number]  {
+function hexToRgbArray(hex: string): [number, number, number] {
     hex = hex.replace(/^#/, '');
     const bigint = parseInt(hex, 16);
     const r = (bigint >> 16) & 255;
@@ -66,7 +66,7 @@ function hexToRgbArray(hex: string): [number, number, number]  {
 export function RightSidebar() {
     // TODO this is too messy all using useStore
     const { labelDict, colorDict, setColorDict, textData } =
-        useDefaultStore(["labelDict", "colorDict", "setColorDict", "textData" ]);
+        useDefaultStore(["labelDict", "colorDict", "setColorDict", "textData"]);
 
     function changeLabelColor(i: number, newColor: [number, number, number]) {
         setColorDict(new Map([...colorDict, [i, newColor]]));
@@ -201,6 +201,23 @@ export function RightSidebar() {
         };
     }, [allEpochsProjectionData, epoch, highlightContext, labelDict, textData]);
 
+
+    // Filter
+    const { filterType, setFilterType, filterValue, setFilterValue, filterState, setFilterState }
+        = useDefaultStore(["filterType", "setFilterType", "filterValue", "setFilterValue", "filterState", "setFilterState"]);
+
+    const handleStartFilter = () => {
+        if (filterValue === '') {
+            return;
+        }
+        setFilterState(true);
+    };
+
+    const handleClearFilter = () => {
+        setFilterState(false);
+        setFilterValue('');
+    };
+
     return (
         <div className="info-column">
             <FunctionalBlock label="Search">
@@ -239,27 +256,27 @@ export function RightSidebar() {
                 >
                     <Input onClick={() => {
                         setSearchHistoryOpen(true);
-                    }}/>
+                    }} />
                 </AutoComplete>
                 {
                     (allSearchResult.length > 0 || searchValue !== '')
-                        &&
-                        <ComponentBlock label="Search Result">
-                            {
-                                allSearchResult.length > 0
-                                    ?
-                                    (
-                                            <List className="search-result"
-                                                size="small"
-                                                bordered
-                                                dataSource={allSearchResult}
-                                                renderItem={searchResultRender}
-                                            />
-                                    )
-                                    :
-                                    (searchValue && <div className='alt-text placeholder-block'>No item found</div>)
-                            }
-                        </ComponentBlock>
+                    &&
+                    <ComponentBlock label="Search Result">
+                        {
+                            allSearchResult.length > 0
+                                ?
+                                (
+                                    <List className="search-result"
+                                        size="small"
+                                        bordered
+                                        dataSource={allSearchResult}
+                                        renderItem={searchResultRender}
+                                    />
+                                )
+                                :
+                                (searchValue && <div className='alt-text placeholder-block'>No item found</div>)
+                        }
+                    </ComponentBlock>
                 }
             </FunctionalBlock>
             <Divider></Divider>
@@ -309,6 +326,46 @@ export function RightSidebar() {
                         }
                     </div>
                 </ComponentBlock>
+            </FunctionalBlock>
+            <Divider />
+
+            <FunctionalBlock label="Filter">
+                <div className="filter-options" style={{ margin: '0.5rem 0 0 0' }}>
+                    <label>
+                        <input
+                            type="radio"
+                            value="label"
+                            checked={filterType === 'label'}
+                            onChange={() => setFilterType('label')}
+                        />
+                        Label
+                    </label>
+                    <label>
+                        <input
+                            type="radio"
+                            value="prediction"
+                            checked={filterType === 'prediction'}
+                            onChange={() => setFilterType('prediction')}
+                        />
+                        Prediction
+                    </label>
+                </div>
+                <Input
+                    style={{ margin: '0.5rem 0 0 0' }}
+                    placeholder={`Enter ${filterType}`}
+                    value={filterValue}
+                    onChange={(e) => setFilterValue(e.target.value)}
+                />
+                <div className="filter-buttons">
+                    <Button className="input-button" color="primary" variant="solid" style={{ width: '40%', padding: '0.5rem 1rem', margin: '0.5rem 0.4rem' }}
+                        onClick={handleStartFilter}>
+                        Start Filter
+                    </Button>
+                    <Button className="input-button" color="primary" variant="solid" style={{ width: '40%', padding: '0.5rem 1rem', margin: '0.5rem 0.4rem' }}
+                        onClick={handleClearFilter}>
+                        Clear Filter
+                    </Button>
+                </div>
             </FunctionalBlock>
             <Divider />
         </div>

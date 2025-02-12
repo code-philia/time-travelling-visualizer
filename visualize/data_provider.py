@@ -13,9 +13,6 @@ class DataProvider():
             self.device = device
         else:
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")        
-    def checkpoint_path(self, epoch):
-        return os.path.join(self.content_path, 'Model', "Epoch_{}".format(epoch))
-    
 
     ########################################################################################################################
     #                                                       MODEL                                                          #
@@ -86,7 +83,7 @@ class DataProvider():
     ########################################################################################################################
     #                                                       REPRESENTATION                                                 #
     ########################################################################################################################
-    # Not used, we assume the high dimension representation is already saved during training subject model
+    # *** Not used ***, we assume the high dimension representation is already saved during training subject model
     def generate_representation(self):
         training_data, testing_data, training_label, testing_label = self.load_data()
         for n_epoch in range(self.config["epochStart"], self.config["epochEnd"] + 1, self.config["epochPeriod"]):
@@ -136,6 +133,7 @@ class DataProvider():
         
         train_index = index_dict["train"]
         train_representations = [all_representation[i] for i in train_index]
+        train_representations = np.array(train_representations)
         return train_representations
     
     def test_representation(self, epoch):
@@ -145,7 +143,8 @@ class DataProvider():
             index_dict = json.load(f)
         
         test_index = index_dict["test"]
-        test_representations = [all_representation[i] for i in test_index]        
+        test_representations = [all_representation[i] for i in test_index]
+        test_representations = np.array(test_representations)
         return test_representations
     
     ########################################################################################################################

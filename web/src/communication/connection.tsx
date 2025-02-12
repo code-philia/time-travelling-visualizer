@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-const host = 'http://127.0.0.1:5001';
+const host = 'http://127.0.0.1:5010';
 
 const headers = new Headers();
 headers.append('Content-Type', 'application/json');
@@ -80,7 +80,7 @@ export function Fetch(input: string, init: any) {
         });
 }
 
-export function ConnectionStatus({useVscode}:{useVscode:boolean}) {
+export function ConnectionStatus({ useVscode }: { useVscode: boolean }) {
     const [isConnected, setIsConnected] = useState(false);
 
     useEffect(() => {

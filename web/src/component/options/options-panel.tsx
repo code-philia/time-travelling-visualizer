@@ -5,7 +5,7 @@ import { fetchTimelineData } from "../../communication/api";
 import { DefaultOptionType } from "antd/es/select";
 import { FunctionalBlock, ComponentBlock } from "../custom/basic-components";
 import { useCheckOptions } from "../custom/basic-hooks";
-import { useSetUpDicts, useSetUpProjection, useSetUpTrainingProcess } from "../../state/state-actions";
+import { useSetUpDicts, useSetUpProjection, useSetUpTrainingProcess, useTrainVisualizer } from "../../state/state-actions";
 
 const validVisMethods: DefaultOptionType['items'] = [
     {
@@ -35,13 +35,15 @@ export function OptionsPanel() {
     const setUpTrainingProcess = useSetUpTrainingProcess();
     const setUpProjections = useSetUpProjection();
     const setUpDicts = useSetUpDicts();
+    const trainVisualizer = useTrainVisualizer();
 
     const dataTypeOptions = [{ label: 'Image', value: 'Image', }, { label: 'Text', value: 'Text', },];
+    const { setShowMetadata, setShowBgimg } = useDefaultStore(["setShowMetadata", "setShowBgimg"]);
 
     // display options
 
     const [displayNormalInfoOptions, displayNormalInfoChecked, setDisplayNormalInfoChecked] = useCheckOptions([
-        { label: 'Metadata', value: 'metadata' },
+        { label: 'metadata', value: 'metadata' }, { label: 'background', value: 'bgimg' }
     ]);
     const [displayOnPlotOptions, displayOnPlotChecked, setDisplayOnPlotChecked] = useCheckOptions([
         'number', 'text'
@@ -65,6 +67,14 @@ export function OptionsPanel() {
         setShowNumber(displayOnPlotChecked.includes('number'));
         setShowText(displayOnPlotChecked.includes('text'));
     }, [displayOnPlotChecked, setShowNumber, setShowText]);
+
+    useEffect(() => {
+        setShowBgimg(displayNormalInfoChecked.includes('bgimg'));
+    }, [displayNormalInfoChecked, setShowBgimg]);
+
+    useEffect(() => {
+        setShowMetadata(displayNormalInfoChecked.includes('metadata'));
+    }, [displayNormalInfoChecked, setShowMetadata]);
 
     useEffect(() => {
         const options = [];
@@ -135,7 +145,22 @@ export function OptionsPanel() {
                         Load Visualization
                     </Button>
                 </div>
-            </div>
+                <div className="component-block">
+                    <Button className="input-button" color="primary" variant="solid" style={{ width: '100%' }}
+                        onClick={
+                            (_) => {
+                                if (inputRef.current?.input) {
+                                    setValue("contentPath", inputRef.current.input.value);
+                                }
+                                (async () => {
+                                    await trainVisualizer();
+                                })();
+                            }
+                        }>
+                        Train Visualizer
+                    </Button>
+                </div>
+            </div >
             <Divider />
             <FunctionalBlock label="Display Options">
                 <ComponentBlock label="Panels">

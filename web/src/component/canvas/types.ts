@@ -3,8 +3,29 @@ import { BriefProjectionResult } from "../../communication/api";
 
 export const pointsDefaultSize = 20;
 
+export interface VChartData {
+    positions: [number, number, number][];
+    labels: number[];
+    colors: [number, number, number][];
+    neighborSameType: number[][];
+    neighborCrossType: number[][];
+    predictionProps: number[][]
+}
+
+export function createEmptyVChartData(): VChartData {
+    return {
+        positions: [],
+        labels: [],
+        colors: [],
+        neighborSameType: [],
+        neighborCrossType: [],
+        predictionProps: []
+    };
+}
+
 export interface CommonPointsGeography {
     positions: [number, number, number][];
+    labels: number[];
     colors: [number, number, number][];
     sizes: number[];
     alphas: number[];
@@ -13,6 +34,7 @@ export interface CommonPointsGeography {
 export function createEmptyCommonPointsGeography(): CommonPointsGeography {
     return {
         positions: [],
+        labels: [],
         colors: [],
         sizes: [],
         alphas: []
@@ -222,6 +244,7 @@ export class HighlightContext {
         }
 
         const positions = originalPointsData.positions.slice();
+        const labels = originalPointsData.labels.slice();
         const colors = originalPointsData.colors.slice();
         const sizes = originalPointsData.sizes.slice();
         const alphas = originalPointsData.alphas.slice();
@@ -253,7 +276,7 @@ export class HighlightContext {
 
         this.highlightedPoints = highlightedPoints;
         const nextPlotPoints = {
-            positions, colors, sizes, alphas
+            positions, labels, colors, sizes, alphas
         };
 
         // // do check here
@@ -289,5 +312,12 @@ export class HighlightContext {
 }
 export type SpriteData = {
     labels: string[];
+};
+
+export type Edge = {
+    from: number;
+    to: number;
+    type: string; // sameType, crossType
+    status: string; // connect, disconnect, maintain
 };
 

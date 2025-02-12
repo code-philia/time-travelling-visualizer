@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { fetchTrainingProcessStructure, fetchUmapProjectionData, getAttributeResource, getText } from "../communication/api";
+import { fetchTrainingProcessStructure, fetchUmapProjectionData, getAttributeResource, getBgimg, getText, visualizeTrainingProcess } from "../communication/api";
 import { HighlightContext, randomColor } from "../component/canvas/types";
 import { useDefaultStore } from "./state-store";
 
@@ -17,11 +17,10 @@ export function useSetUpTrainingProcess() {
             setEpoch(res['available_epochs'][0]);
         }
 
-        const text = await getText(contentPath, {
-            host: backendHost
-        });
-        const textData = text['text_list'] ?? [];
-        setTextData(textData);
+        // const text = await getText(contentPath, {
+        //     host: backendHost
+        // });
+        // setTextData(text['text_list'] ?? []);
 
         setHighlightContext(new HighlightContext(textData.length));
 
@@ -32,10 +31,11 @@ export function useSetUpTrainingProcess() {
 
 export function useSetUpProjection() {
     // TODO avoid writing attribute twice
-    const { contentPath, allEpochsProjectionData, setAllEpochsProjectionData, backendHost, visMethod, setHighlightContext, setLabelDict, setColorDict, setNeighborSameType, setNeighborCrossType }
+    const { contentPath, allEpochsProjectionData, setAllEpochsProjectionData, backendHost, visMethod,
+        setHighlightContext, setTextData, setLabelDict, setColorDict, setNeighborSameType, setNeighborCrossType, setLastNeighborSameType, setLastNeighborCrossType, setPredictionProps, setBgimg, setScale }
         = useDefaultStore([
             'contentPath',
-            'allEpochsProjectionData','setProjectionDataAtEpoch',
+            'allEpochsProjectionData', 'setProjectionDataAtEpoch',
             'updateUUID',
             'backendHost',
             'visMethod',
@@ -46,7 +46,10 @@ export function useSetUpProjection() {
             'setAvailableEpochs',
             'setNeighborSameType',
             'setNeighborCrossType',
-            'setAllEpochsProjectionData'
+            'setLastNeighborSameType',
+            'setLastNeighborCrossType',
+            'setAllEpochsProjectionData',
+            'setPredictionProps'
         ]);
 
     // TODO add cache
@@ -63,41 +66,71 @@ export function useSetUpProjection() {
             console.warn(e);
         }
         if (res) {
-            const sameTypeNeighbor = await getAttributeResource(contentPath, epoch, 'intra_similarity', {
-                host: backendHost
-            });
-            const crossTypeNeighbor = await getAttributeResource(contentPath, epoch, 'inter_similarity', {
-                host: backendHost
-            });
-
-            // console.log(sameTypeNeighbor);
-            // console.log(crossTypeNeighbor);
-
-            // FIXME add validation of number[][]
-            setNeighborSameType(sameTypeNeighbor['intra_similarity']);
-            setNeighborCrossType(crossTypeNeighbor['inter_similarity']);
-
+            // part 1: process projection data
             const newData = { ...allEpochsProjectionData };
             newData[epoch] = res; // the latest epoch may have been updated in UI, but not yet in store
-            setAllEpochsProjectionData(newData);
+            const config = res.config;
+
+            // part 2: relationship between points
+            if (config.dataset.taskType == 'Umap-Neighborhood') {
+                const sameTypeNeighbor = await getAttributeResource(contentPath, epoch, 'intra_similarity', {
+                    host: backendHost
+                });
+                const crossTypeNeighbor = await getAttributeResource(contentPath, epoch, 'inter_similarity', {
+                    host: backendHost
+                });
+                setNeighborSameType(sameTypeNeighbor['intra_similarity']);
+                setNeighborCrossType(crossTypeNeighbor['inter_similarity']);
+
+                if (epoch > 1) {
+                    const lastSameTypeNeighbor = await getAttributeResource(contentPath, epoch - 1, 'intra_similarity', {
+                        host: backendHost
+                    });
+                    const lastCrossTypeNeighbor = await getAttributeResource(contentPath, epoch - 1, 'inter_similarity', {
+                        host: backendHost
+                    });
+                    setLastNeighborSameType(lastSameTypeNeighbor['intra_similarity']);
+                    setLastNeighborCrossType(lastCrossTypeNeighbor['inter_similarity']);
+                }
+
+                const text = await getText(contentPath, {
+                    host: backendHost
+                });
+                setTextData(text['text_list'] ?? []);
+            }
+
+            // part 3: for classification task, acquire prediction
+            if (config.dataset.taskType == 'classification') {
+                const predRes = await getAttributeResource(contentPath, epoch, 'prediction', {
+                    host: backendHost
+                });
+                setPredictionProps(predRes['prediction']);
+            }
+            else {
+                setPredictionProps([]);
+            }
 
             // TODO Do an immediate setup dict. Don't know how to fix it because outer setDict cannot see the updated projection data
             const labelDict = new Map<number, string>();
             const colorDict = new Map<number, [number, number, number]>();
 
-            const validLabels = Array.from(new Set(res.labels));
-
-            validLabels.forEach((classLabel, i) => {
-                labelDict.set(i, classLabel);
+            // Here we construct labelDict from res.label_text_list (e.g. [comment, code])
+            // and randomly asssign a color to each label !
+            const label_text_list = res.label_text_list;
+            label_text_list.forEach((label, i) => {
+                labelDict.set(i, label);
                 colorDict.set(i, randomColor(i));
             });
 
-            // TODO backend should provide this
-            labelDict.set(0, 'comment');
-            labelDict.set(1, 'code');
+            // const validLabels = Array.from(new Set(res.labels));
+            // validLabels.forEach((classLabel, i) => {
+            //     labelDict.set(i, classLabel);
+            //     colorDict.set(i, randomColor(i));
+            // });
 
             setLabelDict(labelDict);
             setColorDict(colorDict);
+            setAllEpochsProjectionData(newData);
         }
     }, [allEpochsProjectionData, backendHost, contentPath, setAllEpochsProjectionData, setColorDict, setHighlightContext, setLabelDict, setNeighborCrossType, setNeighborSameType, visMethod]);
 
@@ -115,4 +148,21 @@ export function useSetUpDicts() {
     }, [allEpochsProjectionData, epoch]);
 
     return setUpDicts;
+}
+
+export function useTrainVisualizer() {
+    const { contentPath, backendHost, visMethod }
+        = useDefaultStore([
+            'contentPath',
+            'backendHost',
+            'visMethod'
+        ]);
+    const trainVisualizer = useCallback(async () => {
+        const res = await visualizeTrainingProcess(contentPath, {
+            method: visMethod,
+            host: backendHost
+        });
+    }, [backendHost, contentPath, visMethod]);
+
+    return trainVisualizer;
 }

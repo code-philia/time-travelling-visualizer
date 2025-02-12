@@ -129,7 +129,7 @@ type BaseMutableGlobalStore = {
     dataType: string;
     colorList: number[][];
     labelNameDict: Record<number, string>;
-    timelineData: object | undefined;
+    timelineData: number[] | undefined;
     updateUUID: string;
     allEpochsProjectionData: Record<number, BriefProjectionResult>;
     availableEpochs: number[];
@@ -146,12 +146,25 @@ type BaseMutableGlobalStore = {
     showText: boolean;
     revealNeighborSameType: boolean;
     revealNeighborCrossType: boolean;
+    showMetadata: boolean;
     neighborSameType: number[][];
     neighborCrossType: number[][];
+    lastNeighborSameType: number[][];
+    lastNeighborCrossType: number[][];
+    predictionProps: number[][];
+    showBgimg: boolean;
+    
+    // filter
+    filterState: boolean;
+    filterType: 'label' | 'prediction';
+    filterValue: string;
+    
+    // hovered
+    hoveredIndex: -1;
 
     // dummy settings
-    showLossAttribution: boolean,
-    showTokensWeightAsSize: boolean,
+    showLossAttribution: boolean;
+    showTokensWeightAsSize: boolean;
     showTokensAlignmentAsColor: boolean
 }
 
@@ -184,8 +197,21 @@ const initMutableGlobalStore: BaseMutableGlobalStore = {
     showText: true,
     revealNeighborSameType: false,
     revealNeighborCrossType: false,
+    showMetadata: false,
     neighborSameType: [],
     neighborCrossType: [],
+    lastNeighborCrossType: [],
+    lastNeighborSameType: [],
+    predictionProps: [],
+    showBgimg: false,
+
+    // filter
+    filterState: false,
+    filterType: 'label',
+    filterValue: '',
+
+    // hovered
+    hoveredIndex: -1,
 
     // dummy settings
     showLossAttribution: false,

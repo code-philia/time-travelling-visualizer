@@ -37,6 +37,7 @@ export interface IterationStructure {
     }[];
 }export interface CommonPointsGeography {
     positions: [number, number, number][];
+    labels: number[];
     colors: [number, number, number][];
     sizes: number[];
     alphas: number[];
