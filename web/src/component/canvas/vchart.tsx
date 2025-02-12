@@ -284,7 +284,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                             }
                         },
                         style: {
-                            size: 10,
+                            size: 5,
                             fill: (datum: { label: number; }) => {
                                 const color = colorDict.get(datum.label) ?? [0, 0, 0];
                                 return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
@@ -331,23 +331,25 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
             // ================= axes =================
             axes: [
                 {
+                    visible: false,
                     orient: 'left',
                     min: y_min,
                     max: y_max,
                     type: 'linear',
-                    grid: { visible: true }
+                    grid: { visible: false }
                 },
                 {
+                    visible: false,
                     orient: 'bottom',
                     min: x_min,
                     max: x_max,
                     type: 'linear',
-                    grid: { visible: true }
+                    grid: { visible: false }
                 }
             ],
             dataZoom: [
                 {
-                    visible: true,
+                    visible: false,
                     orient: 'left',
                     filterMode: 'axis',
                     showDetail: false,
@@ -394,7 +396,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                     }
                 },
                 {
-                    visible: true,
+                    visible: false,
                     orient: 'bottom',
                     filterMode: 'axis',
                     showDetail: false,
