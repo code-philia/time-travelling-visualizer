@@ -7,7 +7,7 @@ html {
   --theme-text-grey-out: #898989;
   --layout-border-color: #cccccc;
   --token-active-color: #e9e9e9;
-  --token-highlight-color: #b1d0fc;
+  --token-highlight-color: #cde1fc;
 }
 
 body {
@@ -202,11 +202,13 @@ body {
     padding: 0 0.5em;
     margin-top: 0.5em;
     border-radius: 0.5em;
+    overflow-y: auto;
 }
 
 .tokens-overview-pre code {
     text-wrap: wrap;
     cursor: pointer;
+    font-family: 'Cascadia Code', 'Courier New', Courier, monospace;
 }
 
 .overview-token.active {
@@ -223,7 +225,7 @@ body {
 
 .overview-token.locked {
     /* background-color: rgb(244, 66, 34); */
-    background-color: var(--theme-color);
+    background-color: #b1d0fc;
     color: white;
 }
 
