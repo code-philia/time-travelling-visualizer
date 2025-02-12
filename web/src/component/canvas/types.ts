@@ -141,6 +141,11 @@ export class HighlightContext {
         this.notifyHighlightChanged();
     }
 
+    setAllLocked(indices: number[]) {
+        this.lockedIndices = new Set(indices);
+        this.notifyHighlightChanged();
+    }
+
     removeAllLocked() {
         this.lockedIndices.clear();
         this.notifyHighlightChanged();

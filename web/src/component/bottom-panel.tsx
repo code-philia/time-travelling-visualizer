@@ -117,15 +117,73 @@ interface ReactiveCodePreProps {
     label?: string;
     text: string;
     tokens: string[];
-    highlightedIndex?: number | null;
-    onChangeHighlightIndex?: (index: number | null) => void;
+    hoveredIndex?: number | null;
+    onHoverIndex?: (index: number | null) => void;
     lockedIndices?: number[];
     onChangeLockedIndices?: (indices: number[]) => void;
     affiliatedIndices?: number[];
+    weights?: number[] | null;
+    alignments?: number[] | null;
 }
 
-function ReactiveTokensOverviewBlock({ text, tokens, highlightedIndex, onChangeHighlightIndex, label, lockedIndices = [], affiliatedIndices = [], onChangeLockedIndices }: ReactiveCodePreProps) {
+function ReactiveTokensOverviewBlock({ text, tokens, hoveredIndex, onHoverIndex, label, lockedIndices = [], affiliatedIndices = [], onChangeLockedIndices, weights, alignments }: ReactiveCodePreProps) {
     const spans = extractSpans(text, tokens);
+
+    let regularizedWeights: number[] | null = null;
+    const ub = 1.618;
+    const lb = 0.618;
+    const logistic = (v: number) => 1 / (1 + Math.exp(-v));
+    const norm = (v: number) => lb + v * (ub - lb);
+    if (weights) {
+        const _ub = logistic(Math.max(...weights));
+        const _lb = logistic(Math.min(...weights));
+
+        regularizedWeights = [];
+        for (let i = 0; i < weights.length && i < spans.length; ++i) {
+            const l = logistic(weights[i]);
+            const y = (l - _lb) / (_ub - _lb);
+            const w = norm(y);
+            regularizedWeights.push(w);
+        }
+        for (let i = weights.length; i < spans.length; ++i) {
+            regularizedWeights.push(1);
+        }
+    }
+
+    let assignedColors: string[] | null = null;
+    const increaseSaturation = (r: number, g: number, b: number) => {
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+        const delta = max - min;
+
+        if (delta === 0) return `rgb(${r}, ${g}, ${b})`;
+
+        const saturation = delta / max;
+        const increaseFactor = 1.2; // Increase saturation by 20%
+        const newSaturation = Math.min(saturation * increaseFactor, 1);
+
+        const newR = r + (r - max) * (newSaturation - saturation);
+        const newG = g + (g - max) * (newSaturation - saturation);
+        const newB = b + (b - max) * (newSaturation - saturation);
+
+        return `rgb(${Math.round(newR)}, ${Math.round(newG)}, ${Math.round(newB)})`;
+    };
+    const generateColor = (num: number) => {
+        const r = (num * 137) % 255;
+        const g = (num * 149) % 255;
+        const b = (num * 163) % 255;
+
+        return increaseSaturation(r, g, b);
+    };
+    if (alignments) {
+        assignedColors = [];
+        for (let i = 0; i < alignments.length && i < spans.length; ++i) {
+            assignedColors.push(generateColor(alignments[i]));
+        }
+        for (let i = alignments.length; i < spans.length; ++i) {
+            assignedColors.push('black');
+        }
+    }
 
     const lockedIndicesSet = new Set<number | undefined>(lockedIndices);
     const affiliatedIndicesSet = new Set<number | undefined>(affiliatedIndices);
@@ -135,7 +193,7 @@ function ReactiveTokensOverviewBlock({ text, tokens, highlightedIndex, onChangeH
         if (span.active) {
             classList.push('active');
         }
-        if (highlightedIndex === span.index) {
+        if (hoveredIndex === span.index) {
             classList.push('highlighted');
         }
         if (lockedIndicesSet.has(span.index)) {
@@ -162,12 +220,28 @@ function ReactiveTokensOverviewBlock({ text, tokens, highlightedIndex, onChangeH
     // }
 
     const renderedSpans = spans.map((span, i) => {
+        const spanSizeStyle = regularizedWeights ? { fontSize: `${(regularizedWeights[i] * 100).toFixed(2)}%` } : undefined;
+        const spanColorStyle = assignedColors ? { color: assignedColors[i] } : undefined;
+        const spanStyle = spanSizeStyle || spanColorStyle
+            ? { ...spanSizeStyle, ...spanColorStyle }
+            : undefined;
+
         return (
             <span
                 className={spanClassList[i].join(' ')}
                 key={i}
-                onMouseOver={span.active ? () => onChangeHighlightIndex?.(span.index ?? null) : undefined}
-                onMouseLeave={span.active ? () => onChangeHighlightIndex?.(null) : undefined}
+                onMouseOver={span.active ? () => onHoverIndex?.(span.index ?? null) : undefined}
+                onMouseLeave={span.active ? () => onHoverIndex?.(null) : undefined}
+                onMouseDown={span.active ? () => {
+                    if (span.index === undefined) return;
+
+                    if (lockedIndicesSet.has(span.index)) {
+                        onChangeLockedIndices?.(lockedIndices.filter((idx) => idx !== span.index));
+                    } else {
+                        onChangeLockedIndices?.([...lockedIndices, span.index]);
+                    }
+                } : undefined}
+                style={spanStyle}
             >
                 {span.text}
             </span>
@@ -233,11 +307,11 @@ export function BottomPanel({ defaultActiveTab = '1' }: BottomPanelProps) {
     const demoTokens = {
         "docstring": ['<s>', 'Read', 's', 'Ġexactly', 'Ġthe', 'Ġspecified', 'Ġnumber', 'Ġof', 'Ġbytes', 'Ġfrom', 'Ġthe', 'Ġsocket', '</s>'],
         "code": ['<s>', 'def', 'Ġread', '_', 'ex', 'actly', 'Ġ(', 'Ġself', 'Ġ,', 'Ġnum', '_', 'bytes', 'Ġ)', 'Ġ:', 'Ġoutput', 'Ġ=', 'Ġb', "''", 'Ġremaining', 'Ġ=', 'Ġnum', '_', 'bytes', 'Ġwhile', 'Ġremaining', 'Ġ>', 'Ġ0', 'Ġ:', 'Ġoutput', 'Ġ+=', 'Ġself', 'Ġ.', 'Ġread', 'Ġ(', 'Ġremaining', 'Ġ)', 'Ġremaining', 'Ġ=', 'Ġnum', '_', 'bytes', 'Ġ-', 'Ġlen', 'Ġ(', 'Ġoutput', 'Ġ)', 'Ġreturn', 'Ġoutput', '</s>']
-    }
+    };
     const demoText = {
         "docstring": "Reads exactly the specified number of bytes from the socket",
         "code": "def read_exactly(self, num_bytes):\n    output = b''\n    remaining = num_bytes\n    while remaining > 0:\n        output += self.read(remaining)\n        remaining = num_bytes - len(output)\n    return output"
-    }
+    };
 
     const textGroups = Array.from(Object.keys(demoTokens));
     const textGroupLengths = textGroups.map((key) => demoTokens[key as keyof typeof demoTokens].length);
@@ -246,9 +320,22 @@ export function BottomPanel({ defaultActiveTab = '1' }: BottomPanelProps) {
     const [lockedIndices, setLockedIndices] = useState<number[]>([]);
     const [affilatedIndices, setAffiliatedIndices] = useState<number[]>([]);
 
+    // attention and alignment
+    const {
+        showLossAttribution,
+        showTokensWeightAsSize,
+        showTokensAlignmentAsColor
+    } = useDefaultStore([
+        'showLossAttribution',
+        'showTokensWeightAsSize',
+        'showTokensAlignmentAsColor'
+    ])
+
+    // connect to highlight context
     useEffect(() => {
         const listener = () => {
             setHighlightedIndex(highlightContext.hoveredIndex ?? null);
+            setLockedIndices([...highlightContext.lockedIndices]);
         };
 
         highlightContext.addHighlightChangedListener(listener);
@@ -258,69 +345,97 @@ export function BottomPanel({ defaultActiveTab = '1' }: BottomPanelProps) {
     }, [highlightContext, setHighlightedIndex]);
 
     const tokensOverviewTab = (
-        <div className='tokens-overview-container'>
-            {
-                textGroups.map((key, i) => {
-                    const remap = resolveCurrentIndexAndTokenIndexInGroup(i, textGroupLengths);
-                    if (!(remap)) return null;
+        <div className='vertical-overflow-container'>
+            <div className='tokens-overview-container'>
+                {
+                    textGroups.map((key, i) => {
+                        const remap = resolveCurrentIndexAndTokenIndexInGroup(i, textGroupLengths);
+                        if (!(remap)) return null;
 
-                    if (!(key in demoTokens)) return null;
+                        if (!(key in demoTokens)) return null;
 
-                    const text = demoText[key as keyof typeof demoText];
-                    const tokens = demoTokens[key as keyof typeof demoText];
-                    const remappedIndex = highlightedIndex === null ? null : remap.to(highlightedIndex);
-                    const onChangeHighlightIndex = (index: number | null) => {
-                        const remappedIndex = index === null ? null : remap.from(index);
-                        highlightContext.updateHovered(remappedIndex ?? undefined);
-                    };
+                        const text = demoText[key as keyof typeof demoText];
+                        const tokens = demoTokens[key as keyof typeof demoText];
 
-                    return (
-                        <ReactiveTokensOverviewBlock
-                            key={i}
-                            text={text}
-                            tokens={tokens}
-                            highlightedIndex={remappedIndex}
-                            onChangeHighlightIndex={onChangeHighlightIndex}
-                            label={key}
-                            lockedIndices={i === 0 ? [1] : [2]}
-                            affiliatedIndices={i === 0 ? [8] : [9, 32, 23]}
-                            // affiliatedIndices={i === 0 ? [] : [1, 2, 3, 5, 7, 9, 12, 20, 30, 32]}
-                        />
-                    );
-                })
-            }
-            <div>
-                <div className='loss-attribution-block'>
-                    <div className="loss-attribution-block-title">
-                        <span className="loss-attribution-block-title-text">Loss Attribution</span>
-                        <Button color="primary" variant="text" className="loss-attribution-block-title-button">
-                            <SyncOutlined style={{ fontSize: '10px' }}></SyncOutlined>
-                            <span style={{ transform: 'translateY(-1px)' }}>compute</span>
-                        </Button>
+                        const remappedHighlightedIndex = highlightedIndex === null ? null : remap.to(highlightedIndex);
+                        const onChangeHighlightIndex = (index: number | null) => {
+                            const remappedIndex = index === null ? null : remap.from(index);
+                            highlightContext.updateHovered(remappedIndex ?? undefined);
+                        };
+
+                        const remappedLockedIndices = lockedIndices.map(remap.to).filter((idx) => idx !== null) as number[];
+                        const onChangeLockedIndices = (indices: number[]) => {
+                            const remappedIndices = indices.map(remap.from).filter((idx) => idx !== null) as number[];
+                            highlightContext.setAllLocked(remappedIndices);
+                        };
+
+                        const generateWeights = (length: number, seed: number) => {
+                            const random = (s: number) => {
+                                const x = Math.sin(s) * 10000;
+                                return x - Math.floor(x);
+                            };
+
+                            const weights = [];
+                            for (let i = 0; i < length; i++) {
+                                weights.push(0.5 + random(seed + i) * 2.5);
+                            }
+                            return weights;
+                        };
+
+                        const weights = generateWeights(tokens.length, 42);
+
+                        return (
+                            <ReactiveTokensOverviewBlock
+                                label={key}
+                                key={i}
+                                text={text}
+                                tokens={tokens}
+                                hoveredIndex={remappedHighlightedIndex}
+                                onHoverIndex={onChangeHighlightIndex}
+                                lockedIndices={remappedLockedIndices}
+                                onChangeLockedIndices={onChangeLockedIndices}
+                                weights={showTokensWeightAsSize ? weights : null}
+                                alignments={showTokensAlignmentAsColor ? [1, 1, 2, 2, 3, 4, 6, 6, 7, 7, 7, 7, 7, 7] : null}
+                            />
+                        );
+                    })
+                }
+                {
+                    showLossAttribution &&
+                    <div>
+                        <div className='loss-attribution-block'>
+                            <div className="loss-attribution-block-title">
+                                <span className="loss-attribution-block-title-text">Loss Attribution</span>
+                                <Button color="primary" variant="text" className="loss-attribution-block-title-button">
+                                    <SyncOutlined style={{ fontSize: '10px' }}></SyncOutlined>
+                                    <span style={{ transform: 'translateY(-1px)' }}>compute</span>
+                                </Button>
+                            </div>
+                            <div className="loss-attribution-block-content">
+                                <div>
+                                    Compared to last epoch, the loss between
+                                    <span className="loss-attribution-sample-tag highlighted">1. Read</span>
+                                    and
+                                    <span className="loss-attribution-sample-tag highlighted">15. Ġread</span>
+                                    has changed:
+                                </div>
+                                <div>
+                                    <SampleChangeIndicator value={-0.43}></SampleChangeIndicator>
+                                </div>
+                                <div>
+                                    The loss is changed most significantly with:
+                                </div>
+                                <div>
+                                    <SampleChangeIndicator tag={'8. Ġbytes'} value={-1.57}></SampleChangeIndicator>
+                                    <SampleChangeIndicator tag={'45. Ġread'} value={-0.86}></SampleChangeIndicator>
+                                    <SampleChangeIndicator tag={'22. num'} value={+0.5}></SampleChangeIndicator>
+                                    <SampleChangeIndicator tag={'37. Ġwhile'} value={+1.32}></SampleChangeIndicator>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div className="loss-attribution-block-content">
-                        <div>
-                            Compared to last epoch, the loss between
-                            <span className="loss-attribution-sample-tag highlighted">1. Read</span>
-                            and
-                            <span className="loss-attribution-sample-tag highlighted">15. Ġread</span>
-                            has changed:
-                        </div>
-                        <div>
-                            <SampleChangeIndicator value={-0.43}></SampleChangeIndicator>
-                        </div>
-                        <div>
-                            The loss is changed most significantly with:
-                        </div>
-                        <div>
-                            <SampleChangeIndicator tag={'8. Ġbytes'} value={-1.57}></SampleChangeIndicator>
-                            <SampleChangeIndicator tag={'45. Ġread'} value={-0.86}></SampleChangeIndicator>
-                            <SampleChangeIndicator tag={'22. num'} value={+0.5}></SampleChangeIndicator>
-                            <SampleChangeIndicator tag={'37. Ġwhile'} value={+1.32}></SampleChangeIndicator>
-                        </div>
-                    </div>
-                </div>
-
+                }
+                
             </div>
         </div>
     )

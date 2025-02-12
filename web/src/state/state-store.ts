@@ -55,6 +55,69 @@ function createMutableTypes<T>(initialState: T, set: SetFunction<object>): WithS
     };
 }
 
+const CookiesUtil = {
+    set: function(name: string, value: string, days: number = 0) {
+        let expires = "";
+        if (days) {
+            const date = new Date();
+            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+            expires = `; expires=${date.toUTCString()}`;
+        }
+        document.cookie = `${name}=${value}${expires}; path=/`;
+    },
+    
+    get: function(name: string) {
+        const nameEQ = name + "=";
+        const ca = document.cookie.split(';');
+        for(let i = 0; i < ca.length; i++) {
+            let c = ca[i];
+            while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+            if (c.indexOf(nameEQ) === 0) 
+                return c.substring(nameEQ.length, c.length);
+        }
+        return null;
+    },
+    
+    delete: function(name: string) {
+        this.set(name, "", -1);
+    }
+};
+
+function cookieSetCustom(name: string, value: string, days: number = 0) {
+    const relatedCookieKey = `vis_${name}`;
+    return CookiesUtil.set(relatedCookieKey, value, days);
+}
+
+function cookieGetCustom(name: string) {
+    const relatedCookieKey = `vis_${name}`;
+    return CookiesUtil.get(relatedCookieKey);
+}
+
+function createCookieProxyMutableTypes<T extends Record<string, string>>(initialState: T, set: SetFunction<object>): WithSettersOnAttr<T> {
+    const setters: Record<string, (value: string) => void> = {};
+
+    for (const key in initialState) {
+        const relatedCookieKey = `vis_${key}`;
+
+        const fetchedCookie = CookiesUtil.get(relatedCookieKey);
+        if (fetchedCookie !== null) {
+            initialState[key] = fetchedCookie as T[Extract<keyof T, string>];
+        }
+
+        const setterName = `set${key.charAt(0).toUpperCase()}${key.slice(1)}`;
+        setters[setterName] = (value: string) => {
+            set((state) => {
+                document.cookie = `${relatedCookieKey}=${value}`;
+                return { [key]: value };
+            });
+        };
+    }
+    return {
+        ...initialState,
+        ...setters,
+    };
+}
+
 type BaseMutableGlobalStore = {
     command: string;
     contentPath: string;
@@ -85,6 +148,11 @@ type BaseMutableGlobalStore = {
     revealNeighborCrossType: boolean;
     neighborSameType: number[][];
     neighborCrossType: number[][];
+
+    // dummy settings
+    showLossAttribution: boolean,
+    showTokensWeightAsSize: boolean,
+    showTokensAlignmentAsColor: boolean
 }
 
 const initMutableGlobalStore: BaseMutableGlobalStore = {
@@ -118,13 +186,22 @@ const initMutableGlobalStore: BaseMutableGlobalStore = {
     revealNeighborCrossType: false,
     neighborSameType: [],
     neighborCrossType: [],
+
+    // dummy settings
+    showLossAttribution: false,
+    showTokensWeightAsSize: true,
+    showTokensAlignmentAsColor: true
 };
 
 type MutableGlobalStore = WithSettersOnAttr<BaseMutableGlobalStore>;
 
 type CustomGlobalStore = {
     setProjectionDataAtEpoch: (epoch: number, data: BriefProjectionResult) => void;
-}
+} & WithSettersOnAttr<{
+    backendHost: string;
+    visMethod: string;
+    contentPath: string;
+}>;
 function createCustomGlobalStore(set: SetFunction<GlobalStore>): CustomGlobalStore {
     return {
         setProjectionDataAtEpoch: (epoch: number, data: BriefProjectionResult) => set((state) => ({
@@ -132,7 +209,23 @@ function createCustomGlobalStore(set: SetFunction<GlobalStore>): CustomGlobalSto
                 ...state.allEpochsProjectionData,
                 [epoch]: data,
             },
-        }))
+        })),
+        // TODO extract these patterns of get and set
+        backendHost: cookieGetCustom('backendHost') || initMutableGlobalStore.backendHost,
+        setBackendHost: (value) => set(() => {
+            cookieSetCustom('backendHost', value);
+            return { backendHost: value };
+        }),
+        visMethod: cookieGetCustom('visMethod') || initMutableGlobalStore.visMethod,
+        setVisMethod: (value) => set(() => {
+            cookieSetCustom('visMethod', value);
+            return { visMethod: value };
+        }),
+        contentPath: cookieGetCustom('contentPath') || initMutableGlobalStore.contentPath,
+        setContentPath: (value) => set(() => {
+            cookieSetCustom('contentPath', value);
+            return { contentPath: value };
+        })
     };
 }
 
