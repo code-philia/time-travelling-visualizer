@@ -64,8 +64,8 @@ export function OptionsPanel() {
     }, [setDisplayOnPlotChecked, showNumber, showText]);
 
     useEffect(() => {
-        setShowNumber(displayOnPlotChecked.includes('number'));
-        setShowText(displayOnPlotChecked.includes('text'));
+        setShowNumber(displayOnPlotChecked.includes('index'));
+        setShowText(displayOnPlotChecked.includes('data'));
     }, [displayOnPlotChecked, setShowNumber, setShowText]);
 
     useEffect(() => {
