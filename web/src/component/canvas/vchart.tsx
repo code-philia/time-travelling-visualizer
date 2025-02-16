@@ -6,6 +6,8 @@ import { useDefaultStore } from "../../state/store";
 import { convexHull, createEdges, softmax } from './utils';
 const PADDING = 1;
 const THRESHOLD = 0.9;
+const CANVAS_HEIGHT = 600;
+const CANVAS_WIDTH = 800;
 
 type SampleTag = {
     num: number;
@@ -103,6 +105,17 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
             // ================= meta data =================
             type: 'common', // chart type
             animation: false,
+
+            width: CANVAS_WIDTH,
+            height: CANVAS_HEIGHT,
+
+            padding: {
+                top: 0,
+                right: 0,
+                bottom: 0,
+                left: 0
+            },
+
             data: [
                 {
                     id: 'points',
@@ -755,8 +768,8 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
         ref={chartRef}
         id="chart"
         style={{
-            width: '100%',
-            height: '100%'
+            width: CANVAS_WIDTH,
+            height: CANVAS_HEIGHT
         }}>
     </div>;
 });

@@ -277,7 +277,7 @@ export function MainBlock() {
     // only consider single container for now
     return (
         <div className="canvas-column">
-            <div id="canvas-wrapper" style={{ height: "100%", width: "100%" }}>
+            <div id="canvas-wrapper" style={{ height: "100%", width: "100%", display: "grid", placeItems: "center" }}>
                 <ChartComponent
                     vchartData={vchartData}
                 />
