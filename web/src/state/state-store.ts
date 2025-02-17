@@ -163,7 +163,7 @@ type BaseMutableGlobalStore = {
     filterValue: string;
     
     // hovered
-    hoveredIndex: -1;
+    hoveredIndex: number;
 
     // dummy settings
     showLossAttribution: boolean;
