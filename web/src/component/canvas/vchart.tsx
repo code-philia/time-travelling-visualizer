@@ -1,9 +1,10 @@
 // ChartComponent.tsx
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import VChart from '@visactor/vchart';
 import { Edge, VChartData } from './types';
 import { useDefaultStore } from "../../state/store";
-import { convexHull, createEdges, softmax } from './utils';
+import { convexHull, createEdges, softmax, createPixels, PIXEL_SIZE } from './utils';
+import { getPixelColor } from '../../communication/api';
 const PADDING = 1;
 const THRESHOLD = 0.9;
 const CANVAS_HEIGHT = 600;
@@ -28,12 +29,15 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
     const { revealNeighborCrossType, revealNeighborSameType } = useDefaultStore(["revealNeighborCrossType", "revealNeighborSameType"]);
     const { hoveredIndex, setHoveredIndex } = useDefaultStore(["hoveredIndex", "setHoveredIndex"]);
     const { highlightContext, setHighlightContext } = useDefaultStore(["highlightContext", "setHighlightContext"]);
+    const { contentPath, visMethod, backendHost } = useDefaultStore(['contentPath', 'visMethod', 'backendHost']);
 
     const samplesRef = useRef<{ pointId: number, x: number; y: number; label: number; pred: number; label_desc: string; pred_desc: string; confidence: number; textSample: string }[]>([]);
+    const pixelsRef = useRef<{ x: number, y: number, color: number[] }[]>([]);
     const edgesRef = useRef<Edge[]>([]);
 
     const [selectedItems, setSelectedItems] = useState<SampleTag[]>([]);
 
+    let x_min = Infinity, y_min = Infinity, x_max = -Infinity, y_max = -Infinity;
 
     useEffect(() => {
         const listener = () => {
@@ -62,7 +66,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
 
         // create data
         samplesRef.current = [];
-        let x_min = Infinity, y_min = Infinity, x_max = -Infinity, y_max = -Infinity;
+        x_min = Infinity, y_min = Infinity, x_max = -Infinity, y_max = -Infinity;
 
         vchartData?.positions.map((p, i) => {
             const x = parseFloat(p[0].toFixed(3));
@@ -141,11 +145,11 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                 },
                 {
                     id: 'edges',
-                    values: [] // dynamically set
+                    values: edgesRef.current
                 },
                 {
-                    id: 'regions',
-                    values: [] // dynamically set
+                    id: 'pixels',
+                    values: pixelsRef.current
                 }
             ],
 
@@ -183,39 +187,21 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                     }
                 },
                 {
-                    id: 'regions-series',
-                    interactive: false,
-                    stack: false,
-                    type: 'area',
-                    dataId: 'regions',
-                    xField: 'xx',
-                    yField: 'yy',
-                    seriesField: 'class',
+                    id: 'background-series',
+                    type: 'scatter',
+                    dataId: 'pixels',
+                    xField: 'x',
+                    yField: 'y',
                     point: {
-                        visible: false,
-                    },
-                    line: {
-                        interactive: false,
-                        visible: false,
-                        style: {
-                            curveType: 'catmullRomClosed',
-                        }
-                    },
-                    area: {
                         interactive: false,
                         style: {
-                            fill: (datum: { class: number }) => {
-                                const color = colorDict.get(datum.class) ?? [0, 0, 0];
-                                return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
-                            },
+                            size: PIXEL_SIZE,
+                            shape: 'square',
+                            fill: (datum: { color: number[]; }) => {
+                                return `rgb(${datum.color[0]}, ${datum.color[1]}, ${datum.color[2]})`;
+                            }
                         }
                     },
-                    hover: {
-                        enable: false,
-                    },
-                    select: {
-                        enable: false,
-                    }
                 },
                 {
                     id: 'edges-series',
@@ -228,15 +214,15 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                         style: {
                             stroke: (datum: { status: string; }) => {
                                 if (datum.status == 'maintain') {
-                                    return 'rgb(113, 113, 113)';
+                                    return 'rgb(175, 173, 173)';
                                 }
                                 else if (datum.status == 'connect') {
-                                    return 'rgb(94, 242, 121)';
+                                    return 'rgb(47, 250, 84)';
                                 }
                                 else if (datum.status == 'disconnect') {
-                                    return 'rgb(242, 129, 129)';
+                                    return 'rgb(250, 58, 58)';
                                 }
-                                return 'rgb(113, 113, 113)';
+                                return 'rgb(175, 173, 173)';
                             },
                             lineDash: (datum: { status: string; }) => {
                                 if (datum.status == 'maintain') {
@@ -252,13 +238,13 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                             },
                             lineWidth: (datum: { status: string; }) => {
                                 if (datum.status == 'maintain') {
-                                    return 1;
+                                    return 0.5;
                                 }
                                 else if (datum.status == 'connect') {
-                                    return 1;
+                                    return 1.5;
                                 }
                                 else if (datum.status == 'disconnect') {
-                                    return 1;
+                                    return 1.5;
                                 }
                                 return 1;
                             },
@@ -298,7 +284,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                             }
                         },
                         style: {
-                            size: 5,
+                            size: 3,
                             fill: (datum: { label: number; }) => {
                                 const color = colorDict.get(datum.label) ?? [0, 0, 0];
                                 return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
@@ -633,7 +619,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
         }
 
         vchartRef.current.renderSync();
-    }, [vchartData, filterState, showMetadata, showNumber, showText]);
+    }, [vchartData, filterState, showMetadata, showBgimg, showNumber, showText]);
 
 
     function updateHighlight() {
@@ -686,7 +672,6 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
         if (!vchartRef.current) {
             return;
         }
-        console.log('Locked: ', highlightContext.lockedIndices);
         updateHighlight();
     }, [vchartData, highlightContext, hoveredIndex]);
 
@@ -720,49 +705,32 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
             return;
         }
         if (!showBgimg) {
-            vchartRef.current?.updateDataSync('regions', []);
+            vchartRef.current?.updateDataSync('pixels', []);
             return;
         }
 
-        let filteredPoints: { [key: number]: number[][] } = {};
-        vchartData?.positions.map((p, i) => {
-            const x = parseFloat(p[0].toFixed(3));
-            const y = parseFloat(p[1].toFixed(3));
-            let confidence = 1.0;
-            let pred = vchartData?.labels[i];
-            if (vchartData?.predictionProps && vchartData.predictionProps.length > 0) {
-                let props = vchartData.predictionProps[i];
-                let softmaxValues = softmax(props);
-                confidence = Math.max(...softmaxValues);
-                pred = softmaxValues.indexOf(confidence);
+        pixelsRef.current = [];
+        const pixelPosition = createPixels(x_min, x_max, y_min, y_max, CANVAS_WIDTH, CANVAS_HEIGHT);
+        const fetchData = async () => {
+            const res = await getPixelColor(contentPath, visMethod, pixelPosition, {
+                host: backendHost
+            });
+            const pixelColor = res['pixelColor'];
+            for (let i = 0; i < pixelPosition.length; i++) {
+                const x_ = pixelPosition[i][0];
+                const y_ = pixelPosition[i][1];
+                const color_ = pixelColor[i];
+                const point = { x: x_, y: y_, color: color_ };
+                pixelsRef.current.push(point);
             }
-            if (confidence >= THRESHOLD) {
-                if (!filteredPoints[pred]) {
-                    filteredPoints[pred] = [];
-                }
-                filteredPoints[pred].push([x, y]);
+            if (!vchartRef.current) {
+                return;
             }
-        });
+            vchartRef.current.updateData('pixels', pixelsRef.current);
+        };
 
-        let convexHulls: { [key: number]: number[][] } = {};
-        for (const key in filteredPoints) {
-            if (filteredPoints.hasOwnProperty(key)) {
-                convexHulls[key] = convexHull(filteredPoints[key]);
-            }
-        }
-
-        let region: { xx: number, yy: number, class: number }[] = [];
-        for (const key in convexHulls) {
-            if (convexHulls.hasOwnProperty(key)) {
-                convexHulls[key].forEach((point, _) => {
-                    region.push({ xx: point[0], yy: point[1], class: parseInt(key) });
-                });
-            }
-        }
-        vchartRef.current.updateData('regions', region);
-
-    }, [showBgimg, filterState, showMetadata, showNumber, showText, vchartData]);
-
+        fetchData();
+    }, [showBgimg, vchartData]);
 
     return <div
         ref={chartRef}

@@ -125,3 +125,13 @@ export function getText(contentPath: string, options?: { host?: string }) {
 
     return basicUnsafePostWithJsonResponse('/getAllText', data, options);
 }
+
+export function getPixelColor(contentPath: string, visMethod: string, pixelPosition: number[][], options?: { host?: string }) {
+    const data = {
+        "contentPath": contentPath,
+        "visMethod": visMethod,
+        "pixelPosition": pixelPosition
+    };
+
+    return basicUnsafePostWithJsonResponse('/getPixelColor', data, options);
+}

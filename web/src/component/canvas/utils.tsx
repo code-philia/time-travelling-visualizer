@@ -142,3 +142,22 @@ export function convexHull(points: number[][]): number[][] {
 
     return expandedHull;
 }
+
+export const PIXEL_SIZE = 4;
+export function createPixels(x_min: number, x_max: number, y_min: number, y_max: number, width: number, height: number): number[][] {
+    const pixels: number[][] = [];
+
+    const x_scale = (x_max - x_min) / (width / PIXEL_SIZE);
+    const y_scale = (y_max - y_min) / (height / PIXEL_SIZE);
+
+    for (let i = 0; i < width / PIXEL_SIZE; i++) {
+        for (let j = 0; j < height / PIXEL_SIZE; j++) {
+            const x = x_min + (i + 0.5) * x_scale;
+            const y = y_min + (j + 0.5) * y_scale;
+
+            pixels.push([x, y]);
+        }
+    }
+
+    return pixels;
+}

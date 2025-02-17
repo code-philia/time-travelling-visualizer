@@ -1,3 +1,5 @@
+import math
+import tqdm
 import os
 import json
 import re
@@ -20,7 +22,7 @@ import torch
 from typing import List
 
 from config import VisConfig
-from visualize.data_provider import DataProvider
+from vismodel import VisModel
 
 """Utils of new data schema"""
 # Func: infer available epochs through projection files, return a list of available epochs
@@ -265,6 +267,100 @@ def get_filter_result(config, content_path, epoch, filters):
 
     return result,''
 
+
+# Func: get pixel color
+def compute_pixel_color(config, content_path, vis_method, pixel_position):
+    # define and load visualize model
+    device = torch.device("cuda:{}".format(2) if torch.cuda.is_available() else "cpu")
+    # TODO read from config file
+    ENCODER_DIMS = [
+            512,
+            256,
+            256,
+            256,
+            256,
+            2
+    ]
+    DECODER_DIMS = [
+            2,
+            256,
+            256,
+            256,
+            256,
+            512
+    ]
+    vis_model = VisModel(ENCODER_DIMS, DECODER_DIMS).to(device)
+    vis_model_location = os.path.join(content_path, "visualize", vis_method, "model", f"{vis_method}.pth")
+    save_model = torch.load(vis_model_location, map_location="cpu")
+    vis_model.load_state_dict(save_model["state_dict"])
+    vis_model.to(device)
+    vis_model.eval()
+    print("Successfully load the visualization model")
+    
+    # get high dimensional representation
+    pixel_position = np.array(pixel_position)
+    embedding = vis_model.decoder(torch.from_numpy(pixel_position).to(dtype=torch.float32, device=device)).cpu().detach().numpy()
+    print('size of embedding:', embedding.shape)
+    
+    # define and load subject model
+    sys.path.append(content_path)
+    import model as subject_model
+    
+    # TODO read from config file
+    model = eval("subject_model.{}()".format("ResNet34"))
+    
+    # state dict of subject model
+    subject_model_location = os.path.join(content_path, "model", "subject_model.pth")
+    model.load_state_dict(torch.load(subject_model_location, map_location=torch.device("cpu")))
+    model.to(device)
+    model.eval()
+    
+    # get prediction and color
+    pred_func = model.prediction
+    mesh_preds = batch_run(pred_func, torch.from_numpy(embedding).to(device), desc="getting prediction")
+    color = get_decision_view(mesh_preds)
+    print("color: ", color)
+
+    return color
+
+def get_decision_view(mesh_preds):
+    mesh_preds = mesh_preds + 1e-8
+    sort_preds = np.sort(mesh_preds, axis=1)
+    diff = (sort_preds[:, -1] - sort_preds[:, -2]) / (sort_preds[:, -1] - sort_preds[:, 0])
+    border = np.zeros(len(diff), dtype=np.uint8) + 0.05
+    border[diff < 0.15] = 1
+    diff[border == 1] = 0.
+
+    diff = diff/(diff.max()+1e-8)
+    diff = diff*0.9
+
+    mesh_classes = mesh_preds.argmax(axis=1)
+    mesh_max_class = max(mesh_classes)
+    cmap = plt.get_cmap('tab10')
+    color = cmap(mesh_classes / mesh_max_class)
+
+    diff = diff.reshape(-1, 1)
+
+    color = color[:, 0:3]
+    color = diff * 0.5 * color + (1 - diff) * np.ones(color.shape, dtype=np.uint8)
+    color_rgb = (color * 255).astype(np.uint8)
+    return color_rgb
+
+def batch_run(model, data, desc = "batch_run", batch_size=200):
+    """batch run, in case memory error"""
+    data = data.to(dtype=torch.float)
+    output = None
+    n_batches = max(math.ceil(len(data) / batch_size), 1)
+    for b in tqdm.tqdm(range(n_batches)):
+        r1, r2 = b * batch_size, (b + 1) * batch_size
+        inputs = data[r1:r2]
+        with torch.no_grad():
+            pred = model(inputs).cpu().numpy()
+            if output is None:
+                output = pred
+            else:
+                output = np.concatenate((output, pred), axis=0)
+    return output
 
 """ ==================================================================== """
 def initialize_config(config_file, setting = 'normal'):

@@ -295,6 +295,31 @@ def visualize_training_process():
 
     return make_response(result, error_code)
 
+"""
+Api: get pixel color
+
+Request:
+    content_path (str)
+    vis_method (str)
+    pixel_position (list of int): [x, y]
+Response:
+    pixel_color (list of int): [r, g, b]
+"""
+@app.route('/getPixelColor', methods = ["POST"])
+@cross_origin()
+def get_pixel_color():
+    req = request.get_json()
+    content_path = req['contentPath']
+    vis_method = req['visMethod']
+    pixel_position = req['pixelPosition']
+    config = read_file_as_json(os.path.join(content_path, 'config.json'))
+    pixelColor = compute_pixel_color(config, content_path, vis_method, pixel_position)
+
+    return make_response(jsonify({
+        'pixelColor': pixelColor.tolist()
+    }), 200)
+    
+
 """ ===================================================================== """
 # Func: get iteration structure
 def get_tree():
