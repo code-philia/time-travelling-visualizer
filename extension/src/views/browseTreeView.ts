@@ -1,104 +1,212 @@
 import * as vscode from 'vscode';
 
-interface TreeData {
-    trainingDatasets: {
-        name: string;
-        data: object[];
-    }[];
+type ValidAttributeSource = string | {
+    type: string;
+    pattern: string;
+};
+
+// NOTE This attribute configuration is related to backend config. Need to be regulated.
+interface TrainingProcessAttribute {
+    name: string;
+    dataType: string;
+    source?: ValidAttributeSource;
+    data?: object | object[];
+}
+
+interface BasicDataset {
+    uuid: string;
+    name: string;
+    baseType: string;
+    basePath: string;
+    size?: string;
+    samples: TrainingProcessAttribute;
+    attributes?: TrainingProcessAttribute[];
+}
+
+const supportedBuiltinVisualizationMethods = ['DVI', 'TrustVis', 'TimeVis'] as const;
+type SupportedBuiltinVisualizationMethod = typeof supportedBuiltinVisualizationMethods[number];
+
+interface BuiltInVisualizationMethodDescription {
+    name: SupportedBuiltinVisualizationMethod;
+    desc?: string;
+}
+
+const supportedBuiltInVisualizationMethodDescriptions: BuiltInVisualizationMethodDescription[] = [
+    {
+        name: 'DVI',
+        // desc: 'Document Visualization Interface'
+    },
+    {
+        name: 'TrustVis',
+        // desc: 'Trustworthiness Visualization'
+    },
+    {
+        name: 'TimeVis',
+        // desc: 'Time Series Visualization'
+    }
+];
+
+type VisualizationMethodStatus = 'not-started' | 'model-training' | 'model-ready' | 'projection-calculating' | 'projection-cached';
+
+interface TrainingProcessVisualizationMethodStatus {
+    name: string;
+    customMethodPath?: string;
+    status?: VisualizationMethodStatus;
+    cachedVisualizationModelPath?: string;
+    cachedProjectionPath?: string;
+}
+
+interface TrainingProcessTreeData {
     trainingProcesses: {
-        onData: string;
+        name: string;
+        basePath: string;
+        datasets: {
+            train?: BasicDataset;
+            validation?: BasicDataset;
+        };
         epochs?: {
             checkpoint?: {
                 path: string
             };
-            output?: any[];     // TODO any cannot deduce the type
-            projection?: any[];
-        }[]
+            metrics?: any[];     // TODO any cannot deduce the type
+        }[];
+        visualizationMethods?: TrainingProcessVisualizationMethodStatus[];
     }[];
-    visualizationModels: {
-        name: string;
-        path: string;
-    }[];
+    datasets: BasicDataset[];
+    visualizationMethods: BuiltInVisualizationMethodDescription[];
 }
 
-const placeholderTreeData: TreeData = {
-    trainingDatasets: [
-        {
-            name: 'Dataset 1',
-            data: [
-                { id: 1, name: 'Test Set 1', size: '1.2GB', type: 'csv' },
-                { id: 2, name: 'Test Set 2', size: '800MB', type: 'json' },
-                { id: 3, name: 'Test Set 3', size: '2.1GB', type: 'json' }
-            ]
-        },
-        {
-            name: 'Dataset 2',
-            data: [
-                { id: 4, name: 'Test Set', size: '500MB', type: 'csv' },
-                { id: 5, name: 'Validation Set', size: '300MB', type: 'json' }
-            ]
-        }
-    ],
-    trainingProcesses: [
-        {
-            onData: 'Dataset 1',
-            epochs: [
-                {
-                    checkpoint: {
-                        path: '/checkpoints/epoch_1.ckpt'
-                    },
-                    output: [
-                        { loss: 0.345, accuracy: 0.89 },
-                        { loss: 0.322, accuracy: 0.91 }
-                    ],
-                    projection: [
-                        { x: 0.1, y: 0.2, z: 0.3 },
-                        { x: 0.4, y: 0.5, z: 0.6 }
-                    ]
-                }
-            ]
-        },
-        {
-            onData: 'Dataset 2',
-            epochs: [
-                {
-                    checkpoint: {
-                        path: '/checkpoints/epoch_2.ckpt'
-                    },
-                    output: [
-                        { loss: 0.289, accuracy: 0.93 },
-                        { loss: 0.275, accuracy: 0.94 }
-                    ]
-                }
-            ]
-        }
-    ],
-    visualizationModels: [
-        {
-            name: 'Model_v1',
-            path: '/models/visualization_v1.pb'
-        },
-        {
-            name: 'Model_v2',
-            path: '/models/visualization_v2.pb'
-        },
-        {
-            name: 'Model_v3',
-            path: '/models/visualization_v3.pb'
-        }
-    ]
+const placeholderVisualizationMethod: TrainingProcessVisualizationMethodStatus = {
+    name: 'DVI',
+    status: 'not-started'
 };
 
+const placeholderSamples: TrainingProcessAttribute = {
+    "name": "sample",
+    "dataType": "text",
+    "source": {
+        "type": "folder",
+        "pattern": "dataset/sample/text_${index}.txt"
+    }
+};
+
+const placeholderAttributes: TrainingProcessAttribute[] = [
+    {
+        "name": "originalText",
+        "dataType": "text",
+        "source": {
+            "type": "file",
+            "pattern": "dataset/full_text.json"
+        }
+    },
+    {
+        "name": "attention",
+        "dataType": "text",
+        "source": {
+            "type": "file",
+            "pattern": "dataset/attention.json"
+        }
+    },
+    {
+        "name": "label",
+        "dataType": "npy",
+        "source": {
+            "type": "file",
+            "pattern": "dataset/label/labels.npy"
+        }
+    },
+    {
+        "name": "inter_similarity",
+        "dataType": "npy",
+        "source": {
+            "type": "folder",
+            "pattern": "dataset/inter_similarity/${epoch}.npy"
+        }
+    },
+    {
+        "name": "intra_similarity",
+        "dataType": "npy",
+        "source": {
+            "type": "folder",
+            "pattern": "dataset/intra_similarity/${epoch}.npy"
+        }
+    }
+];
+
+const placeholderDataset: BasicDataset = {
+    uuid: 'Dataset 1',
+    name: 'Dataset 1',
+    baseType: 'text',
+    basePath: '/new-version-datasets/gcb_tokens',
+    samples: placeholderSamples,
+    attributes: placeholderAttributes
+};
+
+const placeholderTreeData: TrainingProcessTreeData = {
+    trainingProcesses: [
+        {
+            name: 'gcb_tokens',
+            basePath: '/new-version-datasets/gcb_tokens',
+            datasets: {
+                validation: {
+                    uuid: 'Dataset 1',
+                    name: 'Dataset 1',
+                    baseType: 'text',
+                    basePath: '/new-version-datasets/gcb_tokens',
+                    samples: placeholderSamples,
+                    attributes: placeholderAttributes
+                }
+            },
+            epochs: [
+                {
+                    checkpoint: {
+                        path: ''
+                    },
+                    metrics: [
+                        { loss: 0.345, accuracy: 0.89 }
+                    ]
+                },
+                {
+                    checkpoint: {
+                        path: ''
+                    },
+                    metrics: [
+                        { loss: 0.289, accuracy: 0.93 }
+                    ]
+                }
+            ],
+            visualizationMethods: [
+                {
+                    name: 'DVI',
+                    status: 'projection-cached',
+                    cachedProjectionPath: '/new-version-datasets/gcb_tokens/visualize/DVI'
+                },
+                {
+                    name: 'TimeVis',
+                    status: 'projection-cached',
+                    cachedProjectionPath: '/new-version-datasets/gcb_tokens/visualize/TimeVis'
+                }
+            ]
+        }
+    ],
+    datasets: [placeholderDataset],
+    visualizationMethods: supportedBuiltInVisualizationMethodDescriptions
+};
+
+const demoData = ['<s>', 'Read', 's', 'Ġexactly', 'Ġthe', 'Ġspecified', 'Ġnumber', 'Ġof', 'Ġbytes', 'Ġfrom', 'Ġthe', 'Ġsocket', '</s>', '<s>', 'def', 'Ġread', '_', 'ex', 'actly', 'Ġ(', 'Ġself', 'Ġ,', 'Ġnum', '_', 'bytes', 'Ġ)', 'Ġ:', 'Ġoutput', 'Ġ=', 'Ġb', "''", 'Ġremaining', 'Ġ=', 'Ġnum', '_', 'bytes', 'Ġwhile', 'Ġremaining', 'Ġ>', 'Ġ0', 'Ġ:', 'Ġoutput', 'Ġ+=', 'Ġself', 'Ġ.', 'Ġread', 'Ġ(', 'Ġremaining', 'Ġ)', 'Ġremaining', 'Ġ=', 'Ġnum', '_', 'bytes', 'Ġ-', 'Ġlen', 'Ġ(', 'Ġoutput', 'Ġ)', 'Ġreturn', 'Ġoutput', '</s>'];
+
 // Updated TreeItem class with path property
+// TODO in order to load the children asynchronously, can we use reflection?
 class TreeItem extends vscode.TreeItem {
     constructor(
         public readonly label: string,
-        public readonly collapsibleState: vscode.TreeItemCollapsibleState,
         public readonly iconName: string,
-        public readonly path: string = label,
+        public readonly children?: TreeItem[],
         public readonly description?: string
     ) {
-        super(label, collapsibleState);
+        const collapsible = children && children.length > 0 ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None;
+
+        super(label, collapsible);
         this.iconPath = new vscode.ThemeIcon(iconName);
     }
 }
@@ -108,181 +216,213 @@ class TreeDataProvider implements vscode.TreeDataProvider<TreeItem> {
     private _onDidChangeTreeData: vscode.EventEmitter<TreeItem | undefined | null | void> = new vscode.EventEmitter<TreeItem | undefined | null | void>();
     readonly onDidChangeTreeData: vscode.Event<TreeItem | undefined | null | void> = this._onDidChangeTreeData.event;
 
+    private data: TrainingProcessTreeData = placeholderTreeData;
+
     getTreeItem(element: TreeItem): vscode.TreeItem {
         return element;
     }
 
+    private resolveRootItems(): TreeItem[] {
+        const children = [
+            new TreeItem(
+                'Training Processes', 'server-process',
+                this.data.trainingProcesses.map(p => this.resolveItemTrainingProcess(p)),
+            ),
+            new TreeItem(
+                'Available Datasets', 'folder-library',
+                this.data.datasets.map(d => this.resolveItemBasicDataset(d)),
+            ),
+            new TreeItem('Available Visualization Methods', 'symbol-misc',
+                this.data.visualizationMethods.map(m => this.resolveItemBuiltInVisualizationMethodDescription(m)),    
+            )
+        ];
+
+        return children;
+    }
+
+    private resolveItemTrainingProcess(process: TrainingProcessTreeData['trainingProcesses'][0]): TreeItem {
+        const children: TreeItem[] = [];
+
+        const datasetItems = Object.keys(process.datasets).map(key => {
+            const _key = key as 'train' | 'validation';
+            const dataset = process.datasets[_key] as BasicDataset;     // NOTE these type hints are so unnecessary but have to
+            return this.resolveItemBasicDataset(dataset);
+        });
+        children.push(...datasetItems);
+
+        if (process.epochs) {
+            children.push(this.resolveItemEpochs(process.epochs));
+        }
+
+        if (process.visualizationMethods) {
+            const visualizationMethodItems = process.visualizationMethods.map(method => this.resolveItemTrainingProcessVisualizationMethodStatus(method));
+            const visualizationMethodsTreeItem = new TreeItem(
+                'Visualization Methods',
+                'symbol-misc',
+                visualizationMethodItems
+            );
+            children.push(visualizationMethodsTreeItem);
+        }
+
+        return new TreeItem(
+            process.name,
+            'graph',
+            children
+        );
+    }
+
+    private resolveItemBasicDataset(dataset: BasicDataset): TreeItem {
+        const getPattern = (source: ValidAttributeSource | undefined) => {
+            if (typeof source === 'undefined') {
+                return undefined;
+            }
+            if (typeof source === 'string') {
+                return source;
+            }
+            return source.pattern;
+        };
+
+        return new TreeItem(
+            dataset.name,
+            'database',
+            [
+                new TreeItem(
+                    'Directory',
+                    'folder-opened',
+                    [],
+                    dataset.basePath
+                ),
+                new TreeItem(
+                    'Samples',
+                    'symbol-class',
+                    demoData.map((sample, index) => new TreeItem(
+                        `${index}`,
+                        'symbol-string',
+                        [],
+                        sample
+                    ))
+                ),
+                new TreeItem(
+                    'Attributes',
+                    'symbol-class',
+                    dataset.attributes!.map(attr => this.resolveItemTrainingProcessAttribute(attr))
+                )
+            ],
+            // dataset.basePath
+        );
+    }
+
+    private resolveItemEpochs(epochs: TrainingProcessTreeData['trainingProcesses'][0]['epochs']): TreeItem {
+        let children: TreeItem[] = [];
+
+        if (epochs) {
+            children = epochs.map((epoch, index) => {
+                const children = [];
+    
+                if (epoch.checkpoint) {
+                    children.push(new TreeItem(
+                        'Checkpoint',
+                        'save',
+                        [],
+                        epoch.checkpoint.path
+                    ));
+                }
+    
+                if (epoch.metrics) {
+                    children.push(new TreeItem(
+                        'Metrics',
+                        'graph-line',
+                        [], 
+                    ));
+                }
+    
+                return new TreeItem(
+                    `${index + 1}`,
+                    'symbol-numeric',
+                    children
+                );
+            });
+        }
+
+        return new TreeItem(
+            'Epochs',
+            'graph',
+            children
+        );
+    }
+
+    private resolveItemTrainingProcessVisualizationMethodStatus(status: TrainingProcessVisualizationMethodStatus): TreeItem {
+        const children = [];
+
+        if (status.customMethodPath) {
+            children.push(new TreeItem(
+                'Custom Method',
+                'symbol-method',
+                [],
+                status.customMethodPath
+            ));
+        }
+
+        if (status.cachedProjectionPath) {
+            children.push(new TreeItem(
+                'Cached Projection',
+                'symbol-ruler',
+                [],
+                status.cachedProjectionPath
+            ));
+        }
+
+        if (status.cachedVisualizationModelPath) {
+            children.push(new TreeItem(
+                'Cached Visualization Model',
+                'graph',
+                [],
+                status.cachedVisualizationModelPath
+            ));
+        }
+
+        return new TreeItem(
+            status.name,
+            'symbol-misc',
+            children,
+            status.status === 'projection-cached' ? 'cached' : status.status
+        );
+    }
+
+    private resolveItemBuiltInVisualizationMethodDescription(method: BuiltInVisualizationMethodDescription): TreeItem {
+        return new TreeItem(
+            method.name,
+            'graph',
+            [],
+            method.desc
+        );
+    }
+
+    private resolveItemTrainingProcessAttribute(attribute: TrainingProcessAttribute): TreeItem {
+        const children = [];
+
+        if (attribute.source) {
+            children.push(new TreeItem(
+                'Source',
+                'symbol-file',
+                [],
+                typeof attribute.source === 'string' ? attribute.source : attribute.source.pattern
+            ));
+        }
+
+        return new TreeItem(
+            attribute.name,
+            'symbol-property',
+            children
+        );
+    }
+
     getChildren(element?: TreeItem): Thenable<TreeItem[]> {
         if (!element) {
-            // Root level
-            return Promise.resolve([
-                new TreeItem('Training Datasets', vscode.TreeItemCollapsibleState.Collapsed, 'database', 'Training Data'),
-                new TreeItem('Training Processes', vscode.TreeItemCollapsibleState.Collapsed, 'server-process', 'Training Processes'),
-                new TreeItem('Visualization Model', vscode.TreeItemCollapsibleState.Collapsed, 'symbol-misc', 'Visualization Model')
-            ]);
+            return Promise.resolve(this.resolveRootItems());
         }
-
-        // Store the parent path to identify the level
-        const parentPath = element.path || element.label;
-
-        // Child items based on parent
-        if (parentPath === 'Training Data') {
-            return Promise.resolve(
-                placeholderTreeData.trainingDatasets.map((dataset, index) =>
-                    new TreeItem(
-                        `${dataset.name}`,
-                        vscode.TreeItemCollapsibleState.Collapsed,
-                        'database',
-                        `Training Data/Dataset ${index + 1}`
-                    )
-                )
-            );
-        }
-
-        if (parentPath.startsWith('Training Data/Dataset ')) {
-            const datasetIndex = parseInt(parentPath.split('Dataset ')[1]) - 1;
-            const dataset = placeholderTreeData.trainingDatasets[datasetIndex];
-
-            return Promise.resolve(
-                dataset.data.map((item: any) =>
-                    new TreeItem(
-                        `${item.name}`,
-                        vscode.TreeItemCollapsibleState.None,
-                        'file-text',
-                        `${parentPath}/${item.name}`,
-                        `${item.type}, ${item.size}`
-                    )
-                )
-            );
-        }
-
-        if (parentPath === 'Training Processes') {
-            return Promise.resolve(
-                placeholderTreeData.trainingProcesses.map((process, index) =>
-                    new TreeItem(
-                        `Process on ${process.onData}`,
-                        vscode.TreeItemCollapsibleState.Collapsed,
-                        'pulse',
-                        `Training Processes/Process ${index + 1}`
-                    )
-                )
-            );
-        }
-
-        if (parentPath.includes('/output')) {
-            const processIndex = parseInt(parentPath.split('Process ')[1].split('/')[0]) - 1;
-            const epochIndex = parseInt(parentPath.split('Epoch ')[1].split('/')[0]) - 1;
-            const outputs = placeholderTreeData.trainingProcesses[processIndex].epochs![epochIndex].output!;
-
-            return Promise.resolve(
-                outputs.map((output, index) =>
-                    new TreeItem(
-                        `Metrics ${index + 1}`,
-                        vscode.TreeItemCollapsibleState.None,
-                        'symbol-numeric',
-                        `${parentPath}/${index}`,
-                        `loss=${output.loss}, accuracy=${output.accuracy}`
-                    )
-                )
-            );
-        }
-
-        if (parentPath.includes('/projection')) {
-            const processIndex = parseInt(parentPath.split('Process ')[1].split('/')[0]) - 1;
-            const epochIndex = parseInt(parentPath.split('Epoch ')[1].split('/')[0]) - 1;
-            const projections = placeholderTreeData.trainingProcesses[processIndex].epochs![epochIndex].projection!;
-
-            return Promise.resolve(
-                projections.map((proj, index) =>
-                    new TreeItem(
-                        // `Projection ${index + 1}: (${proj.x}, ${proj.y}, ${proj.z})`,
-                        `Projection ${index + 1}`,
-                        vscode.TreeItemCollapsibleState.None,
-                        'symbol-ruler',
-                        `${parentPath}/${index}`
-                    )
-                )
-            );
-        }
-
-        if (parentPath.includes('/Epoch ')) {
-            const processIndex = parseInt(parentPath.split('Process ')[1].split('/')[0]) - 1;
-            const epochIndex = parseInt(parentPath.split('Epoch ')[1]) - 1;
-            const epoch = placeholderTreeData.trainingProcesses[processIndex].epochs![epochIndex];
-
-            const items: TreeItem[] = [];
-
-            if (epoch.checkpoint) {
-                items.push(
-                    new TreeItem(
-                        `Checkpoint`,
-                        vscode.TreeItemCollapsibleState.None,
-                        'save',
-                        `${parentPath}/checkpoint`,
-                        `${epoch.checkpoint.path}`
-                    )
-                );
-            }
-
-            if (epoch.output) {
-                items.push(
-                    new TreeItem(
-                        'Output Metrics',
-                        vscode.TreeItemCollapsibleState.Collapsed,
-                        'graph-line',
-                        `${parentPath}/output`
-                    )
-                );
-            }
-
-            if (epoch.projection) {
-                items.push(
-                    new TreeItem(
-                        'Projections',
-                        vscode.TreeItemCollapsibleState.Collapsed,
-                        'symbol-ruler',
-                        `${parentPath}/projection`
-                    )
-                );
-            }
-
-            return Promise.resolve(items);
-        }
-
-        // TODO use a new method to judge which layer it is at, so that we don't "if" reversely one by one
-        if (parentPath.startsWith('Training Processes/Process ')) {
-            const processIndex = parseInt(parentPath.split('Process ')[1]) - 1;
-            const process = placeholderTreeData.trainingProcesses[processIndex];
-
-            const epochs = process.epochs || [];
-            return Promise.resolve([
-                ...epochs.map((epoch, epochIndex) =>
-                    new TreeItem(
-                        `Epoch ${epochIndex + 1}`,
-                        vscode.TreeItemCollapsibleState.Collapsed,
-                        'symbol-numeric',
-                        `${parentPath}/Epoch ${epochIndex + 1}`
-                    )
-                )
-            ]);
-        }
-
-        if (parentPath === 'Visualization Model') {
-            return Promise.resolve(
-                placeholderTreeData.visualizationModels.map(model =>
-                    new TreeItem(
-                        `${model.name}`,
-                        vscode.TreeItemCollapsibleState.None,
-                        'graph',
-                        `Visualization Model/${model.name}`,
-                        `${model.path}`
-                    )
-                )
-            );
-        }
-
-        return Promise.resolve([]);
-    }
+        return Promise.resolve(element?.children ?? []);
+    }    
 }
 
 export class BrowseTreeView implements vscode.Disposable {
