@@ -129,6 +129,8 @@ interface ReactiveCodePreProps {
 function ReactiveTokensOverviewBlock({ text, tokens, hoveredIndex, onHoverIndex, label, lockedIndices = [], affiliatedIndices = [], onChangeLockedIndices, weights, alignments }: ReactiveCodePreProps) {
     const spans = extractSpans(text, tokens);
 
+    hoveredIndex !== null && hoveredIndex !== undefined && console.log(`In-block hovered index: ${hoveredIndex}`);
+
     let regularizedWeights: number[] | null = null;
     const ub = 1.618;
     const lb = 0.618;
@@ -139,11 +141,16 @@ function ReactiveTokensOverviewBlock({ text, tokens, hoveredIndex, onHoverIndex,
         const _lb = logistic(Math.min(...weights));
 
         regularizedWeights = [];
-        for (let i = 0; i < weights.length && i < spans.length; ++i) {
-            const l = logistic(weights[i]);
-            const y = (l - _lb) / (_ub - _lb);
-            const w = norm(y);
-            regularizedWeights.push(w);
+        for (let i = 0; i < spans.length; ++i) {
+            const index = spans[i].index;
+            if (index !== undefined && index < weights.length) {
+                const l = logistic(weights[i]);
+                const y = (l - _lb) / (_ub - _lb);
+                const w = norm(y);
+                regularizedWeights.push(w);
+            } else {
+                regularizedWeights.push(1);
+            }
         }
         for (let i = weights.length; i < spans.length; ++i) {
             regularizedWeights.push(1);
@@ -177,11 +184,13 @@ function ReactiveTokensOverviewBlock({ text, tokens, hoveredIndex, onHoverIndex,
     };
     if (alignments) {
         assignedColors = [];
-        for (let i = 0; i < alignments.length && i < spans.length; ++i) {
-            assignedColors.push(generateColor(alignments[i]));
-        }
-        for (let i = alignments.length; i < spans.length; ++i) {
-            assignedColors.push('black');
+        for (let i = 0; i < spans.length; ++i) {
+            const index = spans[i].index;
+            if (index !== undefined && index < alignments.length) {
+                assignedColors.push(generateColor(alignments[index]));
+            } else {
+                assignedColors.push('black');
+            }
         }
     }
 
@@ -392,6 +401,26 @@ export function BottomPanel({ defaultActiveTab = '1' }: BottomPanelProps) {
 
                         const weights = generateWeights(tokens.length, 42);
 
+                        const docstringAlignments = Array(20).fill(0);
+                        const codeAlignments = Array(50).fill(0);
+
+                        docstringAlignments[1] = 7;
+                        docstringAlignments[6] = 6;
+                        docstringAlignments[7] = 6;
+                        docstringAlignments[8] = 6;
+
+                        codeAlignments[3] = 7;
+                        codeAlignments[33] = 7;
+                        codeAlignments[10] = 6;
+                        codeAlignments[11] = 6;
+                        codeAlignments[12] = 6;
+                        codeAlignments[21] = 6;
+                        codeAlignments[22] = 6;
+                        codeAlignments[23] = 6;
+                        codeAlignments[39] = 6;
+                        codeAlignments[40] = 6;
+                        codeAlignments[41] = 6;
+
                         return (
                             <ReactiveTokensOverviewBlock
                                 label={key}
@@ -403,7 +432,7 @@ export function BottomPanel({ defaultActiveTab = '1' }: BottomPanelProps) {
                                 lockedIndices={remappedLockedIndices}
                                 onChangeLockedIndices={onChangeLockedIndices}
                                 weights={showTokensWeightAsSize ? weights : null}
-                                alignments={showTokensAlignmentAsColor ? [1, 1, 2, 2, 3, 4, 6, 6, 7, 7, 7, 7, 7, 7] : null}
+                                alignments={i == 0 ? docstringAlignments : codeAlignments}
                             />
                         );
                     })
