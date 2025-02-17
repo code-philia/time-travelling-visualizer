@@ -84,7 +84,13 @@
           "id": "visualizer-metadata-view",
           "name": "Data Point Info"
         }
-      ]
+      ],
+      "explorer": [
+            {
+                "id": "browse-tree-view",
+                "name": "Training Overview"
+            }
+        ]
     }
   },
   "scripts": {
