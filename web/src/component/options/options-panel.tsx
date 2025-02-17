@@ -46,7 +46,7 @@ export function OptionsPanel() {
         { label: 'metadata', value: 'metadata' }, { label: 'background', value: 'bgimg' }
     ]);
     const [displayOnPlotOptions, displayOnPlotChecked, setDisplayOnPlotChecked] = useCheckOptions([
-        'number', 'text'
+        'index', 'data'
     ]);  // TODO this should be read from backend
     const [revealNeighborOptions, revealNeighborChecked, setRevealNeighborChecked] = useCheckOptions([
         'same-type', 'cross-type'
@@ -55,17 +55,17 @@ export function OptionsPanel() {
     useEffect(() => {
         const options = [];
         if (showNumber) {
-            options.push('number');
+            options.push('index');
         }
         if (showText) {
-            options.push('text');
+            options.push('data');
         }
         setDisplayOnPlotChecked(options);
     }, [setDisplayOnPlotChecked, showNumber, showText]);
 
     useEffect(() => {
-        setShowNumber(displayOnPlotChecked.includes('number'));
-        setShowText(displayOnPlotChecked.includes('text'));
+        setShowNumber(displayOnPlotChecked.includes('index'));
+        setShowText(displayOnPlotChecked.includes('data'));
     }, [displayOnPlotChecked, setShowNumber, setShowText]);
 
     useEffect(() => {

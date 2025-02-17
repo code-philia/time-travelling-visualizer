@@ -102,6 +102,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
         const spec = {
             // ================= meta data =================
             type: 'common', // chart type
+            animation: false,
             data: [
                 {
                     id: 'points',
@@ -446,7 +447,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
             legends: [
                 {
                     seriesId: 'point-series',
-                    visible: true,
+                    visible: false,
                     orient: 'right',
                     position: 'start',
                     data: (items: any[]) => {
