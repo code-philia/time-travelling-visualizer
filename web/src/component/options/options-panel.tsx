@@ -5,7 +5,7 @@ import { fetchTimelineData } from "../../communication/api";
 import { DefaultOptionType } from "antd/es/select";
 import { FunctionalBlock, ComponentBlock } from "../custom/basic-components";
 import { useCheckOptions } from "../custom/basic-hooks";
-import { useSetUpDicts, useSetUpProjection, useSetUpTrainingProcess, useTrainVisualizer } from "../../state/state-actions";
+import { useSetUpProjection, useSetUpTrainingProcess, useTrainVisualizer } from "../../state/state-actions";
 
 const validVisMethods: DefaultOptionType['items'] = [
     {
@@ -34,7 +34,6 @@ export function OptionsPanel() {
 
     const setUpTrainingProcess = useSetUpTrainingProcess();
     const setUpProjections = useSetUpProjection();
-    const setUpDicts = useSetUpDicts();
     const trainVisualizer = useTrainVisualizer();
 
     const dataTypeOptions = [{ label: 'Image', value: 'Image', }, { label: 'Text', value: 'Text', },];
