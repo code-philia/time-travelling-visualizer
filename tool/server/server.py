@@ -51,21 +51,28 @@ def get_epoch_structure():
     return make_response(result, 200)
 
 """
-Api: get color for each class
+Api: get training process info
 
 Request:
     content_path (str)
+    vis_method (str)
 Response:
-    color (list): list of color for each class (read classes from config.json)
+    color_list (list): list of colors
+    label_text_list (list): list of label text
 """
-@app.route('/getColorList', methods=["GET"])
+@app.route('/getTrainingProcessInfo', methods=["GET"])
 @cross_origin()
-def get_color():
+def get_training_process_info():
     content_path = request.args.get('content_path')
     config = read_file_as_json(os.path.join(content_path, 'config.json'))
+    # 1. color list
     color_list  = get_coloring_list(config)
+    # 2. label text list
+    label_text_list = config['dataset']['classes']
+    
     result = jsonify({
-        'color': color_list
+        'color_list': color_list,
+        'label_text_list': label_text_list,
     })
     return make_response(result, 200)
 
@@ -98,40 +105,7 @@ def update_projection():
     result = jsonify({
         'config': config,
         'proj': projection[:min(5000,len(projection))],
-        'labels': label_list[:min(5000,len(label_list))],
-        'label_text_list': config['dataset']['classes']
-    })
-    return make_response(result, 200)
-
-"""
-Api: get background image of one epoch
-
-Request:
-    content_path (str)
-    vis_method (str)
-    epoch (str)
-Response:
-    bgimg (str): base64 encoded image
-"""
-@app.route('/getBackgroundImage', methods = ["POST"])
-@cross_origin()
-def get_background_image():
-    req = request.get_json()
-    content_path = req['content_path']
-    vis_method = req['vis_method']
-    epoch = int(req['epoch'])
-
-    config = read_file_as_json(os.path.join(content_path, 'config.json'))
-
-    try:
-        bgimg = load_background_image_base64(config, content_path, vis_method, epoch)
-        scale = load_scale(config, content_path, vis_method, epoch)
-    except Exception as e:
-        return make_response(jsonify({'error_message': 'Error in loading background image'}), 400)
-
-    result = jsonify({
-        'bgimg': bgimg, # 'data:image/png;base64,' + img_stream
-        'scale' : scale
+        'labels': label_list[:min(5000,len(label_list))]
     })
     return make_response(result, 200)
 

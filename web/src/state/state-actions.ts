@@ -1,11 +1,12 @@
 import { useCallback } from "react";
-import { fetchColorList, fetchTrainingProcessStructure, fetchUmapProjectionData, getAttributeResource, getBgimg, getText, visualizeTrainingProcess } from "../communication/api";
-import { HighlightContext, randomColor } from "../component/canvas/types";
+import { fetchTrainingProcessInfo, fetchTrainingProcessStructure, fetchUmapProjectionData, getAttributeResource, getBgimg, getText, visualizeTrainingProcess } from "../communication/api";
+import { HighlightContext } from "../component/canvas/types";
 import { useDefaultStore } from "./store";
 
+// Set up the training process
 export function useSetUpTrainingProcess() {
-    const { contentPath, backendHost, setAvailableEpochs, setTextData, setEpoch, setHighlightContext, setColorDict } =
-        useDefaultStore(['contentPath', 'setAvailableEpochs', 'backendHost', 'setTextData', 'setEpoch', 'setHighlightContext', 'setColorDict']);
+    const { contentPath, visMethod, backendHost, setAvailableEpochs, setTextData, setEpoch, setHighlightContext, setColorDict, setLabelDict, setScale } =
+        useDefaultStore(['contentPath', 'visMethod', 'setAvailableEpochs', 'backendHost', 'setTextData', 'setEpoch', 'setHighlightContext', 'setColorDict', 'setLabelDict', 'setScale']);
 
     const setUpTrainingProcess = useCallback(async () => {
         // 1. get iteration structure
@@ -13,22 +14,30 @@ export function useSetUpTrainingProcess() {
             host: backendHost
         });
         setAvailableEpochs(res['available_epochs']);
-
         if (res['available_epochs'].length > 0) {
             setEpoch(res['available_epochs'][0]);
         }
 
-        // 2. get color list for each class
-        const res1 = await fetchColorList(contentPath, {
+        // 2. get basic info of training process
+        //    - color list
+        //    - label description list
+        const res1 = await fetchTrainingProcessInfo(contentPath, {
             host: backendHost
         });
 
         const colorDict = new Map<number, [number, number, number]>();
-        res1['color'].forEach((c: number[], i: number) => {
+        res1['color_list'].forEach((c: number[], i: number) => {
             colorDict.set(i, [c[0], c[1], c[2]]);
         });
-
         setColorDict(colorDict);
+
+        const labelDict = new Map<number, string>();
+        res1['label_text_list'].forEach((label: string, i: number) => {
+            labelDict.set(i, label);
+        });
+        setLabelDict(labelDict);
+
+        // 3. init highlight context
         setHighlightContext(new HighlightContext());
 
     }, [backendHost, contentPath, setAvailableEpochs, setTextData, setEpoch]);
@@ -36,10 +45,11 @@ export function useSetUpTrainingProcess() {
     return setUpTrainingProcess;
 }
 
+// Set up certain epoch of the training process
 export function useSetUpProjection() {
     // TODO avoid writing attribute twice
     const { contentPath, allEpochsProjectionData, setAllEpochsProjectionData, backendHost, visMethod,
-        setHighlightContext, setTextData, setLabelDict, setNeighborSameType, setNeighborCrossType, setLastNeighborSameType, setLastNeighborCrossType, setPredictionProps, setBgimg, setScale }
+        setHighlightContext, setTextData, setNeighborSameType, setNeighborCrossType, setLastNeighborSameType, setLastNeighborCrossType, setPredictionProps, setBgimg, setScale }
         = useDefaultStore([
             'contentPath',
             'allEpochsProjectionData', 'setProjectionDataAtEpoch',
@@ -48,7 +58,6 @@ export function useSetUpProjection() {
             'visMethod',
             'setHighlightContext',
             'setTextData',
-            'setLabelDict',
             'setAvailableEpochs',
             'setNeighborSameType',
             'setNeighborCrossType',
@@ -116,35 +125,12 @@ export function useSetUpProjection() {
                 setPredictionProps([]);
             }
 
-            // TODO Do an immediate setup dict. Don't know how to fix it because outer setDict cannot see the updated projection data
-            const labelDict = new Map<number, string>();
-            // Here we construct labelDict from res.label_text_list (e.g. [comment, code])
-            const label_text_list = res.label_text_list;
-            label_text_list.forEach((label, i) => {
-                labelDict.set(i, label);
-            });
-
-            setLabelDict(labelDict);
             setAllEpochsProjectionData(newData);
         }
-    }, [allEpochsProjectionData, backendHost, contentPath, setAllEpochsProjectionData, setHighlightContext, setLabelDict, setNeighborCrossType, setNeighborSameType, visMethod]);
+    }, [allEpochsProjectionData, backendHost, contentPath, setAllEpochsProjectionData, setHighlightContext, setNeighborCrossType, setNeighborSameType, visMethod]);
 
     return setUpProjections;
 }
-
-export function useSetUpDicts() {
-    const { epoch, allEpochsProjectionData, setLabelDict, setColorDict }
-        = useDefaultStore(['epoch', 'allEpochsProjectionData', 'setLabelDict', 'setColorDict']);
-
-    const setUpDicts = useCallback(() => {
-        // TODO extract this currentEpochData to a useStore
-        const currentEpochData = allEpochsProjectionData[epoch];
-        if (!currentEpochData) return;
-    }, [allEpochsProjectionData, epoch]);
-
-    return setUpDicts;
-}
-
 export function useTrainVisualizer() {
     const { contentPath, backendHost, visMethod }
         = useDefaultStore([
