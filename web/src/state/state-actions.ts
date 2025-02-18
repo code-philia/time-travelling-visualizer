@@ -1,13 +1,14 @@
 import { useCallback } from "react";
-import { fetchTrainingProcessStructure, fetchUmapProjectionData, getAttributeResource, getBgimg, getText, visualizeTrainingProcess } from "../communication/api";
+import { fetchColorList, fetchTrainingProcessStructure, fetchUmapProjectionData, getAttributeResource, getBgimg, getText, visualizeTrainingProcess } from "../communication/api";
 import { HighlightContext, randomColor } from "../component/canvas/types";
 import { useDefaultStore } from "./store";
 
 export function useSetUpTrainingProcess() {
-    const { contentPath, backendHost, setAvailableEpochs, setTextData, setEpoch, setHighlightContext } =
-        useDefaultStore(['contentPath', 'setAvailableEpochs', 'backendHost', 'setTextData', 'setEpoch', 'setHighlightContext']);
+    const { contentPath, backendHost, setAvailableEpochs, setTextData, setEpoch, setHighlightContext, setColorDict } =
+        useDefaultStore(['contentPath', 'setAvailableEpochs', 'backendHost', 'setTextData', 'setEpoch', 'setHighlightContext', 'setColorDict']);
 
     const setUpTrainingProcess = useCallback(async () => {
+        // 1. get iteration structure
         const res = await fetchTrainingProcessStructure(contentPath, {
             host: backendHost
         });
@@ -17,11 +18,17 @@ export function useSetUpTrainingProcess() {
             setEpoch(res['available_epochs'][0]);
         }
 
-        // const text = await getText(contentPath, {
-        //     host: backendHost
-        // });
-        // setTextData(text['text_list'] ?? []);
+        // 2. get color list for each class
+        const res1 = await fetchColorList(contentPath, {
+            host: backendHost
+        });
 
+        const colorDict = new Map<number, [number, number, number]>();
+        res1['color'].forEach((c: number[], i: number) => {
+            colorDict.set(i, [c[0], c[1], c[2]]);
+        });
+
+        setColorDict(colorDict);
         setHighlightContext(new HighlightContext());
 
     }, [backendHost, contentPath, setAvailableEpochs, setTextData, setEpoch]);
@@ -32,7 +39,7 @@ export function useSetUpTrainingProcess() {
 export function useSetUpProjection() {
     // TODO avoid writing attribute twice
     const { contentPath, allEpochsProjectionData, setAllEpochsProjectionData, backendHost, visMethod,
-        setHighlightContext, setTextData, setLabelDict, setColorDict, setNeighborSameType, setNeighborCrossType, setLastNeighborSameType, setLastNeighborCrossType, setPredictionProps, setBgimg, setScale }
+        setHighlightContext, setTextData, setLabelDict, setNeighborSameType, setNeighborCrossType, setLastNeighborSameType, setLastNeighborCrossType, setPredictionProps, setBgimg, setScale }
         = useDefaultStore([
             'contentPath',
             'allEpochsProjectionData', 'setProjectionDataAtEpoch',
@@ -42,7 +49,6 @@ export function useSetUpProjection() {
             'setHighlightContext',
             'setTextData',
             'setLabelDict',
-            'setColorDict',
             'setAvailableEpochs',
             'setNeighborSameType',
             'setNeighborCrossType',
@@ -112,27 +118,16 @@ export function useSetUpProjection() {
 
             // TODO Do an immediate setup dict. Don't know how to fix it because outer setDict cannot see the updated projection data
             const labelDict = new Map<number, string>();
-            const colorDict = new Map<number, [number, number, number]>();
-
             // Here we construct labelDict from res.label_text_list (e.g. [comment, code])
-            // and randomly asssign a color to each label !
             const label_text_list = res.label_text_list;
             label_text_list.forEach((label, i) => {
                 labelDict.set(i, label);
-                colorDict.set(i, randomColor(i));
             });
 
-            // const validLabels = Array.from(new Set(res.labels));
-            // validLabels.forEach((classLabel, i) => {
-            //     labelDict.set(i, classLabel);
-            //     colorDict.set(i, randomColor(i));
-            // });
-
             setLabelDict(labelDict);
-            setColorDict(colorDict);
             setAllEpochsProjectionData(newData);
         }
-    }, [allEpochsProjectionData, backendHost, contentPath, setAllEpochsProjectionData, setColorDict, setHighlightContext, setLabelDict, setNeighborCrossType, setNeighborSameType, visMethod]);
+    }, [allEpochsProjectionData, backendHost, contentPath, setAllEpochsProjectionData, setHighlightContext, setLabelDict, setNeighborCrossType, setNeighborSameType, visMethod]);
 
     return setUpProjections;
 }

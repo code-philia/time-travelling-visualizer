@@ -26,7 +26,6 @@ from vismodel import VisModel
 
 """Utils of new data schema"""
 # Func: infer available epochs through projection files, return a list of available epochs
-# TODO other methods to infer epoch structure
 def epoch_structure_from_projection(content_path):
     visMethods = ['DVI', 'TimeVis']
     for visMethod in visMethods:
@@ -42,6 +41,19 @@ def epoch_structure_from_projection(content_path):
             return file_numbers, ''
 
     return None, "No projection files found, can't infer epoch structure"
+
+# Func: get coloring list
+def get_coloring_list(config):
+    if 'classes' in config['dataset']:
+        classes = config['dataset']['classes']
+        class_num = len(classes)
+    else:
+        class_num = 10
+    # color = get_standard_classes_color(class_num) * 255
+    color_map = plt.get_cmap('tab10')
+    color = color_map(range(class_num))
+    color_255 = (color[:, :3] * 255).astype(np.uint8)  # 获取 RGB 三个通道，并转换为整数
+    return color_255.tolist()
 
 # Func: load projection and label list (minimum requirement for 'update_projection')
 def load_projection(config, content_path, vis_method, epoch):
@@ -552,14 +564,10 @@ def get_standard_classes_color(class_num):
         color : numpy.ndarray, shape (class_num, 3)
     '''
     mesh_max_class = class_num + 1
-    mesh_classes = np.arange(class_num+2)
-    # apply more color
-    color_map = plt.cm.get_cmap('tab20', class_num+2)
+    mesh_classes = np.arange(class_num)
+    color_map = plt.cm.get_cmap('tab10', class_num)
     color = color_map(mesh_classes / mesh_max_class)
-    color = color[2:, 0:3]
-    # color = self.cmap(mesh_classes / mesh_max_class)
-    # color = color[:, 0:3]
-    # color = np.concatenate((color, np.zeros((1,3))), axis=0)
+    color = color[:, 0:3]
     return color
 
 def update_epoch_projection(config, epoch, predicates, indicates=[]):

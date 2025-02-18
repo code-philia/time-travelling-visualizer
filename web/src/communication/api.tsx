@@ -30,6 +30,10 @@ export function fetchTrainingProcessStructure(contentPath: string, options?: { h
     return basicUnsafeGetWithJsonResponse(`/getIterationStructure?content_path=${contentPath}`, options);
 }
 
+export function fetchColorList(contentPath: string, options?: { host?: string }) {
+    return basicUnsafeGetWithJsonResponse(`/getColorList?content_path=${contentPath}`, options);
+}
+
 export function updateProjection(contentPath: string, visMethod: string,
     taskType: string, iteration: number, filterIndex: number[] | string): Promise<BriefProjectionResult> {
     const data = {

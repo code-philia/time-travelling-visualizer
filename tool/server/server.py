@@ -50,6 +50,25 @@ def get_epoch_structure():
     })
     return make_response(result, 200)
 
+"""
+Api: get color for each class
+
+Request:
+    content_path (str)
+Response:
+    color (list): list of color for each class (read classes from config.json)
+"""
+@app.route('/getColorList', methods=["GET"])
+@cross_origin()
+def get_color():
+    content_path = request.args.get('content_path')
+    config = read_file_as_json(os.path.join(content_path, 'config.json'))
+    color_list  = get_coloring_list(config)
+    result = jsonify({
+        'color': color_list
+    })
+    return make_response(result, 200)
+
 
 """
 Api: get minimum info of one epoch
