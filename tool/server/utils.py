@@ -309,12 +309,10 @@ def compute_pixel_color(content_path, vis_method, pixel_position):
     vis_model.load_state_dict(save_model["state_dict"])
     vis_model.to(device)
     vis_model.eval()
-    print("Successfully load the visualization model")
     
     # get high dimensional representation
     pixel_position = np.array(pixel_position)
     embedding = vis_model.decoder(torch.from_numpy(pixel_position).to(dtype=torch.float32, device=device)).cpu().detach().numpy()
-    print('size of embedding:', embedding.shape)
     
     # define and load subject model
     sys.path.append(content_path)
@@ -333,7 +331,6 @@ def compute_pixel_color(content_path, vis_method, pixel_position):
     pred_func = model.prediction
     mesh_preds = batch_run(pred_func, torch.from_numpy(embedding).to(device), desc="getting prediction")
     color = get_decision_view(mesh_preds)
-    print("color: ", color)
 
     return color
 
@@ -360,7 +357,7 @@ def get_decision_view(mesh_preds):
     color_rgb = (color * 255).astype(np.uint8)
     return color_rgb
 
-def batch_run(model, data, desc = "batch_run", batch_size=200):
+def batch_run(model, data, desc = "batch_run", batch_size=1024):
     """batch run, in case memory error"""
     data = data.to(dtype=torch.float)
     output = None
