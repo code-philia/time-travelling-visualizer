@@ -1,4 +1,4 @@
-import { basicUnsafeGetWithJsonResponse, basicUnsafePostWithJsonResponse, Fetch } from './connection';
+import { basicUnsafeGetWithJsonResponse, basicUnsafePostWithJsonResponse, Fetch, fetchImage } from './connection';
 
 // TODO add check functions
 export interface ProjectionAttributeSource {
@@ -23,15 +23,15 @@ export interface BriefProjectionResult {
     }
     proj: number[][];
     labels: string[];
-    label_text_list: string[];
+    scale: number[];
 }
 
 export function fetchTrainingProcessStructure(contentPath: string, options?: { host?: string }) {
     return basicUnsafeGetWithJsonResponse(`/getIterationStructure?content_path=${contentPath}`, options);
 }
 
-export function fetchColorList(contentPath: string, options?: { host?: string }) {
-    return basicUnsafeGetWithJsonResponse(`/getColorList?content_path=${contentPath}`, options);
+export function fetchTrainingProcessInfo(contentPath: string, options?: { host?: string }) {
+    return basicUnsafeGetWithJsonResponse(`/getTrainingProcessInfo?content_path=${contentPath}`, options);
 }
 
 export function updateProjection(contentPath: string, visMethod: string,
@@ -102,13 +102,15 @@ function getOriginalData(contentPath: string, dataType: string, index: number, i
     return Fetch(`sprite${dataType}`, data);
 }
 
-export function getBgimg(contentPath: string, visMethod: string, epoch: number, options?: { host?: string }) {
+export function getBackground(contentPath: string, visMethod: string, width: number, height: number, scale: number[], options?: { host?: string }) {
     const data = {
         "content_path": contentPath,
         "vis_method": visMethod,
-        "epoch": `${epoch}`
+        "width": width,
+        "height": height,
+        "scale": scale
     };
-    return basicUnsafePostWithJsonResponse('/getBackgroundImage', data, options);
+    return fetchImage('/getBackground', data, options);
 }
 
 export function getAttributeResource(contentPath: string, epoch: number, attributeName: string, options?: { host?: string }) {

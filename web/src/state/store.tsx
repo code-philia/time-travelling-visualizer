@@ -76,6 +76,7 @@ type BaseMutableGlobalStore = {
     rawPointsGeography: CommonPointsGeography | null;
 
     textData: string[];
+    allBackground: Record<number, string>;
 
     // settings
     backendHost: string;
@@ -122,6 +123,7 @@ const initMutableGlobalStore: BaseMutableGlobalStore = {
     rawPointsGeography: null,
 
     textData: [],
+    allBackground: {},
 
     // settings
     backendHost: 'localhost:5010',

@@ -1,3 +1,4 @@
+import io
 import math
 import tqdm
 import os
@@ -5,10 +6,10 @@ import json
 import re
 from secrets import token_urlsafe
 import time
-import csv
 import numpy as np
 import sys
 import base64
+from PIL import Image
 
 vis_path = "../.."
 sys.path.append(vis_path)
@@ -71,22 +72,15 @@ def load_projection(config, content_path, vis_method, epoch):
     file_path_pattern = attributes['label']['source']['pattern']
     file_path = os.path.join(content_path, file_path_pattern)
     label_list = read_label_file(file_path)
-
-    return projection_list, label_list
-
-# Func: load background image
-def load_background_image_base64(config, content_path, vis_method, epoch):
-    bgimg_path = os.path.join(content_path, "visualize", vis_method, "bgimg", f"{epoch}.png")
-    with open(bgimg_path, 'rb') as img_f:
-        img_stream = img_f.read()
-        img_stream = base64.b64encode(img_stream).decode()
-
-    return 'data:image/png;base64,' + img_stream
-
-def load_scale(config, content_path, vis_method, epoch):
-    scale_path = os.path.join(content_path, "visualize", vis_method, "scale", f"{epoch}.npy")
-    scale = np.load(scale_path)
-    return scale.tolist()
+    
+    # compute scale to fix canvas
+    x_min = np.min(projection[:, 0])
+    y_min = np.min(projection[:, 1])
+    x_max = np.max(projection[:, 0])
+    y_max = np.max(projection[:, 1])
+    scale = [x_min-1, y_min-1, x_max+1, y_max+1]
+    
+    return projection_list, label_list, scale
 
 # Func: load one sample from content_path
 def load_one_sample(config, content_path, index):
@@ -279,28 +273,48 @@ def get_filter_result(config, content_path, epoch, filters):
 
     return result,''
 
+# Func: compute pixel color, return webp image
+def paint_background(content_path, vis_method, width, height, scale):
+    pixel_position = compute_pixel_position(width, height, scale)
+    pixel_color = compute_pixel_color(content_path, vis_method, pixel_position)
+    
+    pixel_color = pixel_color.reshape((height, width, 3))
+    
+    image = Image.fromarray(pixel_color.astype('uint8'), 'RGB')
+    file_path = os.path.join(content_path, 'background.png')
+    image.save(file_path, 'PNG')
+    
+    png_image = Image.open(file_path)
+    
+    webp_image = io.BytesIO()
+    png_image.save(webp_image, format='WEBP')
+    webp_image.seek(0)
 
-# Func: get pixel color
-def compute_pixel_color(config, content_path, vis_method, pixel_position):
+    return webp_image
+
+
+def compute_pixel_position(width, height, scale, pixel_size=1):
+    [x_min, y_min, x_max, y_max] = scale
+    pixels = []
+
+    x_scale = (x_max - x_min) / (width / pixel_size)
+    y_scale = (y_max - y_min) / (height / pixel_size)
+
+    for j in range(int(height / pixel_size)):
+        for i in range(int(width / pixel_size)):
+            x = x_min + (i + pixel_size / 2) * x_scale
+            y = y_min + (j + pixel_size / 2) * y_scale
+            pixels.append([x, y])
+
+    return pixels
+    
+
+def compute_pixel_color(content_path, vis_method, pixel_position):
     # define and load visualize model
     device = torch.device("cuda:{}".format(2) if torch.cuda.is_available() else "cpu")
     # TODO read from config file
-    ENCODER_DIMS = [
-            512,
-            256,
-            256,
-            256,
-            256,
-            2
-    ]
-    DECODER_DIMS = [
-            2,
-            256,
-            256,
-            256,
-            256,
-            512
-    ]
+    ENCODER_DIMS = [512,256,256,256,256,2]
+    DECODER_DIMS = [2,256,256,256,256,512]
     vis_model = VisModel(ENCODER_DIMS, DECODER_DIMS).to(device)
     vis_model_location = os.path.join(content_path, "visualize", vis_method, "model", f"{vis_method}.pth")
     save_model = torch.load(vis_model_location, map_location="cpu")

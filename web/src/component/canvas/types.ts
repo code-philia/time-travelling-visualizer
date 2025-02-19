@@ -7,6 +7,8 @@ export interface VChartData {
     positions: [number, number, number][];
     labels: number[];
     colors: [number, number, number][];
+    scale: number[];
+    background: string;
     neighborSameType: number[][];
     neighborCrossType: number[][];
     predictionProps: number[][]
@@ -17,6 +19,8 @@ export function createEmptyVChartData(): VChartData {
         positions: [],
         labels: [],
         colors: [],
+        scale: [-10, -10, 10, 10],
+        background: "",
         neighborSameType: [],
         neighborCrossType: [],
         predictionProps: []

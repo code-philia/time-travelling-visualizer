@@ -122,7 +122,7 @@ export function MainBlock() {
 
     const { revealNeighborSameType, revealNeighborCrossType, neighborSameType, neighborCrossType } = useDefaultStore(['revealNeighborSameType', 'revealNeighborCrossType', 'neighborSameType', 'neighborCrossType']);
 
-    const { predictionProps } = useDefaultStore(['predictionProps']);
+    const { predictionProps, allBackground } = useDefaultStore(['predictionProps', 'allBackground']);
 
     // TODO all shared data are using useStore now. Decouple some of them
     // const highlightContext = useRef(new HighlightContext());
@@ -178,9 +178,11 @@ export function MainBlock() {
         const positions: [number, number, number][] = [];
         const labels: number[] = [];
         const colors: [number, number, number][] = [];
+        const scale: number[] = [];
+        const background: string = allBackground[epoch] ?? "";
 
         const data = {
-            positions, labels, colors, neighborSameType, neighborCrossType, predictionProps
+            positions, labels, colors, scale, background, neighborSameType, neighborCrossType, predictionProps
         };
 
         if (!currentEpochData) return data;
@@ -193,6 +195,11 @@ export function MainBlock() {
             if (color === undefined) return;
             colors[i] = ([color[0] / 255, color[1] / 255, color[2] / 255]);
         });
+
+        currentEpochData.scale.forEach((v, i) => {
+            scale.push(v);
+        });
+
         return data;
     }, [currentEpochData]);
 

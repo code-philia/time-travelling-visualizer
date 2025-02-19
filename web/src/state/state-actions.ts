@@ -1,12 +1,12 @@
 import { useCallback } from "react";
-import { fetchTrainingProcessInfo, fetchTrainingProcessStructure, fetchUmapProjectionData, getAttributeResource, getBgimg, getText, visualizeTrainingProcess } from "../communication/api";
+import { fetchTrainingProcessInfo, fetchTrainingProcessStructure, fetchUmapProjectionData, getAttributeResource, getBackground, getText, visualizeTrainingProcess } from "../communication/api";
 import { HighlightContext } from "../component/canvas/types";
 import { useDefaultStore } from "./store";
 
 // Set up the training process
 export function useSetUpTrainingProcess() {
-    const { contentPath, visMethod, backendHost, setAvailableEpochs, setTextData, setEpoch, setHighlightContext, setColorDict, setLabelDict, setScale } =
-        useDefaultStore(['contentPath', 'visMethod', 'setAvailableEpochs', 'backendHost', 'setTextData', 'setEpoch', 'setHighlightContext', 'setColorDict', 'setLabelDict', 'setScale']);
+    const { contentPath, backendHost, setAvailableEpochs, setTextData, setEpoch, setHighlightContext, setColorDict, setLabelDict } =
+        useDefaultStore(['contentPath', 'setAvailableEpochs', 'backendHost', 'setTextData', 'setEpoch', 'setHighlightContext', 'setColorDict', 'setLabelDict']);
 
     const setUpTrainingProcess = useCallback(async () => {
         // 1. get iteration structure
@@ -48,12 +48,14 @@ export function useSetUpTrainingProcess() {
 // Set up certain epoch of the training process
 export function useSetUpProjection() {
     // TODO avoid writing attribute twice
-    const { contentPath, allEpochsProjectionData, setAllEpochsProjectionData, backendHost, visMethod,
-        setHighlightContext, setTextData, setNeighborSameType, setNeighborCrossType, setLastNeighborSameType, setLastNeighborCrossType, setPredictionProps, setBgimg, setScale }
+    const { contentPath, allEpochsProjectionData, setAllEpochsProjectionData, allBackground, setAllBackground, backendHost, visMethod,
+        setHighlightContext, setTextData, setNeighborSameType, setNeighborCrossType, setLastNeighborSameType, setLastNeighborCrossType, setPredictionProps }
         = useDefaultStore([
             'contentPath',
-            'allEpochsProjectionData', 'setProjectionDataAtEpoch',
-            'updateUUID',
+            'allEpochsProjectionData',
+            'setAllEpochsProjectionData',
+            'allBackground',
+            'setAllBackground',
             'backendHost',
             'visMethod',
             'setHighlightContext',
@@ -114,18 +116,27 @@ export function useSetUpProjection() {
                 setTextData(text['text_list'] ?? []);
             }
 
-            // part 3: for classification task, acquire prediction
+            // part 3: for classification task, acquire prediction and background
+            const newBackground = { ...allBackground };
             if (config.dataset.taskType == 'classification') {
                 const predRes = await getAttributeResource(contentPath, epoch, 'prediction', {
                     host: backendHost
                 });
                 setPredictionProps(predRes['prediction']);
+
+                const bgimgRes = await getBackground(contentPath, visMethod, 800, 600, res.scale, {
+                    host: backendHost
+                });
+                newBackground[epoch] = bgimgRes;
             }
             else {
                 setPredictionProps([]);
+                newBackground[epoch] = '';
             }
 
+
             setAllEpochsProjectionData(newData);
+            setAllBackground(newBackground);
         }
     }, [allEpochsProjectionData, backendHost, contentPath, setAllEpochsProjectionData, setHighlightContext, setNeighborCrossType, setNeighborSameType, visMethod]);
 

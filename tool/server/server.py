@@ -3,7 +3,7 @@ import sys
 import base64
 import numpy as np
 from utils import *
-from flask import request, Flask, jsonify, make_response,send_from_directory
+from flask import request, Flask, jsonify, make_response, send_file,send_from_directory
 from flask_cors import CORS, cross_origin
 
 sys.path.append('..')
@@ -100,12 +100,13 @@ def update_projection():
     config = read_file_as_json(os.path.join(content_path, 'config.json'))
 
     # NOTE dont't hide exception to backend output
-    projection, label_list = load_projection(config, content_path, vis_method, epoch)
+    projection, label_list, scale = load_projection(config, content_path, vis_method, epoch)
 
     result = jsonify({
         'config': config,
         'proj': projection[:min(5000,len(projection))],
-        'labels': label_list[:min(5000,len(label_list))]
+        'labels': label_list[:min(5000,len(label_list))],
+        'scale': scale
     })
     return make_response(result, 200)
 
@@ -289,29 +290,31 @@ def visualize_training_process():
     return make_response(result, error_code)
 
 """
-Api: get pixel color
+Api: get background image
 
 Request:
     content_path (str)
     vis_method (str)
-    pixel_position (list of int): [x, y]
+    width (int)
+    height (int)
+    scale (list of float)
 Response:
-    pixel_color (list of int): [r, g, b]
-"""
-@app.route('/getPixelColor', methods = ["POST"])
+    background_image_base64 (str): base64 encoded im
+"""    
+@app.route('/getBackground', methods = ["POST"])
 @cross_origin()
-def get_pixel_color():
+def get_background():
     req = request.get_json()
-    content_path = req['contentPath']
-    vis_method = req['visMethod']
-    pixel_position = req['pixelPosition']
-    config = read_file_as_json(os.path.join(content_path, 'config.json'))
-    pixelColor = compute_pixel_color(config, content_path, vis_method, pixel_position)
-
-    return make_response(jsonify({
-        'pixelColor': pixelColor.tolist()
-    }), 200)
+    content_path = req['content_path']
+    vis_method = req['vis_method']
+    width = int(req['width'])
+    height = int(req['height'])
+    scale = req['scale']
     
+    # config = read_file_as_json(os.path.join(content_path, 'config.json'))
+    webp_image = paint_background(content_path, vis_method, width, height, scale)
+
+    return send_file(webp_image, mimetype='image/webp')
 
 """ ===================================================================== """
 # Func: get iteration structure

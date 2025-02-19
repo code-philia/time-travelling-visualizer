@@ -1,12 +1,9 @@
 // ChartComponent.tsx
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import VChart from '@visactor/vchart';
 import { Edge, VChartData } from './types';
 import { useDefaultStore } from "../../state/store";
-import { convexHull, createEdges, softmax, createPixels, PIXEL_SIZE } from './utils';
-import { getPixelColor } from '../../communication/api';
-const PADDING = 1;
-const THRESHOLD = 0.9;
+import { createEdges, softmax } from './utils';
 const CANVAS_HEIGHT = 600;
 const CANVAS_WIDTH = 800;
 
@@ -29,15 +26,14 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
     const { revealNeighborCrossType, revealNeighborSameType } = useDefaultStore(["revealNeighborCrossType", "revealNeighborSameType"]);
     const { hoveredIndex, setHoveredIndex } = useDefaultStore(["hoveredIndex", "setHoveredIndex"]);
     const { highlightContext, setHighlightContext } = useDefaultStore(["highlightContext", "setHighlightContext"]);
-    const { contentPath, visMethod, backendHost } = useDefaultStore(['contentPath', 'visMethod', 'backendHost']);
 
     const samplesRef = useRef<{ pointId: number, x: number; y: number; label: number; pred: number; label_desc: string; pred_desc: string; confidence: number; textSample: string }[]>([]);
-    const pixelsRef = useRef<{ x: number, y: number, color: number[] }[]>([]);
     const edgesRef = useRef<Edge[]>([]);
+    const bgimgRef = useRef<String>();
 
     const [selectedItems, setSelectedItems] = useState<SampleTag[]>([]);
 
-    let x_min = Infinity, y_min = Infinity, x_max = -Infinity, y_max = -Infinity;
+    let [x_min, y_min, x_max, y_max] = vchartData?.scale ?? [-10, -10, 10, 10];
 
     useEffect(() => {
         const listener = () => {
@@ -66,7 +62,6 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
 
         // create data
         samplesRef.current = [];
-        x_min = Infinity, y_min = Infinity, x_max = -Infinity, y_max = -Infinity;
 
         vchartData?.positions.map((p, i) => {
             const x = parseFloat(p[0].toFixed(3));
@@ -91,18 +86,18 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                 confidence: confidence,
                 textSample: textData[i] ?? ''
             });
-
-            if (x < x_min) x_min = x;
-            if (y < y_min) y_min = y;
-            if (x > x_max) x_max = x;
-            if (y > y_max) y_max = y;
         });
         edgesRef.current = createEdges(neighborSameType, neighborCrossType, lastNeighborSameType, lastNeighborCrossType);
 
-        x_min = x_min - PADDING;
-        y_min = y_min - PADDING;
-        x_max = x_max + PADDING;
-        y_max = y_max + PADDING;
+        if (!showBgimg) {
+            bgimgRef.current = '<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg" version="1.1"> <rect width="800" height="600" fill="white" /></svg>';
+            console.log('not showing background');
+        }
+        else {
+            bgimgRef.current = vchartData?.background;
+            console.log('showing background');
+            console.log(vchartData?.background);
+        }
 
         // create spec
         const spec = {
@@ -146,10 +141,6 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                 {
                     id: 'edges',
                     values: edgesRef.current
-                },
-                {
-                    id: 'pixels',
-                    values: pixelsRef.current
                 }
             ],
 
@@ -161,11 +152,11 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                     type: 'area',
                     data: {
                         values: [
-                            { xx: x_min - 1, yy: y_min - 1 },
-                            { xx: x_max + 1, yy: y_min - 1 },
-                            { xx: x_max + 1, yy: y_max + 1 },
-                            { xx: x_min - 1, yy: y_max + 1 },
-                            { xx: x_min - 1, yy: y_min - 1 },
+                            { xx: x_min, yy: y_min },
+                            { xx: x_max, yy: y_min },
+                            { xx: x_max, yy: y_max },
+                            { xx: x_min, yy: y_max },
+                            { xx: x_min, yy: y_min },
                         ]
                     },
                     xField: 'xx',
@@ -173,10 +164,15 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                     point: {
                         visible: false,
                     },
+                    line: {
+                        visible: false,
+                    },
                     area: {
                         interactive: false,
                         style: {
-                            fill: 'white',
+                            background: bgimgRef.current,
+                            fill: 'transparent',
+                            fillOpacity: 0.6
                         }
                     },
                     hover: {
@@ -185,23 +181,6 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                     select: {
                         enable: false,
                     }
-                },
-                {
-                    id: 'background-series',
-                    type: 'scatter',
-                    dataId: 'pixels',
-                    xField: 'x',
-                    yField: 'y',
-                    point: {
-                        interactive: false,
-                        style: {
-                            size: PIXEL_SIZE,
-                            shape: 'square',
-                            fill: (datum: { color: number[]; }) => {
-                                return `rgb(${datum.color[0]}, ${datum.color[1]}, ${datum.color[2]})`;
-                            }
-                        }
-                    },
                 },
                 {
                     id: 'edges-series',
@@ -604,6 +583,8 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
             vchartRef.current.on('pointerout', { id: 'point-series' }, e => {
                 setHoveredIndex(-1);
             });
+
+            // TODO handle click event to lock
             vchartRef.current.on('click', { id: 'point-series' }, e => {
                 console.log('Clicked: ', e.datum?.pointId);
                 if (highlightContext.lockedIndices.has(e.datum?.pointId)) {
@@ -701,35 +682,13 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
         triggered by showBgimg
     */
     useEffect(() => {
-        if (!vchartRef.current) {
-            return;
-        }
         if (!showBgimg) {
-            vchartRef.current?.updateDataSync('pixels', []);
-            return;
+            // vchartRef.current?.updateDataSync('pixels', []);
+            bgimgRef.current = '<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg" version="1.1"> <rect width="800" height="600" fill="white" /></svg>';
         }
-
-        pixelsRef.current = [];
-        const pixelPosition = createPixels(x_min, x_max, y_min, y_max, CANVAS_WIDTH, CANVAS_HEIGHT);
-        const fetchData = async () => {
-            const res = await getPixelColor(contentPath, visMethod, pixelPosition, {
-                host: backendHost
-            });
-            const pixelColor = res['pixelColor'];
-            for (let i = 0; i < pixelPosition.length; i++) {
-                const x_ = pixelPosition[i][0];
-                const y_ = pixelPosition[i][1];
-                const color_ = pixelColor[i];
-                const point = { x: x_, y: y_, color: color_ };
-                pixelsRef.current.push(point);
-            }
-            if (!vchartRef.current) {
-                return;
-            }
-            vchartRef.current.updateData('pixels', pixelsRef.current);
-        };
-
-        fetchData();
+        else {
+            bgimgRef.current = vchartData?.background;
+        }
     }, [showBgimg, vchartData]);
 
     return <div

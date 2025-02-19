@@ -65,6 +65,34 @@ export function basicUnsafePostWithJsonResponse(path: string, data: number | str
         });
 }
 
+export function fetchImage(path: string, data: number | string | object, networkOptions: Partial<NetworkOptions> = {}) {
+    const combinedOptions = { ...defaultNetworkOptions, ...networkOptions };
+    const fullPath = `http://${combinedOptions.host}${path}`;
+
+    return fetch(fullPath, {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`POST ${fullPath} failed with response: ${response.statusText}`);
+            }
+            return response.blob();
+        })
+        .then(blob => {
+            // transform blob to imageUrl
+            const imageUrl = URL.createObjectURL(blob);
+            return imageUrl;
+        })
+        .catch(error => {
+            console.error('Error fetching image:', error);
+            throw error;
+        });
+}
+
 // obsolete and not tested
 export function Fetch(input: string, init: any) {
     return fetch(`${host}/${input}`, init)
