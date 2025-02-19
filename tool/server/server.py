@@ -1,7 +1,5 @@
 import os
 import sys
-import base64
-import numpy as np
 from utils import *
 from flask import request, Flask, jsonify, make_response, send_file,send_from_directory
 from flask_cors import CORS, cross_origin
@@ -10,15 +8,10 @@ sys.path.append('..')
 sys.path.append('.')
 sys.path.append('../..')
 
-# from visualize.visualizer import Visualizer
-
 # flask for API server
 app = Flask(__name__, static_url_path='/static', static_folder='../frontend')
 cors = CORS(app, supports_credentials=True)
 app.config['CORS_HEADERS'] = 'Content-Type'
-
-# TODO:from where to get config path?
-config_file ='/path/to/config.json'
 
 # Check for "--dev" argument
 is_dev_mode = "--dev" in sys.argv
@@ -267,6 +260,7 @@ Request:
 Response:
     error_message (str): error message if training failed
 """
+# TODO need to be exposed to front end ?
 @app.route('/visualizeTrainingProcess', methods = ["POST"])
 @cross_origin()
 def visualize_training_process():
@@ -316,123 +310,6 @@ def get_background():
 
     return send_file(webp_image, mimetype='image/webp')
 
-""" ===================================================================== """
-# Func: get iteration structure
-def get_tree():
-    config = initialize_config(config_file)
-
-    json_data = []
-    previous_epoch = ""
-    for epoch in range(config.EPOCH_START, config.EPOCH_END + 1, config.EPOCH_PERIOD):
-        json_data.append({
-            "value": epoch,
-            "name": 'Epoch',
-            "pid": previous_epoch if previous_epoch else ""
-        })
-        previous_epoch = epoch
-    return make_response(jsonify({"structure":json_data}), 200)
-
-# Func: load projection result of one epoch
-def update_projection_old():
-    # search filter
-    req = request.get_json()
-    iteration = int(req['iteration'])
-    predicates = req['predicates']
-    indicates = list(range(100)) # we now don't use req['selectedPoints'] to filter in backend
-
-    # load config from config_file
-    config = initialize_config(config_file)
-
-    # load visualization result of one epoch
-    if config.TASK_TYPE == 'classification' or config.TASK_TYPE == 'non-classification':
-
-        embedding_2d, grid, decision_view, label_name_dict, label_color_list, label_list, max_iter, training_data_index, \
-        testing_data_index, eval_new, prediction_list, selected_points, error_message_projection, color_list, \
-            confidence_list = update_epoch_projection(config, iteration, predicates, indicates)
-
-        # make response and return
-        grid = np.array(grid)
-        color_list = color_list.tolist()
-        return make_response(jsonify({'result': embedding_2d,
-                                    'grid_index': grid.tolist(),
-                                    'grid_color': 'data:image/png;base64,' + decision_view,
-                                    'label_name_dict':label_name_dict,
-                                    'label_color_list': label_color_list,
-                                    'label_list': label_list,
-                                    'maximum_iteration': max_iter,
-                                    'training_data': training_data_index,
-                                    'testing_data': testing_data_index,
-                                    'evaluation': eval_new,
-                                    'prediction_list': prediction_list,
-                                    "selectedPoints":selected_points.tolist(),
-                                    "errorMessage": error_message_projection,
-                                    "color_list": color_list,
-                                    "confidence_list": confidence_list
-                                    }), 200)
-    elif config.TASK_TYPE == 'Umap-Neighborhood':
-        result = get_umap_neighborhood_epoch_projection(config.CONTENT_PATH, iteration, predicates, indicates)
-        return make_response(jsonify(result), 200)
-    else:
-        return make_response(jsonify({'error': 'TaskType not found'}), 400)
-
-# Func: get sprite or text of one sample
-@app.route('/spriteImage', methods = ["GET"])
-@cross_origin()
-def sprite_image():
-    index = int(request.args.get("index"))
-
-    # load config from config_file
-    config = initialize_config(config_file)
-    if config.DATA_TYPE == "image":
-        pic_save_dir_path = os.path.join(config.CONTENT_PATH, "Dataset","sprites", "{}.png".format(index))
-        img_stream = ""
-        with open(pic_save_dir_path, 'rb') as img_f:
-            img_stream = img_f.read()
-            img_stream = base64.b64encode(img_stream).decode()
-        return make_response(jsonify({"imgUrl":'data:image/png;base64,' + img_stream}), 200)
-    elif config.DATA_TYPE == "text":
-        if config.SHOW_LABEL:
-            if index % 2 == 0: # source
-                text_save_dir_path = os.path.join(config.CONTENT_PATH, "Dataset","source", "{}.txt".format(int(index/2)))
-            else: # target
-                text_save_dir_path = os.path.join(config.CONTENT_PATH, "Dataset","target", "{}.txt".format(int(index/2)))
-        else:
-            text_save_dir_path = os.path.join(config.CONTENT_PATH, "Dataset","source", "{}.txt".format(index))
-
-        sprite_texts = ''
-        with open(text_save_dir_path, 'r') as text_f:
-            sprite_texts = text_f.read()
-        return make_response(jsonify({"texts": sprite_texts}), 200)
-    else:
-        raise ValueError("Invalid data type in config")
-
-@app.route('/spriteText', methods = ["GET"])
-@cross_origin()
-def sprite_text():
-    index = int(request.args.get("index"))
-
-    # load config from config_file
-    config = initialize_config(config_file)
-
-    if config.SHOW_LABEL:
-        if index % 2 == 0: # source
-            text_save_dir_path = os.path.join(config.CONTENT_PATH, "Dataset","source", "{}.txt".format(int(index/2)))
-        else: # target
-            text_save_dir_path = os.path.join(config.CONTENT_PATH, "Dataset","target", "{}.txt".format(int(index/2)))
-    else:
-        text_save_dir_path = os.path.join(config.CONTENT_PATH, "Dataset","source", "{}.txt".format(index))
-
-    sprite_texts = ''
-    if os.path.exists(text_save_dir_path):
-        with open(text_save_dir_path, 'r') as text_f:
-            sprite_texts = text_f.read()
-    else:
-        print("File does not exist:", text_save_dir_path)
-
-    response_data = {
-        "texts": sprite_texts
-    }
-    return make_response(jsonify(response_data), 200)
 
 def check_port_inuse(port, host):
     import socket

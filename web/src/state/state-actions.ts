@@ -69,8 +69,6 @@ export function useSetUpProjection() {
             'setPredictionProps'
         ]);
 
-    // TODO add cache
-
     // FIXME this is updating too many things, even depending on too many things
     const setUpProjections = useCallback(async (epoch: number) => {
         let res = undefined;
@@ -150,7 +148,7 @@ export function useTrainVisualizer() {
             'visMethod'
         ]);
     const trainVisualizer = useCallback(async () => {
-        const res = await visualizeTrainingProcess(contentPath, {
+        await visualizeTrainingProcess(contentPath, {
             method: visMethod,
             host: backendHost
         });

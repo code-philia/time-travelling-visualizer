@@ -683,7 +683,6 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
     */
     useEffect(() => {
         if (!showBgimg) {
-            // vchartRef.current?.updateDataSync('pixels', []);
             bgimgRef.current = '<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg" version="1.1"> <rect width="800" height="600" fill="white" /></svg>';
         }
         else {

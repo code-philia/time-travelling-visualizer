@@ -144,7 +144,7 @@ export function OptionsPanel() {
                         Load Visualization
                     </Button>
                 </div>
-                <div className="component-block">
+                {/* <div className="component-block">
                     <Button className="input-button" color="primary" variant="solid" style={{ width: '100%' }}
                         onClick={
                             (_) => {
@@ -158,7 +158,7 @@ export function OptionsPanel() {
                         }>
                         Train Visualizer
                     </Button>
-                </div>
+                </div> */}
             </div >
             <Divider />
             <FunctionalBlock label="Display Options">
