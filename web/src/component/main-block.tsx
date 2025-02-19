@@ -102,21 +102,14 @@ function Timeline({ epoch, epochs, onSwitchEpoch }: { epoch: number, epochs: num
 };
 
 export function MainBlock() {
-    const { epoch, setEpoch, availableEpochs, allEpochsProjectionData, colorDict, neighborSameType, neighborCrossType, predictionProps, allBackground }
+    const { epoch, setEpoch, availableEpochs }
         = useDefaultStore([
             "epoch",
             "setEpoch",
-            "availableEpochs",
-            "allEpochsProjectionData",
-            "colorDict",
-            "neighborSameType",
-            "neighborCrossType",
-            "predictionProps",
-            "allBackground"
+            "availableEpochs"
         ]);
 
     const setUpProjections = useSetUpProjection();
-    const currentEpochData = useMemo(() => allEpochsProjectionData[epoch] as BriefProjectionResult | undefined, [allEpochsProjectionData, epoch]);
 
     // default epoch
     useEffect(() => {
@@ -125,43 +118,11 @@ export function MainBlock() {
         }
     }, [availableEpochs, setEpoch]);
 
-    // construct data for vchart
-    const vchartData = useMemo(() => {
-        const positions: [number, number, number][] = [];
-        const labels: number[] = [];
-        const colors: [number, number, number][] = [];
-        const scale: number[] = [];
-        const background: string = allBackground[epoch] ?? "";
-
-        const data = {
-            positions, labels, colors, scale, background, neighborSameType, neighborCrossType, predictionProps
-        };
-
-        if (!currentEpochData) return data;
-
-        const labelsAsNumber = currentEpochData.labels.map((label) => parseInt(label));
-        currentEpochData.proj.forEach((point, i) => {
-            positions.push([point[0], point[1], 0]);
-            labels.push(labelsAsNumber[i]);
-            const color = colorDict.get(labelsAsNumber[i]);
-            if (color === undefined) return;
-            colors[i] = ([color[0] / 255, color[1] / 255, color[2] / 255]);
-        });
-
-        currentEpochData.scale.forEach((v, i) => {
-            scale.push(v);
-        });
-
-        return data;
-    }, [currentEpochData]);
-
     // only consider single container for now
     return (
         <div className="canvas-column">
             <div id="canvas-wrapper" style={{ height: "100%", width: "100%", display: "grid", placeItems: "center" }}>
-                <ChartComponent
-                    vchartData={vchartData}
-                />
+                <ChartComponent />
             </div>
             <div id="footer">
                 <div className="functional-block-title">Epochs</div>

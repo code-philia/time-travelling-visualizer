@@ -1,9 +1,10 @@
 // ChartComponent.tsx
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import VChart from '@visactor/vchart';
-import { Edge, VChartData } from './types';
+import { Edge } from './types';
 import { useDefaultStore } from "../../state/store";
 import { createEdges, softmax } from './utils';
+import { BriefProjectionResult } from '../../communication/api';
 const CANVAS_HEIGHT = 600;
 const CANVAS_WIDTH = 800;
 
@@ -12,28 +13,52 @@ type SampleTag = {
     title: string;
 }
 
-export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | null }) => {
+export const ChartComponent = memo(() => {
     const chartRef = useRef<HTMLDivElement>(null);
     const vchartRef = useRef<VChart | null>(null);
 
-    // Here are data from useStore
-    const { labelDict, colorDict } = useDefaultStore(["labelDict", "colorDict"]);
+    // data
+    const { epoch, allEpochsProjectionData } = useDefaultStore(["epoch", "allEpochsProjectionData"]);
+    const { labelDict, colorDict, textData } = useDefaultStore(["labelDict", "colorDict", "textData"]);
     const { filterValue, filterType } = useDefaultStore(["filterValue", "filterType"]);
-    const { filterState } = useDefaultStore(["filterState"]);
-    const { showMetadata, showBgimg } = useDefaultStore(["showMetadata", "showBgimg"]);
-    const { showNumber, showText, textData } = useDefaultStore(["showNumber", "showText", "textData"])
     const { neighborSameType, neighborCrossType, lastNeighborSameType, lastNeighborCrossType } = useDefaultStore(["neighborSameType", "neighborCrossType", "lastNeighborSameType", "lastNeighborCrossType"]);
-    const { revealNeighborCrossType, revealNeighborSameType } = useDefaultStore(["revealNeighborCrossType", "revealNeighborSameType"]);
     const { hoveredIndex, setHoveredIndex } = useDefaultStore(["hoveredIndex", "setHoveredIndex"]);
     const { highlightContext, setHighlightContext } = useDefaultStore(["highlightContext", "setHighlightContext"]);
+    const { allBackground, predictionProps } = useDefaultStore(["allBackground", "predictionProps"]);
 
-    const samplesRef = useRef<{ pointId: number, x: number; y: number; label: number; pred: number; label_desc: string; pred_desc: string; confidence: number; textSample: string }[]>([]);
-    const edgesRef = useRef<Edge[]>([]);
-    const bgimgRef = useRef<String>();
+    // settings
+    const { showMetadata, showBgimg } = useDefaultStore(["showMetadata", "showBgimg"]);
+    const { showNumber, showText } = useDefaultStore(["showNumber", "showText"])
+    const { filterState } = useDefaultStore(["filterState"]);
+    const { revealNeighborCrossType, revealNeighborSameType } = useDefaultStore(["revealNeighborCrossType", "revealNeighborSameType"]);
 
     const [selectedItems, setSelectedItems] = useState<SampleTag[]>([]);
 
-    let [x_min, y_min, x_max, y_max] = vchartData?.scale ?? [-10, -10, 10, 10];
+    // temp data
+    const samplesRef = useRef<{ pointId: number, x: number; y: number; label: number; pred: number; label_desc: string; pred_desc: string; confidence: number; textSample: string }[]>([]);
+    const edgesRef = useRef<Edge[]>([]);
+    const bgimgRef = useRef<String>();
+    const currentEpochData = useMemo(() => allEpochsProjectionData[epoch] as BriefProjectionResult | undefined, [allEpochsProjectionData, epoch]);
+
+    const positions: [number, number][] = [];
+    const labels: number[] = [];
+    const colors: [number, number, number][] = [];
+    const background = allBackground[epoch] ?? "";
+    if (currentEpochData) {
+        const labelsAsNumber = currentEpochData.labels.map((label) => parseInt(label));
+        currentEpochData.proj.forEach((point, i) => {
+            positions.push([point[0], point[1]]);
+            labels.push(labelsAsNumber[i]);
+            const color = colorDict.get(labelsAsNumber[i]);
+            if (color === undefined) {
+                colors[i] = ([0, 0, 0]);
+            }
+            else {
+                colors[i] = ([color[0] / 255, color[1] / 255, color[2] / 255]);
+            }
+        });
+    }
+    let [x_min, y_min, x_max, y_max] = currentEpochData?.scale ?? [-10, -10, 10, 10];
 
     useEffect(() => {
         const listener = () => {
@@ -49,8 +74,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
         return () => {
             highlightContext.removeHighlightChangedListener(listener);
         };
-    }, [vchartData]);
-
+    }, [currentEpochData]);
 
     /*
         Main update logic
@@ -63,13 +87,13 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
         // create data
         samplesRef.current = [];
 
-        vchartData?.positions.map((p, i) => {
+        positions.map((p, i) => {
             const x = parseFloat(p[0].toFixed(3));
             const y = parseFloat(p[1].toFixed(3));
             let confidence = 1.0;
-            let pred = vchartData?.labels[i];
-            if (vchartData?.predictionProps && vchartData.predictionProps.length > 0) {
-                let props = vchartData.predictionProps[i];
+            let pred = labels[i];
+            if (predictionProps && predictionProps.length > 0) {
+                let props = predictionProps[i];
                 let softmaxValues = softmax(props);
                 confidence = Math.max(...softmaxValues);
                 pred = softmaxValues.indexOf(confidence);
@@ -79,10 +103,10 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                 pointId: i,
                 x: x,
                 y: y,
-                label: vchartData?.labels[i],
-                label_desc: labelDict.get(vchartData?.labels[i]) ?? '',
+                label: labels[i],
+                label_desc: labelDict.get(labels[i]) ?? '',
                 pred: pred,
-                pred_desc: labelDict.get(pred) ?? labelDict.get(vchartData?.labels[i]) ?? '',
+                pred_desc: labelDict.get(pred) ?? labelDict.get(labels[i]) ?? '',
                 confidence: confidence,
                 textSample: textData[i] ?? ''
             });
@@ -91,12 +115,9 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
 
         if (!showBgimg) {
             bgimgRef.current = '<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg" version="1.1"> <rect width="800" height="600" fill="white" /></svg>';
-            console.log('not showing background');
         }
         else {
-            bgimgRef.current = vchartData?.background;
-            console.log('showing background');
-            console.log(vchartData?.background);
+            bgimgRef.current = background;
         }
 
         // create spec
@@ -600,8 +621,18 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
         }
 
         vchartRef.current.renderSync();
-    }, [vchartData, filterState, showMetadata, showBgimg, showNumber, showText]);
+    }, [currentEpochData, filterState, showMetadata, showBgimg, showNumber, showText]);
 
+
+    /*
+    Highlight locked points
+    */
+    useEffect(() => {
+        if (!vchartRef.current) {
+            return;
+        }
+        updateHighlight();
+    }, [highlightContext, hoveredIndex]);
 
     function updateHighlight() {
         if (highlightContext.lockedIndices.size === 0 && hoveredIndex === -1) {
@@ -647,16 +678,6 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
     }
 
     /*
-    Highlight locked points
-    */
-    useEffect(() => {
-        if (!vchartRef.current) {
-            return;
-        }
-        updateHighlight();
-    }, [vchartData, highlightContext, hoveredIndex]);
-
-    /*
         Show neighborhood relationship
     */
     useEffect(() => {
@@ -675,20 +696,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
         });
         vchartRef.current?.updateDataSync('edges', endpoints);
 
-    }, [revealNeighborCrossType, revealNeighborSameType, hoveredIndex, highlightContext, vchartData]);
-
-    /*
-        Show classification border
-        triggered by showBgimg
-    */
-    useEffect(() => {
-        if (!showBgimg) {
-            bgimgRef.current = '<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg" version="1.1"> <rect width="800" height="600" fill="white" /></svg>';
-        }
-        else {
-            bgimgRef.current = vchartData?.background;
-        }
-    }, [showBgimg, vchartData]);
+    }, [revealNeighborCrossType, revealNeighborSameType, hoveredIndex, highlightContext]);
 
     return <div
         ref={chartRef}
