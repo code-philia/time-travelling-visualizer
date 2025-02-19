@@ -295,11 +295,11 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                                         return `${datum.pointId}`;
                                     }
                                 },
-
-                                fill: (datum: { label: number; }) => {
-                                    const color = colorDict.get(datum.label) ?? [0, 0, 0];
-                                    return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
-                                },
+                                fill: 'black',
+                                // fill: (datum: { label: number; }) => {
+                                //     const color = colorDict.get(datum.label) ?? [0, 0, 0];
+                                //     return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
+                                // },
                                 fillOpacity: 0.6
                             }
                         }
