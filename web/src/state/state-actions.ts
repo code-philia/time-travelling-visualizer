@@ -49,7 +49,7 @@ export function useSetUpTrainingProcess() {
 export function useSetUpProjection() {
     // TODO avoid writing attribute twice
     const { contentPath, allEpochsProjectionData, setAllEpochsProjectionData, allBackground, setAllBackground, backendHost, visMethod,
-        setHighlightContext, setTextData, setNeighborSameType, setNeighborCrossType, setLastNeighborSameType, setLastNeighborCrossType, setPredictionProps }
+        setHighlightContext, setTextData, allNeighborSameType, setAllNeighborSameType, allNeighborCrossType, setAllNeighborCrossType, allPredictionProps, setAllPredictionProps }
         = useDefaultStore([
             'contentPath',
             'allEpochsProjectionData',
@@ -61,16 +61,21 @@ export function useSetUpProjection() {
             'setHighlightContext',
             'setTextData',
             'setAvailableEpochs',
-            'setNeighborSameType',
-            'setNeighborCrossType',
-            'setLastNeighborSameType',
-            'setLastNeighborCrossType',
-            'setAllEpochsProjectionData',
-            'setPredictionProps'
+            'allNeighborSameType',
+            'setAllNeighborSameType',
+            'allNeighborCrossType',
+            'setAllNeighborCrossType',
+            'allPredictionProps',
+            'setAllPredictionProps'
         ]);
 
     // FIXME this is updating too many things, even depending on too many things
     const setUpProjections = useCallback(async (epoch: number) => {
+        // cache hit
+        if (allEpochsProjectionData[epoch]) {
+            return;
+        }
+
         let res = undefined;
         try {
             res = await fetchUmapProjectionData(contentPath, epoch, {

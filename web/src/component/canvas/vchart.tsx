@@ -21,10 +21,10 @@ export const ChartComponent = memo(() => {
     const { epoch, allEpochsProjectionData } = useDefaultStore(["epoch", "allEpochsProjectionData"]);
     const { labelDict, colorDict, textData } = useDefaultStore(["labelDict", "colorDict", "textData"]);
     const { filterValue, filterType } = useDefaultStore(["filterValue", "filterType"]);
-    const { neighborSameType, neighborCrossType, lastNeighborSameType, lastNeighborCrossType } = useDefaultStore(["neighborSameType", "neighborCrossType", "lastNeighborSameType", "lastNeighborCrossType"]);
+    const { allNeighborSameType, allNeighborCrossType } = useDefaultStore(["allNeighborSameType", "allNeighborCrossType"]);
     const { hoveredIndex, setHoveredIndex } = useDefaultStore(["hoveredIndex", "setHoveredIndex"]);
     const { highlightContext, setHighlightContext } = useDefaultStore(["highlightContext", "setHighlightContext"]);
-    const { allBackground, predictionProps } = useDefaultStore(["allBackground", "predictionProps"]);
+    const { allBackground, allPredictionProps } = useDefaultStore(["allBackground", "allPredictionProps"]);
 
     // settings
     const { showMetadata, showBgimg } = useDefaultStore(["showMetadata", "showBgimg"]);
@@ -92,8 +92,8 @@ export const ChartComponent = memo(() => {
             const y = parseFloat(p[1].toFixed(3));
             let confidence = 1.0;
             let pred = labels[i];
-            if (predictionProps && predictionProps.length > 0) {
-                let props = predictionProps[i];
+            if (allPredictionProps[epoch] && allPredictionProps[epoch].length > 0) {
+                let props = allPredictionProps[epoch][i];
                 let softmaxValues = softmax(props);
                 confidence = Math.max(...softmaxValues);
                 pred = softmaxValues.indexOf(confidence);
@@ -111,7 +111,7 @@ export const ChartComponent = memo(() => {
                 textSample: textData[i] ?? ''
             });
         });
-        edgesRef.current = createEdges(neighborSameType, neighborCrossType, lastNeighborSameType, lastNeighborCrossType);
+        edgesRef.current = createEdges(allNeighborSameType[epoch] ?? [], allNeighborCrossType[epoch] ?? [], allNeighborSameType[epoch - 1] ?? [], allNeighborCrossType[epoch - 1] ?? []);
 
         if (!showBgimg) {
             bgimgRef.current = '<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg" version="1.1"> <rect width="800" height="600" fill="white" /></svg>';

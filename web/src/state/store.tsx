@@ -68,7 +68,6 @@ type BaseMutableGlobalStore = {
     labelNameDict: Record<number, string>;
     timelineData: number[] | undefined;
     updateUUID: string;
-    allEpochsProjectionData: Record<number, BriefProjectionResult>;
     availableEpochs: number[];
     colorDict: Map<number, [number, number, number]>;
     labelDict: Map<number, string>;
@@ -76,7 +75,11 @@ type BaseMutableGlobalStore = {
     rawPointsGeography: CommonPointsGeography | null;
 
     textData: string[];
+    allEpochsProjectionData: Record<number, BriefProjectionResult>;
     allBackground: Record<number, string>;
+    allNeighborSameType: Record<number, number[][]>;
+    allNeighborCrossType: Record<number, number[][]>;
+    allPredictionProps: Record<number, number[][]>;
 
     // settings
     backendHost: string;
@@ -85,11 +88,6 @@ type BaseMutableGlobalStore = {
     revealNeighborSameType: boolean;
     revealNeighborCrossType: boolean;
     showMetadata: boolean;
-    neighborSameType: number[][];
-    neighborCrossType: number[][];
-    lastNeighborSameType: number[][];
-    lastNeighborCrossType: number[][];
-    predictionProps: number[][];
     showBgimg: boolean;
 
     // filter
@@ -114,7 +112,6 @@ const initMutableGlobalStore: BaseMutableGlobalStore = {
     labelNameDict: {},
     timelineData: undefined,
     updateUUID: '',     // FIXME should use a global configure object to manage this
-    allEpochsProjectionData: {},
     availableEpochs: [],
     // FIXME should use an object to apply user settings (like color) to original data, computing final point geography, and setting cache
     colorDict: new Map(),
@@ -123,7 +120,11 @@ const initMutableGlobalStore: BaseMutableGlobalStore = {
     rawPointsGeography: null,
 
     textData: [],
+    allEpochsProjectionData: {},
     allBackground: {},
+    allNeighborSameType: {},
+    allNeighborCrossType: {},
+    allPredictionProps: {},
 
     // settings
     backendHost: 'localhost:5010',
@@ -132,11 +133,6 @@ const initMutableGlobalStore: BaseMutableGlobalStore = {
     revealNeighborSameType: false,
     revealNeighborCrossType: false,
     showMetadata: false,
-    neighborSameType: [],
-    neighborCrossType: [],
-    lastNeighborCrossType: [],
-    lastNeighborSameType: [],
-    predictionProps: [],
     showBgimg: false,
 
     // filter
