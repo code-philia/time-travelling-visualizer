@@ -1,12 +1,31 @@
 import { useCallback } from "react";
-import { fetchTrainingProcessInfo, fetchTrainingProcessStructure, fetchUmapProjectionData, getAttributeResource, getBackground, getText, visualizeTrainingProcess } from "../communication/api";
+import { BriefProjectionResult, fetchTrainingProcessInfo, fetchTrainingProcessStructure, fetchUmapProjectionData, getAttributeResource, getBackground, getText, visualizeTrainingProcess } from "../communication/api";
 import { HighlightContext } from "../component/canvas/types";
 import { useDefaultStore } from "./store";
 
 // Set up the training process
 export function useSetUpTrainingProcess() {
-    const { contentPath, backendHost, setAvailableEpochs, setTextData, setEpoch, setHighlightContext, setColorDict, setLabelDict } =
-        useDefaultStore(['contentPath', 'setAvailableEpochs', 'backendHost', 'setTextData', 'setEpoch', 'setHighlightContext', 'setColorDict', 'setLabelDict']);
+    const { contentPath, visMethod, backendHost, setAvailableEpochs, setTextData, setEpoch, setHighlightContext, setColorDict, setLabelDict } =
+        useDefaultStore(['contentPath', 'visMethod', 'backendHost', 'setAvailableEpochs', 'setTextData', 'setEpoch', 'setHighlightContext', 'setColorDict', 'setLabelDict']);
+
+    const {
+        allEpochsProjectionData, setAllEpochsProjectionData,
+        allBackground, setAllBackground,
+        allNeighborSameType, setAllNeighborSameType,
+        allNeighborCrossType, setAllNeighborCrossType,
+        allPredictionProps, setAllPredictionProps
+    } = useDefaultStore([
+        'allEpochsProjectionData',
+        'setAllEpochsProjectionData',
+        'allBackground',
+        'setAllBackground',
+        'allNeighborSameType',
+        'setAllNeighborSameType',
+        'allNeighborCrossType',
+        'setAllNeighborCrossType',
+        'allPredictionProps',
+        'setAllPredictionProps'
+    ]);
 
     const setUpTrainingProcess = useCallback(async () => {
         // 1. get iteration structure
@@ -39,6 +58,37 @@ export function useSetUpTrainingProcess() {
 
         // 3. init highlight context
         setHighlightContext(new HighlightContext());
+
+
+        // 4. preload epochs
+        // data needed to be preloaded
+        const allEpochsProjectionDataCopy = { ...allEpochsProjectionData };
+        const allBackgroundCopy = { ...allBackground };
+        const allNeighborSameTypeCopy = { ...allNeighborSameType };
+        const allNeighborCrossTypeCopy = { ...allNeighborCrossType };
+        const allPredictionPropsCopy = { ...allPredictionProps };
+
+        // preload and set data
+        for (const i of res['available_epochs']) {
+            await preLoadEpochProjection(
+                i,
+                contentPath,
+                visMethod,
+                backendHost,
+                allEpochsProjectionDataCopy,
+                allBackgroundCopy,
+                allNeighborSameTypeCopy,
+                allNeighborCrossTypeCopy,
+                allPredictionPropsCopy,
+                setAllNeighborSameType,
+                setAllNeighborCrossType,
+                setAllPredictionProps,
+                setTextData,
+                setAllEpochsProjectionData,
+                setAllBackground
+            );
+            console.log('preload:', i);
+        }
 
     }, [backendHost, contentPath, setAvailableEpochs, setTextData, setEpoch]);
 
@@ -87,32 +137,39 @@ export function useSetUpProjection() {
         }
         if (res) {
             // part 1: process projection data
-            const newData = { ...allEpochsProjectionData };
-            newData[epoch] = res; // the latest epoch may have been updated in UI, but not yet in store
+            const allEpochsProjectionDataCopy = { ...allEpochsProjectionData };
+            allEpochsProjectionDataCopy[epoch] = res; // the latest epoch may have been updated in UI, but not yet in store
             const config = res.config;
 
             // part 2: relationship between points
             if (config.dataset.taskType == 'Umap-Neighborhood') {
+                const allNeighborSameTypeCopy = { ...allNeighborSameType };
+                const allNeighborCrossTypeCopy = { ...allNeighborCrossType };
+
                 const sameTypeNeighbor = await getAttributeResource(contentPath, epoch, 'intra_similarity', {
                     host: backendHost
                 });
                 const crossTypeNeighbor = await getAttributeResource(contentPath, epoch, 'inter_similarity', {
                     host: backendHost
                 });
-                setNeighborSameType(sameTypeNeighbor['intra_similarity']);
-                setNeighborCrossType(crossTypeNeighbor['inter_similarity']);
+                allNeighborSameTypeCopy[epoch] = sameTypeNeighbor['intra_similarity'];
+                allNeighborCrossTypeCopy[epoch] = crossTypeNeighbor['inter_similarity'];
 
-                if (epoch > 1) {
+                if (epoch > 1 && !allNeighborSameTypeCopy[epoch - 1]) {
                     const lastSameTypeNeighbor = await getAttributeResource(contentPath, epoch - 1, 'intra_similarity', {
                         host: backendHost
                     });
                     const lastCrossTypeNeighbor = await getAttributeResource(contentPath, epoch - 1, 'inter_similarity', {
                         host: backendHost
                     });
-                    setLastNeighborSameType(lastSameTypeNeighbor['intra_similarity']);
-                    setLastNeighborCrossType(lastCrossTypeNeighbor['inter_similarity']);
+                    allNeighborSameTypeCopy[epoch - 1] = lastSameTypeNeighbor['intra_similarity'];
+                    allNeighborCrossTypeCopy[epoch - 1] = lastCrossTypeNeighbor['inter_similarity'];
                 }
 
+                setAllNeighborSameType(allNeighborSameTypeCopy);
+                setAllNeighborCrossType(allNeighborCrossTypeCopy);
+
+                // TODO KWY: avoid get text data muti-times
                 const text = await getText(contentPath, {
                     host: backendHost
                 });
@@ -120,31 +177,123 @@ export function useSetUpProjection() {
             }
 
             // part 3: for classification task, acquire prediction and background
-            const newBackground = { ...allBackground };
+            const allBackgroundCopy = { ...allBackground };
+            const allPredictionPropsCopy = { ...allPredictionProps };
             if (config.dataset.taskType == 'classification') {
                 const predRes = await getAttributeResource(contentPath, epoch, 'prediction', {
                     host: backendHost
                 });
-                setPredictionProps(predRes['prediction']);
+                allPredictionPropsCopy[epoch] = predRes['prediction'];
 
                 const bgimgRes = await getBackground(contentPath, visMethod, 800, 600, res.scale, {
                     host: backendHost
                 });
-                newBackground[epoch] = bgimgRes;
+                allBackgroundCopy[epoch] = bgimgRes;
             }
             else {
-                setPredictionProps([]);
-                newBackground[epoch] = '';
+                allPredictionPropsCopy[epoch] = [];
+                allBackgroundCopy[epoch] = '';
             }
 
-
-            setAllEpochsProjectionData(newData);
-            setAllBackground(newBackground);
+            setAllEpochsProjectionData(allEpochsProjectionDataCopy);
+            setAllPredictionProps(allPredictionPropsCopy);
+            setAllBackground(allBackgroundCopy);
         }
-    }, [allEpochsProjectionData, backendHost, contentPath, setAllEpochsProjectionData, setHighlightContext, setNeighborCrossType, setNeighborSameType, visMethod]);
+    }, [allEpochsProjectionData, backendHost, contentPath, setAllEpochsProjectionData, setHighlightContext, setAllNeighborCrossType, setAllNeighborSameType, visMethod]);
 
     return setUpProjections;
 }
+
+export async function preLoadEpochProjection(
+    epoch: number,
+    contentPath: string,
+    visMethod: string,
+    backendHost: string,
+    allEpochsProjectionDataCopy: Record<number, BriefProjectionResult>,
+    allBackgroundCopy: Record<number, string>,
+    allNeighborSameTypeCopy: Record<number, number[][]>,
+    allNeighborCrossTypeCopy: Record<number, number[][]>,
+    allPredictionPropsCopy: Record<number, number[][]>,
+    setAllNeighborSameType: (arg0: any) => void,
+    setAllNeighborCrossType: (arg0: any) => void,
+    setAllPredictionProps: (arg0: any) => void,
+    setTextData: (arg0: any) => void,
+    setAllEpochsProjectionData: (arg0: any) => void,
+    setAllBackground: (arg0: any) => void
+) {
+    if (allEpochsProjectionDataCopy[epoch]) {
+        return allEpochsProjectionDataCopy;
+    }
+
+    let res = undefined;
+    try {
+        res = await fetchUmapProjectionData(contentPath, epoch, {
+            method: visMethod,
+            host: backendHost
+        });
+    } catch (e) {
+        console.warn(e);
+    }
+    if (res) {
+        // part 1: process projection data
+        allEpochsProjectionDataCopy[epoch] = res; // the latest epoch may have been updated in UI, but not yet in store
+        const config = res.config;
+
+        // part 2: relationship between points
+        if (config.dataset.taskType == 'Umap-Neighborhood') {
+            const sameTypeNeighbor = await getAttributeResource(contentPath, epoch, 'intra_similarity', {
+                host: backendHost
+            });
+            const crossTypeNeighbor = await getAttributeResource(contentPath, epoch, 'inter_similarity', {
+                host: backendHost
+            });
+            allNeighborSameTypeCopy[epoch] = sameTypeNeighbor['intra_similarity'];
+            allNeighborCrossTypeCopy[epoch] = crossTypeNeighbor['inter_similarity'];
+
+            if (epoch > 1 && !allNeighborSameTypeCopy[epoch - 1]) {
+                const lastSameTypeNeighbor = await getAttributeResource(contentPath, epoch - 1, 'intra_similarity', {
+                    host: backendHost
+                });
+                const lastCrossTypeNeighbor = await getAttributeResource(contentPath, epoch - 1, 'inter_similarity', {
+                    host: backendHost
+                });
+                allNeighborSameTypeCopy[epoch - 1] = lastSameTypeNeighbor['intra_similarity'];
+                allNeighborCrossTypeCopy[epoch - 1] = lastCrossTypeNeighbor['inter_similarity'];
+            }
+
+            setAllNeighborSameType(allNeighborSameTypeCopy);
+            setAllNeighborCrossType(allNeighborCrossTypeCopy);
+
+            // TODO KWY: avoid get text data muti-times
+            const text = await getText(contentPath, {
+                host: backendHost
+            });
+            setTextData(text['text_list'] ?? []);
+        }
+
+        // part 3: for classification task, acquire prediction and background
+        if (config.dataset.taskType == 'classification') {
+            const predRes = await getAttributeResource(contentPath, epoch, 'prediction', {
+                host: backendHost
+            });
+            allPredictionPropsCopy[epoch] = predRes['prediction'];
+
+            const bgimgRes = await getBackground(contentPath, visMethod, 800, 600, res.scale, {
+                host: backendHost
+            });
+            allBackgroundCopy[epoch] = bgimgRes;
+        }
+        else {
+            allPredictionPropsCopy[epoch] = [];
+            allBackgroundCopy[epoch] = '';
+        }
+
+        setAllEpochsProjectionData(allEpochsProjectionDataCopy);
+        setAllPredictionProps(allPredictionPropsCopy);
+        setAllBackground(allBackgroundCopy);
+    }
+}
+
 export function useTrainVisualizer() {
     const { contentPath, backendHost, visMethod }
         = useDefaultStore([

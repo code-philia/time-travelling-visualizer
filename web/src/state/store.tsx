@@ -73,8 +73,9 @@ type BaseMutableGlobalStore = {
     labelDict: Map<number, string>;
     highlightContext: HighlightContext;
     rawPointsGeography: CommonPointsGeography | null;
-
     textData: string[];
+
+    // cached epoch data
     allEpochsProjectionData: Record<number, BriefProjectionResult>;
     allBackground: Record<number, string>;
     allNeighborSameType: Record<number, number[][]>;
@@ -118,8 +119,9 @@ const initMutableGlobalStore: BaseMutableGlobalStore = {
     labelDict: new Map(),
     highlightContext: new HighlightContext(),
     rawPointsGeography: null,
-
     textData: [],
+
+    // cached epoch data
     allEpochsProjectionData: {},
     allBackground: {},
     allNeighborSameType: {},
