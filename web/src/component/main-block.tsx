@@ -111,13 +111,6 @@ export function MainBlock() {
 
     const setUpProjections = useSetUpProjection();
 
-    // default epoch
-    useEffect(() => {
-        if (availableEpochs.length > 0) {
-            setEpoch(availableEpochs[0]);
-        }
-    }, [availableEpochs, setEpoch]);
-
     // only consider single container for now
     return (
         <div className="canvas-column">
