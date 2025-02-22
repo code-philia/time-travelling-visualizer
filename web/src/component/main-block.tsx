@@ -3,7 +3,7 @@ import { createPlot2DCanvasContextFrom, Plot2DDataContext } from './canvas/canva
 import { useDefaultStore } from '../state/store'
 import { CommonPointsGeography, extractConnectedPoints, pointsDefaultSize, createEmptyCommonPointsGeography } from './canvas/types';
 import { BriefProjectionResult } from '../communication/api';
-import { useSetUpProjection } from '../state/state-actions';
+import { useSetUpProjection, useSwitchEpoch } from '../state/state-actions';
 import ChartComponent from './canvas/vchart';
 function Timeline({ epoch, epochs, percent, onSwitchEpoch }: { epoch: number, epochs: number[], percent: number, onSwitchEpoch: (epoch: number) => void }) {
     // Set the initial epoch from the passed epochs array
@@ -131,7 +131,8 @@ export function MainBlock() {
             "progress"
         ]);
 
-    const setUpProjections = useSetUpProjection();
+    // const setUpProjections = useSetUpProjection();
+    const switchEpoch = useSwitchEpoch();
 
     // only consider single container for now
     return (
@@ -143,9 +144,10 @@ export function MainBlock() {
                 <div className="functional-block-title">Epochs</div>
                 <div style={{ overflow: "auto" }}>
                     <Timeline epoch={epoch} epochs={availableEpochs} percent={progress} onSwitchEpoch={(epoch) => {
-                        setUpProjections(epoch).then(
-                            () => setEpoch(epoch)
-                        );
+                        switchEpoch(epoch);
+                        // setUpProjections(epoch).then(
+                        //     () => setEpoch(epoch)
+                        // );
                     }} />
                 </div>
             </div>

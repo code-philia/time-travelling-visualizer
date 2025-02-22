@@ -205,6 +205,27 @@ export function useSetUpProjection() {
     return setUpProjections;
 }
 
+export function useSwitchEpoch() {
+    // TODO avoid writing attribute twice
+    const { allEpochsProjectionData, setEpoch } = useDefaultStore([
+        'allEpochsProjectionData',
+        'setEpoch'
+    ]);
+
+    const switchEpoch = useCallback(async (epoch: number) => {
+        // already loaded
+        if (allEpochsProjectionData[epoch]) {
+            setEpoch(epoch);
+        }
+        else {
+            // TODO: force load or ignore?
+            return;
+        }
+    }, [allEpochsProjectionData]);
+
+    return switchEpoch;
+}
+
 export async function preLoadEpochProjection(
     epoch: number,
     contentPath: string,
