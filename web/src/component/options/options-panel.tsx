@@ -1,11 +1,10 @@
-import { Radio, Button, Input, Flex, Select, InputRef, Divider, Checkbox } from "antd"
+import { Button, Input, Select, InputRef, Divider, Checkbox } from "antd"
 import { useEffect, useRef, useState } from "react"
 import { useDefaultStore } from '../../state/store';
-import { fetchTimelineData } from "../../communication/api";
 import { DefaultOptionType } from "antd/es/select";
 import { FunctionalBlock, ComponentBlock } from "../custom/basic-components";
 import { useCheckOptions } from "../custom/basic-hooks";
-import { useSetUpProjection, useSetUpTrainingProcess, useTrainVisualizer } from "../../state/state-actions";
+import { useSetUpTrainingProcess } from "../../state/state-actions";
 
 const validVisMethods: DefaultOptionType['items'] = [
     {
@@ -33,8 +32,6 @@ export function OptionsPanel() {
     const { visMethod, setVisMethod } = useDefaultStore(["visMethod", "setVisMethod"]);
 
     const setUpTrainingProcess = useSetUpTrainingProcess();
-    const setUpProjections = useSetUpProjection();
-    const trainVisualizer = useTrainVisualizer();
 
     const dataTypeOptions = [{ label: 'Image', value: 'Image', }, { label: 'Text', value: 'Text', },];
     const { setShowMetadata, setShowBgimg } = useDefaultStore(["setShowMetadata", "setShowBgimg"]);
