@@ -5,8 +5,8 @@ import { useDefaultStore } from "./store";
 
 // Set up the training process
 export function useSetUpTrainingProcess() {
-    const { contentPath, visMethod, backendHost, setAvailableEpochs, setTextData, setEpoch, setHighlightContext, setColorDict, setLabelDict } =
-        useDefaultStore(['contentPath', 'visMethod', 'backendHost', 'setAvailableEpochs', 'setTextData', 'setEpoch', 'setHighlightContext', 'setColorDict', 'setLabelDict']);
+    const { contentPath, visMethod, backendHost, setAvailableEpochs, setTextData, setEpoch, setHighlightContext, setColorDict, setLabelDict, setProgress } =
+        useDefaultStore(['contentPath', 'visMethod', 'backendHost', 'setAvailableEpochs', 'setTextData', 'setEpoch', 'setHighlightContext', 'setColorDict', 'setLabelDict', 'setProgress']);
 
     const {
         allEpochsProjectionData, setAllEpochsProjectionData,
@@ -87,10 +87,11 @@ export function useSetUpTrainingProcess() {
                 setAllEpochsProjectionData,
                 setAllBackground
             );
-            console.log('preload:', i);
+            let loadedEpochs = Object.keys(allEpochsProjectionDataCopy).map(Number);
+            setProgress(loadedEpochs.length / res['available_epochs'].length * 100);
         }
 
-    }, [backendHost, contentPath, setAvailableEpochs, setTextData, setEpoch]);
+    }, [backendHost, contentPath, visMethod, setAvailableEpochs, setTextData, setEpoch, setProgress]);
 
     return setUpTrainingProcess;
 }

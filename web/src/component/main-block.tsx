@@ -5,8 +5,7 @@ import { CommonPointsGeography, extractConnectedPoints, pointsDefaultSize, creat
 import { BriefProjectionResult } from '../communication/api';
 import { useSetUpProjection } from '../state/state-actions';
 import ChartComponent from './canvas/vchart';
-
-function Timeline({ epoch, epochs, onSwitchEpoch }: { epoch: number, epochs: number[], onSwitchEpoch: (epoch: number) => void }) {
+function Timeline({ epoch, epochs, percent, onSwitchEpoch }: { epoch: number, epochs: number[], percent: number, onSwitchEpoch: (epoch: number) => void }) {
     // Set the initial epoch from the passed epochs array
     useEffect(() => {
         if (epochs.length > 0) {
@@ -60,6 +59,10 @@ function Timeline({ epoch, epochs, onSwitchEpoch }: { epoch: number, epochs: num
                 {nodes.map((node, index) => {
                     if (index < nodes.length - 1) {
                         const nextNode = nodes[index + 1];
+                        const totalLength = epochs.length * 40 - 10;
+                        const nextNodeCenterX = nextNode.x + 8;
+                        const nextNodeProgress = (nextNodeCenterX / totalLength) * 100;
+                        const isLinkLoaded = percent >= nextNodeProgress; // 基于下一个节点的进度
                         return (
                             <line
                                 key={`link-${index}`}
@@ -67,8 +70,12 @@ function Timeline({ epoch, epochs, onSwitchEpoch }: { epoch: number, epochs: num
                                 y1={node.y}
                                 x2={nextNode.x}
                                 y2={nextNode.y}
-                                stroke="#72A8F0"
+                                stroke={isLinkLoaded ? '#72A8F0' : '#e0e0e0'}
                                 strokeWidth="1"
+                                style={{
+                                    transition: 'stroke 0.5s ease-in-out',
+                                    strokeLinecap: 'round'
+                                }}
                             />
                         );
                     }
@@ -76,37 +83,52 @@ function Timeline({ epoch, epochs, onSwitchEpoch }: { epoch: number, epochs: num
                 })}
 
                 {/* Nodes */}
-                {nodes.map((node, index) => (
-                    <g key={index} transform={`translate(${node.x}, ${node.y})`}>
-                        <circle
-                            r="8"
-                            fill={node.value === epoch ? '#3278F0' : '#72A8F0'}
-                            strokeWidth="1"
-                            stroke={node.value === epoch ? '#3278F0' : '#72A8F0'}
-                            className="timeline-node"
-                            onClick={() => onSwitchEpoch(node.value)}
-                        />
-                        <text
-                            x="0"
-                            y="-14"
-                            textAnchor="middle"
-                            style={{ fill: node.value === epoch ? '#3278F0' : '#72A8F0' }}
-                        >
-                            {node.value}
-                        </text>
-                    </g>
-                ))}
+                {nodes.map((node, index) => {
+                    const totalLength = epochs.length * 40 - 10;
+                    const nodeCenterX = node.x + 8;
+                    const nodeProgress = (nodeCenterX / totalLength) * 100;
+                    const isLoaded = percent >= nodeProgress;
+                    return (
+                        <g key={index} transform={`translate(${node.x}, ${node.y})`}>
+                            <circle
+                                r="8"
+                                fill={isLoaded ? (node.value === epoch ? '#3278F0' : '#72A8F0') : '#e0e0e0'}
+                                stroke={isLoaded ? (node.value === epoch ? '#3278F0' : '#72A8F0') : '#e0e0e0'}
+                                className="timeline-node"
+                                style={{
+                                    transition: 'all 0.5s ease-in-out',
+                                    cursor: 'pointer'
+                                }}
+                                onClick={() => onSwitchEpoch(node.value)}
+                            />
+                            <text
+                                x="0"
+                                y="-14"
+                                style={{
+                                    fill: isLoaded ? (node.value === epoch ? '#3278F0' : '#72A8F0') : '#e0e0e0',
+                                    transition: 'fill 0.5s ease-in-out',
+                                    fontSize: '12px',
+                                    userSelect: 'none'
+                                }}
+                                textAnchor="middle"
+                            >
+                                {node.value}
+                            </text>
+                        </g>
+                    );
+                })}
             </g>
         </svg>
     );
 };
 
 export function MainBlock() {
-    const { epoch, setEpoch, availableEpochs }
+    const { epoch, setEpoch, availableEpochs, progress }
         = useDefaultStore([
             "epoch",
             "setEpoch",
-            "availableEpochs"
+            "availableEpochs",
+            "progress"
         ]);
 
     const setUpProjections = useSetUpProjection();
@@ -120,7 +142,7 @@ export function MainBlock() {
             <div id="footer">
                 <div className="functional-block-title">Epochs</div>
                 <div style={{ overflow: "auto" }}>
-                    <Timeline epoch={epoch} epochs={availableEpochs} onSwitchEpoch={(epoch) => {
+                    <Timeline epoch={epoch} epochs={availableEpochs} percent={progress} onSwitchEpoch={(epoch) => {
                         setUpProjections(epoch).then(
                             () => setEpoch(epoch)
                         );

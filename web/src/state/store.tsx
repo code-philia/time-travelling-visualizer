@@ -97,7 +97,9 @@ type BaseMutableGlobalStore = {
     filterValue: string;
 
     // hovered
-    hoveredIndex: -1
+    hoveredIndex: number,
+
+    progress: number
 }
 
 const initMutableGlobalStore: BaseMutableGlobalStore = {
@@ -143,7 +145,9 @@ const initMutableGlobalStore: BaseMutableGlobalStore = {
     filterValue: '',
 
     // hovered
-    hoveredIndex: -1
+    hoveredIndex: -1,
+
+    progress: 0
 };
 
 type MutableGlobalStore = WithSettersOnAttr<BaseMutableGlobalStore>;
