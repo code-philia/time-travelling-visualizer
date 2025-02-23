@@ -62,10 +62,10 @@ def load_projection(config, content_path, vis_method, epoch):
     label_list = read_label_file(file_path)
     
     # compute scale to fix canvas
-    x_min = np.min(projection[:, 0])
-    y_min = np.min(projection[:, 1])
-    x_max = np.max(projection[:, 0])
-    y_max = np.max(projection[:, 1])
+    x_min = float(np.min(projection[:, 0]))
+    y_min = float(np.min(projection[:, 1]))
+    x_max = float(np.max(projection[:, 0]))
+    y_max = float(np.max(projection[:, 1]))
     scale = [x_min-1, y_min-1, x_max+1, y_max+1]
     
     return projection_list, label_list, scale
