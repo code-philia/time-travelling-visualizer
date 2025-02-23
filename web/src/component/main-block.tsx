@@ -1,17 +1,27 @@
-import { useState, useEffect, useMemo } from 'react'
-import { createPlot2DCanvasContextFrom, Plot2DDataContext } from './canvas/canvas'
-import { useDefaultStore } from '../state/store'
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { createPlot2DCanvasContextFrom, Plot2DDataContext } from './canvas/canvas';
+import { useDefaultStore } from '../state/store';
 import { CommonPointsGeography, extractConnectedPoints, pointsDefaultSize, createEmptyCommonPointsGeography } from './canvas/types';
 import { BriefProjectionResult } from '../communication/api';
 import { useSetUpProjection, useSwitchEpoch } from '../state/state-actions';
 import ChartComponent from './canvas/vchart';
+
 function Timeline({ epoch, epochs, percent, onSwitchEpoch }: { epoch: number, epochs: number[], percent: number, onSwitchEpoch: (epoch: number) => void }) {
+    const [isPlaying, setIsPlaying] = useState(false);
+    const intervalRef = useRef<any | null>(null);
+    const currentEpochIndexRef = useRef<number>(epochs.indexOf(epoch));
+
     // Set the initial epoch from the passed epochs array
     useEffect(() => {
         if (epochs.length > 0) {
             onSwitchEpoch(epochs[0]);
+            currentEpochIndexRef.current = 0;
         }
     }, [epochs]);
+
+    useEffect(() => {
+        currentEpochIndexRef.current = epochs.indexOf(epoch);
+    }, [epoch]);
 
     const nodes = useMemo(() => {
         if (epochs.length > 0) {
@@ -46,79 +56,137 @@ function Timeline({ epoch, epochs, percent, onSwitchEpoch }: { epoch: number, ep
         }
     }, [nodes]);
 
-    // Render nodes and links (simple lines between nodes)
-    return (
-        <svg
-            width={svgDimensions.width}
-            height={svgDimensions.height}
-            // viewBox={`0 0 ${svgDimensions.width} ${svgDimensions.height}`}
-            className="timeline-svg"
-        >
-            <g transform="translate(20, 0)">
-                {/* Links (lines between nodes) */}
-                {nodes.map((node, index) => {
-                    if (index < nodes.length - 1) {
-                        const nextNode = nodes[index + 1];
-                        const totalLength = epochs.length * 40 - 10;
-                        const nextNodeCenterX = nextNode.x + 8;
-                        const nextNodeProgress = (nextNodeCenterX / totalLength) * 100;
-                        const isLinkLoaded = percent >= nextNodeProgress; // 基于下一个节点的进度
-                        return (
-                            <line
-                                key={`link-${index}`}
-                                x1={node.x}
-                                y1={node.y}
-                                x2={nextNode.x}
-                                y2={nextNode.y}
-                                stroke={isLinkLoaded ? '#72A8F0' : '#e0e0e0'}
-                                strokeWidth="1"
-                                style={{
-                                    transition: 'stroke 0.5s ease-in-out',
-                                    strokeLinecap: 'round'
-                                }}
-                            />
-                        );
+    // Action for play button
+    const togglePlayPause = () => {
+        if (isPlaying) {
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+                intervalRef.current = null;
+            }
+        } else {
+            intervalRef.current = setInterval(() => {
+                const nextIndex = (currentEpochIndexRef.current + 1) % epochs.length;
+                if (nextIndex === 0) {
+                    if (intervalRef.current) {
+                        clearInterval(intervalRef.current);
+                        intervalRef.current = null;
                     }
-                    return null;
-                })}
+                    setIsPlaying(false);
+                } else {
+                    onSwitchEpoch(epochs[nextIndex]);
+                    currentEpochIndexRef.current = nextIndex;
+                }
+            }, 1000);
+        }
+        setIsPlaying(!isPlaying);
+    };
 
-                {/* Nodes */}
-                {nodes.map((node, index) => {
-                    const totalLength = epochs.length * 40 - 10;
-                    const nodeCenterX = node.x + 8;
-                    const nodeProgress = (nodeCenterX / totalLength) * 100;
-                    const isLoaded = percent >= nodeProgress;
-                    return (
-                        <g key={index} transform={`translate(${node.x}, ${node.y})`}>
-                            <circle
-                                r="8"
-                                fill={isLoaded ? (node.value === epoch ? '#3278F0' : '#72A8F0') : '#e0e0e0'}
-                                stroke={isLoaded ? (node.value === epoch ? '#3278F0' : '#72A8F0') : '#e0e0e0'}
-                                className="timeline-node"
-                                style={{
-                                    transition: 'all 0.5s ease-in-out',
-                                    cursor: 'pointer'
-                                }}
-                                onClick={() => onSwitchEpoch(node.value)}
-                            />
-                            <text
-                                x="0"
-                                y="-14"
-                                style={{
-                                    fill: isLoaded ? (node.value === epoch ? '#3278F0' : '#72A8F0') : '#e0e0e0',
-                                    transition: 'fill 0.5s ease-in-out',
-                                    fontSize: '12px',
-                                    userSelect: 'none'
-                                }}
-                                textAnchor="middle"
-                            >
-                                {node.value}
-                            </text>
-                        </g>
-                    );
-                })}
-            </g>
-        </svg>
+    useEffect(() => {
+        return () => {
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+            }
+        };
+    }, []);
+
+    return (
+        <div style={{ position: 'relative' }}>
+            <svg
+                width={svgDimensions.width}
+                height={svgDimensions.height}
+                className="timeline-svg"
+            >
+                <g transform="translate(20, 0)">
+                    {/* Links (lines between nodes) */}
+                    {nodes.map((node, index) => {
+                        if (index < nodes.length - 1) {
+                            const nextNode = nodes[index + 1];
+                            const totalLength = epochs.length * 40 - 10;
+                            const nextNodeCenterX = nextNode.x + 8;
+                            const nextNodeProgress = (nextNodeCenterX / totalLength) * 100;
+                            const isLinkLoaded = percent >= nextNodeProgress;
+                            return (
+                                <line
+                                    key={`link-${index}`}
+                                    x1={node.x}
+                                    y1={node.y}
+                                    x2={nextNode.x}
+                                    y2={nextNode.y}
+                                    stroke={isLinkLoaded ? '#72A8F0' : '#e0e0e0'}
+                                    strokeWidth="1"
+                                    style={{
+                                        transition: 'stroke 0.5s ease-in-out',
+                                        strokeLinecap: 'round'
+                                    }}
+                                />
+                            );
+                        }
+                        return null;
+                    })}
+
+                    {/* Nodes */}
+                    {nodes.map((node, index) => {
+                        const totalLength = epochs.length * 40 - 10;
+                        const nodeCenterX = node.x + 8;
+                        const nodeProgress = (nodeCenterX / totalLength) * 100;
+                        const isLoaded = percent >= nodeProgress;
+                        return (
+                            <g key={index} transform={`translate(${node.x}, ${node.y})`}>
+                                <circle
+                                    r="8"
+                                    fill={isLoaded ? (node.value === epoch ? '#3278F0' : '#72A8F0') : '#e0e0e0'}
+                                    stroke={isLoaded ? (node.value === epoch ? '#3278F0' : '#72A8F0') : '#e0e0e0'}
+                                    className="timeline-node"
+                                    style={{
+                                        transition: 'all 0.5s ease-in-out',
+                                        cursor: 'pointer'
+                                    }}
+                                    onClick={() => onSwitchEpoch(node.value)}
+                                />
+                                <text
+                                    x="0"
+                                    y="-14"
+                                    style={{
+                                        fill: isLoaded ? (node.value === epoch ? '#3278F0' : '#72A8F0') : '#e0e0e0',
+                                        transition: 'fill 0.5s ease-in-out',
+                                        fontSize: '12px',
+                                        userSelect: 'none'
+                                    }}
+                                    textAnchor="middle"
+                                >
+                                    {node.value}
+                                </text>
+                            </g>
+                        );
+                    })}
+                </g>
+            </svg>
+
+            {/* Play/Pause Button */}
+            <button
+                onClick={togglePlayPause}
+                style={{
+                    position: 'absolute',
+                    bottom: '10px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    backgroundColor: '#3278F0',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '40px',
+                    height: '40px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#fff',
+                    fontSize: '16px',
+                    transition: 'background-color 0.3s ease',
+                }}
+            >
+                {isPlaying ? '❚❚' : '▶'}
+            </button>
+        </div>
     );
 };
 
@@ -151,7 +219,7 @@ export function MainBlock() {
                     }} />
                 </div>
             </div>
-        </div >
+        </div>
     )
 }
 
