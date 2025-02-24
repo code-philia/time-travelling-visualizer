@@ -6,10 +6,11 @@ import { BriefProjectionResult } from '../communication/api';
 import { useSetUpProjection, useSwitchEpoch } from '../state/state-actions';
 import ChartComponent from './canvas/vchart';
 
-function Timeline({ epoch, epochs, percent, onSwitchEpoch }: { epoch: number, epochs: number[], percent: number, onSwitchEpoch: (epoch: number) => void }) {
+function Timeline({ epoch, epochs, progress, onSwitchEpoch }: { epoch: number, epochs: number[], progress: number, onSwitchEpoch: (epoch: number) => void }) {
     const [isPlaying, setIsPlaying] = useState(false);
     const intervalRef = useRef<any | null>(null);
     const currentEpochIndexRef = useRef<number>(epochs.indexOf(epoch));
+    const nodeOffset = 40;
 
     // Set the initial epoch from the passed epochs array
     useEffect(() => {
@@ -27,7 +28,7 @@ function Timeline({ epoch, epochs, percent, onSwitchEpoch }: { epoch: number, ep
         if (epochs.length > 0) {
             return epochs.map((epoch, index) => ({
                 value: epoch,
-                x: index * 40 + 40,
+                x: index * 40 + nodeOffset,
                 y: 30,
             }));
         }
@@ -45,7 +46,7 @@ function Timeline({ epoch, epochs, percent, onSwitchEpoch }: { epoch: number, ep
 
             // Set the SVG dimensions to fit all nodes
             return {
-                width: maxX - minX + 40,
+                width: maxX - minX + nodeOffset,
                 height: maxY - minY,
             };
         } else {
@@ -101,10 +102,8 @@ function Timeline({ epoch, epochs, percent, onSwitchEpoch }: { epoch: number, ep
                     {nodes.map((node, index) => {
                         if (index < nodes.length - 1) {
                             const nextNode = nodes[index + 1];
-                            const totalLength = epochs.length * 40 + 40;
-                            const nextNodeCenterX = nextNode.x + 8;
-                            const nextNodeProgress = (nextNodeCenterX / totalLength) * 100;
-                            const isLinkLoaded = percent >= nextNodeProgress;
+                            const nextNodeId = (nextNode.x - nodeOffset) / 40 + 1;
+                            const isLinkLoaded = progress >= nextNodeId;
                             return (
                                 <line
                                     key={`link-${index}`}
@@ -126,10 +125,9 @@ function Timeline({ epoch, epochs, percent, onSwitchEpoch }: { epoch: number, ep
 
                     {/* Nodes */}
                     {nodes.map((node, index) => {
-                        const totalLength = epochs.length * 40 + 40;
-                        const nodeCenterX = node.x + 8;
-                        const nodeProgress = (nodeCenterX / totalLength) * 100;
-                        const isLoaded = percent >= nodeProgress;
+                        const nodeId = (node.x - nodeOffset) / 40 + 1;
+                        const isLoaded = progress >= nodeId;
+
                         return (
                             <g key={index} transform={`translate(${node.x}, ${node.y})`}>
                                 <circle
@@ -211,7 +209,7 @@ export function MainBlock() {
             <div id="footer">
                 <div className="functional-block-title">Epochs</div>
                 <div style={{ overflow: "auto" }}>
-                    <Timeline epoch={epoch} epochs={availableEpochs} percent={progress} onSwitchEpoch={(epoch) => {
+                    <Timeline epoch={epoch} epochs={availableEpochs} progress={progress} onSwitchEpoch={(epoch) => {
                         switchEpoch(epoch);
                         // setUpProjections(epoch).then(
                         //     () => setEpoch(epoch)

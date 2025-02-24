@@ -88,7 +88,7 @@ export function useSetUpTrainingProcess() {
                 setAllBackground
             );
             let loadedEpochs = Object.keys(allEpochsProjectionDataCopy).map(Number);
-            setProgress(loadedEpochs.length / res['available_epochs'].length * 100);
+            setProgress(loadedEpochs.length);
         }
 
     }, [backendHost, contentPath, visMethod, setAvailableEpochs, setTextData, setEpoch, setProgress]);
