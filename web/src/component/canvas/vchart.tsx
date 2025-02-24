@@ -8,11 +8,6 @@ import { BriefProjectionResult } from '../../communication/api';
 const CANVAS_HEIGHT = 600;
 const CANVAS_WIDTH = 800;
 
-type SampleTag = {
-    num: number;
-    title: string;
-}
-
 export const ChartComponent = memo(() => {
     const chartRef = useRef<HTMLDivElement>(null);
     const vchartRef = useRef<VChart | null>(null);
@@ -31,8 +26,6 @@ export const ChartComponent = memo(() => {
     const { showNumber, showText } = useDefaultStore(["showNumber", "showText"])
     const { filterState } = useDefaultStore(["filterState"]);
     const { revealNeighborCrossType, revealNeighborSameType } = useDefaultStore(["revealNeighborCrossType", "revealNeighborSameType"]);
-
-    const [selectedItems, setSelectedItems] = useState<SampleTag[]>([]);
 
     // temp data
     const samplesRef = useRef<{ pointId: number, x: number; y: number; label: number; pred: number; label_desc: string; pred_desc: string; confidence: number; textSample: string }[]>([]);
@@ -59,22 +52,6 @@ export const ChartComponent = memo(() => {
         });
     }
     let [x_min, y_min, x_max, y_max] = currentEpochData?.scale ?? [-10, -10, 10, 10];
-
-    useEffect(() => {
-        const listener = () => {
-            const tokens = textData;
-            setSelectedItems(Array.from(highlightContext.lockedIndices).map((num) => ({
-                num,
-                title: tokens[num]!
-            })));
-        };
-
-        listener();
-        highlightContext.addHighlightChangedListener(listener);
-        return () => {
-            highlightContext.removeHighlightChangedListener(listener);
-        };
-    }, [currentEpochData]);
 
     /*
         Main update logic
@@ -614,7 +591,6 @@ export const ChartComponent = memo(() => {
                 } else {
                     highlightContext.addLocked(e.datum?.pointId);
                 }
-                setHighlightContext(highlightContext);
             });
         }
         else {
@@ -633,7 +609,7 @@ export const ChartComponent = memo(() => {
             return;
         }
         updateHighlight();
-    }, [highlightContext, hoveredIndex]);
+    }, [highlightContext, hoveredIndex, currentEpochData]);
 
     function updateHighlight() {
         if (highlightContext.lockedIndices.size === 0 && hoveredIndex === -1) {
@@ -697,7 +673,7 @@ export const ChartComponent = memo(() => {
         });
         vchartRef.current?.updateDataSync('edges', endpoints);
 
-    }, [revealNeighborCrossType, revealNeighborSameType, hoveredIndex, highlightContext]);
+    }, [revealNeighborCrossType, revealNeighborSameType, hoveredIndex, highlightContext, currentEpochData]);
 
     return <div
         ref={chartRef}
