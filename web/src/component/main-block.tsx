@@ -27,7 +27,7 @@ function Timeline({ epoch, epochs, percent, onSwitchEpoch }: { epoch: number, ep
         if (epochs.length > 0) {
             return epochs.map((epoch, index) => ({
                 value: epoch,
-                x: index * 40,
+                x: index * 40 + 40,
                 y: 30,
             }));
         }
@@ -45,14 +45,14 @@ function Timeline({ epoch, epochs, percent, onSwitchEpoch }: { epoch: number, ep
 
             // Set the SVG dimensions to fit all nodes
             return {
-                width: maxX - minX,
+                width: maxX - minX + 40,
                 height: maxY - minY,
-            }
+            };
         } else {
             return {
                 width: 0,
                 height: 0,
-            }
+            };
         }
     }, [nodes]);
 
@@ -101,7 +101,7 @@ function Timeline({ epoch, epochs, percent, onSwitchEpoch }: { epoch: number, ep
                     {nodes.map((node, index) => {
                         if (index < nodes.length - 1) {
                             const nextNode = nodes[index + 1];
-                            const totalLength = epochs.length * 40 - 10;
+                            const totalLength = epochs.length * 40 + 40;
                             const nextNodeCenterX = nextNode.x + 8;
                             const nextNodeProgress = (nextNodeCenterX / totalLength) * 100;
                             const isLinkLoaded = percent >= nextNodeProgress;
@@ -126,7 +126,7 @@ function Timeline({ epoch, epochs, percent, onSwitchEpoch }: { epoch: number, ep
 
                     {/* Nodes */}
                     {nodes.map((node, index) => {
-                        const totalLength = epochs.length * 40 - 10;
+                        const totalLength = epochs.length * 40 + 40;
                         const nodeCenterX = node.x + 8;
                         const nodeProgress = (nodeCenterX / totalLength) * 100;
                         const isLoaded = percent >= nodeProgress;
@@ -167,21 +167,21 @@ function Timeline({ epoch, epochs, percent, onSwitchEpoch }: { epoch: number, ep
                 onClick={togglePlayPause}
                 style={{
                     position: 'absolute',
-                    bottom: '10px',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
+                    top: '48%',
+                    transform: 'translateY(-50%)',
                     backgroundColor: '#3278F0',
                     border: 'none',
-                    borderRadius: '50%',
-                    width: '40px',
-                    height: '40px',
+                    borderRadius: '30%',
+                    width: '25px',
+                    height: '25px',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     color: '#fff',
-                    fontSize: '16px',
+                    fontSize: '10px',
                     transition: 'background-color 0.3s ease',
+                    zIndex: 1,
                 }}
             >
                 {isPlaying ? '❚❚' : '▶'}
