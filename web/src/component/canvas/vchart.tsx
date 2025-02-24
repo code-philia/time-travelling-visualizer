@@ -304,6 +304,7 @@ export const ChartComponent = memo(() => {
                                 type: 'text',
                                 fontFamily: 'Console',
                                 fontStyle: 'italic',
+                                fontSize: 12,
                                 // fontWeight: 'bold',
                                 text: (datum: { pointId: any; textSample: string; label: number; }) => {
                                     if (showText && showNumber) {
@@ -321,7 +322,7 @@ export const ChartComponent = memo(() => {
                                 //     const color = colorDict.get(datum.label) ?? [0, 0, 0];
                                 //     return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
                                 // },
-                                fillOpacity: 0.6
+                                fillOpacity: 1
                             }
                         }
                     ]
