@@ -150,7 +150,7 @@ const placeholderTreeData: TrainingProcessTreeData = {
             datasets: {
                 validation: {
                     uuid: 'Dataset 1',
-                    name: 'Dataset 1',
+                    name: 'val',
                     baseType: 'text',
                     basePath: '/new-version-datasets/gcb_tokens',
                     samples: placeholderSamples,
@@ -246,7 +246,7 @@ class TreeDataProvider implements vscode.TreeDataProvider<TreeItem> {
         const datasetItems = Object.keys(process.datasets).map(key => {
             const _key = key as 'train' | 'validation';
             const dataset = process.datasets[_key] as BasicDataset;     // NOTE these type hints are so unnecessary but have to
-            return this.resolveItemBasicDataset(dataset);
+            return this.resolveItemBasicDataset(dataset, _key);
         });
         children.push(...datasetItems);
 
@@ -271,7 +271,7 @@ class TreeDataProvider implements vscode.TreeDataProvider<TreeItem> {
         );
     }
 
-    private resolveItemBasicDataset(dataset: BasicDataset): TreeItem {
+    private resolveItemBasicDataset(dataset: BasicDataset, type: string = 'train'): TreeItem {
         const getPattern = (source: ValidAttributeSource | undefined) => {
             if (typeof source === 'undefined') {
                 return undefined;
@@ -283,7 +283,7 @@ class TreeDataProvider implements vscode.TreeDataProvider<TreeItem> {
         };
 
         return new TreeItem(
-            dataset.name,
+            type,
             'database',
             [
                 new TreeItem(

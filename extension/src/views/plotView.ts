@@ -44,7 +44,7 @@ export class PlotViewManager {
 			{ retainContextWhenHidden: true, ...config.getDefaultWebviewOptions() }
 		);
 	
-		panel.iconPath = vscode.Uri.file(path.join(config.GlobalStorageContext.webRoot, '..', 'resources/eye_tracking_24dp_5F6368_FILL0_wght300_GRAD0_opsz24.svg'));
+		panel.iconPath = vscode.Uri.file(path.join(config.GlobalStorageContext.resourceRoot, 'eye_tracking_24dp_5F6368_FILL0_wght300_GRAD0_opsz24.svg'));
 	
 		if (config.isDev) {
 			panel.webview.html = getLiveWebviewHtml(panel.webview, config.editorWebviewPort, true);

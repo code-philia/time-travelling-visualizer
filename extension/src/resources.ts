@@ -13,6 +13,6 @@ export function getIconUri(iconName: string): vscode.Uri {
     if (relativeIconPath === undefined) {
         throw new Error(`Icon name ${iconName} not found`);
     }
-    const resourceRootUri = vscode.Uri.file(config.GlobalStorageContext.resouceRoot);
+    const resourceRootUri = vscode.Uri.file(config.GlobalStorageContext.resourceRoot);
     return vscode.Uri.joinPath(resourceRootUri, relativeIconPath);
 }

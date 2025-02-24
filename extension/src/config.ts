@@ -6,14 +6,14 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 
-export let isDev = true;
+export let isDev = false;
 export const editorWebviewPort = 5001;
 export const controlWebviewPort = 5002;
 export const metadataWebviewPort = 5003;
 
 export class GlobalStorageContext {
 	private static extensionLocation: string = __dirname;
-	private static readonly webRootRelativePath = 'web/';
+	private static readonly webRootRelativePath = '../web/dist/';
 	private static readonly resourceRootRelativePath = 'resources/';
 	
 	private constructor() { }
@@ -22,7 +22,7 @@ export class GlobalStorageContext {
 		return path.join(this.extensionLocation, this.webRootRelativePath);
 	}
 
-	static get resouceRoot(): string {
+	static get resourceRoot(): string {
 		return path.join(this.extensionLocation, this.resourceRootRelativePath);
 	}
 
