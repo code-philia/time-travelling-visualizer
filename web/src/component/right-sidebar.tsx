@@ -201,22 +201,6 @@ export function RightSidebar() {
     }, [allEpochsProjectionData, epoch, highlightContext, labelDict, textData]);
 
 
-    // Filter
-    const { filterType, setFilterType, filterValue, setFilterValue, filterState, setFilterState }
-        = useDefaultStore(["filterType", "setFilterType", "filterValue", "setFilterValue", "filterState", "setFilterState"]);
-
-    const handleStartFilter = () => {
-        if (filterValue === '') {
-            return;
-        }
-        setFilterState(true);
-    };
-
-    const handleClearFilter = () => {
-        setFilterState(false);
-        setFilterValue('');
-    };
-
     return (
         <div className="info-column">
             <FunctionalBlock label="Search">
@@ -325,46 +309,6 @@ export function RightSidebar() {
                         }
                     </div>
                 </ComponentBlock>
-            </FunctionalBlock>
-            <Divider />
-
-            <FunctionalBlock label="Filter">
-                <div className="filter-options" style={{ margin: '0.5rem 0 0 0' }}>
-                    <label>
-                        <input
-                            type="radio"
-                            value="label"
-                            checked={filterType === 'label'}
-                            onChange={() => setFilterType('label')}
-                        />
-                        Label
-                    </label>
-                    <label>
-                        <input
-                            type="radio"
-                            value="prediction"
-                            checked={filterType === 'prediction'}
-                            onChange={() => setFilterType('prediction')}
-                        />
-                        Prediction
-                    </label>
-                </div>
-                <Input
-                    style={{ margin: '0.5rem 0 0 0' }}
-                    placeholder={`Enter ${filterType}`}
-                    value={filterValue}
-                    onChange={(e) => setFilterValue(e.target.value)}
-                />
-                <div className="filter-buttons">
-                    <Button className="input-button" color="primary" variant="solid" style={{ width: '40%', padding: '0.5rem 1rem', margin: '0.5rem 0.4rem' }}
-                        onClick={handleStartFilter}>
-                        Start Filter
-                    </Button>
-                    <Button className="input-button" color="primary" variant="solid" style={{ width: '40%', padding: '0.5rem 1rem', margin: '0.5rem 0.4rem' }}
-                        onClick={handleClearFilter}>
-                        Clear Filter
-                    </Button>
-                </div>
             </FunctionalBlock>
             <Divider />
         </div>
