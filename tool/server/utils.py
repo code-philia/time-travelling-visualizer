@@ -299,10 +299,12 @@ def compute_pixel_position(width, height, scale, pixel_size=1):
 
 def compute_pixel_color(content_path, vis_method, pixel_position):
     # define and load visualize model
-    device = torch.device("cuda:{}".format(2) if torch.cuda.is_available() else "cpu")
-    # TODO read from config file
-    ENCODER_DIMS = [512,256,256,256,256,2]
-    DECODER_DIMS = [2,256,256,256,256,512]
+    device = torch.device("cuda:{}".format(3) if torch.cuda.is_available() else "cpu")
+    
+    params = read_file_as_json(os.path.join(content_path, "params.json"))
+    ENCODER_DIMS = params[vis_method]['ENCODER_DIMS']
+    DECODER_DIMS = params[vis_method]['DECODER_DIMS']
+    
     vis_model = VisModel(ENCODER_DIMS, DECODER_DIMS).to(device)
     vis_model_location = os.path.join(content_path, "visualize", vis_method, "model", f"{vis_method}.pth")
     save_model = torch.load(vis_model_location, map_location="cpu")
@@ -318,8 +320,8 @@ def compute_pixel_color(content_path, vis_method, pixel_position):
     sys.path.append(content_path)
     import model as subject_model
     
-    # TODO read from config file
-    model = eval("subject_model.{}()".format("ResNet34"))
+    config = read_file_as_json(os.path.join(content_path, "config.json"))
+    model = eval("subject_model.{}()".format(config['dataset']['net']))
     
     # state dict of subject model
     subject_model_location = os.path.join(content_path, "model", "subject_model.pth")
@@ -357,7 +359,7 @@ def get_decision_view(mesh_preds):
     color_rgb = (color * 255).astype(np.uint8)
     return color_rgb
 
-def batch_run(model, data, desc = "batch_run", batch_size=1024):
+def batch_run(model, data, desc = "batch_run", batch_size=512):
     """batch run, in case memory error"""
     data = data.to(dtype=torch.float)
     output = None
