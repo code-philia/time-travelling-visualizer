@@ -299,9 +299,9 @@ def compute_pixel_position(width, height, scale, pixel_size=1):
 
 def compute_pixel_color(content_path, vis_method, pixel_position):
     # define and load visualize model
-    device = torch.device("cuda:{}".format(3) if torch.cuda.is_available() else "cpu")
+    device = torch.device("cpu")
     
-    params = read_file_as_json(os.path.join(content_path, "params.json"))
+    params = get_training_parameters()
     ENCODER_DIMS = params[vis_method]['ENCODER_DIMS']
     DECODER_DIMS = params[vis_method]['DECODER_DIMS']
     
@@ -379,3 +379,12 @@ def batch_run(model, data, desc = "batch_run", batch_size=512):
 def read_file_as_json(file_path: str):
     with open(file_path, "r") as f:
         return json.load(f)
+    
+
+def get_training_parameters():
+    server_path = os.path.dirname(os.path.realpath(__file__))
+    tool_path = os.path.dirname(server_path)
+    project_path = os.path.dirname(tool_path)
+    params_path = os.path.join(project_path, "visualize","params.json")
+    params = read_file_as_json(params_path)
+    return params
