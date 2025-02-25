@@ -97,8 +97,8 @@ def update_projection():
 
     result = jsonify({
         'config': config,
-        'proj': projection[:min(5000,len(projection))],
-        'labels': label_list[:min(5000,len(label_list))],
+        'proj': projection,
+        'labels': label_list,
         'scale': scale
     })
     return make_response(result, 200)
