@@ -5,8 +5,8 @@ import { useDefaultStore } from "./store";
 
 // Set up the training process
 export function useSetUpTrainingProcess() {
-    const { contentPath, visMethod, backendHost, setAvailableEpochs, setTextData, setEpoch, setHighlightContext, setColorDict, setLabelDict, setProgress } =
-        useDefaultStore(['contentPath', 'visMethod', 'backendHost', 'setAvailableEpochs', 'setTextData', 'setEpoch', 'setHighlightContext', 'setColorDict', 'setLabelDict', 'setProgress']);
+    const { contentPath, visMethod, backendHost, taskType, setTaskType, setAvailableEpochs, setTextData, setEpoch, setHighlightContext, setColorDict, setLabelDict, setProgress } =
+        useDefaultStore(['contentPath', 'visMethod', 'backendHost', 'taskType', 'setTaskType', 'setAvailableEpochs', 'setTextData', 'setEpoch', 'setHighlightContext', 'setColorDict', 'setLabelDict', 'setProgress']);
 
     const {
         allEpochsProjectionData, setAllEpochsProjectionData,
@@ -44,6 +44,9 @@ export function useSetUpTrainingProcess() {
             host: backendHost
         });
 
+        const config = res1['config'];
+        setTaskType(config['dataset']['taskType']);
+
         const colorDict = new Map<number, [number, number, number]>();
         res1['color_list'].forEach((c: number[], i: number) => {
             colorDict.set(i, [c[0], c[1], c[2]]);
@@ -75,6 +78,7 @@ export function useSetUpTrainingProcess() {
                 contentPath,
                 visMethod,
                 backendHost,
+                config['dataset']['taskType'],
                 allEpochsProjectionDataCopy,
                 allBackgroundCopy,
                 allNeighborSameTypeCopy,
@@ -91,7 +95,7 @@ export function useSetUpTrainingProcess() {
             setProgress(loadedEpochs.length);
         }
 
-    }, [backendHost, contentPath, visMethod, setAvailableEpochs, setTextData, setEpoch, setProgress]);
+    }, [backendHost, contentPath, visMethod, taskType, setAvailableEpochs, setTextData, setEpoch, setProgress]);
 
     return setUpTrainingProcess;
 }
@@ -99,7 +103,7 @@ export function useSetUpTrainingProcess() {
 // Set up certain epoch of the training process
 export function useSetUpProjection() {
     // TODO avoid writing attribute twice
-    const { contentPath, allEpochsProjectionData, setAllEpochsProjectionData, allBackground, setAllBackground, backendHost, visMethod,
+    const { contentPath, allEpochsProjectionData, setAllEpochsProjectionData, allBackground, setAllBackground, backendHost, visMethod, taskType,
         setHighlightContext, setTextData, allNeighborSameType, setAllNeighborSameType, allNeighborCrossType, setAllNeighborCrossType, allPredictionProps, setAllPredictionProps }
         = useDefaultStore([
             'contentPath',
@@ -109,6 +113,7 @@ export function useSetUpProjection() {
             'setAllBackground',
             'backendHost',
             'visMethod',
+            'taskType',
             'setHighlightContext',
             'setTextData',
             'setAvailableEpochs',
@@ -140,10 +145,9 @@ export function useSetUpProjection() {
             // part 1: process projection data
             const allEpochsProjectionDataCopy = { ...allEpochsProjectionData };
             allEpochsProjectionDataCopy[epoch] = res; // the latest epoch may have been updated in UI, but not yet in store
-            const config = res.config;
 
             // part 2: relationship between points
-            if (config.dataset.taskType == 'Umap-Neighborhood') {
+            if (taskType == 'Umap-Neighborhood') {
                 const allNeighborSameTypeCopy = { ...allNeighborSameType };
                 const allNeighborCrossTypeCopy = { ...allNeighborCrossType };
 
@@ -180,7 +184,7 @@ export function useSetUpProjection() {
             // part 3: for classification task, acquire prediction and background
             const allBackgroundCopy = { ...allBackground };
             const allPredictionPropsCopy = { ...allPredictionProps };
-            if (config.dataset.taskType == 'classification') {
+            if (taskType == 'classification') {
                 const predRes = await getAttributeResource(contentPath, epoch, 'prediction', {
                     host: backendHost
                 });
@@ -231,6 +235,7 @@ export async function preLoadEpochProjection(
     contentPath: string,
     visMethod: string,
     backendHost: string,
+    taskType: string,
     allEpochsProjectionDataCopy: Record<number, BriefProjectionResult>,
     allBackgroundCopy: Record<number, string>,
     allNeighborSameTypeCopy: Record<number, number[][]>,
@@ -259,10 +264,9 @@ export async function preLoadEpochProjection(
     if (res) {
         // part 1: process projection data
         allEpochsProjectionDataCopy[epoch] = res; // the latest epoch may have been updated in UI, but not yet in store
-        const config = res.config;
 
         // part 2: relationship between points
-        if (config.dataset.taskType == 'Umap-Neighborhood') {
+        if (taskType == 'Umap-Neighborhood') {
             const sameTypeNeighbor = await getAttributeResource(contentPath, epoch, 'intra_similarity', {
                 host: backendHost
             });
@@ -294,7 +298,7 @@ export async function preLoadEpochProjection(
         }
 
         // part 3: for classification task, acquire prediction and background
-        if (config.dataset.taskType == 'classification') {
+        if (taskType == 'classification') {
             const predRes = await getAttributeResource(contentPath, epoch, 'prediction', {
                 host: backendHost
             });

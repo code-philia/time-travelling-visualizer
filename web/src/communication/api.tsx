@@ -15,12 +15,6 @@ export interface ProjectionAttribute {
 }
 
 export interface BriefProjectionResult {
-    config: {
-        dataset: {
-            taskType: string,
-            attributes?: { [keys: string]: ProjectionAttribute }
-        }
-    }
     proj: number[][];
     labels: string[];
     scale: number[];

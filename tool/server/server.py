@@ -64,6 +64,7 @@ def get_training_process_info():
     label_text_list = config['dataset']['classes']
     
     result = jsonify({
+        'config': config,
         'color_list': color_list,
         'label_text_list': label_text_list,
     })
@@ -96,7 +97,6 @@ def update_projection():
     projection, label_list, scale = load_projection(config, content_path, vis_method, epoch)
 
     result = jsonify({
-        'config': config,
         'proj': projection,
         'labels': label_list,
         'scale': scale
