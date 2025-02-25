@@ -176,9 +176,17 @@ export function RightSidebar() {
     // TODO do not directly access result here
     const { highlightContext, epoch, allEpochsProjectionData } = useDefaultStore(["highlightContext", "epoch", "allEpochsProjectionData"]);
     const [selectedItems, setSelectedItems] = useState<SampleTag[]>([]);
+    const [sid, setSid] = useState(-1);
+    const [eid, setEid] = useState(-1);
+    const { setStartIndex, setEndIndex } = useDefaultStore(["setStartIndex", "setEndIndex"]);
 
     const handleClose = (item: SampleTag) => {
         highlightContext.removeLocked(item.num);
+    };
+
+    const handleFilter = () => {
+        setStartIndex(sid);
+        setEndIndex(eid);
     };
 
     useEffect(() => {
@@ -203,6 +211,40 @@ export function RightSidebar() {
 
     return (
         <div className="info-column">
+            <FunctionalBlock label="Filter">
+                <ComponentBlock>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Input
+                            placeholder="Start"
+                            value={sid === -1 ? '' : sid}
+                            onChange={(e) => setSid(e.target.value ? parseInt(e.target.value) : -1)}
+                            style={{ flex: 1, maxWidth: '100px' }}
+                        />
+                        <span style={{ color: '#888', fontSize: '14px' }}>—</span>
+                        <Input
+                            placeholder="End"
+                            value={eid === -1 ? '' : eid}
+                            onChange={(e) => setEid(e.target.value ? parseInt(e.target.value) : -1)}
+                            style={{ flex: 1, maxWidth: '100px' }}
+                        />
+                        <Button
+                            type="primary"
+                            onClick={handleFilter}
+                            style={{
+                                padding: '0 12px',
+                                height: '30px',
+                                fontSize: '14px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                            }}
+                        >
+                            Go
+                        </Button>
+                    </div>
+                </ComponentBlock>
+            </FunctionalBlock>
+
             <FunctionalBlock label="Search">
                 <AutoComplete
                     style={{ marginTop: '3px' }}

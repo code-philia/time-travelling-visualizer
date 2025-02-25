@@ -15,7 +15,6 @@ export const ChartComponent = memo(() => {
     // data
     const { epoch, allEpochsProjectionData } = useDefaultStore(["epoch", "allEpochsProjectionData"]);
     const { labelDict, colorDict, textData } = useDefaultStore(["labelDict", "colorDict", "textData"]);
-    const { filterValue, filterType } = useDefaultStore(["filterValue", "filterType"]);
     const { allNeighborSameType, allNeighborCrossType } = useDefaultStore(["allNeighborSameType", "allNeighborCrossType"]);
     const { hoveredIndex, setHoveredIndex } = useDefaultStore(["hoveredIndex", "setHoveredIndex"]);
     const { highlightContext, setHighlightContext } = useDefaultStore(["highlightContext", "setHighlightContext"]);
@@ -23,8 +22,8 @@ export const ChartComponent = memo(() => {
 
     // settings
     const { showMetadata, showBgimg } = useDefaultStore(["showMetadata", "showBgimg"]);
-    const { showNumber, showText } = useDefaultStore(["showNumber", "showText"])
-    const { filterState } = useDefaultStore(["filterState"]);
+    const { showNumber, showText } = useDefaultStore(["showNumber", "showText"]);
+    const { startIndex, endIndex } = useDefaultStore(["startIndex", "endIndex"]);
     const { revealNeighborCrossType, revealNeighborSameType } = useDefaultStore(["revealNeighborCrossType", "revealNeighborSameType"]);
 
     // temp data
@@ -38,16 +37,21 @@ export const ChartComponent = memo(() => {
     const colors: [number, number, number][] = [];
     const background = allBackground[epoch] ?? "";
     if (currentEpochData) {
+        let startId = startIndex < 0 ? 0 : Math.min(currentEpochData.proj.length - 1, startIndex);
+        let endId = endIndex < 0 ? currentEpochData.proj.length - 1 : Math.min(currentEpochData.proj.length - 1, endIndex);
+
         const labelsAsNumber = currentEpochData.labels.map((label) => parseInt(label));
         currentEpochData.proj.forEach((point, i) => {
-            positions.push([point[0], point[1]]);
-            labels.push(labelsAsNumber[i]);
-            const color = colorDict.get(labelsAsNumber[i]);
-            if (color === undefined) {
-                colors[i] = ([0, 0, 0]);
-            }
-            else {
-                colors[i] = ([color[0] / 255, color[1] / 255, color[2] / 255]);
+            if (i >= startId && i <= endId) {
+                positions.push([point[0], point[1]]);
+                labels.push(labelsAsNumber[i]);
+                const color = colorDict.get(labelsAsNumber[i]);
+                if (color === undefined) {
+                    colors[i] = ([0, 0, 0]);
+                }
+                else {
+                    colors[i] = ([color[0] / 255, color[1] / 255, color[2] / 255]);
+                }
             }
         });
     }
@@ -116,25 +120,7 @@ export const ChartComponent = memo(() => {
             data: [
                 {
                     id: 'points',
-                    values: samplesRef.current,
-                    transforms: [
-                        {
-                            type: 'filter',
-                            options: {
-                                callback: (datum: { label_desc: string; pred_desc: string; }) => {
-                                    if (filterState) {
-                                        const filterValues = filterValue.split(',').map(value => value.trim());
-                                        if (filterType === 'label') {
-                                            return filterValues.includes(datum.label_desc);
-                                        } else if (filterType === 'prediction') {
-                                            return filterValues.includes(datum.pred_desc);
-                                        }
-                                    }
-                                    return true;
-                                }
-                            }
-                        }
-                    ]
+                    values: samplesRef.current
                 },
                 {
                     id: 'edges',
@@ -598,7 +584,7 @@ export const ChartComponent = memo(() => {
         }
 
         vchartRef.current.renderSync();
-    }, [currentEpochData, filterState, showMetadata, showBgimg, showNumber, showText]);
+    }, [currentEpochData, startIndex, endIndex, showMetadata, showBgimg, showNumber, showText]);
 
 
     /*
