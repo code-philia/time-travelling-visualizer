@@ -16,7 +16,7 @@ export interface ProjectionAttribute {
 
 export interface BriefProjectionResult {
     proj: number[][];
-    labels: string[];
+    labels: number[];
     scale: number[];
 }
 
