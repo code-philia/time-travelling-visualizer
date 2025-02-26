@@ -25,6 +25,18 @@ export interface PointsNeighborRelationship {
     intraNeighbors: number[][];
 }
 
+
+export type DistancePair = {
+    indexA: number;
+    indexB: number;
+    startDistance: number;
+    endDistance: number;
+    distanceDelta: number;
+    labelA: number;
+    labelB: number;
+};
+
+
 // TODO backend not providing color yet, do random generation
 const seed = 12345;
 function seededRandom(seed: number) {

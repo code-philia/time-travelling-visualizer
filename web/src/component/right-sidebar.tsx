@@ -1,7 +1,9 @@
-import { AutoComplete, Divider, Input, List, Tag, RefSelectProps, InputRef, Button } from 'antd';
+import { AutoComplete, Divider, Input, List, Tag, RefSelectProps, InputRef, Button, Tooltip } from 'antd';
 import { useDefaultStore } from '../state/store';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ComponentBlock, FunctionalBlock } from './custom/basic-components';
+import { calculateSignificantPairs, transferArray2Color } from './utils';
+import { DistancePair } from './canvas/types';
 
 type SampleTag = {
     num: number;
@@ -306,7 +308,7 @@ export function RightSidebar() {
             </FunctionalBlock>
             <Divider></Divider>
             <FunctionalBlock label="Categories">
-                <ComponentBlock label="Classes">
+                <ComponentBlock>
                     <div className="class-list">
                         {
                             Array.from(labelDict.keys()).length
@@ -353,6 +355,104 @@ export function RightSidebar() {
                 </ComponentBlock>
             </FunctionalBlock>
             <Divider />
+            <SignificantChangesBlock />
         </div>
     )
 }
+
+
+function SignificantChangesBlock() {
+    const { allEpochsProjectionData, availableEpochs, textData, epoch, colorDict, highlightContext } = useDefaultStore([
+        'allEpochsProjectionData',
+        'availableEpochs',
+        'textData',
+        'epoch',
+        'colorDict',
+        'highlightContext'
+    ]);
+
+    const [significantPairs, setSignificantPairs] = useState<DistancePair[]>([]);
+
+    const handlePairClick = (pair: DistancePair) => {
+        highlightContext.addLocked(pair.indexA);
+        highlightContext.addLocked(pair.indexB);
+        console.log(pair);
+    };
+
+
+    useEffect(() => {
+        if (availableEpochs.length >= 2 && Object.keys(allEpochsProjectionData).length == availableEpochs.length) {
+            const pairs = calculateSignificantPairs(allEpochsProjectionData, availableEpochs);
+            setSignificantPairs(pairs.slice(0, 20));
+        }
+    }, [allEpochsProjectionData, epoch]);
+
+    const renderPairItem = (pair: DistancePair) => {
+        const getDeltaStyle = (delta: number) => ({
+            color: delta < 0 ? '#52c41a' : '#ff4d4f',
+            fontWeight: 500
+        });
+
+        return (
+            <List.Item
+                className="significant-pair-item"
+                onClick={() => handlePairClick(pair)}
+            >
+                <div className="pair-content">
+                    <div className="pair-text">
+                        <div>
+                            <span
+                                className="label-dot"
+                                style={{ backgroundColor: transferArray2Color(colorDict.get(pair.labelA)) }}
+                            />
+                            <Tooltip title={textData[pair.indexA]}>
+                                <span className="text-snippet">
+                                    {textData[pair.indexA]?.slice(0, 30)}
+                                </span>
+                            </Tooltip>
+                        </div>
+                        <div>
+                            <span
+                                className="label-dot"
+                                style={{ backgroundColor: transferArray2Color(colorDict.get(pair.labelB)) }}
+                            />
+                            <Tooltip title={textData[pair.indexB]}>
+                                <span className="text-snippet">
+                                    {textData[pair.indexB]?.slice(0, 30)}
+                                </span>
+                            </Tooltip>
+                        </div>
+                    </div>
+                    <div className="pair-stats">
+                        <span style={getDeltaStyle(pair.distanceDelta)}>
+                            {pair.distanceDelta.toFixed(2)}
+                            {pair.distanceDelta < 0 ? ' ↓' : ' ↑'}
+                        </span>
+                        <div className="secondary-text">
+                            {pair.startDistance.toFixed(2)} → {pair.endDistance.toFixed(2)}
+                        </div>
+                    </div>
+                </div>
+            </List.Item>
+        );
+    };
+
+    return (
+        <FunctionalBlock label="Significant Changes">
+            <ComponentBlock>
+                <div
+                    className="significant-changes-container"
+                    style={{ maxHeight: '400px', overflowY: 'auto' }}
+                >
+                    <List
+                        size="small"
+                        bordered={false}
+                        dataSource={significantPairs}
+                        renderItem={renderPairItem}
+                        locale={{ emptyText: 'No significant changes detected' }}
+                    />
+                </div>
+            </ComponentBlock>
+        </FunctionalBlock>
+    );
+};
