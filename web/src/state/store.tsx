@@ -97,6 +97,7 @@ type BaseMutableGlobalStore = {
 
     // hovered
     hoveredIndex: number,
+    updateHighlightSig: boolean,
 
     progress: number
 }
@@ -144,6 +145,7 @@ const initMutableGlobalStore: BaseMutableGlobalStore = {
 
     // hovered
     hoveredIndex: -1,
+    updateHighlightSig: false,
 
     progress: 0
 };

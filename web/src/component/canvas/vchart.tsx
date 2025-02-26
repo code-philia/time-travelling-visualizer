@@ -3,7 +3,7 @@ import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import VChart from '@visactor/vchart';
 import { Edge } from './types';
 import { useDefaultStore } from "../../state/store";
-import { createEdges, softmax } from './utils';
+import { createEdges, softmax } from '../utils';
 import { BriefProjectionResult } from '../../communication/api';
 const CANVAS_HEIGHT = 600;
 const CANVAS_WIDTH = 800;
@@ -25,6 +25,7 @@ export const ChartComponent = memo(() => {
     const { showNumber, showText } = useDefaultStore(["showNumber", "showText"]);
     const { startIndex, endIndex } = useDefaultStore(["startIndex", "endIndex"]);
     const { revealNeighborCrossType, revealNeighborSameType } = useDefaultStore(["revealNeighborCrossType", "revealNeighborSameType"]);
+    const { updateHighlightSig } = useDefaultStore(["updateHighlightSig"]);
 
     // temp data
     const samplesRef = useRef<{ pointId: number, x: number; y: number; label: number; pred: number; label_desc: string; pred_desc: string; confidence: number; textSample: string }[]>([]);
@@ -39,13 +40,11 @@ export const ChartComponent = memo(() => {
     if (currentEpochData) {
         let startId = startIndex < 0 ? 0 : Math.min(currentEpochData.proj.length - 1, startIndex);
         let endId = endIndex < 0 ? currentEpochData.proj.length - 1 : Math.min(currentEpochData.proj.length - 1, endIndex);
-
-        const labelsAsNumber = currentEpochData.labels.map((label) => parseInt(label));
         currentEpochData.proj.forEach((point, i) => {
             if (i >= startId && i <= endId) {
                 positions.push([point[0], point[1]]);
-                labels.push(labelsAsNumber[i]);
-                const color = colorDict.get(labelsAsNumber[i]);
+                labels.push(currentEpochData.labels[i]);
+                const color = colorDict.get(currentEpochData.labels[i]);
                 if (color === undefined) {
                     colors[i] = ([0, 0, 0]);
                 }
@@ -577,6 +576,7 @@ export const ChartComponent = memo(() => {
                 } else {
                     highlightContext.addLocked(e.datum?.pointId);
                 }
+                setHighlightContext(highlightContext);
             });
         }
         else {
@@ -595,7 +595,7 @@ export const ChartComponent = memo(() => {
             return;
         }
         updateHighlight();
-    }, [highlightContext, hoveredIndex, currentEpochData]);
+    }, [highlightContext, updateHighlightSig, hoveredIndex, currentEpochData]);
 
     function updateHighlight() {
         if (highlightContext.lockedIndices.size === 0 && hoveredIndex === -1) {
@@ -659,7 +659,7 @@ export const ChartComponent = memo(() => {
         });
         vchartRef.current?.updateDataSync('edges', endpoints);
 
-    }, [revealNeighborCrossType, revealNeighborSameType, hoveredIndex, highlightContext, currentEpochData]);
+    }, [revealNeighborCrossType, revealNeighborSameType, hoveredIndex, highlightContext, updateHighlightSig, currentEpochData]);
 
     return <div
         ref={chartRef}

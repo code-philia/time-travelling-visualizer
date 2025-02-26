@@ -89,6 +89,7 @@ export function RightSidebar() {
     // NOTE always add state as middle dependency
     const [searchValue, setSearchValue] = useState('');
     const { textData: searchFromOptions } = useDefaultStore(['textData']);
+    let { updateHighlightSig, setUpdateHighlightSig } = useDefaultStore(["updateHighlightSig", "setUpdateHighlightSig"]);
 
     const limitOfHistory = 5;
     const [searchHistory, setSearchHistory] = useState<string[]>([]);
@@ -161,7 +162,7 @@ export function RightSidebar() {
         return (
             <List.Item
                 className={"search-result-sample" + (highlightContext.checkLocked(item.num) ? ' locked' : '')}
-                onClick={() => { highlightContext.switchLocked(item.num) }}
+                onClick={() => { highlightContext.switchLocked(item.num); updateHighlightSig = !updateHighlightSig; setUpdateHighlightSig(updateHighlightSig); }}
             >
                 <div className="search-result-sample-field">
                     <span className="field-tag tag-1">index</span>
@@ -184,6 +185,8 @@ export function RightSidebar() {
 
     const handleClose = (item: SampleTag) => {
         highlightContext.removeLocked(item.num);
+        updateHighlightSig = !updateHighlightSig;
+        setUpdateHighlightSig(updateHighlightSig);
     };
 
     const handleFilter = () => {
@@ -370,13 +373,18 @@ function SignificantChangesBlock() {
         'colorDict',
         'highlightContext'
     ]);
+    let { updateHighlightSig, setUpdateHighlightSig } = useDefaultStore([
+        'updateHighlightSig',
+        'setUpdateHighlightSig'
+    ]);
 
     const [significantPairs, setSignificantPairs] = useState<DistancePair[]>([]);
 
     const handlePairClick = (pair: DistancePair) => {
         highlightContext.addLocked(pair.indexA);
         highlightContext.addLocked(pair.indexB);
-        console.log(pair);
+        updateHighlightSig = !updateHighlightSig;
+        setUpdateHighlightSig(updateHighlightSig);
     };
 
 
