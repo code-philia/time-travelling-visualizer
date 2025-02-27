@@ -211,21 +211,23 @@ export function useSetUpProjection() {
 
 export function useSwitchEpoch() {
     // TODO avoid writing attribute twice
-    const { allEpochsProjectionData, setEpoch } = useDefaultStore([
+    const { allEpochsProjectionData, epoch, setEpoch, taskType } = useDefaultStore([
         'allEpochsProjectionData',
-        'setEpoch'
+        'epoch',
+        'setEpoch',
+        'taskType'
     ]);
 
-    const switchEpoch = useCallback(async (epoch: number) => {
+    const switchEpoch = useCallback(async (curEpoch: number, newEpoch: number) => {
         // already loaded
-        if (allEpochsProjectionData[epoch]) {
-            setEpoch(epoch);
+        if (allEpochsProjectionData[newEpoch]) {
+            setEpoch(newEpoch);
         }
         else {
             // TODO: force load or ignore?
             return;
         }
-    }, [allEpochsProjectionData]);
+    }, [allEpochsProjectionData, epoch, setEpoch, taskType]);
 
     return switchEpoch;
 }

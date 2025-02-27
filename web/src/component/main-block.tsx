@@ -6,7 +6,7 @@ import { BriefProjectionResult } from '../communication/api';
 import { useSetUpProjection, useSwitchEpoch } from '../state/state-actions';
 import ChartComponent from './canvas/vchart';
 
-function Timeline({ epoch, epochs, progress, onSwitchEpoch }: { epoch: number, epochs: number[], progress: number, onSwitchEpoch: (epoch: number) => void }) {
+function Timeline({ epoch, epochs, progress, onSwitchEpoch }: { epoch: number, epochs: number[], progress: number, onSwitchEpoch: (curEpoch: number, newEpoch: number) => void }) {
     const [isPlaying, setIsPlaying] = useState(false);
     const intervalRef = useRef<any | null>(null);
     const currentEpochIndexRef = useRef<number>(epochs.indexOf(epoch));
@@ -15,7 +15,7 @@ function Timeline({ epoch, epochs, progress, onSwitchEpoch }: { epoch: number, e
     // Set the initial epoch from the passed epochs array
     useEffect(() => {
         if (epochs.length > 0) {
-            onSwitchEpoch(epochs[0]);
+            onSwitchEpoch(epochs[0], epochs[0]);
             currentEpochIndexRef.current = 0;
         }
     }, [epochs]);
@@ -74,7 +74,7 @@ function Timeline({ epoch, epochs, progress, onSwitchEpoch }: { epoch: number, e
                     }
                     setIsPlaying(false);
                 } else {
-                    onSwitchEpoch(epochs[nextIndex]);
+                    onSwitchEpoch(epochs[currentEpochIndexRef.current], epochs[nextIndex]);
                     currentEpochIndexRef.current = nextIndex;
                 }
             }, 1000);
@@ -139,7 +139,7 @@ function Timeline({ epoch, epochs, progress, onSwitchEpoch }: { epoch: number, e
                                         transition: 'all 0.5s ease-in-out',
                                         cursor: 'pointer'
                                     }}
-                                    onClick={() => onSwitchEpoch(node.value)}
+                                    onClick={() => onSwitchEpoch(epochs[currentEpochIndexRef.current], node.value)}
                                 />
                                 <text
                                     x="0"
@@ -209,8 +209,8 @@ export function MainBlock() {
             <div id="footer">
                 <div className="functional-block-title">Epochs</div>
                 <div style={{ overflow: "auto" }}>
-                    <Timeline epoch={epoch} epochs={availableEpochs} progress={progress} onSwitchEpoch={(epoch) => {
-                        switchEpoch(epoch);
+                    <Timeline epoch={epoch} epochs={availableEpochs} progress={progress} onSwitchEpoch={(curEpoch, newEpoch) => {
+                        switchEpoch(curEpoch, newEpoch);
                         // setUpProjections(epoch).then(
                         //     () => setEpoch(epoch)
                         // );
