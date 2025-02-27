@@ -25,7 +25,7 @@ export const ChartComponent = memo(() => {
     const { showNumber, showText } = useDefaultStore(["showNumber", "showText"]);
     const { startIndex, endIndex } = useDefaultStore(["startIndex", "endIndex"]);
     const { revealNeighborCrossType, revealNeighborSameType } = useDefaultStore(["revealNeighborCrossType", "revealNeighborSameType"]);
-    const { updateHighlightSig } = useDefaultStore(["updateHighlightSig"]);
+    let { updateHighlightSig, setUpdateHighlightSig } = useDefaultStore(["updateHighlightSig", "setUpdateHighlightSig"]);
 
     // temp data
     const samplesRef = useRef<{ pointId: number, x: number; y: number; label: number; pred: number; label_desc: string; pred_desc: string; confidence: number; textSample: string }[]>([]);
@@ -240,8 +240,8 @@ export const ChartComponent = memo(() => {
                                 fillOpacity: 0.5
                             },
                             locked: {
-                                scaleX: 2,
-                                scaleY: 2,
+                                scaleX: 2.5,
+                                scaleY: 2.5,
                                 fillOpacity: 1
                             }
                         },
@@ -568,7 +568,6 @@ export const ChartComponent = memo(() => {
                 setHoveredIndex(-1);
             });
 
-            // TODO handle click event to lock
             vchartRef.current.on('click', { id: 'point-series' }, e => {
                 console.log('Clicked: ', e.datum?.pointId);
                 if (highlightContext.lockedIndices.has(e.datum?.pointId)) {
@@ -577,6 +576,8 @@ export const ChartComponent = memo(() => {
                     highlightContext.addLocked(e.datum?.pointId);
                 }
                 setHighlightContext(highlightContext);
+                updateHighlightSig = !updateHighlightSig;
+                setUpdateHighlightSig(updateHighlightSig);
             });
         }
         else {
@@ -584,7 +585,7 @@ export const ChartComponent = memo(() => {
         }
 
         vchartRef.current.renderSync();
-    }, [currentEpochData, startIndex, endIndex, showMetadata, showBgimg, showNumber, showText]);
+    }, [currentEpochData, startIndex, endIndex, showMetadata, showBgimg, showNumber, showText, colorDict]);
 
 
     /*
@@ -659,7 +660,7 @@ export const ChartComponent = memo(() => {
         });
         vchartRef.current?.updateDataSync('edges', endpoints);
 
-    }, [revealNeighborCrossType, revealNeighborSameType, hoveredIndex, highlightContext, updateHighlightSig, currentEpochData]);
+    }, [revealNeighborCrossType, revealNeighborSameType, hoveredIndex, highlightContext, distancePairs, updateHighlightSig, currentEpochData]);
 
     return <div
         ref={chartRef}

@@ -471,6 +471,15 @@ input[type="color"] {
   border-color: #d9d9d9;
 }
 
+.significant-pair-item.selected {
+  background-color: #f0f5ff;
+  border-color: #91caff;
+}
+
+.significant-pair-item.selected:hover {
+  background-color: #e6f7ff;
+}
+
 .pair-header {
   display: flex;
   align-items: center;
