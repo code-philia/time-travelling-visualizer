@@ -2,7 +2,7 @@ import { AutoComplete, Divider, Input, List, Tag, RefSelectProps, InputRef, Butt
 import { useDefaultStore } from '../state/store';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ComponentBlock, FunctionalBlock } from './custom/basic-components';
-import { calculateSignificantPairs, transferArray2Color } from './utils';
+import { calculateSignificantPairsGlobal, transferArray2Color } from './utils';
 import { DistancePair } from './canvas/types';
 
 type SampleTag = {
@@ -365,7 +365,8 @@ export function RightSidebar() {
 
 
 function SignificantChangesBlock() {
-    const { allEpochsProjectionData, availableEpochs, textData, epoch, colorDict, highlightContext } = useDefaultStore([
+    const { taskType, allEpochsProjectionData, availableEpochs, textData, epoch, colorDict, highlightContext } = useDefaultStore([
+        'taskType',
         'allEpochsProjectionData',
         'availableEpochs',
         'textData',
@@ -387,23 +388,26 @@ function SignificantChangesBlock() {
         setUpdateHighlightSig(updateHighlightSig);
     };
 
-
     useEffect(() => {
-        if (availableEpochs.length >= 2 && Object.keys(allEpochsProjectionData).length == availableEpochs.length) {
-            const pairs = calculateSignificantPairs(allEpochsProjectionData, availableEpochs);
-            setSignificantPairs(pairs.slice(0, 20));
+        if (taskType !== 'Umap-Neighborhood') {
+            return;
         }
-    }, [allEpochsProjectionData, epoch]);
+        if (availableEpochs.length >= 2 && Object.keys(allEpochsProjectionData).length == availableEpochs.length) {
+            const pairs = calculateSignificantPairsGlobal(allEpochsProjectionData, availableEpochs);
+            setSignificantPairs(pairs);
+        }
+    }, [allEpochsProjectionData, epoch, taskType]);
 
     const renderPairItem = (pair: DistancePair) => {
         const getDeltaStyle = (delta: number) => ({
             color: delta < 0 ? '#52c41a' : '#ff4d4f',
             fontWeight: 500
         });
+        const isSelected = (highlightContext.checkLocked(pair.indexA) && highlightContext.checkLocked(pair.indexB));
 
         return (
             <List.Item
-                className="significant-pair-item"
+                className={`significant-pair-item ${isSelected ? 'selected' : ''}`}
                 onClick={() => handlePairClick(pair)}
             >
                 <div className="pair-content">

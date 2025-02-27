@@ -78,27 +78,44 @@ export function createEdges(
 }
 
 
-export function calculateSignificantPairs(allEpochsProjectionData: Record<number, BriefProjectionResult>, availableEpochs: number[], threshold = 0.3) {
+export function calculateSignificantPairsGlobal(allEpochsProjectionData: Record<number, BriefProjectionResult>, availableEpochs: number[]) {
     if (availableEpochs.length < 2 || Object.keys(allEpochsProjectionData).length < availableEpochs.length) {
         return [];
     }
+    return calculateSignificantPairs(allEpochsProjectionData, availableEpochs[0], availableEpochs[availableEpochs.length - 1]);
+};
 
-    const firstEpoch = allEpochsProjectionData[availableEpochs[0]];
-    const lastEpoch = allEpochsProjectionData[availableEpochs[availableEpochs.length - 1]];
+export function calculateSignificantPairs(
+    allEpochsProjectionData: Record<number, BriefProjectionResult>,
+    from: number,
+    to: number,
+    thresholdClose = 0.3,
+    thresholdAway = 2
+) {
+    const firstEpoch = allEpochsProjectionData[from];
+    const lastEpoch = allEpochsProjectionData[to];
     const pairs: DistancePair[] = [];
 
-    for (let i = 0; i < firstEpoch.labels.length; i++) {
-        if (firstEpoch.labels[i] === 1) continue;
+    const span = 1 + (Math.abs(to - from) / Object.keys(allEpochsProjectionData).length);
 
-        for (let j = 0; j < firstEpoch.labels.length; j++) {
+    for (let i = 0; i < firstEpoch.labels.length; i++) {
+        for (let j = i + 1; j < firstEpoch.labels.length; j++) {
             if (i === j) continue;
-            if (firstEpoch.labels[i] === firstEpoch.labels[j]) continue;
 
             const startDist = euclideanDistance(firstEpoch.proj[i], firstEpoch.proj[j]);
             const endDist = euclideanDistance(lastEpoch.proj[i], lastEpoch.proj[j]);
             const delta = endDist - startDist;
 
-            if (Math.abs(delta) > threshold * startDist) {
+            const relativeDelta = delta / startDist;
+
+            let threshold;
+            if (delta < 0) {
+                threshold = thresholdClose * span;
+            } else {
+                threshold = thresholdAway * span;
+            }
+
+            if (Math.abs(relativeDelta) > threshold) {
                 pairs.push({
                     indexA: i,
                     indexB: j,
