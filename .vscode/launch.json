@@ -7,7 +7,7 @@
         {
             "type": "chrome",
             "request": "launch",
-            "name": "Launch Visualizer Web",
+            "name": "Launch Visualizer Debug Browser",
             "url": "http://localhost:5173",
             "webRoot": "${workspaceFolder}/web"
         },
