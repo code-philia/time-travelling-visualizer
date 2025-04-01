@@ -21,12 +21,6 @@
             "cwd": "${workspaceFolder}/tool/server"
         },
         {
-            "type": "starlark",
-            "request": "launch",
-            "name": "Build Example (Debug)",
-            "targetLabel": "bazel run :standalone"
-        },
-        {
             "name": "Run Extension",
             "type": "extensionHost",
             "request": "launch",
