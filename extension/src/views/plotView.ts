@@ -22,14 +22,14 @@ function replaceUri(html: string, webview: vscode.Webview, srcPattern: string, d
 	return cssFormattedHtml;
 }
 
-function loadHomePage(webview: vscode.Webview, root: string, mapSrc: string, mapDst: string): string {
+export function loadHomePage(webview: vscode.Webview, root: string, mapSrc: string, mapDst: string): string {
 	const html = readFileSync(root, 'utf8');
 	return replaceUri(html, webview, mapSrc, mapDst);
 }
 
 export class PlotViewManager {
 	static panel?: vscode.WebviewPanel;
-	
+
 	static get view(): vscode.Webview | undefined {
 		return this.panel?.webview;
 	}
@@ -43,31 +43,45 @@ export class PlotViewManager {
 			vscode.ViewColumn.One,
 			{ retainContextWhenHidden: true, ...config.getDefaultWebviewOptions() }
 		);
-	
+
 		panel.iconPath = vscode.Uri.file(path.join(config.GlobalStorageContext.resourceRoot, 'eye_tracking_24dp_5F6368_FILL0_wght300_GRAD0_opsz24.svg'));
-	
+
 		if (config.isDev) {
 			panel.webview.html = getLiveWebviewHtml(panel.webview, config.editorWebviewPort, true);
-		} else {
+        } else {
+            /**
+             * The build folder structure is:
+             * - dist (the `GlobalStorageContext.webRoot`)
+             *   - assets
+             *   - configs
+             *     - extension-plot-view
+             *     - extension-panel-view
+             */
 			panel.webview.html = loadHomePage(
 				panel.webview,
-				path.join(config.GlobalStorageContext.webRoot, 'index.html'),
-				'(?!http:\\/\\/|https:\\/\\/)([^"]*\\.[^"]+)',	// remember to double-back-slash here
-				config.GlobalStorageContext.webRoot
+				path.join(config.GlobalStorageContext.webRoot, 'configs', 'extension-plot-view', 'index.html'),
+                '(?!http:\\/\\/|https:\\/\\/)([^"]*\\.[^"]+)',	// remember to double-back-slash here
+                path.join(config.GlobalStorageContext.webRoot)
 			);
 		}
-		
+
 		panel.onDidChangeViewState((e) => {
 			console.log(`Panel view state changed: ${e.webviewPanel.active}`);
 		});
 		panel.onDidDispose((e) => {
 			this.panel = undefined;
 		});
-	
+
 		// TODO the iframe would not be refreshed for not receiving "update" message, which is a handicap for live preview in development
 		// reload the data when the iframe is refreshed, maybe by posting a message to vscode to ask for several major arguments
-		panel.webview.onDidReceiveMessage(handleMessageDefault);
-		
+        panel.webview.onDidReceiveMessage(handleMessageDefault);
+
+        // Setup variables for the first time
+        // panel.webview.postMessage({
+        //     command: 'sync',
+        //     backendHost: 'localhost:5012'
+        // });
+
 		const loaded: Promise<boolean> = new Promise((resolve) => {
 			panel.webview.onDidReceiveMessage((msg) => {		// this will add a listener, not overwriting
 				if (msg.state === 'load') {

@@ -2,7 +2,8 @@ import * as vscode from 'vscode';
 import * as config from '../config';
 import { getLiveWebviewHtml } from '../devLiveServer';
 import { handleMessageDefault } from '../control';
-
+import { loadHomePage } from './plotView';
+import path from 'path';
 
 export class SidebarWebviewViewProvider implements vscode.WebviewViewProvider {
 	private readonly port?: number;
@@ -23,20 +24,26 @@ export class SidebarWebviewViewProvider implements vscode.WebviewViewProvider {
 
 		webviewView.webview.options = config.getDefaultWebviewOptions();
 
-		if (!this.port) {
-			webviewView.webview.html = this.getPlacehoderHtmlForWebview(webviewView.webview);		// FIXME: the static version (for prod) is not updated																					// to be the same as live preview version (for dev) yet
-			return;
-		}
+		// if (!this.port) {
+		// 	webviewView.webview.html = this.getPlaceholderHtmlForWebview(webviewView.webview);		// FIXME: the static version (for prod) is not updated																					// to be the same as live preview version (for dev) yet
+		// 	return;
+		// }
 
-		webviewView.webview.html = getLiveWebviewHtml(webviewView.webview, this.port, false, this.path);
-		webviewView.webview.options = {
-			enableScripts: true,
-		};
+        if (config.isDev) {
+            webviewView.webview.html = getLiveWebviewHtml(webviewView.webview, this.port, false, this.path);
+        } else {
+            webviewView.webview.html = loadHomePage(
+                webviewView.webview,
+                path.join(config.GlobalStorageContext.webRoot, 'configs', 'extension-panel-view', 'index.html'),
+                '(?!http:\\/\\/|https:\\/\\/)([^"]*\\.[^"]+)',	// remember to double-back-slash here
+                path.join(config.GlobalStorageContext.webRoot)
+            );
+        }
 
 		webviewView.webview.onDidReceiveMessage(handleMessageDefault);
 	}
 
-	private getPlacehoderHtmlForWebview(webview: vscode.Webview): string {
+	private getPlaceholderHtmlForWebview(webview: vscode.Webview): string {
 		return `<!DOCTYPE html>
         <html lang="en">
         <head>

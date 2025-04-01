@@ -5,7 +5,7 @@ import * as api from './api';
 import { PlotViewManager } from "./views/plotView";
 import { isDirectory } from './ioUtils';
 import { getIconUri } from './resources';
-import { MetadataViewManager } from './views/metadataView';
+import { MessageViewManager } from './views/metadataView';
 
 async function repickConfig( configDescription: string, items: (vscode.QuickPickItem & { iconId?: string })[]): Promise<string> {
 	const quickPickitems: vscode.QuickPickItem[] = items.map(item => {
@@ -34,7 +34,7 @@ function checkDefaultVisualizationConfig(): api.BasicVisualizationConfig | undef
 	// that can both define the ID and validate the value
 	if (api.Types.VisualizationDataType.has(dataType) &&
 		api.Types.VisualizationTaskType.has(taskType) &&
-		typeof contentPath === 'string' && isDirectory(contentPath) && 
+		typeof contentPath === 'string' && isDirectory(contentPath) &&
 		api.Types.VisualizationMethod.has(visualizationMethod)) {
 		return {
 			dataType: dataType,
@@ -210,10 +210,10 @@ async function notifyVisualizationUpdate(dataType: string, taskType: string, con
 	return await PlotViewManager.postMessage(msg);
 }
 
-class GlobalMessageHandler {
+class GeneralMessageHandler {
 	static handlers: Map<string, (msg: any) => any> = new Map();
 	static defaultHandler: (msg: any) => any = (msg) => {};
-	
+
 	static {
 		this.initGlobalMessageHandlers();
 	}
@@ -229,11 +229,11 @@ class GlobalMessageHandler {
 		});
 		this.addHandler('updateDataPoint', (msg) => {
 			console.log('message: updateDataPoint', msg);
-			if (MetadataViewManager.view) {
+			if (MessageViewManager.view) {
                 msg.command = 'sync';
                 // TODO should use MetadataViewManager.view.postMessage
                 // for consistency?
-				MetadataViewManager.postMessage(msg);
+				MessageViewManager.postMessage(msg);
 			} else {
 				console.log("Cannot find metadata_view");
 			}
@@ -258,14 +258,16 @@ class GlobalMessageHandler {
 				PlotViewManager.panel.webview.postMessage(msg);
 			} else {
 				console.log("Cannot find mainView. Message: other type not passed...");
-			}
+            }
+
+            MessageViewManager.postMessage(msg);
 		});
 	}
 
 	static addHandler(command: string, handler: (msg: any) => void): void {
 		this.handlers.set(command, handler);
 	}
-	
+
 	static setDefaultHandler(handler: (msg: any) => void): void {
 		this.defaultHandler = handler;
 	}
@@ -288,7 +290,7 @@ class GlobalMessageHandler {
 }
 
 export function handleMessageDefault(msg: any): boolean {
-	return GlobalMessageHandler.handleMessage(msg);
+	return GeneralMessageHandler.handleMessage(msg);
 }
 
 function setDataFolder(file: vscode.Uri | undefined): boolean {
@@ -297,8 +299,8 @@ function setDataFolder(file: vscode.Uri | undefined): boolean {
 	}
 	const fsPath = file.fsPath;
 	if (isDirectory(fsPath)) {
-		const config = vscode.workspace.getConfiguration('timeTravellingVisualizer');
-		config.update(config.ConfigurationID.contentPath, fsPath);
+		const extensionConfig = vscode.workspace.getConfiguration('timeTravellingVisualizer');
+		extensionConfig.update(config.ConfigurationID.contentPath, fsPath);
 		return true;
 	} else {
 		vscode.window.showErrorMessage("Selected path is not a directory 😮");
@@ -309,11 +311,11 @@ function setDataFolder(file: vscode.Uri | undefined): boolean {
 export function setAsDataFolderAndLoadVisualizationResult(file: vscode.Uri | undefined): void {
     if (!(file instanceof vscode.Uri)) {
         return;
-    }	
+    }
     const success = setDataFolder(file);
     if (success) {
         startVisualization();
-    }	
+    }
 }
 
 export function setAsDataFolder(file: vscode.Uri | undefined): void {
