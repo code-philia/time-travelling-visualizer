@@ -4,6 +4,7 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
+            "label": "Build Extension",
 			"type": "npm",
 			"script": "watch",
 			"path": "extension",
@@ -15,15 +16,52 @@
 			"group": {
 				"kind": "build",
 				"isDefault": true
-			}
+			},
+            "dependsOn": "Build Front-end Pages for Extension"
 		},
         {
-            "label": "Start Web Page Dev",
+            "label": "Start Web Page Dev",      // https://stackoverflow.com/questions/72213396/how-can-i-show-problems-detected-by-vite-checker-plugin-in-vs-code
             "type": "npm",
 			"script": "dev",
 			"path": "web",
-			"problemMatcher": "$tsc-watch",
+			"problemMatcher": [
+                {
+                    "owner": "typescript",
+                    "source": "Typescript",
+                    "fileLocation": "absolute",
+                    "applyTo": "allDocuments",
+                    "background": {
+                        "activeOnStart": true,
+                        "beginsPattern": "sd",
+                        "endsPattern": "Local:"
+                    },
+                    "pattern": [
+                        {
+                            "regexp": "(ERROR|WARNING)\\(TypeScript\\)  (.*)",
+                            "severity": 1,
+                            "message": 2
+                        },
+                        {
+                            "regexp": "^ FILE  (.*):(\\d*):(\\d*)$",
+                            "file": 1,
+                            "line": 2,
+                            "column": 3
+                        }
+                    ]
+                }
+            ],
             "isBackground": true,
+            "presentation": {
+                "reveal": "never"
+            }
+        },
+        {
+            "label": "Build Front-end Pages for Extension",
+            "type": "npm",
+            "script": "build",
+            "path": "web",
+            "problemMatcher": "$tsc-watch",
+			"isBackground": true,
             "presentation": {
                 "reveal": "never"
             }
