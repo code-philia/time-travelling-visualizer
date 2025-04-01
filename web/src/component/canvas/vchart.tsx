@@ -264,8 +264,8 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                     point: {
                         state: {
                             hover: {
-                                scaleX: 2,
-                                scaleY: 2,
+                                scaleX: 1.6,
+                                scaleY: 1.6,
                                 fillOpacity: 1
                             },
                             hover_reverse: {
@@ -274,8 +274,8 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                                 fillOpacity: 0.2
                             },
                             as_neighbor: {
-                                scaleX: 1.6,
-                                scaleY: 1.6,
+                                scaleX: 1,
+                                scaleY: 1,
                                 fillOpacity: 0.5
                             },
                             locked: {
@@ -285,7 +285,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                             }
                         },
                         style: {
-                            size: 5,
+                            size: 8,
                             fill: (datum: { label: number; }) => {
                                 const color = colorDict.get(datum.label) ?? [0, 0, 0];
                                 return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
@@ -304,7 +304,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                                 },
                                 type: 'text',
                                 fontFamily: 'Console',
-                                fontStyle: 'italic',
+                                // fontStyle: 'italic',
                                 // fontWeight: 'bold',
                                 text: (datum: { pointId: any; textSample: string; label: number; }) => {
                                     if (showText && showNumber) {
@@ -318,11 +318,14 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                                     }
                                 },
 
-                                fill: (datum: { label: number; }) => {
-                                    const color = colorDict.get(datum.label) ?? [0, 0, 0];
-                                    return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
-                                },
-                                fillOpacity: 0.6
+                                fill: 'black',
+                                fontSize: 12
+
+                                // fill: (datum: { label: number; }) => {
+                                //     const color = colorDict.get(datum.label) ?? [0, 0, 0];
+                                //     return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
+                                // },
+                                // fillOpacity: 0.6
                             }
                         }
                     ]
@@ -603,7 +606,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                 setHoveredIndex(e.datum?.pointId);
             });
             vchartRef.current.on('pointerout', { id: 'point-series' }, e => {
-                setHoveredIndex(-1);
+                setHoveredIndex(undefined);
             });
             vchartRef.current.on('click', { id: 'point-series' }, e => {
                 console.log('Clicked: ', e.datum?.pointId);
@@ -673,7 +676,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
         if (!vchartRef.current) {
             return;
         }
-        console.log('Locked: ', highlightContext.lockedIndices);
+        // console.log('Locked: ', highlightContext.lockedIndices);
         updateHighlight();
     }, [vchartData, highlightContext, hoveredIndex]);
 

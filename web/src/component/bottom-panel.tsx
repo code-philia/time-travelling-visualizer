@@ -4,6 +4,8 @@ import { UpOutlined, DownOutlined, SyncOutlined } from '@ant-design/icons';
 import styled from 'styled-components';
 import { useDefaultStore } from '../state/state-store';
 
+declare const __APP_CONFIG__: string | undefined;
+
 const BottomPanelContainer = styled.div<{ $expanded: boolean }>`
     display: flex;
     border-top: 1px solid var(--layout-border-color);
@@ -129,11 +131,11 @@ interface ReactiveCodePreProps {
 function ReactiveTokensOverviewBlock({ text, tokens, hoveredIndex, onHoverIndex, label, lockedIndices = [], affiliatedIndices = [], onChangeLockedIndices, weights, alignments }: ReactiveCodePreProps) {
     const spans = extractSpans(text, tokens);
 
-    hoveredIndex !== null && hoveredIndex !== undefined && console.log(`In-block hovered index: ${hoveredIndex}`);
+    // hoveredIndex !== null && hoveredIndex !== undefined && console.log(`In-block hovered index: ${hoveredIndex}`);
 
     let regularizedWeights: number[] | null = null;
-    const ub = 1.618;
-    const lb = 0.618;
+    const ub = 1.0;
+    const lb = 0.2;
     const logistic = (v: number) => 1 / (1 + Math.exp(-v));
     const norm = (v: number) => lb + v * (ub - lb);
     if (weights) {
@@ -229,8 +231,10 @@ function ReactiveTokensOverviewBlock({ text, tokens, hoveredIndex, onHoverIndex,
     // }
 
     const renderedSpans = spans.map((span, i) => {
-        const spanSizeStyle = regularizedWeights ? { fontSize: `${(regularizedWeights[i] * 100).toFixed(2)}%` } : undefined;
         const spanColorStyle = assignedColors ? { color: assignedColors[i] } : undefined;
+        const spanSizeStyle = regularizedWeights && regularizedWeights[i] !== 1
+            ? { color: `color-mix(in srgb, currentColor ${ Math.pow(regularizedWeights[i], 2) * 100 }%, transparent);` }
+            : undefined;
         const spanStyle = spanSizeStyle || spanColorStyle
             ? { ...spanSizeStyle, ...spanColorStyle }
             : undefined;
@@ -305,7 +309,11 @@ function SampleChangeIndicator({ tag, value }: { tag?: string, value: number }) 
 }
 
 export function BottomPanel({ defaultActiveTab = '1' }: BottomPanelProps) {
-    const [isExpanded, setIsExpanded] = useState(false);
+    const appConfig = typeof __APP_CONFIG__ !== 'undefined' ? __APP_CONFIG__ : undefined;
+
+    const defaultExpanded = appConfig === 'extension-panel-view' ? true : false;
+
+    const [isExpanded, setIsExpanded] = useState(defaultExpanded);
     const [activeTab, setActiveTab] = useState(defaultActiveTab);
 
     const togglePanel = () => {
@@ -325,7 +333,7 @@ export function BottomPanel({ defaultActiveTab = '1' }: BottomPanelProps) {
             if (groupId === i) {
                 groupedTokens[groupName].push(textData[j]);
             }
-        }); 
+        });
     });
 
     const { originalTextData: originalText } = useDefaultStore(['originalTextData']);
@@ -333,9 +341,26 @@ export function BottomPanel({ defaultActiveTab = '1' }: BottomPanelProps) {
     const textGroups = Array.from(Object.keys(groupedTokens));
     const textGroupLengths = textGroups.map((key) => groupedTokens[key as keyof typeof groupedTokens].length);
 
+    // const { hoveredIndex, setHoveredIndex } = useDefaultStore(['hoveredIndex', 'setHoveredIndex']);
+
     const [highlightedIndex, setHighlightedIndex] = useState<number | null>(null);
+
+    // useEffect(() => {
+    //     if (hoveredIndex !== highlightedIndex) {
+    //         setHighlightedIndex(hoveredIndex ?? null);
+    //     }
+    // }, [hoveredIndex]);
+
+    // useEffect(() => {
+    //     if (highlightedIndex !== hoveredIndex) {
+    //         setHoveredIndex(highlightedIndex ?? undefined);
+    //     }
+    // }, [highlightedIndex, setHoveredIndex]);
+
     const [lockedIndices, setLockedIndices] = useState<number[]>([]);
     const [affilatedIndices, setAffiliatedIndices] = useState<number[]>([]);
+
+    // const {hoveredIndex, setHoveredIndex} = useDefaultStore(['hoveredIndex', 'setHoveredIndex'])
 
     // attention and alignment
     const {
@@ -351,6 +376,8 @@ export function BottomPanel({ defaultActiveTab = '1' }: BottomPanelProps) {
     // connect to highlight context
     useEffect(() => {
         const listener = () => {
+            console.log(`highlight changed in bottom view ${highlightContext.hoveredIndex}  ${highlightContext.lockedIndices}`);
+
             setHighlightedIndex(highlightContext.hoveredIndex ?? null);
             setLockedIndices([...highlightContext.lockedIndices]);
         };
@@ -404,6 +431,7 @@ export function BottomPanel({ defaultActiveTab = '1' }: BottomPanelProps) {
                         const docstringAlignments = Array(20).fill(0);
                         const codeAlignments = Array(50).fill(0);
 
+                        // DEBUG PURPOSE
                         docstringAlignments[1] = 7;
                         docstringAlignments[6] = 6;
                         docstringAlignments[7] = 6;
@@ -472,7 +500,7 @@ export function BottomPanel({ defaultActiveTab = '1' }: BottomPanelProps) {
                         </div>
                     </div>
                 }
-                
+
             </div>
         </div>
     )
@@ -491,13 +519,16 @@ export function BottomPanel({ defaultActiveTab = '1' }: BottomPanelProps) {
 
     return (
         <BottomPanelContainer className="bottom-panel" $expanded={isExpanded}>
-            <Button
-                type="text"
-                icon={isExpanded ? <DownOutlined /> : <UpOutlined />}
-                onClick={togglePanel}
-                className={isExpanded ? "bottom-panel-collapse-button" : "bottom-panel-collapse-button expand"}
-                color="primary" variant="filled"
-            />
+            {
+                !defaultExpanded &&
+                <Button
+                    type="text"
+                    icon={isExpanded ? <DownOutlined /> : <UpOutlined />}
+                    onClick={togglePanel}
+                    className={isExpanded ? "bottom-panel-collapse-button" : "bottom-panel-collapse-button expand"}
+                    color="primary" variant="filled"
+                />
+            }
             <TabsContainer $expanded={isExpanded}>
                 <Tabs
                     activeKey={activeTab}

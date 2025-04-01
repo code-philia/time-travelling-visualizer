@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { PlotContainer, Plot2DCanvasContext, Plot2DDataContext, createPlot2DCanvasContextFrom } from './canvas/canvas'
 import { useDefaultStore } from '../state/state-store'
 import { CommonPointsGeography, extractConnectedPoints, pointsDefaultSize, createEmptyCommonPointsGeography } from './canvas/types';
@@ -6,7 +6,44 @@ import { BriefProjectionResult } from '../communication/api';
 import { useSetUpProjection } from '../state/state-actions';
 import ChartComponent from './canvas/vchart';
 
+// https://stackoverflow.com/questions/54095994/react-useeffect-comparing-objects
+// FIXME use a library for all object/array nested comparison
+function deepCompareEquals(a: Array<number>, b: Array<number>){
+    if (a.length !== b.length) {
+        return false;
+    }
+
+    for (let i = 0; i < a.length; i++) {
+        if (a[i] !== b[i]) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+function useDeepCompareMemoize(value: Array<number>) {
+    const ref = useRef<Array<number>>([]);
+    // it can be done by using useMemo as well
+    // but useRef is rather cleaner and easier
+
+    if (!deepCompareEquals(value, ref.current)) {
+        ref.current = value;
+    }
+
+    return ref.current
+}
+
+function useDeepCompareEffect(callback: any, dependencies: Array<Array<number>>) {
+    useEffect(
+        callback,
+        dependencies.map(useDeepCompareMemoize)
+    )
+}
+
 function Timeline({ epoch, epochs, onSwitchEpoch }: { epoch: number, epochs: number[], onSwitchEpoch: (epoch: number) => void }) {
+    epochs = useDeepCompareMemoize(epochs);
+
     // Set the initial epoch from the passed epochs array
     useEffect(() => {
         if (epochs.length > 0) {
@@ -26,7 +63,7 @@ function Timeline({ epoch, epochs, onSwitchEpoch }: { epoch: number, epochs: num
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [epochs, epoch, onSwitchEpoch]);
+    }, [epochs, epoch]);
 
     const nodes = useMemo(() => {
         if (epochs.length > 0) {

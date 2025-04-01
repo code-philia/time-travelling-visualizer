@@ -12,6 +12,7 @@ html {
 
 body {
   margin: 0;
+  padding: 0;   /* fit: reset vscode default style */
   overflow: hidden;
   width: 100%;
   height: 100%;
@@ -209,6 +210,7 @@ body {
     text-wrap: wrap;
     cursor: pointer;
     font-family: 'Cascadia Code', 'Courier New', Courier, monospace;
+    background-color: transparent;
 }
 
 .overview-token.active {
