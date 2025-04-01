@@ -16,6 +16,17 @@
 				"kind": "build",
 				"isDefault": true
 			}
-		}
+		},
+        {
+            "label": "Start Web Page Dev",
+            "type": "npm",
+			"script": "dev",
+			"path": "web",
+			"problemMatcher": "$tsc-watch",
+            "isBackground": true,
+            "presentation": {
+                "reveal": "never"
+            }
+        }
 	]
 }
