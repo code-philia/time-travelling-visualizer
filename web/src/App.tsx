@@ -4,14 +4,16 @@ import { RightSidebar } from './component/right-sidebar'
 import { Button, Checkbox, Input, Modal } from "antd";
 import { SettingOutlined } from "@ant-design/icons";
 import BottomPanel from "./component/bottom-panel";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useDefaultStore } from "./state/state-store";
 
 import './index.css';
+import { useSetUpTrainingProcess } from "./state/state-actions";
+import { MessageHandler } from "./communication/message";
 
-function App() {
+export function App() {
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-    
+
     const showSettingsModal = () => {
         setIsSettingsModalOpen(true);
     }
@@ -75,14 +77,55 @@ function App() {
             </Modal>
             <div className='app-body'>
                 <div className='app-body-upper-part'>
-                <LeftSidebar />
-                <MainBlock />
-                <RightSidebar />
-            </div>
+                    <LeftSidebar />
+                    <MainBlock />
+                    <RightSidebar />
+                </div>
                 <BottomPanel></BottomPanel>
             </div>
+            <MessageHandler></MessageHandler>
         </div>
     )
 }
 
-export default App
+export function AppPlotViewOnly() {
+    const { setValue } = useDefaultStore(['setValue']);
+    const setUpTrainingProcess = useSetUpTrainingProcess();
+
+    useEffect(() => {
+        setValue("contentPath", "/home/yuhuan/projects/cophi/visualizer-refactor/dev/sample-datasets/new-version-datasets/gcb_tokens");
+        setValue("visMethod", "TimeVis");
+
+        (async () => {
+            await setUpTrainingProcess();
+        })();
+    });
+
+    return (
+        <div style={{ width: '100%', height: '100%', display: 'flex' }}>
+            <MainBlock></MainBlock>
+            <MessageHandler></MessageHandler>
+        </div>
+    );
+}
+
+export function AppPanelViewOnly() {
+    const { setValue } = useDefaultStore(['setValue']);
+    const setUpTrainingProcess = useSetUpTrainingProcess();
+
+    useEffect(() => {
+        setValue("contentPath", "/home/yuhuan/projects/cophi/visualizer-refactor/dev/sample-datasets/new-version-datasets/gcb_tokens");
+        setValue("visMethod", "TimeVis");
+
+        (async () => {
+            await setUpTrainingProcess();
+        })();
+    });
+
+    return (
+        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <BottomPanel></BottomPanel>
+            <MessageHandler></MessageHandler>
+        </div>
+    );
+}

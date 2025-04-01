@@ -1,5 +1,6 @@
 import { BoundaryProps } from "../../state/types";
 import { BriefProjectionResult } from "../../communication/api";
+import { BUILD_CONSTANTS } from "../../constants";
 
 export const pointsDefaultSize = 20;
 
@@ -109,6 +110,7 @@ export class HighlightContext {
     // Operations
 
     isValidIndex(idx: number | undefined): boolean {
+        console.log(`isValidIndex -> idx:${idx} validSampleCount:${this.validSampleCount}`, idx);
         if (idx !== undefined && (idx > this.validSampleCount || idx < 0)) {
             return false;
         }
@@ -116,10 +118,16 @@ export class HighlightContext {
     }
 
     updateHovered(idx: number | undefined) {
+        console.log(`${BUILD_CONSTANTS.APP_CONFIG} hovered index change : ok 1`, idx);
+
         if (!this.isValidIndex(idx)) return;
+        console.log(`${BUILD_CONSTANTS.APP_CONFIG} hovered index change : ok 2`);
 
         if (this.hoveredIndex !== idx) {
+            console.log(`${BUILD_CONSTANTS.APP_CONFIG} hovered index change : err 3`);
             this.hoveredIndex = idx;
+
+            console.log(`${BUILD_CONSTANTS.APP_CONFIG} hovered index change : ok 4`);
             this.notifyHighlightChanged();
         }
     }

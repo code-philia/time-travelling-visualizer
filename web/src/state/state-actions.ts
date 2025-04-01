@@ -3,10 +3,16 @@ import { fetchTrainingProcessStructure, fetchUmapProjectionData, getAttributeRes
 import { HighlightContext, randomColor } from "../component/canvas/types";
 import { useDefaultStore } from "./state-store";
 import { get } from "@visactor/vchart/esm/util";
+import { BUILD_CONSTANTS } from "../constants";
 
 export function useSetUpTrainingProcess() {
-    const { contentPath, backendHost, setAvailableEpochs, setTextData, setAttentionData, setOriginalTextData, setInherentLabelData, setEpoch, setHighlightContext } =
-        useDefaultStore(['contentPath', 'setAvailableEpochs', 'backendHost', 'setTextData', 'setAttentionData', 'setOriginalTextData', 'setInherentLabelData', 'setEpoch', 'setHighlightContext']);
+    const { contentPath, backendHost, setAvailableEpochs, setTextData, setAttentionData, setOriginalTextData, setInherentLabelData, setEpoch, setHighlightContext, allEpochsProjectionData, setAllEpochsProjectionData, visMethod } =
+        useDefaultStore(
+            [
+                'contentPath', 'setAvailableEpochs', 'backendHost', 'setTextData', 'setAttentionData', 'setOriginalTextData', 'setInherentLabelData', 'setEpoch', 'setHighlightContext',
+                'allEpochsProjectionData', 'setAllEpochsProjectionData', 'visMethod'
+            ]
+        );
 
     const setUpTrainingProcess = useCallback(async () => {
         const res = await fetchTrainingProcessStructure(contentPath, {
@@ -34,13 +40,25 @@ export function useSetUpTrainingProcess() {
             host: backendHost
         });
         setOriginalTextData(fullTextForEachLabel['originalText'] ?? []);
-        
+
         const inherentLabels = await getAttributeResource(contentPath, 1, 'label', {
             host: backendHost
         });
         setInherentLabelData(inherentLabels['label'] ?? []);
 
+        console.log(`${BUILD_CONSTANTS.APP_CONFIG} setUpTrainingProcess: `, text['text_list'].length);
         setHighlightContext(new HighlightContext(text['text_list'].length));
+
+        // if (res['available_epochs'].length > 0) {
+        //     for (const epoch of res['available_epochs']) {
+        //         const epochData = await fetchUmapProjectionData(contentPath, epoch, {
+        //             method: visMethod,
+        //             host: backendHost
+        //         });
+        //         const newData = { ...allEpochsProjectionData };
+        //         newData[epoch] = epochData; // the latest epoch may have been updated in UI, but not yet in store
+        //     }
+        // }
 
     }, [backendHost, contentPath, setAvailableEpochs, setTextData, setEpoch]);
 

@@ -30,6 +30,8 @@ export function basicUnsafeGetWithJsonResponse(path: string, networkOptions: Par
     const combinedOptions = { ...defaultNetworkOptions, ...networkOptions };
     const fullPath = `http://${combinedOptions.host}${path}`;
 
+    console.log(`querying ${fullPath}`);
+
     return basicRequest(fullPath)
         .then(response => {
             if (response === undefined) {
