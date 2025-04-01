@@ -1,3 +1,4 @@
+import argparse
 import os
 import sys
 import base64
@@ -279,16 +280,16 @@ def visualize_training_process():
     req = request.get_json()
     content_path = req['content_path']
     vis_method = req['vis_method']
-    
+
     config = read_file_as_json(os.path.join(content_path, 'config.json'))
     visualizer = Visualizer(config, content_path, vis_method)
     error_message = visualizer.visualize()
-    
+
     if error_message == 'success':
         error_code = 200
     else:
         error_code = 400
-        
+
     result = jsonify({
         'error_message': error_message
     })
@@ -427,10 +428,17 @@ def check_port_inuse(port, host):
         if s:
             s.close()
 
+# Parse command-line arguments
+parser = argparse.ArgumentParser(description="Run the Flask server.")
+parser.add_argument("--port", type=int, default=5050, help="Port number to run the server on.")
+args = parser.parse_args()
+
+# Update the port based on the argument
+port = args.port
+
 # for contrast
 if __name__ == "__main__":
     host = '0.0.0.0'
-    port = 5010
     while check_port_inuse(port, host):
         port = port + 1
 
