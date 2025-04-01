@@ -69,26 +69,27 @@
       }
     ],
     "viewsContainers": {
-      "activitybar": [
+      "panel": [
         {
-          "id": "visualizer-sidebar",
-          "title": "Time Travelling Visualizer",
-          "icon": "resources/eye_tracking_24dp_5F6368_FILL0_wght300_GRAD0_opsz24.svg"
+            "id": "visualizer-panel",
+            "title": "Visualizer",
+            "icon": "resources/eye_tracking_24dp_5F6368_FILL0_wght300_GRAD0_opsz24.svg"
         }
       ]
     },
     "views": {
-      "visualizer-sidebar": [
+      "visualizer-panel": [
         {
           "type": "webview",
-          "id": "visualizer-metadata-view",
-          "name": "Data Point Info"
+          "id": "visualizer-inspect-view",
+          "name": "Visualizer"
         }
       ],
       "explorer": [
             {
                 "id": "browse-tree-view",
-                "name": "Training Overview"
+                "name": "Training Overview",
+                "icon": "resources/eye_tracking_24dp_5F6368_FILL0_wght300_GRAD0_opsz24.svg"
             }
         ]
     }

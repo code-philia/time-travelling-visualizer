@@ -4,45 +4,41 @@ import * as vscode from 'vscode';
 import * as config from './config';
 import { LiveServerParams, start as startServer } from 'live-server';
 
-function startSingleLiveServer(htmlPath: string, port: number): void {
+function startSingleLiveServer(distPath: string, port: number): void {
 	const params: LiveServerParams = {
 		port: port,
 		host: "127.0.0.1",
-		root: htmlPath,
+		root: distPath,
 		open: false,
 		wait: 100,
-		logLevel: 2, // 0 = errors only, 1 = some, 2 = lots
+		logLevel: 2,
 	};
 	startServer(params);
 }
 
 export function startDefaultDevLiveServers(context: vscode.ExtensionContext): void {
-	const htmlPath = config.GlobalStorageContext.webRoot;
+	const distPath = config.GlobalStorageContext.webRoot;
 
 	// different from preprocessing HTML in vscode
 	// we don't need to relocate the URI in server hosted page
-	startSingleLiveServer(htmlPath, config.editorWebviewPort);		
+	startSingleLiveServer(distPath + 'extension-plot-view', config.editorWebviewPort);
 	// startSingleLiveServer(htmlPath, config.controlWebviewPort);
-	startSingleLiveServer(htmlPath, config.metadataWebviewPort);
+	// startSingleLiveServer(distPath, config.metadataWebviewPort);
+	startSingleLiveServer(distPath + 'extension-panel-view', config.panelWebviewPort);
 }
 
 // TODO split the views into different folders, otherwise updating resource of one view will refresh all
 export function getLiveWebviewHtml(webview: vscode.Webview, localPort: number = 5000, notifyLoad: boolean = false, path: string = '/'): string {
-	// const notifyLoadScript = notifyLoad ? `
-	// 		window.addEventListener('load', () => {
-	// 			console.log('Webview loaded');
-	// 			vscode.postMessage({ state: 'load', forward: true });	// add forward to avoid bounce-back
-	// 		});
-	// ` : '';
-	const notifyLoadScript = '';
-	const passCssVariable = `const iframeWindow = document.getElementById('debug-iframe').contentWindow;
-				const vscodeFontFamilyId = '--vscode-editor-font-family';
-				const vscodeEditorBackgroundColor = '--vscode-editor-background';
-				const fontFamily = document.documentElement.style.getPropertyValue(vscodeFontFamilyId);
-				const editorBackgroundColor = document.documentElement.style.getPropertyValue(vscodeEditorBackgroundColor);`;
-	
+    const passVSCodeCssVariablesScript =
+`       const iframeWindow = document.getElementById('debug-iframe').contentWindow;
+        const vscodeFontFamilyId = '--vscode-editor-font-family';
+        const vscodeEditorBackgroundColor = '--vscode-editor-background';
+        const fontFamily = document.documentElement.style.getPropertyValue(vscodeFontFamilyId);
+        const editorBackgroundColor = document.documentElement.style.getPropertyValue(vscodeEditorBackgroundColor);
+`;
+
 	// FIXME should not pass targetOrigin to '*', see <https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage>
-	// FIXME consider not using live server but using file watch fro live update, because it is so not transparent
+	// FIXME consider not using live server but using file watch for live update, because it is so nontransparent in vscode
 	return `
         <!DOCTYPE html>
         <html lang="en">
@@ -70,7 +66,7 @@ export function getLiveWebviewHtml(webview: vscode.Webview, localPort: number = 
         </body>
         </html>
 		<script>
-			${passCssVariable}
+			${passVSCodeCssVariablesScript}
 			const vscode = acquireVsCodeApi();
 			window.addEventListener('message', e => {
 				console.log('Received message raw:', e);
@@ -91,7 +87,6 @@ export function getLiveWebviewHtml(webview: vscode.Webview, localPort: number = 
 					vscode.postMessage(data);
 				}
 			},false);
-			${notifyLoadScript}
 		</script>
     `;
 }

@@ -137,7 +137,7 @@ const placeholderDataset: BasicDataset = {
     uuid: 'Dataset 1',
     name: 'Dataset 1',
     baseType: 'text',
-    basePath: '/new-version-datasets/gcb_tokens',
+    basePath: '.',
     samples: placeholderSamples,
     attributes: placeholderAttributes
 };
@@ -146,45 +146,59 @@ const placeholderTreeData: TrainingProcessTreeData = {
     trainingProcesses: [
         {
             name: 'gcb_tokens',
-            basePath: '/new-version-datasets/gcb_tokens',
+            basePath: '.',
             datasets: {
                 validation: {
                     uuid: 'Dataset 1',
                     name: 'val',
                     baseType: 'text',
-                    basePath: '/new-version-datasets/gcb_tokens',
+                    basePath: '.',
                     samples: placeholderSamples,
                     attributes: placeholderAttributes
                 }
             },
             epochs: [
-                {
-                    checkpoint: {
-                        path: ''
-                    },
-                    metrics: [
-                        { loss: 0.345, accuracy: 0.89 }
-                    ]
-                },
-                {
-                    checkpoint: {
-                        path: ''
-                    },
-                    metrics: [
-                        { loss: 0.289, accuracy: 0.93 }
-                    ]
-                }
+                { checkpoint: { path: '' }, metrics: [{ loss: 0.345, accuracy: 0.89 }] },
+                { checkpoint: { path: '' }, metrics: [{ loss: 0.289, accuracy: 0.93 }] },
+                { checkpoint: { path: '' }, metrics: [{ loss: 0.245, accuracy: 0.94 }] },
+                { checkpoint: { path: '' }, metrics: [{ loss: 0.212, accuracy: 0.95 }] },
+                { checkpoint: { path: '' }, metrics: [{ loss: 0.198, accuracy: 0.96 }] },
+                { checkpoint: { path: '' }, metrics: [{ loss: 0.187, accuracy: 0.96 }] },
+                { checkpoint: { path: '' }, metrics: [{ loss: 0.176, accuracy: 0.97 }] },
+                { checkpoint: { path: '' }, metrics: [{ loss: 0.165, accuracy: 0.97 }] },
+                { checkpoint: { path: '' }, metrics: [{ loss: 0.158, accuracy: 0.97 }] },
+                { checkpoint: { path: '' }, metrics: [{ loss: 0.152, accuracy: 0.97 }] },
+                { checkpoint: { path: '' }, metrics: [{ loss: 0.147, accuracy: 0.98 }] },
+                { checkpoint: { path: '' }, metrics: [{ loss: 0.143, accuracy: 0.98 }] },
+                { checkpoint: { path: '' }, metrics: [{ loss: 0.139, accuracy: 0.98 }] },
+                { checkpoint: { path: '' }, metrics: [{ loss: 0.136, accuracy: 0.98 }] },
+                { checkpoint: { path: '' }, metrics: [{ loss: 0.133, accuracy: 0.98 }] },
+                { checkpoint: { path: '' }, metrics: [{ loss: 0.131, accuracy: 0.98 }] },
+                { checkpoint: { path: '' }, metrics: [{ loss: 0.129, accuracy: 0.98 }] },
+                { checkpoint: { path: '' }, metrics: [{ loss: 0.127, accuracy: 0.98 }] },
+                { checkpoint: { path: '' }, metrics: [{ loss: 0.125, accuracy: 0.99 }] },
+                { checkpoint: { path: '' }, metrics: [{ loss: 0.124, accuracy: 0.99 }] },
+                { checkpoint: { path: '' }, metrics: [{ loss: 0.123, accuracy: 0.99 }] },
+                { checkpoint: { path: '' }, metrics: [{ loss: 0.122, accuracy: 0.99 }] },
+                { checkpoint: { path: '' }, metrics: [{ loss: 0.121, accuracy: 0.99 }] },
+                { checkpoint: { path: '' }, metrics: [{ loss: 0.120, accuracy: 0.99 }] },
+                { checkpoint: { path: '' }, metrics: [{ loss: 0.119, accuracy: 0.99 }] },
+                { checkpoint: { path: '' }, metrics: [{ loss: 0.118, accuracy: 0.99 }] },
+                { checkpoint: { path: '' }, metrics: [{ loss: 0.117, accuracy: 0.99 }] },
+                { checkpoint: { path: '' }, metrics: [{ loss: 0.116, accuracy: 0.99 }] },
+                { checkpoint: { path: '' }, metrics: [{ loss: 0.115, accuracy: 0.99 }] },
+                { checkpoint: { path: '' }, metrics: [{ loss: 0.114, accuracy: 0.99 }] }
             ],
             visualizationMethods: [
                 {
                     name: 'DVI',
                     status: 'projection-cached',
-                    cachedProjectionPath: '/new-version-datasets/gcb_tokens/visualize/DVI'
+                    cachedProjectionPath: './visualize/DVI'
                 },
                 {
                     name: 'TimeVis',
                     status: 'projection-cached',
-                    cachedProjectionPath: '/new-version-datasets/gcb_tokens/visualize/TimeVis'
+                    cachedProjectionPath: './visualize/TimeVis'
                 }
             ]
         }
@@ -202,12 +216,25 @@ class TreeItem extends vscode.TreeItem {
         public readonly label: string,
         public readonly iconName: string,
         public readonly children?: TreeItem[],
-        public readonly description?: string
+        public readonly description?: string,
+        public readonly options?: {
+            command?: vscode.Command,
+            resourceUri?: vscode.Uri,
+            tooltip?: string,
+        }
     ) {
         const collapsible = children && children.length > 0 ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None;
 
         super(label, collapsible);
+
         this.iconPath = new vscode.ThemeIcon(iconName);
+        this.contextValue = 'treeItem'; // Add this line to enable context menu
+
+        if (options) {
+            this.command = options.command;
+            this.resourceUri = options.resourceUri;
+            this.tooltip = options.tooltip;
+        }
     }
 }
 
@@ -225,15 +252,15 @@ class TreeDataProvider implements vscode.TreeDataProvider<TreeItem> {
     private resolveRootItems(): TreeItem[] {
         const children = [
             new TreeItem(
-                'Training Processes', 'server-process',
+                'Training Processes', 'history',
                 this.data.trainingProcesses.map(p => this.resolveItemTrainingProcess(p)),
             ),
             new TreeItem(
-                'Available Datasets', 'folder-library',
+                'Available Datasets', 'package',
                 this.data.datasets.map(d => this.resolveItemBasicDataset(d)),
             ),
-            new TreeItem('Available Visualization Methods', 'symbol-misc',
-                this.data.visualizationMethods.map(m => this.resolveItemBuiltInVisualizationMethodDescription(m)),    
+            new TreeItem('Available Visualization', 'symbol-misc',
+                this.data.visualizationMethods.map(m => this.resolveItemBuiltInVisualizationMethodDescription(m)),
             )
         ];
 
@@ -257,8 +284,8 @@ class TreeDataProvider implements vscode.TreeDataProvider<TreeItem> {
         if (process.visualizationMethods) {
             const visualizationMethodItems = process.visualizationMethods.map(method => this.resolveItemTrainingProcessVisualizationMethodStatus(method));
             const visualizationMethodsTreeItem = new TreeItem(
-                'Visualization Methods',
-                'symbol-misc',
+                'Visualizations',
+                'graph-scatter',
                 visualizationMethodItems
             );
             children.push(visualizationMethodsTreeItem);
@@ -266,7 +293,7 @@ class TreeDataProvider implements vscode.TreeDataProvider<TreeItem> {
 
         return new TreeItem(
             process.name,
-            'graph',
+            'history',
             children
         );
     }
@@ -283,14 +310,17 @@ class TreeDataProvider implements vscode.TreeDataProvider<TreeItem> {
         };
 
         return new TreeItem(
-            type,
-            'database',
+            `Dataset: ${type}`,
+            'package',
             [
                 new TreeItem(
                     'Directory',
                     'folder-opened',
                     [],
-                    dataset.basePath
+                    dataset.basePath,
+                    {
+                        command: revealInFileExplorerCommand(dataset.basePath)
+                    }
                 ),
                 new TreeItem(
                     'Samples',
@@ -299,7 +329,10 @@ class TreeDataProvider implements vscode.TreeDataProvider<TreeItem> {
                         `${index}`,
                         'symbol-string',
                         [],
-                        sample
+                        sample,
+                        {
+                            command: openAsDocumentCommand(dataset.basePath + `/dataset/sample/text_${index}.txt`)
+                        }
                     ))
                 ),
                 new TreeItem(
@@ -308,7 +341,6 @@ class TreeDataProvider implements vscode.TreeDataProvider<TreeItem> {
                     dataset.attributes!.map(attr => this.resolveItemTrainingProcessAttribute(attr))
                 )
             ],
-            // dataset.basePath
         );
     }
 
@@ -318,7 +350,7 @@ class TreeDataProvider implements vscode.TreeDataProvider<TreeItem> {
         if (epochs) {
             children = epochs.map((epoch, index) => {
                 const children = [];
-    
+
                 if (epoch.checkpoint) {
                     children.push(new TreeItem(
                         'Checkpoint',
@@ -327,15 +359,15 @@ class TreeDataProvider implements vscode.TreeDataProvider<TreeItem> {
                         epoch.checkpoint.path
                     ));
                 }
-    
+
                 if (epoch.metrics) {
                     children.push(new TreeItem(
                         'Metrics',
                         'graph-line',
-                        [], 
+                        [],
                     ));
                 }
-    
+
                 return new TreeItem(
                     `${index + 1}`,
                     'symbol-numeric',
@@ -346,7 +378,7 @@ class TreeDataProvider implements vscode.TreeDataProvider<TreeItem> {
 
         return new TreeItem(
             'Epochs',
-            'graph',
+            'milestone',
             children
         );
     }
@@ -359,7 +391,10 @@ class TreeDataProvider implements vscode.TreeDataProvider<TreeItem> {
                 'Custom Method',
                 'symbol-method',
                 [],
-                status.customMethodPath
+                status.customMethodPath,
+                {
+                    command: revealInFileExplorerCommand(status.customMethodPath)
+                }
             ));
         }
 
@@ -368,7 +403,10 @@ class TreeDataProvider implements vscode.TreeDataProvider<TreeItem> {
                 'Cached Projection',
                 'symbol-ruler',
                 [],
-                status.cachedProjectionPath
+                status.cachedProjectionPath,
+                {
+                    command: revealInFileExplorerCommand(status.cachedProjectionPath)
+                }
             ));
         }
 
@@ -377,7 +415,10 @@ class TreeDataProvider implements vscode.TreeDataProvider<TreeItem> {
                 'Cached Visualization Model',
                 'graph',
                 [],
-                status.cachedVisualizationModelPath
+                status.cachedVisualizationModelPath,
+                {
+                    command: revealInFileExplorerCommand(status.cachedVisualizationModelPath)
+                }
             ));
         }
 
@@ -406,7 +447,10 @@ class TreeDataProvider implements vscode.TreeDataProvider<TreeItem> {
                 'Source',
                 'symbol-file',
                 [],
-                typeof attribute.source === 'string' ? attribute.source : attribute.source.pattern
+                typeof attribute.source === 'string' ? attribute.source : attribute.source.pattern,
+                {
+                    command: openAsDocumentCommand(typeof attribute.source === 'string' ? attribute.source : attribute.source.pattern)
+                }
             ));
         }
 
@@ -422,7 +466,7 @@ class TreeDataProvider implements vscode.TreeDataProvider<TreeItem> {
             return Promise.resolve(this.resolveRootItems());
         }
         return Promise.resolve(element?.children ?? []);
-    }    
+    }
 }
 
 export class BrowseTreeView implements vscode.Disposable {
@@ -437,4 +481,24 @@ export class BrowseTreeView implements vscode.Disposable {
     dispose() {
         this.registration.dispose();
     }
+}
+
+function toPrimaryWorkspaceFolderUri(relativePath: string): vscode.Uri {
+    return vscode.Uri.joinPath(vscode.workspace.workspaceFolders![0].uri ?? '', relativePath);
+}
+
+function revealInFileExplorerCommand(relativePath: string): vscode.Command {
+    return {
+        command: 'revealInExplorer',
+        title: 'Reveal in Explorer',
+        arguments: [toPrimaryWorkspaceFolderUri(relativePath)]
+    };
+}
+
+function openAsDocumentCommand(relativePath: string): vscode.Command {
+    return {
+        command: 'vscode.open',
+        title: 'Open as Document',
+        arguments: [toPrimaryWorkspaceFolderUri(relativePath)]
+    };
 }

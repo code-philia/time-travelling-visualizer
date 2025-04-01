@@ -7,15 +7,19 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 
 export let isDev = false;
-export const editorWebviewPort = 5001;
+
+/* Preserved ports */
+
+export const editorWebviewPort = 5010;
 export const controlWebviewPort = 5002;
 export const metadataWebviewPort = 5003;
+export const panelWebviewPort = 5011;
 
 export class GlobalStorageContext {
 	private static extensionLocation: string = __dirname;
 	private static readonly webRootRelativePath = '../web/dist/';
 	private static readonly resourceRootRelativePath = 'resources/';
-	
+
 	private constructor() { }
 
 	static get webRoot(): string {
@@ -67,5 +71,6 @@ export class CommandID {
 }
 
 export class ViewsID {
-	static readonly metadataView = 'visualizer-metadata-view';
+    static readonly metadataView = 'visualizer-metadata-view';
+    static readonly inspectView = 'visualizer-inspect-view';
 }
