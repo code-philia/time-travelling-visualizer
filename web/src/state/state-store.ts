@@ -2,28 +2,11 @@ import { create } from "zustand";
 import { StoreApi, UseBoundStore } from "zustand";
 import { shallow } from "zustand/shallow";
 import { useStoreWithEqualityFn } from "zustand/traditional";
-import { CommonPointsGeography, ProjectionProps } from "./types";
+import { BaseMutableGlobalStore, initMutableGlobalStore, CommonPointsGeography, ProjectionProps } from "./types";
 import { BriefProjectionResult } from "../communication/api";
-import { HighlightContext } from "../component/canvas/types";
-
-const initProjectionRes: ProjectionProps = {
-    result: [],
-    grid_index: [],
-    grid_color: '',
-    label_name_dict: [],
-    label_color_list: [],
-    label_list: [],
-    maximum_iteration: 0,
-    training_data: [],
-    testing_data: [],
-    evaluation: 0,
-    prediction_list: [],
-    selectedPoints: [],
-    properties: [],
-    errorMessage: '',
-    color_list: [],
-    confidence_list: [],
-}
+import { BUILD_CONSTANTS } from "../constants";
+import { subscribeWithSelector } from "zustand/middleware";
+import { selectedListeningProperties, syncOut } from "../communication/message";
 
 // Not used to ensure all original types are uncapitalized for now
 // type EnsureUncapitalizedAttr<T> = {
@@ -65,19 +48,19 @@ const CookiesUtil = {
         }
         document.cookie = `${name}=${value}${expires}; path=/`;
     },
-    
+
     get: function(name: string) {
         const nameEQ = name + "=";
         const ca = document.cookie.split(';');
         for(let i = 0; i < ca.length; i++) {
             let c = ca[i];
             while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-            if (c.indexOf(nameEQ) === 0) 
+            if (c.indexOf(nameEQ) === 0)
                 return c.substring(nameEQ.length, c.length);
         }
         return null;
     },
-    
+
     delete: function(name: string) {
         this.set(name, "", -1);
     }
@@ -118,113 +101,18 @@ function createCookieProxyMutableTypes<T extends Record<string, string>>(initial
     };
 }
 
-type BaseMutableGlobalStore = {
-    command: string;
-    contentPath: string;
-    visMethod: string;
-    taskType: string;
-    colorType: string;
-    epoch: number;
-    filterIndex: number[] | string;
-    dataType: string;
-    colorList: number[][];
-    labelNameDict: Record<number, string>;
-    timelineData: number[] | undefined;
-    updateUUID: string;
-    allEpochsProjectionData: Record<number, BriefProjectionResult>;
-    availableEpochs: number[];
-    colorDict: Map<number, [number, number, number]>;
-    labelDict: Map<number, string>;
-    highlightContext: HighlightContext;
-    rawPointsGeography: CommonPointsGeography | null;
-
-    textData: string[];
-    attentionData: number[][];
-    originalTextData: Record<string, string>;
-    inherentLabelData: number[];
-
-    // settings
-    backendHost: string;
-    showNumber: boolean;
-    showText: boolean;
-    revealNeighborSameType: boolean;
-    revealNeighborCrossType: boolean;
-    showMetadata: boolean;
-    neighborSameType: number[][];
-    neighborCrossType: number[][];
-    lastNeighborSameType: number[][];
-    lastNeighborCrossType: number[][];
-    predictionProps: number[][];
-    showBgimg: boolean;
-    
-    // filter
-    filterState: boolean;
-    filterType: 'label' | 'prediction';
-    filterValue: string;
-    
-    // hovered
-    hoveredIndex: number;
-
-    // dummy settings
-    showLossAttribution: boolean;
-    showTokensWeightAsSize: boolean;
-    showTokensAlignmentAsColor: boolean
+const presetConfig = BUILD_CONSTANTS.RUNTIME_PRESET_CONFIG;
+if (presetConfig) {
+    for (const key in presetConfig) {
+        if (key in initMutableGlobalStore) {
+            const value = (presetConfig as Record<string, unknown>)[key] as any;
+            if (value !== undefined) {
+                (initMutableGlobalStore as any)[key] = value;
+            }
+        }
+    }
 }
-
-const initMutableGlobalStore: BaseMutableGlobalStore = {
-    command: '',
-    contentPath: "",
-    visMethod: 'Trustvis',
-    taskType: 'Classification',
-    colorType: 'noColoring',
-    epoch: 1,
-    filterIndex: "",
-    dataType: 'Image',
-    colorList: [],
-    labelNameDict: {},
-    timelineData: undefined,
-    updateUUID: '',     // FIXME should use a global configure object to manage this
-    allEpochsProjectionData: {},
-    availableEpochs: [],
-    // FIXME should use an object to apply user settings (like color) to original data, computing final point geography, and setting cache
-    colorDict: new Map(),
-    labelDict: new Map(),
-    highlightContext: new HighlightContext(0),
-    rawPointsGeography: null,
-
-    // FIXME we should use null for not loaded data
-    textData: [],
-    attentionData: [],
-    originalTextData: {},
-    inherentLabelData: [],
-
-    // settings
-    backendHost: 'localhost:58225',
-    showNumber: true,
-    showText: true,
-    revealNeighborSameType: false,
-    revealNeighborCrossType: false,
-    showMetadata: false,
-    neighborSameType: [],
-    neighborCrossType: [],
-    lastNeighborCrossType: [],
-    lastNeighborSameType: [],
-    predictionProps: [],
-    showBgimg: false,
-
-    // filter
-    filterState: false,
-    filterType: 'label',
-    filterValue: '',
-
-    // hovered
-    hoveredIndex: -1,
-
-    // dummy settings
-    showLossAttribution: false,
-    showTokensWeightAsSize: true,
-    showTokensAlignmentAsColor: true
-};
+const configuredMutableGlobalStore = initMutableGlobalStore;
 
 type MutableGlobalStore = WithSettersOnAttr<BaseMutableGlobalStore>;
 
@@ -244,17 +132,17 @@ function createCustomGlobalStore(set: SetFunction<GlobalStore>): CustomGlobalSto
             },
         })),
         // TODO extract these patterns of get and set
-        backendHost: cookieGetCustom('backendHost') || initMutableGlobalStore.backendHost,
+        backendHost: cookieGetCustom('backendHost') || configuredMutableGlobalStore.backendHost,
         setBackendHost: (value) => set(() => {
             cookieSetCustom('backendHost', value);
             return { backendHost: value };
         }),
-        visMethod: cookieGetCustom('visMethod') || initMutableGlobalStore.visMethod,
+        visMethod: cookieGetCustom('visMethod') || configuredMutableGlobalStore.visMethod,
         setVisMethod: (value) => set(() => {
             cookieSetCustom('visMethod', value);
             return { visMethod: value };
         }),
-        contentPath: cookieGetCustom('contentPath') || initMutableGlobalStore.contentPath,
+        contentPath: cookieGetCustom('contentPath') || configuredMutableGlobalStore.contentPath,
         setContentPath: (value) => set(() => {
             cookieSetCustom('contentPath', value);
             return { contentPath: value };
@@ -274,11 +162,24 @@ type WithDefaultValueSetter = {
 
 type GlobalStore = MutableGlobalStore & CustomGlobalStore & WithDefaultValueSetter;
 
-const useGlobalStore = create<GlobalStore>((set) => ({
+const useGlobalStore = create<GlobalStore>()(subscribeWithSelector((set) => ({
     setValue: createDefaultValueSetter(set),
-    ...createMutableTypes(initMutableGlobalStore, set),
+    ...createMutableTypes(configuredMutableGlobalStore, set),
     ...createCustomGlobalStore(set)
-}));    // don't use "as xxx" here so that we can check
+})));    // don't use "as xxx" here so that we can check
+
+if (true || BUILD_CONSTANTS.APP_CONFIG !== 'app') {
+    // For now, we subscribe each property for one time
+    for (const key of selectedListeningProperties) {
+        const _key = key as keyof typeof configuredMutableGlobalStore;
+        useGlobalStore.subscribe(
+            (state) => state[_key],
+            (value) => {
+                syncOut(_key, value);
+            }
+        );
+    }
+}
 
 // comparison-based update
 export function useShallow<T, K extends keyof T>(
