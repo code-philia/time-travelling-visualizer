@@ -99,7 +99,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
         y_max = y_max + PADDING;
 
         // create spec
-        const spec = {
+        const spec: any = {
             // ================= meta data =================
             type: 'common', // chart type
             animation: false,
@@ -264,8 +264,8 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                     point: {
                         state: {
                             hover: {
-                                scaleX: 1.6,
-                                scaleY: 1.6,
+                                scaleX: 2,
+                                scaleY: 2,
                                 fillOpacity: 1
                             },
                             hover_reverse: {
@@ -274,8 +274,8 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                                 fillOpacity: 0.2
                             },
                             as_neighbor: {
-                                scaleX: 1,
-                                scaleY: 1,
+                                scaleX: 1.6,
+                                scaleY: 1.6,
                                 fillOpacity: 0.5
                             },
                             locked: {
@@ -285,7 +285,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                             }
                         },
                         style: {
-                            size: 8,
+                            size: 3,
                             fill: (datum: { label: number; }) => {
                                 const color = colorDict.get(datum.label) ?? [0, 0, 0];
                                 return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
@@ -357,46 +357,15 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                     orient: 'left',
                     filterMode: 'axis',
                     showDetail: false,
-
-                    // style
-                    showBackgroundChart: false,
-                    startHandler: {
-                        style: {
-                            fill: 'rgb(22,119,255)',
-                            symbolType: 'diamond',
-                            size: 5,
-                        }
-                    },
-                    endHandler: {
-                        style: {
-                            fill: 'rgb(22,119,255)',
-                            symbolType: 'diamond',
-                            size: 5,
-                        }
-                    },
-                    background: {
-                        size: 1,
-                        style: {
-                            cornerRadius: 20
-                        }
-                    },
-                    selectedBackground: {
-                        style: {
-                            fill: 'rgb(215, 217, 220)',
-                            fillOpacity: 0.5
-                        }
-                    },
-
-                    // func
                     roamZoom: {
                         enable: true,
                         focus: true,
-                        rate: 5
+                        rate: 0.5
                     },
                     roamDrag: {
                         enable: true,
                         reverse: true,
-                        rate: 1
+                        rate: 0.3
                     }
                 },
                 {
@@ -404,196 +373,19 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                     orient: 'bottom',
                     filterMode: 'axis',
                     showDetail: false,
-
-                    // style
-                    showBackgroundChart: false,
-                    startHandler: {
-                        style: {
-                            fill: 'rgb(22,119,255)',
-                            symbolType: 'diamond',
-                            size: 5,
-                        }
-                    },
-                    endHandler: {
-                        style: {
-                            fill: 'rgb(22,119,255)',
-                            symbolType: 'diamond',
-                            size: 5,
-                        }
-                    },
-                    background: {
-                        size: 1,
-                        style: {
-                            cornerRadius: 20
-                        }
-                    },
-                    selectedBackground: {
-                        style: {
-                            fill: 'rgb(215, 217, 220)',
-                            fillOpacity: 0.5
-                        }
-                    },
-
-                    // func
                     roamZoom: {
                         enable: true,
                         focus: true,
-                        rate: 5
+                        rate: 0.5
                     },
                     roamDrag: {
                         enable: true,
                         reverse: true,
-                        rate: 1
+                        rate: 0.3
                     },
                 }
             ],
-            legends: [
-                {
-                    seriesId: 'point-series',
-                    visible: false,
-                    orient: 'right',
-                    position: 'start',
-                    data: (items: any[]) => {
-                        return items.map(item => {
-                            item.shape.outerBorder = {
-                                stroke: item.shape.fill,
-                                distance: 2,
-                                lineWidth: 1
-                            };
-                            item.value = labelDict.get(item.label);
-                            return item;
-                        });
-                    },
-                    title: {
-                        visible: true,
-                        align: 'left',
-                        textStyle: {
-                            text: 'Classes',
-                            fontFamily: 'SimHei',
-                            fontSize: 18,
-                            fontWeight: 'bold'
-                        }
-                    },
-                    item: {
-                        visible: true,
-                        width: '8%',
-                        value: {
-                            alignRight: true,
-                            style: {
-                                fill: '#000',
-                                fillOpacity: 1,
-                                fontSize: 12
-                            },
-                            state: {
-                                unselected: {
-                                    fill: '#d8d8d8'
-                                }
-                            }
-                        }
-                    }
-                }
-            ],
-
-            tooltip: {
-                seriesId: 'point-series',
-                lockAfterClick: false,
-                visible: showMetadata,
-                activeType: 'mark',
-                trigger: 'hover',
-                mark: {
-                    title: {
-                        visiable: true,
-                        value: 'Info'
-                    },
-                    content: [
-                        {
-                            key: 'Label',
-                            value: (datum: { label_desc: string; }) => datum.label_desc,
-                            shapeType: 'circle',
-                            shapeSize: 8
-                        },
-                        {
-                            key: 'Prediction',
-                            value: (datum: { pred_desc: string }) => datum.pred_desc,
-                            shapeType: 'circle',
-                            shapeSize: 8,
-                            shapeFill: (datum: { pred: number }) => {
-                                const color = colorDict.get(datum.pred) ?? [0, 0, 0];
-                                return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
-                            }
-                        },
-                        {
-                            key: 'Confidance',
-                            value: (datum: { confidence: number }) => `${datum.confidence.toFixed(2)}`,
-                            shapeType: 'square',
-                            shapeSize: 8,
-                            shapeHollow: false,
-                            shapeFill: (datum: { label: number, pred: number }) => {
-                                if (datum.label == datum.pred) {
-                                    return 'rgb(20, 227, 58)';
-                                }
-                                else {
-                                    return 'rgb(255, 0, 0)';
-                                }
-                            }
-                        }
-                    ]
-                },
-                style: {
-                    fillOpacity: () => {
-                        if (showMetadata) {
-                            return 1;
-                        }
-                        else {
-                            return 0;
-                        }
-                    },
-                    panel: {
-                        padding: {
-                            top: 10,
-                            bottom: 15,
-                            left: 10,
-                            right: 10
-                        },
-                        backgroundColor: '#fff',
-                        border: {
-                            color: '#eee',
-                            width: 1,
-                            radius: 10
-                        },
-                        shadow: {
-                            x: 0,
-                            y: 0,
-                            blur: 10,
-                            spread: 5,
-                            color: '#eee'
-                        }
-                    },
-                    titleLabel: {
-                        fontSize: 20,
-                        fontFamily: 'Times New Roman',
-                        fill: 'brown',
-                        fontWeight: 'bold',
-                        textAlign: 'center',
-                        lineHeight: 24
-                    },
-                    keyLabel: {
-                        fontSize: 16,
-                        fontFamily: 'Times New Roman',
-                        fill: 'black',
-                        textAlign: 'center',
-                        lineHeight: 15,
-                        spacing: 10
-                    },
-                    valueLabel: {
-                        fontSize: 14,
-                        fill: 'black',
-                        textAlign: 'center',
-                        lineHeight: 15,
-                        spacing: 10
-                    }
-                }
-            },
+            tooltip: {visible: false},
             direction: 'horizontal'
         };
 
