@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as config from './config';
-import { MessageViewManager } from './views/metadataView';
+import { TokenViewMessageManager, DetailViewMessageManager } from './views/messageManager';
 import { BrowseTreeView } from './views/browseTreeView';
 
 export function doViewsRegistration(): vscode.Disposable {
@@ -9,15 +9,17 @@ export function doViewsRegistration(): vscode.Disposable {
     //     MetadataViewManager.getWebViewProvider(),
     //     { webviewOptions: { retainContextWhenHidden: true } }
     // );
+    const tokenViewMessageManager = new TokenViewMessageManager();
     const inspectViewRegistration = vscode.window.registerWebviewViewProvider(
         config.ViewsID.inspectView,
-        MessageViewManager.getWebViewProvider(),
+        tokenViewMessageManager.getWebViewProvider(),
         { webviewOptions: { retainContextWhenHidden: true } }
     );
     
+    const detailViewMessageManager = new DetailViewMessageManager();
     const detailViewRegistration = vscode.window.registerWebviewViewProvider(
         config.ViewsID.detailView,
-        MessageViewManager.getDetailViewProvider(),
+        detailViewMessageManager.getWebViewProvider(),
         { webviewOptions: { retainContextWhenHidden: true } }
     );
 
