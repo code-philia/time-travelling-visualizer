@@ -74,6 +74,11 @@
             "id": "visualizer-panel",
             "title": "Visualizer",
             "icon": "resources/eye_tracking_24dp_5F6368_FILL0_wght300_GRAD0_opsz24.svg"
+        },
+        {
+            "id": "detail-panel",
+            "title": "Details",
+            "icon": "resources/eye_tracking_24dp_5F6368_FILL0_wght300_GRAD0_opsz24.svg"
         }
       ]
     },
@@ -82,16 +87,23 @@
         {
           "type": "webview",
           "id": "visualizer-inspect-view",
-          "name": "Visualizer"
+          "name": "Tokens Overview"
+        }
+      ],
+      "detail-panel":[
+        {
+          "type": "webview",
+          "id": "visualizer-detail-view",
+          "name": "Details"
         }
       ],
       "explorer": [
-            {
-                "id": "browse-tree-view",
-                "name": "Training Overview",
-                "icon": "resources/eye_tracking_24dp_5F6368_FILL0_wght300_GRAD0_opsz24.svg"
-            }
-        ]
+        {
+            "id": "browse-tree-view",
+            "name": "Training Overview",
+            "icon": "resources/eye_tracking_24dp_5F6368_FILL0_wght300_GRAD0_opsz24.svg"
+        }
+      ]
     }
   },
   "scripts": {

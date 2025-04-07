@@ -14,11 +14,19 @@ export function doViewsRegistration(): vscode.Disposable {
         MessageViewManager.getWebViewProvider(),
         { webviewOptions: { retainContextWhenHidden: true } }
     );
+    
+    const detailViewRegistration = vscode.window.registerWebviewViewProvider(
+        config.ViewsID.detailView,
+        MessageViewManager.getDetailViewProvider(),
+        { webviewOptions: { retainContextWhenHidden: true } }
+    );
+
     const browseTreeViewRegistration = new BrowseTreeView();
 
     return vscode.Disposable.from(
         // metadataViewRegistration,
         inspectViewRegistration,
+        detailViewRegistration,
         browseTreeViewRegistration
     );
 }

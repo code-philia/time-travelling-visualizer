@@ -10,6 +10,7 @@ import { useDefaultStore } from "./state/state-store";
 import './index.css';
 import { useSetUpTrainingProcess } from "./state/state-actions";
 import { MessageHandler } from "./communication/message";
+import DetailPanel from "./component/detail-panel";
 
 export function App() {
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
@@ -125,6 +126,15 @@ export function AppPanelViewOnly() {
     return (
         <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
             <BottomPanel></BottomPanel>
+            <MessageHandler></MessageHandler>
+        </div>
+    );
+}
+
+export function AppDetailPanelViewOnly() {
+    return (
+        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <DetailPanel></DetailPanel>
             <MessageHandler></MessageHandler>
         </div>
     );
