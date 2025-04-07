@@ -131,8 +131,8 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                     values: [] // dynamically set
                 },
                 {
-                    id: 'regions',
-                    values: [] // dynamically set
+                     id: 'trails',
+                     values: []
                 }
             ],
 
@@ -170,30 +170,32 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                     }
                 },
                 {
-                    id: 'regions-series',
-                    interactive: false,
-                    stack: false,
-                    type: 'area',
-                    dataId: 'regions',
-                    xField: 'xx',
-                    yField: 'yy',
-                    seriesField: 'class',
-                    point: {
-                        visible: false,
-                    },
+                    id: 'trails-series',
+                    type: 'line',
+                    dataId: 'trails',
+                    seriesField: 'trailId',
+                    xField: 'x',
+                    yField: 'y',
                     line: {
-                        interactive: false,
-                        visible: false,
+                        intereactive: false,
                         style: {
-                            curveType: 'catmullRomClosed',
+                            stroke: 'rgb(169, 168, 168)',
+                            // lineDash: [2, 2],
+                            lineWidth: 3,
+                            fillOpacity: 0.5
                         }
                     },
-                    area: {
-                        interactive: false,
+                    point: {
+                        visible: true,
+                        intereactive: false,
                         style: {
-                            fill: (datum: { class: number }) => {
-                                const color = colorDict.get(datum.class) ?? [0, 0, 0];
-                                return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
+                            fill: 'rgb(149, 147, 147)',
+                            // fillOpacity: (datum: { opacity: number }) => {
+                            //     return Math.max(0.7, datum.opacity);
+                            // },
+                            size: (datum: { opacity: number }) => {
+                                // return Math.max(5, 7.5 * datum.opacity);
+                                return 6.5;
                             },
                         }
                     },
@@ -492,6 +494,31 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
         vchartRef.current?.updateDataSync('edges', endpoints);
 
     }, [revealNeighborCrossType, revealNeighborSameType, hoveredIndex, highlightContext, vchartData]);
+
+
+     /*
+     Update motion trail
+     */
+     useEffect(() => {
+         if (!vchartRef.current) {
+             return;
+         }
+         const trailpoints: { trailId: number, x: number, y: number, opacity: number }[] = [];
+         const epochId = availableEpochs.indexOf(epoch);
+         selectedIndices.forEach(idx => {
+             let i;
+             for (i = 0; i <= epochId; i += 2) {
+                 let epochData = allEpochsProjectionData[availableEpochs[i]];
+                 trailpoints.push({ trailId: idx, x: epochData.proj[idx][0], y: epochData.proj[idx][1], opacity: (i + 1) / (epochId + 1) });
+             }
+             if (i !== epochId + 2) {
+                 let epochData = allEpochsProjectionData[epoch];
+                 trailpoints.push({ trailId: idx, x: epochData.proj[idx][0], y: epochData.proj[idx][1], opacity: 1 });
+             }
+         });
+         vchartRef.current.updateDataSync('trails', trailpoints);
+     }, [selectedIndices, epoch, availableEpochs, allEpochsProjectionData]);
+ 
 
     /*
         Show classification border
