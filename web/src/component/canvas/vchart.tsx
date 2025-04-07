@@ -22,6 +22,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
     const { filterState } = useDefaultStore(["filterState"]);
     const { showMetadata, showBgimg } = useDefaultStore(["showMetadata", "showBgimg"]);
     const { showNumber, showText, textData } = useDefaultStore(["showNumber", "showText", "textData"])
+    const { epoch, availableEpochs, allEpochsProjectionData } = useDefaultStore(["epoch", "availableEpochs", "allEpochsProjectionData"]);
     const { neighborSameType, neighborCrossType, lastNeighborSameType, lastNeighborCrossType } = useDefaultStore(["neighborSameType", "neighborCrossType", "lastNeighborSameType", "lastNeighborCrossType"]);
     const { revealNeighborCrossType, revealNeighborSameType } = useDefaultStore(["revealNeighborCrossType", "revealNeighborSameType"]);
     const { hoveredIndex, setHoveredIndex } = useDefaultStore(["hoveredIndex", "setHoveredIndex"]);
@@ -215,17 +216,13 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                     yField: 'y',
                     line: {
                         style: {
-                            stroke: (datum: { status: string; }) => {
-                                if (datum.status == 'maintain') {
-                                    return 'rgb(113, 113, 113)';
+                            stroke: (datum: { from: number, to: number, type: string; }) => {
+                                if (datum.type === 'sameType') {
+                                    return transferArray2Color(colorDict.get(samplesRef.current[datum.from].label), 0.6);
                                 }
-                                else if (datum.status == 'connect') {
-                                    return 'rgb(94, 242, 121)';
+                                else {
+                                    return transferArray2Color(colorDict.get(samplesRef.current[datum.to].label), 0.6);
                                 }
-                                else if (datum.status == 'disconnect') {
-                                    return 'rgb(242, 129, 129)';
-                                }
-                                return 'rgb(113, 113, 113)';
                             },
                             lineDash: (datum: { status: string; }) => {
                                 if (datum.status == 'maintain') {
@@ -241,17 +238,16 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                             },
                             lineWidth: (datum: { status: string; }) => {
                                 if (datum.status == 'maintain') {
-                                    return 1;
+                                    return 0.8;
                                 }
                                 else if (datum.status == 'connect') {
-                                    return 1;
+                                    return 0.8;
                                 }
                                 else if (datum.status == 'disconnect') {
-                                    return 1;
+                                    return 0.8;
                                 }
-                                return 1;
+                                return 0.8;
                             },
-                            fillOpacity: 0.4
                         }
                     },
                     point: { visible: false }
