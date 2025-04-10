@@ -4,6 +4,8 @@ import * as config from '../config';
 import { readFileSync } from 'fs';
 import { handleMessageDefault } from '../control';
 import { getLiveWebviewHtml } from '../devLiveServer';
+import { MessageManager } from './messageManager';
+import { PlotViewMessageManager } from './viewMessageManager';
 
 function replaceUri(html: string, webview: vscode.Webview, srcPattern: string, dst: string): string {
 	// replace all 'matched pattern' URI using webview.asWebviewUri,
@@ -86,18 +88,12 @@ export class PlotViewManager {
 			panel.webview.onDidReceiveMessage((msg) => {		// this will add a listener, not overwriting
 				if (msg.state === 'load') {
 					this.panel = panel;
+					MessageManager.setPlotViewMessageManager(new PlotViewMessageManager(panel));
 					resolve(true);
 				}
 			});
 		});
 		return loaded;
-	}
-
-	static async postMessage(msg: any): Promise<boolean> {
-		if (!(this.view)) {
-			return false;
-		}
-		return await this.view?.postMessage(msg);
 	}
 
 	static async showView(): Promise<boolean> {

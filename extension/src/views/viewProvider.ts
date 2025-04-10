@@ -60,7 +60,10 @@ export class DetailViewProvider extends BaseViewProvider {
             );
         }
 
-        webviewView.webview.onDidReceiveMessage(handleMessageDefault);
+        // webviewView.webview.onDidReceiveMessage(handleMessageDefault);
+        webviewView.webview.onDidReceiveMessage(msg => {
+            console.log("Detail View received message: ", msg);
+        });
     }
 }
 
@@ -95,6 +98,9 @@ export class TokenViewProvider extends BaseViewProvider {
             );
         }
 
-        webviewView.webview.onDidReceiveMessage(handleMessageDefault);
+        // webviewView.webview.onDidReceiveMessage(handleMessageDefault);
+        webviewView.webview.onDidReceiveMessage(msg => {
+            console.log("Token View received message: ", msg);
+        });
     }
 }
