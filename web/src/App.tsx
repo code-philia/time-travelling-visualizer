@@ -4,13 +4,11 @@ import { RightSidebar } from './component/right-sidebar'
 import { Button, Checkbox, Input, Modal } from "antd";
 import { SettingOutlined } from "@ant-design/icons";
 import BottomPanel from "./component/bottom-panel";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useDefaultStore } from "./state/state-store";
 
 import './index.css';
-import { useSetUpTrainingProcess } from "./state/state-actions";
 import { MessageHandler } from "./communication/message";
-import DetailPanel from "./component/detail-panel";
 
 export function App() {
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
@@ -65,14 +63,14 @@ export function App() {
             <Modal title="Settings" open={isSettingsModalOpen} footer={null} onCancel={hideSettingsModal}>
                 <div className="component-block">
                     <div className="label">Backend Host</div>
-                    <Input value={backendHost} onChange={(e) => setBackendHost(e.target.value)} />
+                    <Input value={backendHost} onChange={(e:any) => setBackendHost(e.target.value)} />
                 </div>
                 <div className="component-block">
                     <div className="label">Dummy Settings</div>
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <Checkbox checked={showLossAttribution} onChange={(e) => setShowLossAttribution(e.target.checked)}>Show Loss Attribution</Checkbox>
-                        <Checkbox checked={showTokensWeightAsSize} onChange={(e) => setShowTokensWeightAsSize(e.target.checked)}>Show Tokens Weight As Size</Checkbox>
-                        <Checkbox checked={showTokensAlignmentAsColor} onChange={(e) => setShowTokensAlignmentAsColor(e.target.checked)}>Show Tokens Alignment As Color</Checkbox>
+                        <Checkbox checked={showLossAttribution} onChange={(e:any) => setShowLossAttribution(e.target.checked)}>Show Loss Attribution</Checkbox>
+                        <Checkbox checked={showTokensWeightAsSize} onChange={(e:any) => setShowTokensWeightAsSize(e.target.checked)}>Show Tokens Weight As Size</Checkbox>
+                        <Checkbox checked={showTokensAlignmentAsColor} onChange={(e:any) => setShowTokensAlignmentAsColor(e.target.checked)}>Show Tokens Alignment As Color</Checkbox>
                     </div>
                 </div>
             </Modal>
@@ -87,55 +85,4 @@ export function App() {
             <MessageHandler></MessageHandler>
         </div>
     )
-}
-
-export function AppPlotViewOnly() {
-    const { setValue } = useDefaultStore(['setValue']);
-    const setUpTrainingProcess = useSetUpTrainingProcess();
-
-    useEffect(() => {
-        setValue("contentPath", "/home/yuhuan/projects/cophi/visualizer-refactor/dev/sample-datasets/new-version-datasets/gcb_tokens");
-        setValue("visMethod", "TimeVis");
-
-        (async () => {
-            await setUpTrainingProcess();
-        })();
-    });
-
-    return (
-        <div style={{ width: '100%', height: '100%', display: 'flex' }}>
-            <MainBlock></MainBlock>
-            <MessageHandler></MessageHandler>
-        </div>
-    );
-}
-
-export function AppPanelViewOnly() {
-    const { setValue } = useDefaultStore(['setValue']);
-    const setUpTrainingProcess = useSetUpTrainingProcess();
-
-    useEffect(() => {
-        setValue("contentPath", "/home/yuhuan/projects/cophi/visualizer-refactor/dev/sample-datasets/new-version-datasets/gcb_tokens");
-        setValue("visMethod", "TimeVis");
-
-        (async () => {
-            await setUpTrainingProcess();
-        })();
-    });
-
-    return (
-        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <BottomPanel></BottomPanel>
-            <MessageHandler></MessageHandler>
-        </div>
-    );
-}
-
-export function AppDetailPanelViewOnly() {
-    return (
-        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <DetailPanel></DetailPanel>
-            <MessageHandler></MessageHandler>
-        </div>
-    );
 }
