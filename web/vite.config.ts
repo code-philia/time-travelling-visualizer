@@ -37,7 +37,8 @@ export default defineConfig({
             input: {
                 full: resolve(__dirname, './index.html'),
                 extensionPanel: resolve(__dirname, './configs/extension-panel-view/index.html'),
-                extensionPlot: resolve(__dirname, './configs/extension-plot-view/index.html')
+                extensionPlot: resolve(__dirname, './configs/extension-plot-view/index.html'),
+                extensionDetail: resolve(__dirname, './configs/extension-detail-view/index.html'),
             }
         },
     }
