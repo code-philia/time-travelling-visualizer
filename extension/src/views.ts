@@ -1,32 +1,27 @@
 import * as vscode from 'vscode';
 import * as config from './config';
-import { TokenViewMessageManager, DetailViewMessageManager } from './views/messageManager';
 import { BrowseTreeView } from './views/browseTreeView';
+import { ViewMessageManager } from './views/viewMessageManager';
 
 export function doViewsRegistration(): vscode.Disposable {
-    // const metadataViewRegistration = vscode.window.registerWebviewViewProvider(
-    //     config.ViewsID.metadataView,
-    //     MetadataViewManager.getWebViewProvider(),
-    //     { webviewOptions: { retainContextWhenHidden: true } }
-    // );
-    const tokenViewMessageManager = new TokenViewMessageManager();
+    // Prepare for registration of webview views
+    ViewMessageManager.initializeView();
+
     const inspectViewRegistration = vscode.window.registerWebviewViewProvider(
         config.ViewsID.inspectView,
-        tokenViewMessageManager.getWebViewProvider(),
+        ViewMessageManager.getTokenViewMessageManager().getWebViewProvider(),
         { webviewOptions: { retainContextWhenHidden: true } }
     );
-    
-    const detailViewMessageManager = new DetailViewMessageManager();
     const detailViewRegistration = vscode.window.registerWebviewViewProvider(
         config.ViewsID.detailView,
-        detailViewMessageManager.getWebViewProvider(),
+        ViewMessageManager.getDetailViewMessageManager().getWebViewProvider(),
         { webviewOptions: { retainContextWhenHidden: true } }
     );
 
+    // Prepare for registration of tree view
     const browseTreeViewRegistration = new BrowseTreeView();
 
     return vscode.Disposable.from(
-        // metadataViewRegistration,
         inspectViewRegistration,
         detailViewRegistration,
         browseTreeViewRegistration

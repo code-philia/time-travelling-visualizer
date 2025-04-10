@@ -1,54 +1,45 @@
-import * as vscode from 'vscode';
-import * as config from '../config';
-import { BaseViewProvider,TokenViewProvider, DetailViewProvider } from './viewProvider';
+import { DetailViewMessageManager, TokenViewMessageManager, PlotViewMessageManager } from "./viewMessageManager";
 
-export class MessageManager {
-    protected provider?: BaseViewProvider;
+export class MessageManager { 
+    private static tokenViewMessageManager: TokenViewMessageManager;
+    private static detailViewMessageManager: DetailViewMessageManager;
+    private static plotViewMessageManager: PlotViewMessageManager;
 
-    get view(): vscode.Webview | undefined {
-        return this.provider?.webview;
-    }
-    
-    public getWebViewProvider(): BaseViewProvider { 
-        return this.provider as BaseViewProvider;
+    static initializeView() {
+        this.tokenViewMessageManager = new TokenViewMessageManager();
+        this.detailViewMessageManager = new DetailViewMessageManager();
     }
 
-    async postMessage(msg: any): Promise<boolean> {
-        if (!this.view) {
-            return false;
+    static getTokenViewMessageManager(): TokenViewMessageManager {
+        return this.tokenViewMessageManager;
+    }
+
+    static getDetailViewMessageManager(): DetailViewMessageManager {
+        return this.detailViewMessageManager;
+    }
+
+    static setPlotViewMessageManager(_plotViewMessageManager: PlotViewMessageManager) {
+        this.plotViewMessageManager = _plotViewMessageManager;
+    }
+
+    static sendToPlotView(msg: any): Promise<boolean> {
+        if (!this.plotViewMessageManager) {
+            return Promise.resolve(false);
         }
-        return await this.view.postMessage(msg);
+        return this.plotViewMessageManager.postMessage(msg);
     }
-}
 
-export class TokenViewMessageManager extends MessageManager {
-    constructor() {
-        super();
-        if (!this.provider) {
-            this.provider = new TokenViewProvider(
-                config.isDev ? config.panelWebviewPort : undefined,
-                config.isDev ? '' : undefined
-            );
+    static sendToTokenView(msg: any): Promise<boolean> {
+        if (!this.tokenViewMessageManager) {
+            return Promise.resolve(false);
         }
+        return this.tokenViewMessageManager.postMessage(msg);
     }
 
-    public getWebViewProvider(): TokenViewProvider {
-        return this.provider as TokenViewProvider;
-    }
-}
-
-export class DetailViewMessageManager extends MessageManager {
-    constructor() {
-        super();
-        if (!this.provider) {
-            this.provider = new DetailViewProvider(
-                config.isDev ? config.panelWebviewPort : undefined,
-                config.isDev ? '' : undefined
-            );
+    static sendToDetailView(msg: any): Promise<boolean> {
+        if (!this.detailViewMessageManager) {
+            return Promise.resolve(false);
         }
-    }
-
-    public getWebViewProvider(): DetailViewProvider {
-        return this.provider as DetailViewProvider;
+        return this.detailViewMessageManager.postMessage(msg);
     }
 }
