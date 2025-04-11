@@ -76,13 +76,14 @@ export class PlotViewManager {
 
 		// TODO the iframe would not be refreshed for not receiving "update" message, which is a handicap for live preview in development
 		// reload the data when the iframe is refreshed, maybe by posting a message to vscode to ask for several major arguments
-        panel.webview.onDidReceiveMessage(handleMessageDefault);
-
-        // Setup variables for the first time
-        // panel.webview.postMessage({
-        //     command: 'sync',
-        //     backendHost: 'localhost:5012'
-        // });
+		
+		// panel.webview.onDidReceiveMessage(handleMessageDefault);
+		panel.webview.onDidReceiveMessage((msg) => {
+			console.log("Plot View received message: ", msg);
+			if (msg.command === 'sync') {
+				MessageManager.sendToDetailView(msg);
+			}
+		});
 
 		const loaded: Promise<boolean> = new Promise((resolve) => {
 			panel.webview.onDidReceiveMessage((msg) => {		// this will add a listener, not overwriting

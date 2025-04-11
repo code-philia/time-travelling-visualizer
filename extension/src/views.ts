@@ -1,20 +1,20 @@
 import * as vscode from 'vscode';
 import * as config from './config';
 import { BrowseTreeView } from './views/browseTreeView';
-import { ViewMessageManager } from './views/viewMessageManager';
+import { MessageManager } from './views/messageManager';
 
 export function doViewsRegistration(): vscode.Disposable {
     // Prepare for registration of webview views
-    ViewMessageManager.initializeView();
+    MessageManager.initializeView();
 
     const inspectViewRegistration = vscode.window.registerWebviewViewProvider(
         config.ViewsID.inspectView,
-        ViewMessageManager.getTokenViewMessageManager().getWebViewProvider(),
+        MessageManager.getTokenViewMessageManager().getWebViewProvider(),
         { webviewOptions: { retainContextWhenHidden: true } }
     );
     const detailViewRegistration = vscode.window.registerWebviewViewProvider(
         config.ViewsID.detailView,
-        ViewMessageManager.getDetailViewMessageManager().getWebViewProvider(),
+        MessageManager.getDetailViewMessageManager().getWebViewProvider(),
         { webviewOptions: { retainContextWhenHidden: true } }
     );
 
