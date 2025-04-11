@@ -1,8 +1,8 @@
-import { StrictMode } from 'react'
+import { StrictMode, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import DetailPanel from '../component/detail-panel';
-import { MessageHandler } from '../communication/message';
 import '../index.css';
+import { useDefaultStore } from '../state/state-store';
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
@@ -13,8 +13,33 @@ createRoot(document.getElementById('root')!).render(
 function AppDetailPanelViewOnly() {
     return (
         <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <DetailPanel></DetailPanel>
             <MessageHandler></MessageHandler>
+            <DetailPanel></DetailPanel>
         </div>
     );
+}
+
+function MessageHandler() {
+    const { setValue } = useDefaultStore(["setValue"]);
+
+    const handleMessage = (event: MessageEvent) => {
+        const message = event.data;
+        if (!message) {
+            console.error("Invalid message:", message);
+            return;
+        }
+        console.log("detail web received message:", message);
+        if (message.command === "sync") {
+            setValue("hoveredIndex", message.hoveredIndex);
+        }
+    };
+
+    useEffect(() => {
+        window.addEventListener("message", handleMessage);
+        return () => {
+            window.removeEventListener("message", handleMessage);
+        };
+    }, []);
+
+    return <></>;
 }

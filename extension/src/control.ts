@@ -143,7 +143,9 @@ async function reconfigureVisualizationConfig(): Promise<api.BasicVisualizationC
 	const visualizationMethod = await repickConfig(
 		"Select the visualization method",
 		[
-			{ label: "TrustVis", description: "(default)" }
+			{ label: "TrustVis", description: "(default)" },
+			{ label: "TimeVis" },
+			{ label: "DVI" },
 		]
 	);
 	if (!visualizationMethod) {
@@ -195,6 +197,9 @@ async function loadVisualizationPlot(forceReconfig: boolean = false): Promise<bo
 		const { dataType, taskType, contentPath, visualizationMethod } = config;
 		return await notifyVisualizationUpdate(dataType, taskType, contentPath, visualizationMethod);
 	}
+	else {
+		console.log("No valid configuration found yet. Generating a new one...");
+	}
 	return false;
 }
 
@@ -207,7 +212,7 @@ async function notifyVisualizationUpdate(dataType: string, taskType: string, con
 		dataType: dataType,
 		forward: true		// recognized by live preview <iframe> (in dev) only
 	};
-	return await PlotViewManager.postMessage(msg);
+	return await MessageManager.sendToPlotView(msg);
 }
 
 class GeneralMessageHandler {

@@ -2,7 +2,6 @@ import { StrictMode, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import { useSetUpTrainingProcess } from '../state/state-actions';
 import BottomPanel from '../component/bottom-panel';
-import { MessageHandler } from '../communication/message';
 import { useDefaultStore } from '../state/state-store';
 import '../index.css';
 
@@ -31,4 +30,25 @@ function AppPanelViewOnly() {
             <MessageHandler></MessageHandler>
         </div>
     );
+}
+
+function MessageHandler() {
+    useEffect(() => {
+        const handleMessage = (event: MessageEvent) => {
+            const message = event.data;
+            if (!message) {
+                console.error('Invalid message:', message);
+                return;
+            }
+            else {
+                console.log('token web received message:', message);
+            }
+        };
+        window.addEventListener('message', handleMessage);
+        return () => {
+            window.removeEventListener('message', handleMessage);
+        };
+    }, []);
+
+    return <></>
 }
