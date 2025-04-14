@@ -1,25 +1,18 @@
-import argparse
 import os
 import sys
-import base64
-import numpy as np
+from llm_agent import call_llm_agent
 from utils import *
-from flask import request, Flask, jsonify, make_response,send_from_directory
+from flask import request, Flask, jsonify, make_response, send_file,send_from_directory
 from flask_cors import CORS, cross_origin
 
 sys.path.append('..')
 sys.path.append('.')
 sys.path.append('../..')
 
-# from visualize.visualizer import Visualizer
-
 # flask for API server
-app = Flask(__name__, static_url_path='/static', static_folder='../frontend')
+app = Flask(__name__)
 cors = CORS(app, supports_credentials=True)
 app.config['CORS_HEADERS'] = 'Content-Type'
-
-# TODO:from where to get config path?
-config_file ='/path/to/config.json'
 
 # Check for "--dev" argument
 is_dev_mode = "--dev" in sys.argv
@@ -51,6 +44,32 @@ def get_epoch_structure():
     })
     return make_response(result, 200)
 
+"""
+Api: get training process info
+
+Request:
+    content_path (str)
+    vis_method (str)
+Response:
+    color_list (list): list of colors
+    label_text_list (list): list of label text
+"""
+@app.route('/getTrainingProcessInfo', methods=["GET"])
+@cross_origin()
+def get_training_process_info():
+    content_path = request.args.get('content_path')
+    config = read_file_as_json(os.path.join(content_path, 'config.json'))
+    # 1. color list
+    color_list  = get_coloring_list(config)
+    # 2. label text list
+    label_text_list = config['dataset']['classes']
+    
+    result = jsonify({
+        'color_list': color_list,
+        'label_text_list': label_text_list,
+    })
+    return make_response(result, 200)
+
 
 """
 Api: get minimum info of one epoch
@@ -72,48 +91,11 @@ def update_projection():
     vis_method = req['vis_method']
     epoch = int(req['epoch'])
 
-    config = read_file_as_json(os.path.join(content_path, 'config.json'))
-
     # NOTE dont't hide exception to backend output
-    projection, label_list = load_projection(config, content_path, vis_method, epoch)
+    projection = load_projection(content_path, vis_method, epoch)
 
     result = jsonify({
-        'config': config,
-        'proj': projection[:min(5000,len(projection))],
-        'labels': label_list[:min(5000,len(label_list))],
-        'label_text_list': config['dataset']['classes']
-    })
-    return make_response(result, 200)
-
-"""
-Api: get background image of one epoch
-
-Request:
-    content_path (str)
-    vis_method (str)
-    epoch (str)
-Response:
-    bgimg (str): base64 encoded image
-"""
-@app.route('/getBackgroundImage', methods = ["POST"])
-@cross_origin()
-def get_background_image():
-    req = request.get_json()
-    content_path = req['content_path']
-    vis_method = req['vis_method']
-    epoch = int(req['epoch'])
-
-    config = read_file_as_json(os.path.join(content_path, 'config.json'))
-
-    try:
-        bgimg = load_background_image_base64(config, content_path, vis_method, epoch)
-        scale = load_scale(config, content_path, vis_method, epoch)
-    except Exception as e:
-        return make_response(jsonify({'error_message': 'Error in loading background image'}), 400)
-
-    result = jsonify({
-        'bgimg': bgimg, # 'data:image/png;base64,' + img_stream
-        'scale' : scale
+        'projection': projection
     })
     return make_response(result, 200)
 
@@ -266,153 +248,103 @@ def get_simple_filter_result():
 
 
 """
-Api: trigger visualize model training and projection process
+Api: get background image
 
 Request:
     content_path (str)
     vis_method (str)
+    width (int)
+    height (int)
+    scale (list of float)
 Response:
-    error_message (str): error message if training failed
-"""
-@app.route('/visualizeTrainingProcess', methods = ["POST"])
+    background_image_base64 (str): base64 encoded im
+"""    
+@app.route('/getBackground', methods = ["POST"])
 @cross_origin()
-def visualize_training_process():
+def get_background():
     req = request.get_json()
     content_path = req['content_path']
     vis_method = req['vis_method']
+    width = int(req['width'])
+    height = int(req['height'])
+    epoch = int(req['epoch'])
+    scale = req['scale']
+    
+    # config = read_file_as_json(os.path.join(content_path, 'config.json'))
+    try:
+        webp_image = paint_background(content_path, vis_method, epoch, width, height, scale)
+        return send_file(webp_image, mimetype='image/webp')
+    except Exception as e:
+        return make_response(jsonify({'error_message': 'Error in loading background'}), 400)
+
+"""
+Api: get image data of one sample
+
+Request:
+    content_path (str)
+    index (str): sample index
+Response:
+    image_base64 (str): base64 encoded image
+"""
+@app.route('/getImageData', methods = ["POST"])
+@cross_origin()
+def get_image_data():
+    req = request.get_json()
+    content_path = req['content_path']
+    index = int(req['index'])
 
     config = read_file_as_json(os.path.join(content_path, 'config.json'))
-    visualizer = Visualizer(config, content_path, vis_method)
-    error_message = visualizer.visualize()
 
-    if error_message == 'success':
-        error_code = 200
-    else:
-        error_code = 400
+    try:
+        webp_image = load_one_image(config, content_path, index)
+        return send_file(webp_image, mimetype='image/webp')
+    except Exception as e:
+        return make_response(jsonify({'error_message': 'Error in loading image'}), 400)
 
-    result = jsonify({
-        'error_message': error_message
-    })
 
-    return make_response(result, error_code)
+"""
+Api: get all neighbors of one sample
 
-""" ===================================================================== """
-# Func: get iteration structure
-def get_tree():
-    config = initialize_config(config_file)
-
-    json_data = []
-    previous_epoch = ""
-    for epoch in range(config.EPOCH_START, config.EPOCH_END + 1, config.EPOCH_PERIOD):
-        json_data.append({
-            "value": epoch,
-            "name": 'Epoch',
-            "pid": previous_epoch if previous_epoch else ""
-        })
-        previous_epoch = epoch
-    return make_response(jsonify({"structure":json_data}), 200)
-
-# Func: load projection result of one epoch
-def update_projection_old():
-    # search filter
+Request:
+    content_path (str)
+    epoch (str)
+Response:
+    inClassNeighbors (array[][])
+    outClassNeighbors (array[][])
+"""
+@app.route('/getAllNeighbors', methods = ["POST"])
+@cross_origin()
+def getAllNeighbors():
     req = request.get_json()
-    iteration = int(req['iteration'])
-    predicates = req['predicates']
-    indicates = list(range(100)) # we now don't use req['selectedPoints'] to filter in backend
+    content_path = req['content_path']
+    epoch = int(req['epoch'])
+    
+    config = read_file_as_json(os.path.join(content_path, 'config.json'))
+    
+    try:
+        inClassNeighbors, outClassNeighbors = calculateAllNeighbors(config, content_path, epoch)
+        result = jsonify({
+            'inClassNeighbors': inClassNeighbors,
+            'outClassNeighbors': outClassNeighbors
+        })
+        return make_response(result, 200)
+    except Exception as e:
+        print(e)
+        return make_response(jsonify({'error_message': 'Error in calculating neighbors'}), 400)
+    
 
-    # load config from config_file
-    config = initialize_config(config_file)
-
-    # load visualization result of one epoch
-    if config.TASK_TYPE == 'classification' or config.TASK_TYPE == 'non-classification':
-
-        embedding_2d, grid, decision_view, label_name_dict, label_color_list, label_list, max_iter, training_data_index, \
-        testing_data_index, eval_new, prediction_list, selected_points, error_message_projection, color_list, \
-            confidence_list = update_epoch_projection(config, iteration, predicates, indicates)
-
-        # make response and return
-        grid = np.array(grid)
-        color_list = color_list.tolist()
-        return make_response(jsonify({'result': embedding_2d,
-                                    'grid_index': grid.tolist(),
-                                    'grid_color': 'data:image/png;base64,' + decision_view,
-                                    'label_name_dict':label_name_dict,
-                                    'label_color_list': label_color_list,
-                                    'label_list': label_list,
-                                    'maximum_iteration': max_iter,
-                                    'training_data': training_data_index,
-                                    'testing_data': testing_data_index,
-                                    'evaluation': eval_new,
-                                    'prediction_list': prediction_list,
-                                    "selectedPoints":selected_points.tolist(),
-                                    "errorMessage": error_message_projection,
-                                    "color_list": color_list,
-                                    "confidence_list": confidence_list
-                                    }), 200)
-    elif config.TASK_TYPE == 'Umap-Neighborhood':
-        result = get_umap_neighborhood_epoch_projection(config.CONTENT_PATH, iteration, predicates, indicates)
+@app.route('/getLLMResponse', methods = ["POST"])
+@cross_origin()
+def getLLMResponse():
+    req = request.get_json()
+    input = req['input']
+    try:
+        result = call_llm_agent(input) # {"tool": "xxx", "output": "xxx"}
         return make_response(jsonify(result), 200)
-    else:
-        return make_response(jsonify({'error': 'TaskType not found'}), 400)
+    except Exception as e:
+        print(e)
+        return make_response(jsonify({'error_message': 'Error in calculating LLM'}), 400)
 
-# Func: get sprite or text of one sample
-@app.route('/spriteImage', methods = ["GET"])
-@cross_origin()
-def sprite_image():
-    index = int(request.args.get("index"))
-
-    # load config from config_file
-    config = initialize_config(config_file)
-    if config.DATA_TYPE == "image":
-        pic_save_dir_path = os.path.join(config.CONTENT_PATH, "Dataset","sprites", "{}.png".format(index))
-        img_stream = ""
-        with open(pic_save_dir_path, 'rb') as img_f:
-            img_stream = img_f.read()
-            img_stream = base64.b64encode(img_stream).decode()
-        return make_response(jsonify({"imgUrl":'data:image/png;base64,' + img_stream}), 200)
-    elif config.DATA_TYPE == "text":
-        if config.SHOW_LABEL:
-            if index % 2 == 0: # source
-                text_save_dir_path = os.path.join(config.CONTENT_PATH, "Dataset","source", "{}.txt".format(int(index/2)))
-            else: # target
-                text_save_dir_path = os.path.join(config.CONTENT_PATH, "Dataset","target", "{}.txt".format(int(index/2)))
-        else:
-            text_save_dir_path = os.path.join(config.CONTENT_PATH, "Dataset","source", "{}.txt".format(index))
-
-        sprite_texts = ''
-        with open(text_save_dir_path, 'r') as text_f:
-            sprite_texts = text_f.read()
-        return make_response(jsonify({"texts": sprite_texts}), 200)
-    else:
-        raise ValueError("Invalid data type in config")
-
-@app.route('/spriteText', methods = ["GET"])
-@cross_origin()
-def sprite_text():
-    index = int(request.args.get("index"))
-
-    # load config from config_file
-    config = initialize_config(config_file)
-
-    if config.SHOW_LABEL:
-        if index % 2 == 0: # source
-            text_save_dir_path = os.path.join(config.CONTENT_PATH, "Dataset","source", "{}.txt".format(int(index/2)))
-        else: # target
-            text_save_dir_path = os.path.join(config.CONTENT_PATH, "Dataset","target", "{}.txt".format(int(index/2)))
-    else:
-        text_save_dir_path = os.path.join(config.CONTENT_PATH, "Dataset","source", "{}.txt".format(index))
-
-    sprite_texts = ''
-    if os.path.exists(text_save_dir_path):
-        with open(text_save_dir_path, 'r') as text_f:
-            sprite_texts = text_f.read()
-    else:
-        print("File does not exist:", text_save_dir_path)
-
-    response_data = {
-        "texts": sprite_texts
-    }
-    return make_response(jsonify(response_data), 200)
 
 def check_port_inuse(port, host):
     import socket
@@ -428,17 +360,10 @@ def check_port_inuse(port, host):
         if s:
             s.close()
 
-# Parse command-line arguments
-parser = argparse.ArgumentParser(description="Run the Flask server.")
-parser.add_argument("--port", type=int, default=5050, help="Port number to run the server on.")
-args = parser.parse_args()
-
-# Update the port based on the argument
-port = args.port
-
 # for contrast
 if __name__ == "__main__":
     host = '0.0.0.0'
+    port = 5050
     while check_port_inuse(port, host):
         port = port + 1
 
