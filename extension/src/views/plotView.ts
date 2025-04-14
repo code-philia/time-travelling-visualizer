@@ -2,10 +2,11 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as config from '../config';
 import { readFileSync } from 'fs';
-import { handleMessageDefault } from '../control';
+import { getCurrentConfig, handleMessageDefault } from '../control';
 import { getLiveWebviewHtml } from '../devLiveServer';
 import { MessageManager } from './messageManager';
 import { PlotViewMessageManager } from './viewMessageManager';
+import { fetchEpochProjection } from '../communication/api';
 
 function replaceUri(html: string, webview: vscode.Webview, srcPattern: string, dst: string): string {
 	// replace all 'matched pattern' URI using webview.asWebviewUri,
@@ -77,11 +78,21 @@ export class PlotViewManager {
 		// TODO the iframe would not be refreshed for not receiving "update" message, which is a handicap for live preview in development
 		// reload the data when the iframe is refreshed, maybe by posting a message to vscode to ask for several major arguments
 		
-		// panel.webview.onDidReceiveMessage(handleMessageDefault);
-		panel.webview.onDidReceiveMessage((msg) => {
+		panel.webview.onDidReceiveMessage(async (msg) => {
 			console.log("Plot View received message: ", msg);
-			if (msg.command === 'sync') {
-				MessageManager.sendToDetailView(msg);
+			if (msg.command === 'epochSwitch') {
+				const targetEpoch: number = msg.data.epoch;
+				const config = getCurrentConfig();
+				if (!config) {
+					return;
+				}
+				const projectionRes: any = await fetchEpochProjection(config.contentPath, config.visualizationMethod, targetEpoch);
+				const msgBack = {
+					command: 'sync',
+					type: 'epochData',
+					data: { projection: projectionRes['projection'], epoch: targetEpoch }
+				};
+				MessageManager.sendToPlotView(msgBack);
 			}
 		});
 

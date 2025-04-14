@@ -5,8 +5,12 @@ import * as api from './api';
 import { PlotViewManager } from "./views/plotView";
 import { isDirectory } from './ioUtils';
 import { getIconUri } from './resources';
-import { MessageViewManager } from './views/metadataView';
+import { MessageManager } from './views/messageManager';
+import { fetchTrainingProcessInfo, fetchTrainingProcessStructure, getAttributeResource, getText } from './communication/api';
 
+/**
+ * Config
+ */
 async function repickConfig( configDescription: string, items: (vscode.QuickPickItem & { iconId?: string })[]): Promise<string> {
 	const quickPickitems: vscode.QuickPickItem[] = items.map(item => {
 		return {
@@ -32,6 +36,7 @@ function checkDefaultVisualizationConfig(): api.BasicVisualizationConfig | undef
 	const visualizationMethod = visConfigSet.get(config.ConfigurationID.visualizationMethod);
 	// TODO create a class for a configuration
 	// that can both define the ID and validate the value
+
 	if (api.Types.VisualizationDataType.has(dataType) &&
 		api.Types.VisualizationTaskType.has(taskType) &&
 		typeof contentPath === 'string' && isDirectory(contentPath) &&
@@ -64,7 +69,7 @@ async function reconfigureVisualizationConfig(): Promise<api.BasicVisualizationC
 		"Select the type of your model task",
 		[
 			{ iconId: "classification-task", label: "Classification" },
-			{ iconId: "non-classification-task", label: "Non-Classification" },
+			{ iconId: "non-classification-task", label: "Code-Retrieval" },
 		]
 	);
 	if (!taskType) {
@@ -177,7 +182,20 @@ async function getConfig(forceReconfig: boolean = false): Promise<api.BasicVisua
 	return config;
 }
 
+export function getCurrentConfig() {
+	var config: api.BasicVisualizationConfig | undefined;
+	config = checkDefaultVisualizationConfig();
+	if (!config) {
+		vscode.window.showErrorMessage("Cannot start visualization: invalid configuration");
+	}
+	return config;
+}
+
+/**
+ * Start the visualization
+ */
 export async function startVisualization(forceReconfig: boolean = false): Promise<boolean> {
+	// 1. create or show plot view
 	if (!(PlotViewManager.view)) {
 		try {
 			await PlotViewManager.showView();
@@ -186,21 +204,49 @@ export async function startVisualization(forceReconfig: boolean = false): Promis
 			return false;
 		}
 	}
-	return await loadVisualizationPlot(forceReconfig);
-}
 
-// TODO does passing forceReconfig twice seem silly?
-async function loadVisualizationPlot(forceReconfig: boolean = false): Promise<boolean> {
+	// 2. check the configuration
 	const config = await getConfig(forceReconfig);
+	if (!config) {
+		vscode.window.showErrorMessage("Cannot start visualization: invalid configuration");
+		return false;
+	}
+	const { dataType, taskType, contentPath, visualizationMethod } = config;
+	
+	// 3. connect with backend
+	const data: {
+		taskType?: string,
+		availableEpochs?: number[],
+		colorList?: number[][],
+		labelTextList?: string[],
+		tokenList?: string[],
+		labelList?: number[],
+	} = {};
+	data['taskType'] = taskType;
 
-	if (config) {
-		const { dataType, taskType, contentPath, visualizationMethod } = config;
-		return await notifyVisualizationUpdate(dataType, taskType, contentPath, visualizationMethod);
+	// TODO:kwy, store in context global state
+	const availableEpochsRes: any = await fetchTrainingProcessStructure(contentPath);
+	data['availableEpochs'] = availableEpochsRes['available_epochs'];
+
+	const trainingInfoRes: any = await fetchTrainingProcessInfo(contentPath);
+	data['colorList'] = trainingInfoRes['color_list'];
+	data['labelTextList'] = trainingInfoRes['label_text_list'];
+
+	const labelRes: any = await getAttributeResource(contentPath, 1, 'label');
+	data['labelList'] = labelRes['label'];
+
+	if (taskType === "Code-Retrieval") {
+		const textRes: any = await getText(contentPath);
+		data['tokenList'] = textRes['text_list'];
 	}
-	else {
-		console.log("No valid configuration found yet. Generating a new one...");
-	}
-	return false;
+
+	// 4. send message to plot view
+	const msg = {
+		command: 'sync',
+		type: 'trainingInfo',
+		data: data
+	};
+	return await MessageManager.sendToPlotView(msg);
 }
 
 async function notifyVisualizationUpdate(dataType: string, taskType: string, contentPath: string, visualizationMethod: string): Promise<boolean> {
@@ -224,48 +270,52 @@ class GeneralMessageHandler {
 	}
 
 	static initGlobalMessageHandlers(): void {
-		this.addHandler('update', (msg) => {
-			console.log('message: update', msg);
-			if (PlotViewManager.view) {
-				PlotViewManager.postMessage(msg);
-			} else {
-				console.log("Cannot find mainView. Message: update not passed...");
-			}
+		// this.addHandler('update', (msg) => {
+		// 	console.log('message: update', msg);
+		// 	if (PlotViewManager.view) {
+		// 		PlotViewManager.postMessage(msg);
+		// 	} else {
+		// 		console.log("Cannot find mainView. Message: update not passed...");
+		// 	}
+		// });
+		// this.addHandler('updateDataPoint', (msg) => {
+		// 	console.log('message: updateDataPoint', msg);
+		// 	if (MessageViewManager.view) {
+        //         msg.command = 'sync';
+        //         // TODO should use MetadataViewManager.view.postMessage
+        //         // for consistency?
+		// 		MessageViewManager.postMessage(msg);
+		// 	} else {
+		// 		console.log("Cannot find metadata_view");
+		// 	}
+		// });
+		this.addHandler('sync', (msg) => {
+			console.log('extension received message: sync', msg);
+			// TODO:kwy, handle sync message
 		});
-		this.addHandler('updateDataPoint', (msg) => {
-			console.log('message: updateDataPoint', msg);
-			if (MessageViewManager.view) {
-                msg.command = 'sync';
-                // TODO should use MetadataViewManager.view.postMessage
-                // for consistency?
-				MessageViewManager.postMessage(msg);
-			} else {
-				console.log("Cannot find metadata_view");
-			}
-		});
+
 		this.setDefaultHandler(async (msg) => {
 			// In early design, forward it as is to the main view
 			// with additional basic configuration fields
 			console.log('message: other type', msg);
-			if (PlotViewManager.panel) {
-				let config = checkDefaultVisualizationConfig();
-				if (!config) {
-					vscode.window.showWarningMessage("No valid configuration found yet. Generating a new one...");
-					config = await reconfigureVisualizationConfig();
-					if (!config) {
-						return;
-					}
-				}
-				msg.contentPath = config.contentPath;
-				msg.customContentPath = '';
-				msg.taskType = config.taskType;
-				msg.dataType = config.dataType;
-				PlotViewManager.panel.webview.postMessage(msg);
-			} else {
-				console.log("Cannot find mainView. Message: other type not passed...");
-            }
-
-            MessageViewManager.postMessage(msg);
+			// if (PlotViewManager.panel) {
+			// 	let config = checkDefaultVisualizationConfig();
+			// 	if (!config) {
+			// 		vscode.window.showWarningMessage("No valid configuration found yet. Generating a new one...");
+			// 		config = await reconfigureVisualizationConfig();
+			// 		if (!config) {
+			// 			return;
+			// 		}
+			// 	}
+			// 	msg.contentPath = config.contentPath;
+			// 	msg.customContentPath = '';
+			// 	msg.taskType = config.taskType;
+			// 	msg.dataType = config.dataType;
+			// 	PlotViewManager.panel.webview.postMessage(msg);
+			// } else {
+			// 	console.log("Cannot find mainView. Message: other type not passed...");
+            // }
+            // MessageViewManager.postMessage(msg);
 		});
 	}
 

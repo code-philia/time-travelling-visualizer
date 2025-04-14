@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { StoreApi, UseBoundStore } from "zustand";
 import { shallow } from "zustand/shallow";
 import { useStoreWithEqualityFn } from "zustand/traditional";
-import { BaseMutableGlobalStore, initMutableGlobalStore, CommonPointsGeography, ProjectionProps } from "./types";
+import { BaseMutableGlobalStore, initMutableGlobalStore } from "./types";
 import { BriefProjectionResult } from "../communication/api";
 import { BUILD_CONSTANTS } from "../constants";
 import { subscribeWithSelector } from "zustand/middleware";
@@ -171,13 +171,13 @@ const useGlobalStore = create<GlobalStore>()(subscribeWithSelector((set) => ({
 if (true || BUILD_CONSTANTS.APP_CONFIG !== 'app') {
     // For now, we subscribe each property for one time
     for (const key of selectedListeningProperties) {
-        const _key = key as keyof typeof configuredMutableGlobalStore;
-        useGlobalStore.subscribe(
-            (state) => state[_key],
-            (value) => {
-                syncOut(_key, value);
-            }
-        );
+        // const _key = key as keyof typeof configuredMutableGlobalStore;
+        // useGlobalStore.subscribe(
+        //     (state) => state[_key],
+        //     (value) => {
+        //         syncOut(_key, value);
+        //     }
+        // );
     }
 }
 

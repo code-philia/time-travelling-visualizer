@@ -1,9 +1,9 @@
 import { StrictMode, useEffect } from "react";
 import { createRoot } from "react-dom/client";
-import { useSetUpTrainingProcess } from "../state/state-actions.ts";
 import { MainBlock } from "../component/main-block.tsx";
 import { useDefaultStore } from "../state/state-store.ts";
 import "../index.css";
+import { notifyEpochSwitch } from "../communication/viewMessage.tsx";
 
 createRoot(document.getElementById("root")!).render(
     <StrictMode>
@@ -21,8 +21,7 @@ function AppPlotViewOnly() {
 }
 
 function MessageHandler() {
-    const { setValue } = useDefaultStore(["setValue"]);
-    const setUpTrainingProcess = useSetUpTrainingProcess();
+    const { setValue } = useDefaultStore(['setValue']);
 
     const handleMessage = (event: MessageEvent) => {
         const message = event.data;
@@ -31,12 +30,34 @@ function MessageHandler() {
             return;
         }
         console.log("plot web received message:", message);
-        if (message.command === "update") {
-            setValue("contentPath", message.contentPath);
-            setValue("visMethod", message.visMethod);
-            (async () => {
-                await setUpTrainingProcess();
-            })();
+        if (message.command === 'sync') {
+            if (message.type === 'trainingInfo') {
+                const messageData = message.data;
+                setValue('taskType', messageData.taskType);
+                setValue('availableEpochs', messageData.availableEpochs);
+
+                const colorDict = new Map<number, [number, number, number]>();
+                messageData.colorList.forEach((c: [number,number,number], i: number) => {
+                    colorDict.set(i, c);                    
+                });
+                setValue('colorDict', colorDict);
+
+                const labelDict = new Map<number, string>();
+                messageData.labelTextList.forEach((l: string, i: number) => {
+                    labelDict.set(i, l);
+                });
+                setValue('labelDict', labelDict);
+
+                setValue('textData', messageData.tokenList);
+                setValue('inherentLabelData', messageData.labelList);
+
+                notifyEpochSwitch(messageData.availableEpochs[0]);
+            }
+            else if(message.type === 'epochData'){
+                const messageData = message.data;
+                setValue('projection', messageData.projection);
+                setValue('epoch', messageData.epoch);
+            }
         }
     };
 
@@ -49,3 +70,6 @@ function MessageHandler() {
 
     return <></>;
 }
+
+window.vscode?.postMessage({ state: 'load' }, '*');
+
