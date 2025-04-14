@@ -68,6 +68,7 @@ export type BaseMutableGlobalStore = {
     highlightContext: HighlightContext;
     rawPointsGeography: CommonPointsGeography | null;
 
+    projection: number[][];
     textData: string[];
     attentionData: number[][];
     originalTextData: Record<string, string>;
@@ -123,6 +124,7 @@ export let initMutableGlobalStore: BaseMutableGlobalStore = {
     rawPointsGeography: null,
 
     // FIXME we should use null for not loaded data
+    projection: [],
     textData: [],
     attentionData: [],
     originalTextData: {},

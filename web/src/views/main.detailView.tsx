@@ -43,3 +43,5 @@ function MessageHandler() {
 
     return <></>;
 }
+
+window.vscode?.postMessage({ state: 'load' }, '*');
