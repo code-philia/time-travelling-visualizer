@@ -50,7 +50,14 @@ def load_projection(content_path, vis_method, epoch):
     projection_path = os.path.join(content_path, "visualize", vis_method, "projection", f"{epoch}.npy")
     projection = np.load(projection_path)
     projection_list = projection.tolist()
-    return projection_list
+
+    x_min = float(np.min(projection[:, 0]))
+    y_min = float(np.min(projection[:, 1]))
+    x_max = float(np.max(projection[:, 0]))
+    y_max = float(np.max(projection[:, 1]))
+    scope = [x_min-1, y_min-1, x_max+1, y_max+1]
+
+    return projection_list, scope
 
 # Func: load one sample from content_path
 def load_one_sample(config, content_path, index):
@@ -206,23 +213,25 @@ def get_filter_result(config, content_path, epoch, filters):
 
 # Func: compute pixel color, return webp image
 def paint_background(content_path, vis_method, epoch, width, height, scale):
+    file_path = os.path.join(content_path, 'visualize',vis_method,'background', f'{epoch}.png')
+    if os.path.exists(file_path):
+        return convert_to_base64(file_path)
+
     pixel_position = compute_pixel_position(width, height, scale)
     pixel_color = compute_pixel_color(content_path, vis_method, epoch, pixel_position)
     
     pixel_color = pixel_color.reshape((height, width, 3))
     
     image = Image.fromarray(pixel_color.astype('uint8'), 'RGB')
-    file_path = os.path.join(content_path, 'background.png')
+    
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
     image.save(file_path, 'PNG')
-    
-    png_image = Image.open(file_path)
-    
-    webp_image = io.BytesIO()
-    png_image.save(webp_image, format='WEBP')
-    webp_image.seek(0)
+    return convert_to_base64(file_path)
 
-    return webp_image
-
+def convert_to_base64(image_path):
+    with open(image_path, "rb") as image_file:
+        base64_image = base64.b64encode(image_file.read()).decode('utf-8')
+    return base64_image
 
 def compute_pixel_position(width, height, scale, pixel_size=1):
     [x_min, y_min, x_max, y_max] = scale
@@ -328,12 +337,10 @@ def load_one_image(config, content_path, index):
     file_path = file_path_pattern.replace('${index}', str(index))
     file_path = os.path.join(content_path, file_path)
 
-    image = Image.open(file_path)
-    webp_image = io.BytesIO()
-    image.save(webp_image, format='WEBP')
-    webp_image.seek(0)
-    
-    return webp_image
+    with open(file_path, "rb") as image_file:
+        base64_image = base64.b64encode(image_file.read()).decode('utf-8')
+
+    return base64_image
 
 
 def calculateAllNeighbors(config, content_path, epoch, max_neighbors=10):

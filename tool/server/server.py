@@ -92,10 +92,11 @@ def update_projection():
     epoch = int(req['epoch'])
 
     # NOTE dont't hide exception to backend output
-    projection = load_projection(content_path, vis_method, epoch)
+    projection, scope = load_projection(content_path, vis_method, epoch)
 
     result = jsonify({
-        'projection': projection
+        'projection': projection,
+        'scope': scope
     })
     return make_response(result, 200)
 
@@ -270,10 +271,12 @@ def get_background():
     epoch = int(req['epoch'])
     scale = req['scale']
     
-    # config = read_file_as_json(os.path.join(content_path, 'config.json'))
     try:
-        webp_image = paint_background(content_path, vis_method, epoch, width, height, scale)
-        return send_file(webp_image, mimetype='image/webp')
+        base64_image = paint_background(content_path, vis_method, epoch, width, height, scale)
+        result = jsonify({
+            'background_image_base64': base64_image
+        })
+        return make_response(result, 200)
     except Exception as e:
         return make_response(jsonify({'error_message': 'Error in loading background'}), 400)
 
@@ -291,13 +294,19 @@ Response:
 def get_image_data():
     req = request.get_json()
     content_path = req['content_path']
-    index = int(req['index'])
+    if('index' not in req):
+        return make_response(jsonify({'image_base64': ''}), 200)
+    
+    index = req['index']
 
     config = read_file_as_json(os.path.join(content_path, 'config.json'))
 
     try:
-        webp_image = load_one_image(config, content_path, index)
-        return send_file(webp_image, mimetype='image/webp')
+        base64_image = load_one_image(config, content_path, index)
+        result = jsonify({
+            'image_base64': base64_image
+        })
+        return make_response(result, 200)
     except Exception as e:
         return make_response(jsonify({'error_message': 'Error in loading image'}), 400)
 
