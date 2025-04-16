@@ -222,7 +222,6 @@ export async function startVisualization(forceReconfig: boolean = false): Promis
 		vscode.window.showErrorMessage("Cannot start visualization: invalid configuration");
 		return false;
 	}
-	const { dataType, taskType, contentPath, visualizationMethod } = config;
 	
 	// 3. connect with backend
 	const data: {
@@ -232,131 +231,79 @@ export async function startVisualization(forceReconfig: boolean = false): Promis
 		labelTextList?: string[],
 		tokenList?: string[],
 		labelList?: number[],
+		originalText?: Record<string, string>,
 	} = {};
-	data['taskType'] = taskType;
+	data['taskType'] = config.taskType;
 
-	// TODO:kwy, store in context global state
-	const availableEpochsRes: any = await fetchTrainingProcessStructure(contentPath);
+	const availableEpochsRes: any = await fetchTrainingProcessStructure(config.contentPath);
 	data['availableEpochs'] = availableEpochsRes['available_epochs'];
 
-	const trainingInfoRes: any = await fetchTrainingProcessInfo(contentPath);
+	const trainingInfoRes: any = await fetchTrainingProcessInfo(config.contentPath);
 	data['colorList'] = trainingInfoRes['color_list'];
-	data['labelTextList'] = trainingInfoRes['label_text_list'];
-
-	const labelRes: any = await getAttributeResource(contentPath, 1, 'label');
-	data['labelList'] = labelRes['label'];
-
-	if (taskType === "Code-Retrieval") {
-		const textRes: any = await getText(contentPath);
-		data['tokenList'] = textRes['text_list'];
+	if (data['colorList']) {
+		const colorDict = new Map<number, [number, number, number]>();
+		for (let i = 0; i < data['colorList'].length; i++) {
+			colorDict.set(i, [data['colorList'][i][0], data['colorList'][i][1], data['colorList'][i][2]]);
+		}
+		extensionContext.workspaceState.update('colorDict', colorDict);
 	}
 
-	// 4. send message to plot view
-	const msg = {
-		command: 'sync',
-		type: 'trainingInfo',
+	data['labelTextList'] = trainingInfoRes['label_text_list'];
+	if (data['labelTextList']) {
+		const labelDict = new Map<number, string>();
+		for (let i = 0; i < data['labelTextList'].length; i++) {
+			labelDict.set(i, data['labelTextList'][i]);
+		}
+		extensionContext.workspaceState.update('labelDict', labelDict);
+	}
+
+	const labelRes: any = await getAttributeResource(config.contentPath, 1, 'label');
+	data['labelList'] = labelRes['label'];
+	extensionContext.workspaceState.update('labelList', data['labelList']);
+
+	if (config.taskType === "Code-Retrieval") {
+		const textRes: any = await getText(config.contentPath);
+		data['tokenList'] = textRes['text_list'];
+		extensionContext.workspaceState.update('tokenList', data['tokenList']);
+
+		const originalTextRes: any = await getAttributeResource(config.contentPath, 1, 'originalText');
+		data['originalText'] = originalTextRes['originalText'];
+	}
+
+	// 4. send message to views
+	const settings = getPlotSettings();
+	const msgToPlotView = {
+		command: 'initPlotSettings',
+		data: settings
+	};
+	MessageManager.sendToPlotView(msgToPlotView);
+
+	const msgToPlotView1 = {
+		command: 'initTrainingInfo',
 		data: data
 	};
-	return await MessageManager.sendToPlotView(msg);
-}
+	MessageManager.sendToPlotView(msgToPlotView1);
 
-async function notifyVisualizationUpdate(dataType: string, taskType: string, contentPath: string, visualizationMethod: string): Promise<boolean> {
-	const msg = {
-		command: 'update',
-		contentPath: contentPath,
-		customContentPath: '',
-		taskType: taskType,
-		dataType: dataType,
-		forward: true		// recognized by live preview <iframe> (in dev) only
-	};
-	return await MessageManager.sendToPlotView(msg);
-}
-
-class GeneralMessageHandler {
-	static handlers: Map<string, (msg: any) => any> = new Map();
-	static defaultHandler: (msg: any) => any = (msg) => {};
-
-	static {
-		this.initGlobalMessageHandlers();
-	}
-
-	static initGlobalMessageHandlers(): void {
-		// this.addHandler('update', (msg) => {
-		// 	console.log('message: update', msg);
-		// 	if (PlotViewManager.view) {
-		// 		PlotViewManager.postMessage(msg);
-		// 	} else {
-		// 		console.log("Cannot find mainView. Message: update not passed...");
-		// 	}
-		// });
-		// this.addHandler('updateDataPoint', (msg) => {
-		// 	console.log('message: updateDataPoint', msg);
-		// 	if (MessageViewManager.view) {
-        //         msg.command = 'sync';
-        //         // TODO should use MetadataViewManager.view.postMessage
-        //         // for consistency?
-		// 		MessageViewManager.postMessage(msg);
-		// 	} else {
-		// 		console.log("Cannot find metadata_view");
-		// 	}
-		// });
-		this.addHandler('sync', (msg) => {
-			console.log('extension received message: sync', msg);
-			// TODO:kwy, handle sync message
-		});
-
-		this.setDefaultHandler(async (msg) => {
-			// In early design, forward it as is to the main view
-			// with additional basic configuration fields
-			console.log('message: other type', msg);
-			// if (PlotViewManager.panel) {
-			// 	let config = checkDefaultVisualizationConfig();
-			// 	if (!config) {
-			// 		vscode.window.showWarningMessage("No valid configuration found yet. Generating a new one...");
-			// 		config = await reconfigureVisualizationConfig();
-			// 		if (!config) {
-			// 			return;
-			// 		}
-			// 	}
-			// 	msg.contentPath = config.contentPath;
-			// 	msg.customContentPath = '';
-			// 	msg.taskType = config.taskType;
-			// 	msg.dataType = config.dataType;
-			// 	PlotViewManager.panel.webview.postMessage(msg);
-			// } else {
-			// 	console.log("Cannot find mainView. Message: other type not passed...");
-            // }
-            // MessageViewManager.postMessage(msg);
-		});
-	}
-
-	static addHandler(command: string, handler: (msg: any) => void): void {
-		this.handlers.set(command, handler);
-	}
-
-	static setDefaultHandler(handler: (msg: any) => void): void {
-		this.defaultHandler = handler;
-	}
-
-	// NOTE don't use this static method as an outside handler directly
-	// cause `this` is not bound
-	static handleMessage(msg: any): boolean {
-		// Returns true if there is a command handler for it
-		const handler = this.handlers.get(msg.command);
-		if (handler) {
-			handler(msg);
-			return true;
-		} else {
-			this.defaultHandler(msg);
-			return false;
+	const msgToDetailView = {
+		command: 'init',
+		data: {
+			labels: data['labelList'],
+			labelTextList: data['labelTextList']
 		}
 	}
+	MessageManager.sendToDetailView(msgToDetailView);
 
-	private constructor() { }
-}
-
-export function handleMessageDefault(msg: any): boolean {
-	return GeneralMessageHandler.handleMessage(msg);
+	const msgToTokenView = {
+		command: 'init',
+		data: {
+			labels: data['labelList'],
+			tokenList: data['tokenList'],
+			originalText: data['originalText'],
+		}
+	}
+	MessageManager.sendToTokenView(msgToTokenView);
+	
+	return true;
 }
 
 function setDataFolder(file: vscode.Uri | undefined): boolean {
