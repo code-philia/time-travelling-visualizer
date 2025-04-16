@@ -87,6 +87,16 @@ export class PlotViewManager {
 				if (!config) {
 					return;
 				}
+				const plotSettings = getPlotSettings();
+
+				const extensionContext = CONFIG.GlobalStorageContext.extensionContext;
+				if (!extensionContext) {
+					vscode.window.showErrorMessage("Extension context is not available.");
+					return;
+				}
+				extensionContext.workspaceState.update('currentEpoch', targetEpoch);
+
+				// projection
 				const projectionRes: any = await fetchEpochProjection(config.contentPath, config.visualizationMethod, targetEpoch);
 				extensionContext.workspaceState.update('projection', projectionRes['projection']);
 				extensionContext.workspaceState.update('scope', projectionRes['scope']);

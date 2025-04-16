@@ -29,6 +29,7 @@
     "configuration": {
       "title": "Time Travelling Visualizer",
       "properties": {
+
         "timeTravellingVisualizer.loadVisualization.dataType": {
           "type": "string",
           "default": "Image",
@@ -38,7 +39,7 @@
         "timeTravellingVisualizer.loadVisualization.taskType": {
           "type": "string",
           "default": "Classification",
-          "enum": ["Classification", "Non-Classification"],
+          "enum": ["Classification", "Code-Retrieval"],
           "description": "Task type to visualize."
         },
         "timeTravellingVisualizer.loadVisualization.contentPath": {
@@ -48,9 +49,41 @@
         },
         "timeTravellingVisualizer.loadVisualization.visualizationMethod": {
           "type": "string",
-          "default": "TrustVis",
-          "enum": ["TrustVis"],
+          "default": "TimeVis",
+          "enum": ["DVI", "TimeVis"],
           "description": "The visualization method for model to use."
+        },
+
+
+        "timeTravellingVisualizer.plotSettings.showIndex": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the index of the data points."
+        },
+        "timeTravellingVisualizer.plotSettings.showLabel": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the label or original text associated with the data points."
+        },
+        "timeTravellingVisualizer.plotSettings.showBackground": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show the classification background"
+        },
+        "timeTravellingVisualizer.plotSettings.showTrail": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show the trail of data points over time."
+        },
+        "timeTravellingVisualizer.plotSettings.revealNeighborSameType": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show neighbors of the same type."
+        },
+        "timeTravellingVisualizer.plotSettings.revealNeighborCrossType": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show neighbors of different types."
         }
       }
     },
@@ -72,7 +105,7 @@
       "panel": [
         {
             "id": "visualizer-panel",
-            "title": "Visualizer",
+            "title": "Tokens Overview",
             "icon": "resources/eye_tracking_24dp_5F6368_FILL0_wght300_GRAD0_opsz24.svg"
         },
         {

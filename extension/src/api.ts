@@ -28,6 +28,6 @@ export class StringSelection {
 
 export class Types {
     static readonly VisualizationDataType: StringSelection = new StringSelection('Image', 'Text');
-    static readonly VisualizationTaskType: StringSelection = new StringSelection('Classification', 'Non-Classification');
-    static readonly VisualizationMethod: StringSelection = new StringSelection('TrustVis');
+    static readonly VisualizationTaskType: StringSelection = new StringSelection('Classification', 'Code-Retrieval');
+    static readonly VisualizationMethod: StringSelection = new StringSelection('TrustVis', 'TimeVis', 'DVI');
 }
