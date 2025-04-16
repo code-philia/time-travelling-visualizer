@@ -1,28 +1,7 @@
-import { BoundaryProps } from "../../state/types";
 import { BriefProjectionResult } from "../../communication/api";
 import { BUILD_CONSTANTS } from "../../constants";
 
 export const pointsDefaultSize = 20;
-
-export interface VChartData {
-    positions: [number, number, number][];
-    labels: number[];
-    colors: [number, number, number][];
-    neighborSameType: number[][];
-    neighborCrossType: number[][];
-    predictionProps: number[][]
-}
-
-export function createEmptyVChartData(): VChartData {
-    return {
-        positions: [],
-        labels: [],
-        colors: [],
-        neighborSameType: [],
-        neighborCrossType: [],
-        predictionProps: []
-    };
-}
 
 export interface CommonPointsGeography {
     positions: [number, number, number][];

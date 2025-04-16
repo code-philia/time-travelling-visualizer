@@ -6,51 +6,27 @@ import { useDefaultStore } from "../../state/state.plotView";
 import { createEdges, softmax, transferArray2Color } from './utils';
 import { notifyHoveredIndexSwitch, notifySelectedIndicesSwitch } from '../../communication/viewMessage';
 const PADDING = 1;
-const THRESHOLD = 0.9;
 
-type SampleTag = {
-    num: number;
-    title: string;
-}
-
-export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | null }) => {
+export const ChartComponent = memo(() => {
     const chartRef = useRef<HTMLDivElement>(null);
     const vchartRef = useRef<VChart | null>(null);
 
     // Here are data from useStore
+    const { projection, inherentLabelData, predProbability } = useDefaultStore(["projection", "inherentLabelData", "predProbability"]);
     const { labelDict, colorDict } = useDefaultStore(["labelDict", "colorDict"]);
     const { filterValue, filterType } = useDefaultStore(["filterValue", "filterType"]);
     const { filterState } = useDefaultStore(["filterState"]);
-    const { showMetadata, showBgimg } = useDefaultStore(["showMetadata", "showBgimg"]);
-    const { showNumber, showText, textData } = useDefaultStore(["showNumber", "showText", "textData"])
-    const { epoch, availableEpochs, allEpochsProjectionData } = useDefaultStore(["epoch", "availableEpochs", "allEpochsProjectionData"]);
-    const { neighborSameType, neighborCrossType, lastNeighborSameType, lastNeighborCrossType } = useDefaultStore(["neighborSameType", "neighborCrossType", "lastNeighborSameType", "lastNeighborCrossType"]);
+    const { showIndex, showLabel,showBackground, textData } = useDefaultStore(["showIndex", "showLabel", "showBackground","textData"])
+    const { availableEpochs } = useDefaultStore(["availableEpochs"]);
+    const { background } = useDefaultStore(["background"]);
+    const { inClassNeighbors, outClassNeighbors} = useDefaultStore(["inClassNeighbors", "outClassNeighbors"]);
     const { revealNeighborCrossType, revealNeighborSameType } = useDefaultStore(["revealNeighborCrossType", "revealNeighborSameType"]);
-    const { hoveredIndex, setHoveredIndex } = useDefaultStore(["hoveredIndex", "setHoveredIndex"]);
-    const { highlightContext, setHighlightContext } = useDefaultStore(["highlightContext", "setHighlightContext"]);
+    const { hoveredIndex, setHoveredIndex, selectedIndices, setSelectedIndices } = useDefaultStore(["hoveredIndex", "setHoveredIndex", "selectedIndices", "setSelectedIndices"]);
+
+    const [localSelectedIndices, setLocalSelectedIndices] = useState<number[]>([]);
 
     const samplesRef = useRef<{ pointId: number, x: number; y: number; label: number; pred: number; label_desc: string; pred_desc: string; confidence: number; textSample: string }[]>([]);
     const edgesRef = useRef<Edge[]>([]);
-
-    const [selectedItems, setSelectedItems] = useState<SampleTag[]>([]);
-
-
-    useEffect(() => {
-        const listener = () => {
-            const tokens = textData;
-            setSelectedItems(Array.from(highlightContext.lockedIndices).map((num) => ({
-                num,
-                title: tokens[num]!
-            })));
-        };
-
-        listener();
-        highlightContext.addHighlightChangedListener(listener);
-        return () => {
-            highlightContext.removeHighlightChangedListener(listener);
-        };
-    }, [vchartData]);
-
 
     /*
         Main update logic
@@ -59,18 +35,17 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
         if (!chartRef.current) {
             return;
         }
-
         // create data
         samplesRef.current = [];
         let x_min = Infinity, y_min = Infinity, x_max = -Infinity, y_max = -Infinity;
 
-        vchartData?.positions.map((p, i) => {
+        projection.map((p, i) => {
             const x = parseFloat(p[0].toFixed(3));
             const y = parseFloat(p[1].toFixed(3));
             let confidence = 1.0;
-            let pred = vchartData?.labels[i];
-            if (vchartData?.predictionProps && vchartData.predictionProps.length > 0) {
-                let props = vchartData.predictionProps[i];
+            let pred = inherentLabelData[i];
+            if (predProbability && predProbability.length > 0) {
+                let props = predProbability[i];
                 let softmaxValues = softmax(props);
                 confidence = Math.max(...softmaxValues);
                 pred = softmaxValues.indexOf(confidence);
@@ -80,12 +55,12 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                 pointId: i,
                 x: x,
                 y: y,
-                label: vchartData?.labels[i],
-                label_desc: labelDict.get(vchartData?.labels[i]) ?? '',
+                label: inherentLabelData[i],
+                label_desc: labelDict.get(inherentLabelData[i]) ?? '',
                 pred: pred,
-                pred_desc: labelDict.get(pred) ?? labelDict.get(vchartData?.labels[i]) ?? '',
+                pred_desc: labelDict.get(pred) ?? labelDict.get(inherentLabelData[i]) ?? '',
                 confidence: confidence,
-                textSample: textData[i] ?? ''
+                textSample: textData? textData[i] ?? '': ''
             });
 
             if (x < x_min) x_min = x;
@@ -93,7 +68,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
             if (x > x_max) x_max = x;
             if (y > y_max) y_max = y;
         });
-        edgesRef.current = createEdges(neighborSameType, neighborCrossType, lastNeighborSameType, lastNeighborCrossType);
+        edgesRef.current = createEdges(inClassNeighbors, outClassNeighbors, [], []);
 
         x_min = x_min - PADDING;
         y_min = y_min - PADDING;
@@ -161,7 +136,11 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                     area: {
                         interactive: false,
                         style: {
-                            fill: 'white',
+                            background: () => {
+                                return showBackground ? background : '';
+                            },
+                            fill: 'transparent',
+                            fillOpacity: 0.6
                         }
                     },
                     hover: {
@@ -299,32 +278,26 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
                             visible: true,
                             style: {
                                 visible: () => {
-                                    return showNumber || showText;
+                                    return showIndex || showLabel;
                                 },
                                 type: 'text',
                                 fontFamily: 'Console',
                                 // fontStyle: 'italic',
                                 // fontWeight: 'bold',
                                 text: (datum: { pointId: any; textSample: string; label: number; }) => {
-                                    if (showText && showNumber) {
+                                    if (showLabel && showIndex) {
                                         return `${datum.pointId}.${datum.textSample == '' ? labelDict.get(datum.label) : datum.textSample}`;
                                     }
-                                    else if (showText) {
+                                    else if (showLabel) {
                                         return datum.textSample == '' ? labelDict.get(datum.label) : datum.textSample;
                                     }
-                                    else if (showNumber) {
+                                    else if (showIndex) {
                                         return `${datum.pointId}`;
                                     }
                                 },
 
                                 fill: 'black',
                                 fontSize: 12
-
-                                // fill: (datum: { label: number; }) => {
-                                //     const color = colorDict.get(datum.label) ?? [0, 0, 0];
-                                //     return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
-                                // },
-                                // fillOpacity: 0.6
                             }
                         }
                     ]
@@ -393,32 +366,47 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
             const vchart = new VChart(spec, { dom: chartRef.current });
             vchartRef.current = vchart;
 
-            vchartRef.current.on('pointerover', { id: 'point-series' }, e => {
+            vchartRef.current.on('pointerover', { id: 'point-series' }, (e: { datum: { pointId: number | undefined; }; }) => {
                 setHoveredIndex(e.datum?.pointId);
+                notifyHoveredIndexSwitch(e.datum?.pointId);
             });
-            vchartRef.current.on('pointerout', { id: 'point-series' }, e => {
+            vchartRef.current.on('pointerout', { id: 'point-series' }, () => {
                 setHoveredIndex(undefined);
+                notifyHoveredIndexSwitch(undefined);
             });
-            vchartRef.current.on('click', { id: 'point-series' }, e => {
-                console.log('Clicked: ', e.datum?.pointId);
-                if (highlightContext.lockedIndices.has(e.datum?.pointId)) {
-                    highlightContext.removeLocked(e.datum?.pointId);
+            vchartRef.current.on('click', { id: 'point-series' }, (e: { datum: { pointId: any; }; }) => {
+                const pointId = e.datum?.pointId;
+                if (localSelectedIndices.includes(pointId)) {
+                    console.log('Clicked on selected point: ', pointId);
+                    const newSelectedIndices = localSelectedIndices.filter(i => i !== pointId);
+                    setSelectedIndices(newSelectedIndices);
+                    setLocalSelectedIndices(newSelectedIndices);
+                    notifySelectedIndicesSwitch(newSelectedIndices);
                 } else {
-                    highlightContext.addLocked(e.datum?.pointId);
+                    console.log('Clicked on unselected point: ', pointId);
+                    const newSelectedIndices = [...localSelectedIndices, pointId];
+                    setSelectedIndices(newSelectedIndices);
+                    setLocalSelectedIndices(newSelectedIndices);
+                    notifySelectedIndicesSwitch(newSelectedIndices);
                 }
-                // setHighlightContext(highlightContext);
             });
         }
         else {
             vchartRef.current.updateSpec(spec);
         }
-
         vchartRef.current.renderSync();
-    }, [vchartData, filterState, showMetadata, showNumber, showText]);
+    }, [projection, background, filterState, showIndex, showLabel, showBackground]);
 
 
-    function updateHighlight() {
-        if (highlightContext.lockedIndices.size === 0 && hoveredIndex === -1) {
+    /*
+    Highlight locked points
+    */
+    useEffect(() => {
+        if (!vchartRef.current) {
+            return;
+        }
+
+        if (selectedIndices.length === 0 && hoveredIndex === -1) {
             vchartRef.current?.updateState({
                 locked: {
                     filter: () => {
@@ -436,16 +424,13 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
 
         const selectedNeighbors: number[] = [];
         edgesRef.current.forEach((edge, _) => {
-            if (edge.from == hoveredIndex || highlightContext.lockedIndices.has(edge.from)) {
+            if (edge.from == hoveredIndex) {
                 selectedNeighbors.push(edge.to);
-            }
-            if (edge.to == hoveredIndex || highlightContext.lockedIndices.has(edge.to)) {
-                selectedNeighbors.push(edge.from);
             }
         });
         vchartRef.current?.updateState({
             as_neighbor: {
-                filter: datum => {
+                filter: (datum: { pointId: number; }) => {
                     return selectedNeighbors.includes(datum.pointId);
                 }
             }
@@ -453,23 +438,12 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
 
         vchartRef.current?.updateState({
             locked: {
-                filter: datum => {
-                    return highlightContext.lockedIndices.has(datum.pointId);
+                filter: (datum: { pointId: number; }) => {
+                    return selectedIndices.includes(datum.pointId);
                 }
             }
         });
-    }
-
-    /*
-    Highlight locked points
-    */
-    useEffect(() => {
-        if (!vchartRef.current) {
-            return;
-        }
-        // console.log('Locked: ', highlightContext.lockedIndices);
-        updateHighlight();
-    }, [vchartData, highlightContext, hoveredIndex]);
+    }, [projection, hoveredIndex, selectedIndices]);
 
     /*
         Show neighborhood relationship
@@ -481,7 +455,7 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
 
         const endpoints: { edgeId: number, from: number, to: number, x: number, y: number, type: string, status: string }[] = [];
         edgesRef.current.forEach((edge, index) => {
-            if (edge.from === hoveredIndex || edge.to === hoveredIndex || highlightContext.lockedIndices.has(edge.from) || highlightContext.lockedIndices.has(edge.to)) {
+            if (edge.from === hoveredIndex) {
                 if ((revealNeighborCrossType && edge.type === 'crossType') || (revealNeighborSameType && edge.type === 'sameType')) {
                     endpoints.push({ edgeId: index, from: edge.from, to: edge.to, x: samplesRef.current[edge.from].x, y: samplesRef.current[edge.from].y, type: edge.type, status: edge.status });
                     endpoints.push({ edgeId: index, from: edge.from, to: edge.to, x: samplesRef.current[edge.to].x, y: samplesRef.current[edge.to].y, type: edge.type, status: edge.status });
@@ -490,85 +464,31 @@ export const ChartComponent = memo(({ vchartData }: { vchartData: VChartData | n
         });
         vchartRef.current?.updateDataSync('edges', endpoints);
 
-    }, [revealNeighborCrossType, revealNeighborSameType, hoveredIndex, highlightContext, vchartData]);
+    }, [revealNeighborCrossType, revealNeighborSameType, hoveredIndex]);
 
 
      /*
      Update motion trail
      */
-     useEffect(() => {
-         if (!vchartRef.current) {
-             return;
-         }
-         const trailpoints: { trailId: number, x: number, y: number, opacity: number }[] = [];
-         const epochId = availableEpochs.indexOf(epoch);
-         selectedIndices.forEach(idx => {
-             let i;
-             for (i = 0; i <= epochId; i += 2) {
-                 let epochData = allEpochsProjectionData[availableEpochs[i]];
-                 trailpoints.push({ trailId: idx, x: epochData.proj[idx][0], y: epochData.proj[idx][1], opacity: (i + 1) / (epochId + 1) });
-             }
-             if (i !== epochId + 2) {
-                 let epochData = allEpochsProjectionData[epoch];
-                 trailpoints.push({ trailId: idx, x: epochData.proj[idx][0], y: epochData.proj[idx][1], opacity: 1 });
-             }
-         });
-         vchartRef.current.updateDataSync('trails', trailpoints);
-     }, [selectedIndices, epoch, availableEpochs, allEpochsProjectionData]);
- 
-
-    /*
-        Show classification border
-        triggered by showBgimg
-    */
-    useEffect(() => {
-        if (!vchartRef.current) {
-            return;
-        }
-        if (!showBgimg) {
-            vchartRef.current?.updateDataSync('regions', []);
-            return;
-        }
-
-        let filteredPoints: { [key: number]: number[][] } = {};
-        vchartData?.positions.map((p, i) => {
-            const x = parseFloat(p[0].toFixed(3));
-            const y = parseFloat(p[1].toFixed(3));
-            let confidence = 1.0;
-            let pred = vchartData?.labels[i];
-            if (vchartData?.predictionProps && vchartData.predictionProps.length > 0) {
-                let props = vchartData.predictionProps[i];
-                let softmaxValues = softmax(props);
-                confidence = Math.max(...softmaxValues);
-                pred = softmaxValues.indexOf(confidence);
-            }
-            if (confidence >= THRESHOLD) {
-                if (!filteredPoints[pred]) {
-                    filteredPoints[pred] = [];
-                }
-                filteredPoints[pred].push([x, y]);
-            }
-        });
-
-        let convexHulls: { [key: number]: number[][] } = {};
-        for (const key in filteredPoints) {
-            if (filteredPoints.hasOwnProperty(key)) {
-                convexHulls[key] = convexHull(filteredPoints[key]);
-            }
-        }
-
-        let region: { xx: number, yy: number, class: number }[] = [];
-        for (const key in convexHulls) {
-            if (convexHulls.hasOwnProperty(key)) {
-                convexHulls[key].forEach((point, _) => {
-                    region.push({ xx: point[0], yy: point[1], class: parseInt(key) });
-                });
-            }
-        }
-        vchartRef.current.updateData('regions', region);
-
-    }, [showBgimg, filterState, showMetadata, showNumber, showText, vchartData]);
-
+    //  useEffect(() => {
+    //      if (!vchartRef.current) {
+    //          return;
+    //      }
+    //      const trailpoints: { trailId: number, x: number, y: number, opacity: number }[] = [];
+    //      const epochId = availableEpochs.indexOf(epoch);
+    //      selectedIndices.forEach(idx => {
+    //          let i;
+    //          for (i = 0; i <= epochId; i += 2) {
+    //              let epochData = allEpochsProjectionData[availableEpochs[i]];
+    //              trailpoints.push({ trailId: idx, x: epochData.proj[idx][0], y: epochData.proj[idx][1], opacity: (i + 1) / (epochId + 1) });
+    //          }
+    //          if (i !== epochId + 2) {
+    //              let epochData = allEpochsProjectionData[epoch];
+    //              trailpoints.push({ trailId: idx, x: epochData.proj[idx][0], y: epochData.proj[idx][1], opacity: 1 });
+    //          }
+    //      });
+    //      vchartRef.current.updateDataSync('trails', trailpoints);
+    //  }, [selectedIndices, epoch, availableEpochs, allEpochsProjectionData]);
 
     return <div
         ref={chartRef}
