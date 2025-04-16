@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useDefaultStore } from '../state/state.plotView';
 import ChartComponent from './canvas/vchart';
+import { notifyEpochSwitch } from '../communication/viewMessage';
 
 // https://stackoverflow.com/questions/54095994/react-useeffect-comparing-objects
 // FIXME use a library for all object/array nested comparison
@@ -28,13 +29,6 @@ function useDeepCompareMemoize(value: Array<number>) {
     }
 
     return ref.current
-}
-
-function useDeepCompareEffect(callback: any, dependencies: Array<Array<number>>) {
-    useEffect(
-        callback,
-        dependencies.map(useDeepCompareMemoize)
-    )
 }
 
 function Timeline({ epoch, epochs, onSwitchEpoch }: { epoch: number, epochs: number[], onSwitchEpoch: (epoch: number) => void }) {
@@ -149,200 +143,21 @@ function Timeline({ epoch, epochs, onSwitchEpoch }: { epoch: number, epochs: num
 };
 
 export function MainBlock() {
-    const { showNumber, showText } = useDefaultStore(['showNumber', 'showText']);
-
     const { epoch, setEpoch } = useDefaultStore(['epoch', 'setEpoch']);
-
-    const { availableEpochs, allEpochsProjectionData, textData } = useDefaultStore(["contentPath", "updateUUID", "availableEpochs", "allEpochsProjectionData", "updateUUID", "textData"]);
-
-    const setUpProjections = useSetUpProjection();
-
-    useEffect(() => {
-        if (availableEpochs.length > 0) {
-            setEpoch(availableEpochs[0]);
-        }
-    }, [availableEpochs, setEpoch]);
-
-    const { colorDict, labelDict } = useDefaultStore(['colorDict', 'labelDict']);
-
-    const { highlightContext } = useDefaultStore(['highlightContext']);
-
-    const { revealNeighborSameType, revealNeighborCrossType, neighborSameType, neighborCrossType } = useDefaultStore(['revealNeighborSameType', 'revealNeighborCrossType', 'neighborSameType', 'neighborCrossType']);
-
-    const { predictionProps } = useDefaultStore(['predictionProps']);
-
-    // TODO all shared data are using useStore now. Decouple some of them
-    // const highlightContext = useRef(new HighlightContext());
-
-    // only set a finally computed attribute as state
-    const [finalPointsGeography, setFinalPointsGeography] = useState<CommonPointsGeography>(createEmptyCommonPointsGeography());
-    const currentEpochData = useMemo(() => allEpochsProjectionData[epoch] as BriefProjectionResult | undefined, [allEpochsProjectionData, epoch]);
-    const originalPointsGeography = useMemo(() => {
-        const positions: [number, number, number][] = [];
-        const labels: number[] = [];
-        const sizes: number[] = [];
-        const alphas: number[] = [];
-        const data = {
-            positions, labels, sizes, alphas
-        };
-
-        if (!currentEpochData) return data;
-
-        const labelsAsNumber = currentEpochData.labels.map((label) => parseInt(label));
-        currentEpochData.proj.forEach((point, i) => {
-            positions.push([point[0], point[1], 0]);
-            labels.push(labelsAsNumber[i]);
-            sizes.push(pointsDefaultSize);
-            alphas.push(1.0);
-        });
-
-        return data;
-    }, [currentEpochData]);
-
-    const appliedColorPointsGeography = useMemo(() => {
-        const { positions, labels, sizes, alphas } = originalPointsGeography;
-        const colors: [number, number, number][] = [];
-
-        const data = {
-            positions, labels, sizes, alphas, colors
-        };
-
-        if (!currentEpochData) return data;
-
-        const labelsAsNumber = currentEpochData.labels.map((label) => parseInt(label));
-        currentEpochData.proj.forEach((point, i) => {
-            const color = colorDict.get(labelsAsNumber[i]);
-            if (color === undefined) return;
-
-            colors[i] = ([color[0] / 255, color[1] / 255, color[2] / 255]);
-        });
-
-        return data;
-    }, [originalPointsGeography, currentEpochData, colorDict]);
-
-    // construct data for vchart
-    const vchartData = useMemo(() => {
-        const positions: [number, number, number][] = [];
-        const labels: number[] = [];
-        const colors: [number, number, number][] = [];
-
-        const data = {
-            positions, labels, colors, neighborSameType, neighborCrossType, predictionProps
-        };
-
-        if (!currentEpochData) return data;
-
-        const labelsAsNumber = currentEpochData.labels.map((label) => parseInt(label));
-        currentEpochData.proj.forEach((point, i) => {
-            positions.push([point[0], point[1], 0]);
-            labels.push(labelsAsNumber[i]);
-            const color = colorDict.get(labelsAsNumber[i]);
-            if (color === undefined) return;
-            colors[i] = ([color[0] / 255, color[1] / 255, color[2] / 255]);
-        });
-        return data;
-    }, [currentEpochData]);
-
-    const spriteData = useMemo(() => {
-        const renderedTextData: string[] = [];
-
-        if (showNumber || showText) {
-            textData.forEach((text, i) => {
-                let renderedText = "";
-                if (showNumber) {
-                    renderedText += `${i}. `;
-                }
-                if (showText) {
-                    renderedText += text;
-                }
-                renderedTextData.push(renderedText);
-            });
-        }
-
-        return {
-            labels: renderedTextData
-        }
-    }, [showNumber, showText, textData]);
-
-    // const neighborhood = useMemo(() => {
-    //     return currentEpochData ? extractConnectedPoints(currentEpochData) : undefined;
-    // }, [currentEpochData]);
-
-    // const plot2DCanvasContext = useMemo(() => {
-    //     return createPlot2DCanvasContextFrom(originalPointsGeography);
-    // }, [originalPointsGeography]);
-
-    // const plot2DDataContext = useMemo(() => {
-    //     return new Plot2DDataContext(finalPointsGeography, spriteData);
-    // }, [finalPointsGeography, spriteData]);
-
-    useEffect(() => {
-        // TODO this is data processing (or business) fair, move it to another module, and should be done immediately together with some atomic update operation
-        const neighborPoints: number[][][] = [];
-        if (revealNeighborSameType) {
-            neighborPoints.push(neighborSameType);
-        }
-        if (revealNeighborCrossType) {
-            neighborPoints.push(neighborCrossType);
-        }
-
-        const mergedNeighborPoints = neighborPoints.reduce((a, b) => {
-            const base = a.length >= b.length ? a : b;
-            const guest = a.length >= b.length ? b : a;
-            return base.map((v, i) => {
-                return [...v, ...(guest[i] ?? [])];
-            });
-        }, []);
-
-        highlightContext.setNeighborPoints(mergedNeighborPoints);
-    }, [revealNeighborSameType, revealNeighborCrossType, highlightContext, neighborSameType, neighborCrossType]);
-
-    // for immediate update highlight from outside control
-    useEffect(() => {
-        const listener = () => {
-            const displayedPoints = highlightContext.tryUpdateHighlight(appliedColorPointsGeography, false);     // TODO can this be moved into the HighlightContext?
-            if (displayedPoints) setFinalPointsGeography(displayedPoints);
-        };
-
-        listener();
-        highlightContext.addHighlightChangedListener(listener);
-
-        // for debug
-        // highlightContext.addRevealed(8);
-        // highlightContext.addRevealed(45);
-        // highlightContext.addRevealed(22);
-        // highlightContext.addRevealed(37);
-
-        return () => {
-            highlightContext.removeHighlightChangedListener(listener);
-        };
-    }, [highlightContext, appliedColorPointsGeography]);
-
-    const onHoverPoint = (idx: number | undefined) => highlightContext.updateHovered(idx);
-
-    const onClickPoint = (idx: number) => {
-        if (highlightContext.lockedIndices.has(idx)) {
-            highlightContext.removeLocked(idx);
-        } else {
-            highlightContext.addLocked(idx);
-        }
-    };
+    const { availableEpochs } = useDefaultStore(['availableEpochs']);
 
     // only consider single container for now
     return (
         <div className="canvas-column">
             <div id="canvas-wrapper" style={{ height: "100%", width: "100%" }}>
-                <ChartComponent
-                    vchartData={vchartData}
-                />
+                <ChartComponent/>
             </div>
             <div id="footer">
                 <div className="functional-block-title">Epochs</div>
                 <div style={{ overflow: "auto" }}>
-                    <Timeline epoch={epoch} epochs={availableEpochs} onSwitchEpoch={(epoch) => {
-                        setUpProjections(epoch).then(
-                            () => setEpoch(epoch)
-                        );
+                    <Timeline epoch={epoch} epochs={availableEpochs} onSwitchEpoch={(e) => {
+                        setEpoch(e);
+                        notifyEpochSwitch(e);
                     }} />
                 </div>
             </div>
