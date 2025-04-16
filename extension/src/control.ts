@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
-import * as config from './config';
+import * as CONFIG from './config';
 import * as api from './api';
 import { PlotViewManager } from "./views/plotView";
 import { isDirectory } from './ioUtils';
@@ -30,11 +30,11 @@ async function repickConfig( configDescription: string, items: (vscode.QuickPick
 }
 
 function checkDefaultVisualizationConfig(): api.BasicVisualizationConfig | undefined {
-	const visConfigSet = vscode.workspace.getConfiguration(config.configurationBaseName);
-	const dataType = visConfigSet.get(config.ConfigurationID.dataType);
-	const taskType = visConfigSet.get(config.ConfigurationID.taskType);
-	const contentPath = visConfigSet.get(config.ConfigurationID.contentPath);
-	const visualizationMethod = visConfigSet.get(config.ConfigurationID.visualizationMethod);
+	const visConfigSet = vscode.workspace.getConfiguration(CONFIG.configurationBaseName);
+	const dataType = visConfigSet.get(CONFIG.ConfigurationID.dataType);
+	const taskType = visConfigSet.get(CONFIG.ConfigurationID.taskType);
+	const contentPath = visConfigSet.get(CONFIG.ConfigurationID.contentPath);
+	const visualizationMethod = visConfigSet.get(CONFIG.ConfigurationID.visualizationMethod);
 	// TODO create a class for a configuration
 	// that can both define the ID and validate the value
 
@@ -158,10 +158,10 @@ async function reconfigureVisualizationConfig(): Promise<api.BasicVisualizationC
 		return undefined;
 	}
 
-	visConfigSet.update(config.ConfigurationID.dataType, dataType);
-	visConfigSet.update(config.ConfigurationID.taskType, taskType);
-	visConfigSet.update(config.ConfigurationID.contentPath, contentPath);
-	visConfigSet.update(config.ConfigurationID.visualizationMethod, visualizationMethod);
+	visConfigSet.update(CONFIG.ConfigurationID.dataType, dataType);
+	visConfigSet.update(CONFIG.ConfigurationID.taskType, taskType);
+	visConfigSet.update(CONFIG.ConfigurationID.contentPath, contentPath);
+	visConfigSet.update(CONFIG.ConfigurationID.visualizationMethod, visualizationMethod);
 
 	return {
 		dataType: dataType,
@@ -366,7 +366,7 @@ function setDataFolder(file: vscode.Uri | undefined): boolean {
 	const fsPath = file.fsPath;
 	if (isDirectory(fsPath)) {
 		const extensionConfig = vscode.workspace.getConfiguration('timeTravellingVisualizer');
-		extensionConfig.update(config.ConfigurationID.contentPath, fsPath);
+		extensionConfig.update(CONFIG.ConfigurationID.contentPath, fsPath);
 		return true;
 	} else {
 		vscode.window.showErrorMessage("Selected path is not a directory 😮");
