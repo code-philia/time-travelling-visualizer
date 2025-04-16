@@ -46,3 +46,38 @@ export function getAttributeResource(contentPath: string, epoch: number, attribu
 
     return basicUnsafePostWithJsonResponse('/getAttributes', data, options);
 }
+
+export function getAllNeighbors(contentPath: string, epoch: number, options?: { host?: string }) {
+    const data = {
+        "content_path": contentPath,
+        "epoch": epoch
+    };
+    return basicUnsafePostWithJsonResponse('/getAllNeighbors', data, options);
+}
+
+export function getBackground(contentPath: string, visMethod: string, epoch: number | undefined, width: number, height: number, scale: number[] | undefined, options?: { host?: string }) {
+    const data = {
+        "content_path": contentPath,
+        "vis_method": visMethod,
+        "epoch": `${epoch}`,
+        "width": width,
+        "height": height,
+        "scale": scale
+    };
+    return basicUnsafePostWithJsonResponse('/getBackground', data, options).then((response) => {
+        const { background_image_base64 } = response as { background_image_base64: string };
+        return `data:image/png;base64,${background_image_base64}`;
+    });
+}
+
+export function getImageData(contentPath: string, index: number, options?: { host?: string }) {
+    const data = {
+        "content_path": contentPath,
+        "index": index
+    }
+    return basicUnsafePostWithJsonResponse('/getImageData', data, options).then((response) => {
+        const { image_base64 } = response as { image_base64: string };
+        return `data:image/png;base64,${image_base64}`;
+    });
+}
+
