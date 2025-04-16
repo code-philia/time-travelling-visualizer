@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
 import * as config from '../config';
 import { getLiveWebviewHtml } from '../devLiveServer';
-import { handleMessageDefault } from '../control';
 import { loadHomePage } from './plotView';
 import path from 'path';
+import { MessageManager } from './messageManager';
 
 export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
     public abstract webview?: vscode.Webview;
@@ -101,6 +101,26 @@ export class TokenViewProvider extends BaseViewProvider {
         // webviewView.webview.onDidReceiveMessage(handleMessageDefault);
         webviewView.webview.onDidReceiveMessage(msg => {
             console.log("Token View received message: ", msg);
+            if(msg.command === 'hoveredIndexSwitch') {
+                const hoveredIndex = msg.data.hoveredIndex;
+                const msgToPlotView = {
+                    command: 'updateHoveredIndex',
+                    data: {
+                        hoveredIndex: hoveredIndex
+                    }
+                }
+                MessageManager.sendToPlotView(msgToPlotView);
+            }
+            else if(msg.command === 'selectedIndicesSwitch') {
+                const selectedIndices = msg.data.selectedIndices;
+                const msgToPlotView = {
+                    command: 'updateSelectedIndices',
+                    data: {
+                        selectedIndices: selectedIndices
+                    }
+                }
+                MessageManager.sendToPlotView(msgToPlotView);
+            }
         });
     }
 }
