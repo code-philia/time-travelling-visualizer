@@ -9,6 +9,7 @@ export function activate(context: vscode.ExtensionContext): void {
 	// vscode using an extension host to manage extensions
 	// Setting isDev directly here
 	config.GlobalStorageContext.initExtensionLocation(context.extensionUri.fsPath);
+	config.GlobalStorageContext.initExtensionContext(context);
 
 	if (config.isDev) {
 		console.log(`Enabling dev mode locally. Webviews are using live updated elements...`);

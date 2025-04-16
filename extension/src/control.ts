@@ -7,6 +7,7 @@ import { isDirectory } from './ioUtils';
 import { getIconUri } from './resources';
 import { MessageManager } from './views/messageManager';
 import { fetchTrainingProcessInfo, fetchTrainingProcessStructure, getAttributeResource, getText } from './communication/api';
+import { defaultWorkspaceState } from './state';
 
 /**
  * Config
@@ -195,6 +196,16 @@ export function getCurrentConfig() {
  * Start the visualization
  */
 export async function startVisualization(forceReconfig: boolean = false): Promise<boolean> {
+	// 0. clear the workspace state
+	const extensionContext = CONFIG.GlobalStorageContext.extensionContext;
+	if(!extensionContext) {
+		vscode.window.showErrorMessage("Cannot start visualization: extension context not found");
+		return false;
+	}
+    Object.entries(defaultWorkspaceState).forEach(([key, value]) => {
+        extensionContext.workspaceState.update(key, value);
+    });
+
 	// 1. create or show plot view
 	if (!(PlotViewManager.view)) {
 		try {

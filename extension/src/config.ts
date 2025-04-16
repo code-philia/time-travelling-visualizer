@@ -19,6 +19,7 @@ export class GlobalStorageContext {
 	private static extensionLocation: string = __dirname;
 	private static readonly webRootRelativePath = '../web/dist/';
 	private static readonly resourceRootRelativePath = 'resources/';
+	public static extensionContext: vscode.ExtensionContext | undefined = undefined;
 
 	private constructor() { }
 
@@ -32,6 +33,10 @@ export class GlobalStorageContext {
 
 	static initExtensionLocation(root: string): void {
 		this.extensionLocation = root;
+	}
+
+	static initExtensionContext(context: vscode.ExtensionContext): void {
+		this.extensionContext = context;
 	}
 }
 
