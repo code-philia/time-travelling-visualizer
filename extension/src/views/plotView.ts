@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import * as config from '../config';
+import * as CONFIG from '../config';
 import { readFileSync } from 'fs';
 import { getCurrentConfig, handleMessageDefault } from '../control';
 import { getLiveWebviewHtml } from '../devLiveServer';
