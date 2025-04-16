@@ -142,3 +142,11 @@ export function convexHull(points: number[][]): number[][] {
 
     return expandedHull;
 }
+
+export function transferArray2Color(colorArray: [number, number, number] | undefined, alpha = 1): string {
+    if (!colorArray) {
+        return 'rgba(116, 116, 116,1)';
+    }
+    const [r, g, b] = colorArray;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
