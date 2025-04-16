@@ -1,8 +1,6 @@
 import {useEffect, useState } from 'react';
 import { TagOutlined, NumberOutlined, BarChartOutlined, PictureOutlined, ArrowDownOutlined, HistoryOutlined } from '@ant-design/icons';
 import styled from 'styled-components';
-import { useDefaultStore } from '../state/state-store';
-// import { getImageData } from '../communication/api';
 import { softmax } from './utils';
 import { MathJaxProvider, MathJaxFormula } from 'mathjax3-react';
 

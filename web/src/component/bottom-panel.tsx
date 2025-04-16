@@ -2,9 +2,9 @@ import { HTMLAttributes, useEffect, useState } from 'react';
 import { Tabs, Button, TabPaneProps, TabsProps } from 'antd';
 import { UpOutlined, DownOutlined, SyncOutlined } from '@ant-design/icons';
 import styled from 'styled-components';
-import { useDefaultStore } from '../state/state-store';
-
-declare const __APP_CONFIG__: string | undefined;
+import { useDefaultStore } from '../state/state.tokenView';
+import { notifyHoveredIndexSwitch, notifySelectedIndicesSwitch } from '../communication/viewMessage';
+import { useEffect, useState } from 'react';
 
 const BottomPanelContainer = styled.div<{ $expanded: boolean }>`
     display: flex;

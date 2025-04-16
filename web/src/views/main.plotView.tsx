@@ -1,7 +1,7 @@
 import { StrictMode, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { MainBlock } from "../component/main-block.tsx";
-import { useDefaultStore } from "../state/state-store.ts";
+import { useDefaultStore } from "../state/state.plotView.ts";
 import "../index.css";
 import { notifyEpochSwitch } from "../communication/viewMessage.tsx";
 
