@@ -62,7 +62,14 @@ export class ConfigurationID {
     static readonly dataType = 'loadVisualization.dataType';
     static readonly taskType = 'loadVisualization.taskType';
     static readonly contentPath = 'loadVisualization.contentPath';
-    static readonly visualizationMethod = 'loadVisualization.visualizationMethod';
+	static readonly visualizationMethod = 'loadVisualization.visualizationMethod';
+	
+	static readonly showIndex = 'plotSettings.showIndex';
+	static readonly showLabel = 'plotSettings.showLabel';
+	static readonly showBackground = 'plotSettings.showBackground';
+	static readonly showTrail = 'plotSettings.showTrail';
+	static readonly revealNeighborSameType = 'plotSettings.revealNeighborSameType';
+	static readonly revealNeighborCrossType = 'plotSettings.revealNeighborCrossType';
 
     private constructor() {}
 }
