@@ -2,7 +2,7 @@ import { StrictMode, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import DetailPanel from '../component/detail-panel';
 import '../index.css';
-import { useDefaultStore } from '../state/state-store';
+import { useDefaultStore } from '../state/state.detailView';
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>

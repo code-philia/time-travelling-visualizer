@@ -1,8 +1,6 @@
-import { StrictMode, useEffect } from 'react'
-import { createRoot } from 'react-dom/client'
-import { useSetUpTrainingProcess } from '../state/state-actions';
-import BottomPanel from '../component/bottom-panel';
-import { useDefaultStore } from '../state/state-store';
+import { StrictMode, useEffect } from 'react';
+import { createRoot } from 'react-dom/client';
+import { BottomPanel } from '../component/bottom-panel';
 import '../index.css';
 
 createRoot(document.getElementById('root')!).render(

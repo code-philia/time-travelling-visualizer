@@ -1,9 +1,10 @@
 // ChartComponent.tsx
 import { memo, useEffect, useRef, useState } from 'react';
 import VChart from '@visactor/vchart';
-import { Edge, VChartData } from './types';
-import { useDefaultStore } from "../../state/state-store";
-import { convexHull, createEdges, softmax } from './utils';
+import { Edge } from './types';
+import { useDefaultStore } from "../../state/state.plotView";
+import { createEdges, softmax, transferArray2Color } from './utils';
+import { notifyHoveredIndexSwitch, notifySelectedIndicesSwitch } from '../../communication/viewMessage';
 const PADDING = 1;
 const THRESHOLD = 0.9;
 
