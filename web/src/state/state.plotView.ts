@@ -6,6 +6,7 @@ import { BriefProjectionResult } from "../communication/api";
 import { BUILD_CONSTANTS } from "../constants";
 import { subscribeWithSelector } from "zustand/middleware";
 import { selectedListeningProperties } from "../communication/message";
+import { SelectedListener } from "../component/canvas/types";
 
 export type BaseMutableGlobalStore = {
     contentPath: string;
@@ -52,6 +53,7 @@ export type BaseMutableGlobalStore = {
     // hovered
     hoveredIndex: number | undefined;
     selectedIndices: number[];
+    selectedListener: SelectedListener;
 
     // dummy settings
     showLossAttribution: boolean;
@@ -106,6 +108,7 @@ export let initMutableGlobalStore: BaseMutableGlobalStore = {
     // hovered
     hoveredIndex: undefined,
     selectedIndices: [],
+    selectedListener: new SelectedListener(),
 
     // dummy settings
     showLossAttribution: false,
