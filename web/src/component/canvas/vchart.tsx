@@ -1,7 +1,7 @@
 // ChartComponent.tsx
 import { memo, useEffect, useRef, useState } from 'react';
 import VChart from '@visactor/vchart';
-import { Edge } from './types';
+import { Edge, SelectedListener } from './types';
 import { useDefaultStore } from "../../state/state.plotView";
 import { createEdges, softmax, transferArray2Color } from './utils';
 import { notifyHoveredIndexSwitch, notifySelectedIndicesSwitch } from '../../communication/viewMessage';
@@ -21,12 +21,29 @@ export const ChartComponent = memo(() => {
     const { background } = useDefaultStore(["background"]);
     const { inClassNeighbors, outClassNeighbors} = useDefaultStore(["inClassNeighbors", "outClassNeighbors"]);
     const { revealNeighborCrossType, revealNeighborSameType } = useDefaultStore(["revealNeighborCrossType", "revealNeighborSameType"]);
-    const { hoveredIndex, setHoveredIndex, selectedIndices, setSelectedIndices } = useDefaultStore(["hoveredIndex", "setHoveredIndex", "selectedIndices", "setSelectedIndices"]);
-
-    const [localSelectedIndices, setLocalSelectedIndices] = useState<number[]>([]);
+    const { hoveredIndex, setHoveredIndex, selectedIndices, setSelectedIndices, selectedListener } = useDefaultStore(["hoveredIndex", "setHoveredIndex", "selectedIndices", "setSelectedIndices", "selectedListener"]);
 
     const samplesRef = useRef<{ pointId: number, x: number; y: number; label: number; pred: number; label_desc: string; pred_desc: string; confidence: number; textSample: string }[]>([]);
     const edgesRef = useRef<Edge[]>([]);
+
+    // listen to selectedIndices change in canvas
+    useEffect(() => {
+        const listener = () => {
+            console.log("Highlight Listener In VChart Triggered.");
+            setSelectedIndices([...selectedListener.selectedIndices]);
+            notifySelectedIndicesSwitch([...selectedListener.selectedIndices]);
+        };
+        console.log("Add Highlight Listener In VChart");
+        selectedListener.addHighlightChangedListener(listener);
+        return () => {
+            selectedListener.removeHighlightChangedListener(listener);
+        }
+    }, []);
+
+    // listen to selectedIndices change in other components
+    useEffect(() => {
+        selectedListener.setSelected([...selectedIndices]);
+    }, [selectedIndices]);
 
     /*
         Main update logic
@@ -376,19 +393,7 @@ export const ChartComponent = memo(() => {
             });
             vchartRef.current.on('click', { id: 'point-series' }, (e: { datum: { pointId: any; }; }) => {
                 const pointId = e.datum?.pointId;
-                if (localSelectedIndices.includes(pointId)) {
-                    console.log('Clicked on selected point: ', pointId);
-                    const newSelectedIndices = localSelectedIndices.filter(i => i !== pointId);
-                    setSelectedIndices(newSelectedIndices);
-                    setLocalSelectedIndices(newSelectedIndices);
-                    notifySelectedIndicesSwitch(newSelectedIndices);
-                } else {
-                    console.log('Clicked on unselected point: ', pointId);
-                    const newSelectedIndices = [...localSelectedIndices, pointId];
-                    setSelectedIndices(newSelectedIndices);
-                    setLocalSelectedIndices(newSelectedIndices);
-                    notifySelectedIndicesSwitch(newSelectedIndices);
-                }
+                selectedListener.switchSelected(pointId);
             });
         }
         else {
