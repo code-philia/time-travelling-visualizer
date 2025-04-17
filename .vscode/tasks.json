@@ -6,7 +6,7 @@
 		{
             "label": "Build Extension",
 			"type": "npm",
-			"script": "watch",
+			"script": "compile",
 			"path": "extension",
 			"problemMatcher": "$tsc-watch",
 			"isBackground": true,
@@ -17,7 +17,10 @@
 				"kind": "build",
 				"isDefault": true
 			},
-            "dependsOn": "Build Front-end Pages for Extension"
+            "dependsOn": [
+                "Build Front-end Pages for Extension",
+                "Launch Backend"
+            ]
 		},
         {
             "label": "Start Web Page Dev",      // https://stackoverflow.com/questions/72213396/how-can-i-show-problems-detected-by-vite-checker-plugin-in-vs-code
@@ -64,6 +67,52 @@
 			"isBackground": true,
             "presentation": {
                 "reveal": "never"
+            }
+        },
+        {
+            "label": "Launch Backend",
+            "type": "shell",
+            "command": "python ${workspaceFolder}/tool/server/server.py",
+            "isBackground": true,
+            "problemMatcher": [
+                {
+                    "owner": "python",
+                    "source": "Flask",
+                    "fileLocation": "absolute",
+                    "applyTo": "allDocuments",
+                    "background": {
+                        "activeOnStart": true,
+                        "beginsPattern": "Serving Flask app",
+                        "endsPattern": "Press CTRL\\+C to quit"
+                    },
+                    "pattern": [
+                        {
+                            "regexp": ".*Running on http://.*:5050",
+                            "message": 1
+                        },
+                        {
+                            "regexp": "Press CTRL\\+C to quit",
+                            "file": 1,
+                            "line": 2,
+                            "column": 3
+                        }
+                    ]
+                }
+            ],
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"  // Keep the terminal shared
+            }
+        },
+        {
+            "label": "Terminate Backend",
+            "type": "shell",
+            "command": "pkill -f 'python ${workspaceFolder}/tool/server/server.py'",
+            "problemMatcher": [],
+            "isBackground": false,
+            "presentation": {
+                "reveal": "silent"
             }
         }
 	]
