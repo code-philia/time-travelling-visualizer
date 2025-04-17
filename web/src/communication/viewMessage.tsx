@@ -1,3 +1,15 @@
+declare global {
+    interface Window {
+        acquireVsCodeApi(): any;
+        vscode: any;
+    }
+}
+
+const canConnectToVsCode = (window.acquireVsCodeApi as any !== undefined);
+if (canConnectToVsCode) {
+  window.vscode = window.acquireVsCodeApi();
+}
+
 /**
  * Plot View to Extension communication
  */
