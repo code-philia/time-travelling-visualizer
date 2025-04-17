@@ -26,17 +26,22 @@ export function DetailPanel() {
         setImage(imageData);
 
         // current epoch prediction
-        const softmaxProps = softmax(predProbability[hoveredIndex]);
-        const sortedProps = [...softmaxProps];
-        sortedProps.sort((a, b) => b - a);
-        const topThreeConfidences = sortedProps.slice(0, 3);
-        const topThreeIndices = topThreeConfidences.map((confidence) => softmaxProps.indexOf(confidence));
-        const topThreeResults = topThreeIndices.map((index, i) => ({
-            value: index,
-            confidence: topThreeConfidences[i],
-            correct: Number(labels[hoveredIndex]) === index
-        }));
-        setPredictions(topThreeResults);
+        if (!predProbability[hoveredIndex]) { 
+            setPredictions([]);
+        }
+        else {
+            const softmaxProps = softmax(predProbability[hoveredIndex]);
+            const sortedProps = [...softmaxProps];
+            sortedProps.sort((a, b) => b - a);
+            const topThreeConfidences = sortedProps.slice(0, 3);
+            const topThreeIndices = topThreeConfidences.map((confidence) => softmaxProps.indexOf(confidence));
+            const topThreeResults = topThreeIndices.map((index, i) => ({
+                value: index,
+                confidence: topThreeConfidences[i],
+                correct: Number(labels[hoveredIndex]) === index
+            }));
+            setPredictions(topThreeResults);
+        }
 
         // history prediction
         const historyPrediction: {epoch: number, prediction: number, confidence: number, correct: boolean}[] = [];
