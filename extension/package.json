@@ -5,7 +5,7 @@
     "url": "https://github.com/code-philia/time-travelling-visualizer",
     "directory": "extension"
   },
-  "displayName": "time-travelling-visualizer",
+  "displayName": "Time Travelling Visualizer",
   "description": "",
   "version": "0.0.1",
   "engines": {
@@ -26,71 +26,103 @@
         }
       ]
     },
-    "configuration": {
-      "title": "Time Travelling Visualizer",
-      "properties": {
-
-        "timeTravellingVisualizer.loadVisualization.dataType": {
-          "type": "string",
-          "default": "Image",
-          "enum": ["Image", "Text"],
-          "description": "The data type to show in visualization data points."
-        },
-        "timeTravellingVisualizer.loadVisualization.taskType": {
-          "type": "string",
-          "default": "Classification",
-          "enum": ["Classification", "Code-Retrieval"],
-          "description": "Task type to visualize."
-        },
-        "timeTravellingVisualizer.loadVisualization.contentPath": {
-          "type": "string",
-          "default": ".",
-          "description": "Folder to load data from."
-        },
-        "timeTravellingVisualizer.loadVisualization.visualizationMethod": {
-          "type": "string",
-          "default": "TimeVis",
-          "enum": ["DVI", "TimeVis"],
-          "description": "The visualization method for model to use."
-        },
-
-
-        "timeTravellingVisualizer.plotSettings.showIndex": {
-          "type": "boolean",
-          "default": true,
-          "description": "Show the index of the data points."
-        },
-        "timeTravellingVisualizer.plotSettings.showLabel": {
-          "type": "boolean",
-          "default": true,
-          "description": "Show the label or original text associated with the data points."
-        },
-        "timeTravellingVisualizer.plotSettings.showBackground": {
-          "type": "boolean",
-          "default": false,
-          "description": "Show the classification background"
-        },
-        "timeTravellingVisualizer.plotSettings.showTrail": {
-          "type": "boolean",
-          "default": false,
-          "description": "Show the trail of data points over time."
-        },
-        "timeTravellingVisualizer.plotSettings.revealNeighborSameType": {
-          "type": "boolean",
-          "default": true,
-          "description": "Show neighbors of the same type."
-        },
-        "timeTravellingVisualizer.plotSettings.revealNeighborCrossType": {
-          "type": "boolean",
-          "default": false,
-          "description": "Show neighbors of different types."
+    "configuration": [
+      {
+        "title": "Load Visualizetion",
+        "properties": {
+          "timeTravellingVisualizer.loadVisualization.dataType": {
+            "type": "string",
+            "default": "Image",
+            "enum": ["Image", "Text"],
+            "description": "The data type to show in visualization data points."
+          },
+          "timeTravellingVisualizer.loadVisualization.taskType": {
+            "type": "string",
+            "default": "Classification",
+            "enum": ["Classification", "Code-Retrieval"],
+            "description": "Task type to visualize."
+          },
+          "timeTravellingVisualizer.loadVisualization.contentPath": {
+            "type": "string",
+            "default": ".",
+            "description": "Folder to load data from."
+          },
+          "timeTravellingVisualizer.loadVisualization.visualizationMethod": {
+            "type": "string",
+            "default": "TimeVis",
+            "enum": ["DVI", "TimeVis"],
+            "description": "The visualization method for model to use."
+          }
+        }
+      },
+      {
+        "title": "TimeVis",
+        "properties": {
+          "timeTravellingVisualizer.timeVisSettings.TimeVisAlpha": {
+            "type": "number",
+            "default": 0.5,
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Alpha value for TimeVis visualization.",
+          }
+        }
+      },
+      {
+        "title": "DVI",
+        "properties": {
+          "timeTravellingVisualizer.visualizeSettings.DVIAlpha": {
+            "type": "number",
+            "default": 0.8,
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Alpha value for DVI visualization.",
+          }
+        }
+      },
+      {
+        "title": "Plot Settings",
+        "properties": {
+          "timeTravellingVisualizer.plotSettings.showIndex": {
+            "type": "boolean",
+            "default": true,
+            "description": "Show the index of the data points."
+          },
+          "timeTravellingVisualizer.plotSettings.showLabel": {
+            "type": "boolean",
+            "default": true,
+            "description": "Show the label or original text associated with the data points."
+          },
+          "timeTravellingVisualizer.plotSettings.showBackground": {
+            "type": "boolean",
+            "default": false,
+            "description": "Show the classification background"
+          },
+          "timeTravellingVisualizer.plotSettings.showTrail": {
+            "type": "boolean",
+            "default": false,
+            "description": "Show the trail of data points over time."
+          },
+          "timeTravellingVisualizer.plotSettings.revealNeighborSameType": {
+            "type": "boolean",
+            "default": true,
+            "description": "Show neighbors of the same type."
+          },
+          "timeTravellingVisualizer.plotSettings.revealNeighborCrossType": {
+            "type": "boolean",
+            "default": false,
+            "description": "Show neighbors of different types."
+          }
         }
       }
-    },
+    ],
     "commands": [
       {
+        "command": "timeTravellingVisualizer.startVisualize",
+        "title": "Start Visualizing"
+      },
+      {
         "command": "timeTravellingVisualizer.loadVisualizationResult",
-        "title": "Visualize Training Process"
+        "title": "Load Visualization Result"
       },
       {
         "command": "timeTravellingVisualizer.setAsDataFolderAndLoadVisualizationResult",

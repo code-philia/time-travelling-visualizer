@@ -212,9 +212,9 @@ export function getPlotSettings(){
 }
 
 /**
- * Start the visualization
+ * Load the visualization result
  */
-export async function startVisualization(forceReconfig: boolean = false): Promise<boolean> {
+export async function loadVisualization(forceReconfig: boolean = false): Promise<boolean> {
 	// 0. clear the workspace state
 	const extensionContext = CONFIG.GlobalStorageContext.extensionContext;
 	if(!extensionContext) {
@@ -325,6 +325,15 @@ export async function startVisualization(forceReconfig: boolean = false): Promis
 	return true;
 }
 
+/**
+ * Start visualizing
+ */
+export async function startVisualizing(): Promise<boolean> {
+	vscode.window.showInformationMessage("Start visualizing...");
+	return true;
+}
+
+
 function setDataFolder(file: vscode.Uri | undefined): boolean {
 	if (!file) {
 		return false;
@@ -346,7 +355,7 @@ export function setAsDataFolderAndLoadVisualizationResult(file: vscode.Uri | und
     }
     const success = setDataFolder(file);
     if (success) {
-        startVisualization();
+        loadVisualization();
     }
 }
 
