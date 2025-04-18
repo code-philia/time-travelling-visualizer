@@ -59,11 +59,13 @@ function withBaseName(id: string): string {
 export const configurationBaseName = 'timeTravellingVisualizer';
 
 export class ConfigurationID {
+	// basic settings
     static readonly dataType = 'loadVisualization.dataType';
     static readonly taskType = 'loadVisualization.taskType';
-    static readonly contentPath = 'loadVisualization.contentPath';
+	static readonly contentPath = 'loadVisualization.contentPath';
 	static readonly visualizationMethod = 'loadVisualization.visualizationMethod';
 	
+	// pllot settings
 	static readonly showIndex = 'plotSettings.showIndex';
 	static readonly showLabel = 'plotSettings.showLabel';
 	static readonly showBackground = 'plotSettings.showBackground';
@@ -76,7 +78,7 @@ export class ConfigurationID {
 
 export class CommandID {
     static readonly loadVisualization = withBaseName('loadVisualizationResult');
-    static readonly openStartView = withBaseName('start');
+    static readonly startVisualizing = withBaseName('startVisualizing');
     static readonly setAsDataFolderAndLoadVisualizationResult = withBaseName('setAsDataFolderAndLoadVisualizationResult');
     static readonly setAsDataFolder = withBaseName('setAsDataFolder');
     static readonly configureAndLoadVisualization = withBaseName('configureAndLoadVisualizationResult');
