@@ -9,21 +9,21 @@ from strategy.custom_weighted_random_sampler import CustomWeightedRandomSampler
 from strategy.edge_dataset import DVIDataHandler
 from strategy.spatial_edge_constructor import SingleEpochSpatialEdgeConstructor
 from strategy.losses import DVILoss, DummyTemporalLoss, TemporalLoss, UmapLoss, ReconstructionLoss
-from strategy.visualize_model import VisModel
+from tool.visualize.visualize_model import VisModel
 from strategy.strategy_abstract import StrategyAbstractClass
 from data_provider import DataProvider
 from umap.umap_ import find_ab_params
 from utils import find_neighbor_preserving_rate
 
 class DeepVisualInsight(StrategyAbstractClass):
-    def __init__(self, config, params):
-        super().__init__(config, params)
+    def __init__(self, config, data_provider):
+        super().__init__(config)
         self.initialize_model()
+        self.data_provider = data_provider
 
     def initialize_model(self):
-        self.device = torch.device("cuda:{}".format(self.config["gpu"]) if torch.cuda.is_available() else "cpu")
-        self.data_provider = DataProvider(self.config, self.device)
-        self.visualize_model = VisModel(self.params['ENCODER_DIMS'], self.params['DECODER_DIMS']).to(self.device)
+        self.device = torch.device("cuda:{}".format(self.config['vis_config']['gpu_id']) if torch.cuda.is_available() else "cpu")
+        self.visualize_model = VisModel(self.config['vis_config']['encoder_dims'], self.config['vis_config']['decoder_dims']).to(self.device)
         
         # define losses
         negative_sample_rate = 5
@@ -33,38 +33,36 @@ class DeepVisualInsight(StrategyAbstractClass):
         self.recon_fn = ReconstructionLoss(beta=1.0)
     
     def train_vis_model(self):
-        # parameters
-        EPOCH_START = self.config["epochStart"]
-        EPOCH_END = self.config["epochEnd"]
-        EPOCH_PERIOD = self.config["epochPeriod"]
+        # parameters    
+        LAMBDA1 = self.config['vis_config']['lambda1']
+        LAMBDA2 = self.config['vis_config']['lambda2']
+        N_NEIGHBORS = self.config['vis_config']['n_neighbors']
+        S_N_EPOCHS = self.config['vis_config']['s_n_epochs']
+        B_N_EPOCHS = self.config['vis_config']['b_n_epochs']
+        PATIENT = self.config['vis_config']['patient']
+        MAX_EPOCH = self.config['vis_config']['max_epochs']
         
-        LAMBDA1 = self.params["LAMBDA1"]
-        LAMBDA2 = self.params["LAMBDA2"]
-        N_NEIGHBORS = self.params["N_NEIGHBORS"]
-        S_N_EPOCHS = self.params["S_N_EPOCHS"]
-        B_N_EPOCHS = self.params["BOUNDARY"]["B_N_EPOCHS"]
-        PATIENT = self.params["PATIENT"]
-        MAX_EPOCH = self.params["MAX_EPOCH"]
+        INIT_NUM = 100
         
         # visualize model of last epoch
-        prev_model = VisModel(self.params['ENCODER_DIMS'], self.params['DECODER_DIMS']).to(self.device)
+        prev_model = VisModel(self.config['vis_config']['endocer_dims'], self.config['vis_config']['decoder_dims']).to(self.device)
         prev_model.load_state_dict(self.visualize_model.state_dict())
         for param in prev_model.parameters():
             param.requires_grad = False
         w_prev = dict(self.visualize_model.named_parameters())
 
         # for each epch
-        start_flag = 1
-        for epoch in range(EPOCH_START, EPOCH_END+EPOCH_PERIOD, EPOCH_PERIOD):
+        available_epochs = self.config['available_epochs']
+        for i in range(len(available_epochs)):
+            epoch = available_epochs[i]
             # Define DVI Loss
-            if start_flag:
+            if i == 0:
                 temporal_loss_fn = DummyTemporalLoss(self.device)
                 criterion = DVILoss(self.umap_fn, self.recon_fn, temporal_loss_fn, lambd1=LAMBDA1, lambd2=0.0, device = self.device)
-                start_flag = 0
             else:
                 self.temporal_fn = TemporalLoss(w_prev,self.device)
-                prev_data = self.data_provider.all_representation(epoch-EPOCH_PERIOD)
-                curr_data = self.data_provider.all_representation(epoch)
+                prev_data = self.data_provider.get_representation(available_epochs[i-1])
+                curr_data = self.data_provider.get_representation(epoch)
                 prev_data = prev_data.reshape(-1,prev_data.shape[-1])
                 curr_data = curr_data.reshape(-1,curr_data.shape[-1])
                 
@@ -75,7 +73,7 @@ class DeepVisualInsight(StrategyAbstractClass):
             optimizer = torch.optim.Adam(self.visualize_model.parameters(), lr=.01, weight_decay=1e-5)
             lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=4, gamma=.1)
             # Define Edge dataset
-            spatial_cons = SingleEpochSpatialEdgeConstructor(self.data_provider, epoch, S_N_EPOCHS, B_N_EPOCHS, N_NEIGHBORS)
+            spatial_cons = SingleEpochSpatialEdgeConstructor(self.data_provider, epoch, INIT_NUM, S_N_EPOCHS, B_N_EPOCHS, N_NEIGHBORS)
             edge_to, edge_from, probs, feature_vectors, attention = spatial_cons.construct()
 
             probs = probs / (probs.max()+1e-3)

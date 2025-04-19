@@ -3,6 +3,7 @@ import torch
 import tqdm
 import math
 import logging
+import base64
 
 # ================ help funcs ================
 def get_feature_num(data):
@@ -121,3 +122,8 @@ def find_neighbor_preserving_rate(prev_data, train_data, n_neighbors):
         pres = np.intersect1d(train_indices[i], prev_indices[i])
         temporal_pres[i] = len(pres) / float(n_neighbors)
     return temporal_pres
+
+def convert_to_base64(image_path):
+    with open(image_path, "rb") as image_file:
+        base64_image = base64.b64encode(image_file.read()).decode('utf-8')
+    return base64_image

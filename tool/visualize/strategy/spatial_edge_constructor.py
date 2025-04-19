@@ -48,6 +48,7 @@ class SpatialEdgeConstructor(SpatialEdgeConstructorAbstractClass):
         n_neighbors: int
             local connectivity
         """
+        self.config = data_provider.config
         self.data_provider = data_provider
         self.init_num = init_num
         self.s_n_epochs = s_n_epochs
@@ -148,30 +149,30 @@ class SpatialEdgeConstructor(SpatialEdgeConstructorAbstractClass):
 
 # Used in DVI
 class SingleEpochSpatialEdgeConstructor(SpatialEdgeConstructor):
-    def __init__(self, data_provider, iteration, s_n_epochs, b_n_epochs, n_neighbors) -> None:
-        super().__init__(data_provider, 100, s_n_epochs, b_n_epochs, n_neighbors)
+    def __init__(self, data_provider, iteration, init_num,s_n_epochs, b_n_epochs, n_neighbors) -> None:
+        super().__init__(data_provider, init_num, s_n_epochs, b_n_epochs, n_neighbors)
         self.iteration = iteration
     
     def construct(self):
         # load train data and border centers
-        train_data = self.data_provider.train_representation(self.iteration)
-        # KWY
-        train_data = train_data.reshape(-1,train_data.shape[-1])
-        print("train_data shape: ",train_data.shape)
+        all_embeddings = self.data_provider.get_representation(self.iteration)
+        all_embeddings = all_embeddings.reshape(-1,all_embeddings.shape[-1])
+        print("all embeddings shape: ",all_embeddings.shape)
 
         if self.b_n_epochs > 0:
             border_centers = self.data_provider.border_representation(self.iteration).squeeze()
-            complex, _, _, _ = self._construct_fuzzy_complex(train_data)
-            bw_complex, _, _, _ = self._construct_boundary_wise_complex(train_data, border_centers)
+            complex, _, _, _ = self._construct_fuzzy_complex(all_embeddings)
+            bw_complex, _, _, _ = self._construct_boundary_wise_complex(all_embeddings, border_centers)
             edge_to, edge_from, weight = self._construct_step_edge_dataset(complex, bw_complex)
-            feature_vectors = np.concatenate((train_data, border_centers), axis=0)
+            feature_vectors = np.concatenate((all_embeddings, border_centers), axis=0)
+            # TODO: fix
             # pred_model = self.data_provider.prediction_function(self.iteration)
             # attention = get_attention(pred_model, feature_vectors, temperature=.01, device=self.data_provider.DEVICE, verbose=1)
             attention = np.zeros(feature_vectors.shape)
         elif self.b_n_epochs == 0:
-            complex, _, _, _ = self._construct_fuzzy_complex(train_data)
+            complex, _, _, _ = self._construct_fuzzy_complex(all_embeddings)
             edge_to, edge_from, weight = self._construct_step_edge_dataset(complex, None)
-            feature_vectors = np.copy(train_data)
+            feature_vectors = np.copy(all_embeddings)
             # pred_model = self.data_provider.prediction_function(self.iteration)
             # attention = get_attention(pred_model, feature_vectors, temperature=.01, device=self.data_provider.DEVICE, verbose=1)            
             attention = np.zeros(feature_vectors.shape)
@@ -222,14 +223,10 @@ class kcSpatialEdgeConstructor(SpatialEdgeConstructor):
         return c0, d0, "{:.1f}".format(t1-t0)
     
     def construct(self):
-        """construct spatio-temporal complex and get edges
-
-        Returns
-        -------
-        _type_
-            _description_
         """
-
+        construct spatio-temporal complex and get edges
+        
+        """
         # dummy input
         edge_to = None
         edge_from = None
@@ -243,7 +240,9 @@ class kcSpatialEdgeConstructor(SpatialEdgeConstructor):
         time_step_nums = list()
         time_step_idxs_list = list()
 
-        baseline_data = self.data_provider.train_representation(self.data_provider.config['epochEnd'])
+        available_epochs = self.config['available_epochs']
+
+        baseline_data = self.data_provider.get_representation(available_epochs[-1], "train")
         baseline_data = baseline_data.reshape(-1,baseline_data.shape[-1])
         max_x = np.linalg.norm(baseline_data, axis=1).max()
         baseline_data = baseline_data/max_x
@@ -260,10 +259,12 @@ class kcSpatialEdgeConstructor(SpatialEdgeConstructor):
             self.MAX_HAUSDORFF = c0-0.01
 
         # each time step
-        for t in range(self.data_provider.config['epochEnd'], self.data_provider.config['epochStart'] - 1, -self.data_provider.config['epochPeriod']):
-            print("=================+++={:d}=+++================".format(t))
+        for i in range(len(available_epochs), 0, -1):
+            epoch = available_epochs[i-1]
+            
+            print("=================+++={:d}=+++================".format(epoch))
             # load train data and border centers
-            train_data = self.data_provider.train_representation(t)
+            train_data = self.data_provider.get_representation(epoch, "train")
             train_data = train_data.reshape(-1,train_data.shape[-1])
 
             # normalize data by max ||x||_2
@@ -280,22 +281,22 @@ class kcSpatialEdgeConstructor(SpatialEdgeConstructor):
             _ = kc.select_batch_with_cn(selected_idxs, self.MAX_HAUSDORFF, c_c0, d_d0, p=0.95)
             selected_idxs = kc.already_selected.astype("int")
 
-            save_dir = os.path.join(self.data_provider.content_path, "selected_idxs")
+            save_dir = os.path.join(self.data_provider.config['content_path'], "selected_idxs")
             if not os.path.exists(save_dir):
                 os.mkdir(save_dir)
-            with open(os.path.join(save_dir,"selected_{}.json".format(t)), "w") as f:
+            with open(os.path.join(save_dir,"selected_{}.json".format(epoch)), "w") as f:
                 json.dump(selected_idxs.tolist(), f)
             print("select {:d} points".format(len(selected_idxs)))
 
             time_step_idxs_list.insert(0, np.arange(len(selected_idxs)).tolist())
 
-            train_data = self.data_provider.train_representation(t).squeeze()
+            train_data = self.data_provider.get_representation(epoch, "train").squeeze()
             train_data = train_data.reshape(-1,train_data.shape[-1])
             train_data = train_data[selected_idxs]
 
             if self.b_n_epochs != 0:
                 # select highly used border centers...
-                border_centers = self.data_provider.border_representation(t)
+                border_centers = self.data_provider.border_representation(epoch)
                 t_num = len(selected_idxs)
                 b_num = len(border_centers)
 
