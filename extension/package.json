@@ -56,26 +56,108 @@
         }
       },
       {
-        "title": "TimeVis",
+        "title": "DVI",
         "properties": {
-          "timeTravellingVisualizer.timeVisSettings.TimeVisAlpha": {
+          "timeTravellingVisualizer.DVISettings.gpu_id": {
             "type": "number",
-            "default": 0.5,
+            "default": 0,
+            "description": "Single GPU index to use, if not using GPU, set to -1."
+          },
+          "timeTravellingVisualizer.DVISettings.resolution": {
+            "type": "string",
+            "default": "1000,800",
+            "description": "Resolution of the background in pixels, fill in as 'width,height'."
+          },
+          "timeTravellingVisualizer.DVISettings.lambda1": {
+            "type": "number",
+            "default": 1.0,
             "minimum": 0,
-            "maximum": 1,
-            "description": "Alpha value for TimeVis visualization.",
+            "maximum": 10,
+            "description": "Weight for reconstruction loss."
+          },
+          "timeTravellingVisualizer.DVISettings.lambda2": {
+            "type": "number",
+            "default": 1.0,
+            "minimum": 0,
+            "maximum": 10,
+            "description": "Weight for temporal loss."
+          },
+          "timeTravellingVisualizer.DVISettings.n_neighbors": {
+            "type": "number",
+            "default": 15,
+            "description": "Number of neighbors taken into account for the temporal loss."
+          },
+          "timeTravellingVisualizer.DVISettings.s_n_epochs": {
+            "type": "number",
+            "default": 10,
+            "description": "Number of epochs for samples to be considered as neighbors."
+          },
+          "timeTravellingVisualizer.DVISettings.b_n_epochs": {
+            "type": "number",
+            "default": 0,
+            "description": "Number of epochs for edges to be considered as neighbors."
+          },
+          "timeTravellingVisualizer.DVISettings.patient": {
+            "type": "number",
+            "default": 3,
+            "description": "Number of epochs to wait."
+          },
+          "timeTravellingVisualizer.DVISettings.max_epochs": {
+            "type": "number",
+            "default": 5,
+            "description": "Maximum number of epochs when training visualization model."
           }
         }
       },
       {
-        "title": "DVI",
+        "title": "TimeVis",
         "properties": {
-          "timeTravellingVisualizer.visualizeSettings.DVIAlpha": {
+          "timeTravellingVisualizer.TimeVisSettings.gpu_id": {
             "type": "number",
-            "default": 0.8,
+            "default": 0,
+            "description": "Single GPU index to use, if not using GPU, set to -1."
+          },
+          "timeTravellingVisualizer.TimeVisSettings.resolution": {
+            "type": "string",
+            "default": "1000,800",
+            "description": "Resolution of the background in pixels, fill in as 'width,height'."
+          },
+          "timeTravellingVisualizer.TimeVisSettings.lambda": {
+            "type": "number",
+            "default": 1.0,
             "minimum": 0,
-            "maximum": 1,
-            "description": "Alpha value for DVI visualization.",
+            "maximum": 10,
+            "description": "Weight for reconstruction loss."
+          },
+          "timeTravellingVisualizer.TimeVisSettings.n_neighbors": {
+            "type": "number",
+            "default": 15,
+            "description": "Number of neighbors taken into account for the temporal loss."
+          },
+          "timeTravellingVisualizer.TimeVisSettings.s_n_epochs": {
+            "type": "number",
+            "default": 10,
+            "description": "Number of epochs for samples to be considered as neighbors."
+          },
+          "timeTravellingVisualizer.TimeVisSettings.b_n_epochs": {
+            "type": "number",
+            "default": 0,
+            "description": "Number of epochs for edges to be considered as neighbors."
+          },
+          "timeTravellingVisualizer.TimeVisSettings.t_n_epochs": {
+            "type": "number",
+            "default": 0,
+            "description": "Number of epochs for edges to be considered as neighbors."
+          },
+          "timeTravellingVisualizer.TimeVisSettings.patient": {
+            "type": "number",
+            "default": 3,
+            "description": "Number of epochs to wait."
+          },
+          "timeTravellingVisualizer.TimeVisSettings.max_epochs": {
+            "type": "number",
+            "default": 5,
+            "description": "Maximum number of epochs when training visualization model."
           }
         }
       },
@@ -117,7 +199,7 @@
     ],
     "commands": [
       {
-        "command": "timeTravellingVisualizer.startVisualize",
+        "command": "timeTravellingVisualizer.startVisualizing",
         "title": "Start Visualizing"
       },
       {
