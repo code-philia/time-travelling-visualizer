@@ -6,7 +6,7 @@ import { PlotViewManager } from "./views/plotView";
 import { isDirectory } from './ioUtils';
 import { getIconUri } from './resources';
 import { MessageManager } from './views/messageManager';
-import { fetchTrainingProcessInfo, fetchTrainingProcessStructure, getAttributeResource, getText } from './communication/api';
+import { fetchTrainingProcessInfo, fetchTrainingProcessStructure, getAttributeResource, getText, triggerStartVisualizing } from './communication/api';
 import { defaultWorkspaceState } from './state';
 
 /**
@@ -183,13 +183,44 @@ async function getConfig(forceReconfig: boolean = false): Promise<api.BasicVisua
 	return config;
 }
 
-export function getCurrentConfig() {
+export function getBasicConfig() {
 	var config: api.BasicVisualizationConfig | undefined;
 	config = checkDefaultVisualizationConfig();
 	if (!config) {
 		vscode.window.showErrorMessage("Cannot start visualization: invalid configuration");
 	}
 	return config;
+}
+
+export function getVisConfig(visualizationMethod: string) { 
+	const visConfigSet = vscode.workspace.getConfiguration(CONFIG.configurationBaseName);
+	if (visualizationMethod === "TimeVis") {
+		return {
+			gpu_id: visConfigSet.get(CONFIG.ConfigurationID.TimeGpuId),
+			resolution: visConfigSet.get(CONFIG.ConfigurationID.TimeResolution),
+			lambda: visConfigSet.get(CONFIG.ConfigurationID.TimeLambda),
+			n_neighbors: visConfigSet.get(CONFIG.ConfigurationID.TimeNNeighbors),
+			s_n_epochs: visConfigSet.get(CONFIG.ConfigurationID.TimeSNEpochs),
+			b_n_epochs: visConfigSet.get(CONFIG.ConfigurationID.TimeBNEpochs),
+			t_n_epochs: visConfigSet.get(CONFIG.ConfigurationID.TimeTNEpochs),
+			patient: visConfigSet.get(CONFIG.ConfigurationID.TimePatient),
+			max_epochs: visConfigSet.get(CONFIG.ConfigurationID.TimeMaxEpochs),
+		};
+	}
+	else if (visualizationMethod === "DVI") {
+		return {
+			gpu_id: visConfigSet.get(CONFIG.ConfigurationID.DVIGpuId),
+			resolution: visConfigSet.get(CONFIG.ConfigurationID.DVIResolution),
+			lambda1: visConfigSet.get(CONFIG.ConfigurationID.DVILambda1),
+			lambda2: visConfigSet.get(CONFIG.ConfigurationID.DVILambda2),
+			n_neighbors: visConfigSet.get(CONFIG.ConfigurationID.DVINNeighbors),
+			s_n_epochs: visConfigSet.get(CONFIG.ConfigurationID.DVISNEpochs),
+			b_n_epochs: visConfigSet.get(CONFIG.ConfigurationID.DVIBNEpochs),
+			patient: visConfigSet.get(CONFIG.ConfigurationID.DVIPatient),
+			max_epochs: visConfigSet.get(CONFIG.ConfigurationID.DVIMaxEpochs),
+		};
+	}
+	return {};
 }
 
 export function getPlotSettings(){
@@ -329,11 +360,20 @@ export async function loadVisualization(forceReconfig: boolean = false): Promise
  * Start visualizing
  */
 export async function startVisualizing(): Promise<boolean> {
+	const config = getBasicConfig();
+	if (!config) {
+		vscode.window.showErrorMessage("Cannot start visualization: invalid configuration");
+		return false;
+	}
 	vscode.window.showInformationMessage("Start visualizing...");
+	const visConfig = getVisConfig(config.visualizationMethod);
+	await triggerStartVisualizing(config.contentPath, config.visualizationMethod,config.taskType, visConfig );
 	return true;
 }
 
-
+/**
+ * Other commands
+ */
 function setDataFolder(file: vscode.Uri | undefined): boolean {
 	if (!file) {
 		return false;

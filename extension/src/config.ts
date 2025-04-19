@@ -73,6 +73,27 @@ export class ConfigurationID {
 	static readonly revealNeighborSameType = 'plotSettings.revealNeighborSameType';
 	static readonly revealNeighborCrossType = 'plotSettings.revealNeighborCrossType';
 
+	// visualize settings
+	static readonly DVIGpuId = 'DVISettings.gpu_id';
+	static readonly DVIResolution = 'DVISettings.resolution';
+	static readonly DVILambda1 = 'DVISettings.lambda1';
+	static readonly DVILambda2 = 'DVISettings.lambda2';
+	static readonly DVINNeighbors = 'DVISettings.n_neighbors';
+	static readonly DVISNEpochs = 'DVISettings.s_n_epochs';
+	static readonly DVIBNEpochs = 'DVISettings.b_n_epochs';
+	static readonly DVIPatient = 'DVISettings.patient';
+	static readonly DVIMaxEpochs = 'DVISettings.max_epochs';
+
+	static readonly TimeGpuId = 'TimeVisSettings.gpu_id';
+	static readonly TimeResolution = 'TimeVisSettings.resolution';
+	static readonly TimeLambda = 'TimeVisSettings.lambda';
+	static readonly TimeNNeighbors = 'TimeVisSettings.n_neighbors';
+	static readonly TimeSNEpochs = 'TimeVisSettings.s_n_epochs';
+	static readonly TimeBNEpochs = 'TimeVisSettings.b_n_epochs';
+	static readonly TimeTNEpochs = 'TimeVisSettings.t_n_epochs';
+	static readonly TimePatient = 'TimeVisSettings.patient';
+	static readonly TimeMaxEpochs = 'TimeVisSettings.max_epochs';
+
     private constructor() {}
 }
 
