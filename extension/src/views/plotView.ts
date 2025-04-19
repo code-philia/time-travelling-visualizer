@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as CONFIG from '../config';
 import { readFileSync } from 'fs';
-import { getCurrentConfig, getPlotSettings } from '../control';
+import { getBasicConfig, getPlotSettings } from '../control';
 import { getLiveWebviewHtml } from '../devLiveServer';
 import { MessageManager } from './messageManager';
 import { PlotViewMessageManager } from './viewMessageManager';
@@ -83,7 +83,7 @@ export class PlotViewManager {
 			console.log("Plot View received message: ", msg);
 			if (msg.command === 'epochSwitch') {
 				const targetEpoch: number = msg.data.epoch;
-				const config = getCurrentConfig();
+				const config = getBasicConfig();
 				if (!config) {
 					return;
 				}
@@ -164,7 +164,7 @@ export class PlotViewManager {
 			}
 			else if (msg.command === 'hoveredIndexSwitch') {
 				const hoveredIndex: number = msg.data.hoveredIndex;
-				const config = getCurrentConfig();
+				const config = getBasicConfig();
 				if (!config) {
 					return;
 				}
@@ -231,7 +231,7 @@ export class PlotViewManager {
 							return;
 						}
 		
-						const config = getCurrentConfig();
+						const config = getBasicConfig();
 						if (!config) {
 							vscode.window.showErrorMessage("Configuration is not available.");
 							return;
