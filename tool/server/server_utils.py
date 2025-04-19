@@ -12,7 +12,9 @@ from PIL import Image
 
 import matplotlib.pyplot as plt
 import torch
-from vismodel import VisModel
+
+sys.path.append('..')
+from visualize.visualize_model import VisModel
 
 # Func: infer available epochs through projection files, return a list of available epochs
 # TODO consider current vismethod into account
@@ -423,3 +425,15 @@ def get_training_parameters():
     params_path = os.path.join(project_path, "visualize","params.json")
     params = read_file_as_json(params_path)
     return params
+
+
+def generate_dimension_array(dimension):
+    encoder_dims = [dimension]
+    while len(encoder_dims) < 5:
+        next_dim = 2 ** (int(encoder_dims[-1].bit_length() - 1))
+        next_dim = max(128, next_dim) if next_dim > 128 else next_dim
+        encoder_dims.append(next_dim)
+    encoder_dims.append(2)
+    
+    decoder_dims = encoder_dims[::-1]
+    return encoder_dims, decoder_dims

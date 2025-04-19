@@ -13,6 +13,16 @@ export interface BriefProjectionResult {
 /**
  * Interaction with backend
  */
+export function triggerStartVisualizing(contentPath: string, visMethod: string, taskType: string,visConfig: any, options?: { host?: string }) {
+    const data = {
+        "content_path": contentPath,
+        "vis_method": visMethod,
+        "task_type": taskType,
+        "vis_config": visConfig
+    };
+    return basicUnsafePostWithJsonResponse('/startVisualizing', data, options);
+}
+
 export function fetchTrainingProcessStructure(contentPath: string, options?: { host?: string }){
     return basicUnsafeGetWithJsonResponse(`/getIterationStructure?content_path=${contentPath}`, options);
 }

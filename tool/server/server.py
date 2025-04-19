@@ -1,13 +1,17 @@
 import os
 import sys
 from llm_agent import call_llm_agent
-from utils import *
+from run_visualization import visualize_run
+
 from flask import request, Flask, jsonify, make_response, send_file,send_from_directory
 from flask_cors import CORS, cross_origin
 
-sys.path.append('..')
 sys.path.append('.')
+sys.path.append('..')
 sys.path.append('../..')
+sys.path.append('../visualize')
+
+from server_utils import *
 
 # flask for API server
 app = Flask(__name__)
@@ -99,6 +103,21 @@ def update_projection():
         'scope': scope
     })
     return make_response(result, 200)
+
+@app.route('/startVisualizing', methods = ["POST"])
+def start_visualizing():
+    req = request.get_json()
+    content_path = req['content_path']
+    vis_method = req['vis_method']
+    task_type = req['task_type']
+    vis_config = req['vis_config']
+
+    print('start visualizing')
+    print("vis config:", vis_config)
+    
+    visualize_run(content_path, vis_method, task_type, vis_config)
+    
+    return make_response({}, 200)
 
 
 """
