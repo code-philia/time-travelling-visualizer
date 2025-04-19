@@ -5,7 +5,7 @@ import json
 import numpy as np
 import torch
 
-from strategy.visualize_model import VisModel
+from tool.visualize.visualize_model import VisModel
 
 # ------------------
 # Projector:
@@ -38,16 +38,16 @@ class ProjectorAbstractClass(ABC):
         pass
 
 class Projector(ProjectorAbstractClass):
-    def __init__(self, config, params):
-        self.content_path = config['contentPath']
-        self.vis_method = config['visMethod']
-        self.vis_model_name = config['visMethod'] + "_model"
-        gpu_id = config['gpu']
+    def __init__(self, config):
+        self.content_path = config['content_path']
+        self.vis_method = config['vis_method']
+        
+        gpu_id = config['vis_config']['gpu_id']
         self.device = torch.device("cuda:{}".format(gpu_id) if torch.cuda.is_available() else "cpu")
-        self.vis_model = VisModel(params['ENCODER_DIMS'], params['DECODER_DIMS']).to(self.device)
+        self.vis_model = VisModel(config['vis_config']['encoder_dims'], config['vis_config']['decoder_dims']).to(self.device)
 
     def load(self, iteration):
-        file_path = os.path.join(self.content_path, "Model", "Epoch_{}".format(iteration), "{}.pth".format(self.vis_model_name))
+        file_path = os.path.join(self.content_path, 'visualize', self.vis_method, 'epochs', f'epoch_{iteration}', 'vis_model.pth')
         save_model = torch.load(file_path, map_location="cpu")
         self.vis_model.load_state_dict(save_model["state_dict"])
         self.vis_model.to(self.device)
@@ -64,7 +64,6 @@ class Projector(ProjectorAbstractClass):
             embedding = self.vis_model.encoder(torch.from_numpy(data_flatten).to(dtype=torch.float32, device=self.device)).cpu().detach().numpy()
         return embedding # [sample_num * feature_num, 2]
     
-    #TODO: fix
     def individual_project(self, iteration, data):
         self.load(iteration)
         embedding = self.vis_model.encoder(torch.from_numpy(np.expand_dims(data, axis=0)).to(dtype=torch.float32, device=self.device)).cpu().detach().numpy()
@@ -214,12 +213,11 @@ class EvalProjector(DeepDebuggerProjector):
 
 
 class DVIProjector(Projector):
-    def __init__(self, config, params) -> None:
-        super().__init__(config, params)
+    def __init__(self, config) -> None:
+        super().__init__(config)
 
     def load(self, iteration):
-        print("DVIPROJECTOR", self.vis_model_name)
-        file_path = os.path.join(self.content_path,"visualize", self.vis_method, "vismodel", f"{iteration}.pth")
+        file_path = os.path.join(self.content_path, 'visualize', self.vis_method, 'epochs', f'epoch_{iteration}', 'vis_model.pth')
         save_model = torch.load(file_path, map_location="cpu")
         self.vis_model.load_state_dict(save_model["state_dict"])
         self.vis_model.to(self.device)
@@ -228,11 +226,11 @@ class DVIProjector(Projector):
 
 
 class TimeVisProjector(Projector):
-    def __init__(self, config, params) -> None:
-        super().__init__(config, params)
+    def __init__(self, config) -> None:
+        super().__init__(config)
 
     def load(self, iteration):
-        file_path = os.path.join(self.content_path,"visualize", self.vis_method, "vismodel", "1.pth")
+        file_path = os.path.join(self.content_path, 'visualize', self.vis_method, 'vis_model.pth')
         save_model = torch.load(file_path, map_location="cpu")
         self.vis_model.load_state_dict(save_model["state_dict"])
         self.vis_model.to(self.device)

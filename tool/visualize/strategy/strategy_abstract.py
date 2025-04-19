@@ -5,9 +5,8 @@ import os
 import torch
 
 class StrategyAbstractClass(ABC):
-    def __init__(self, config, params):
+    def __init__(self, config):
         self.config = config
-        self.params = params
 
     @abstractmethod
     def initialize_model(self):
@@ -31,5 +30,5 @@ class StrategyAbstractClass(ABC):
             "state_dict": model.state_dict(),
             "optimizer": optimizer.state_dict()
         }
-        os.makedirs(os.path.join(self.config["contentPath"],"visualize", self.config["visMethod"], "vismodel"), exist_ok=True)
-        torch.save(save_model, os.path.join(self.config["contentPath"],"visualize", self.config["visMethod"], "vismodel", f"{epoch}.pth"))
+        os.makedirs(os.path.join(self.config["content_path"],"visualize", self.config["vis_method"], "epochs", f"epoch_{epoch}"), exist_ok=True)
+        torch.save(save_model, os.path.join(self.config["content_path"],"visualize", self.config["vis_method"], "epochs", f"epoch_{epoch}", "vis_model.pth"))
