@@ -10,7 +10,6 @@ type BaseMutableGlobalStore = {
     selectedIndices: number[];
     labels: number[];
     tokenList: string[];
-    originalText: Record<string, string>;
     inClassNeighbors: number[][];
     outClassNeighbors: number[][];
 };
@@ -20,7 +19,6 @@ let initMutableGlobalStore: BaseMutableGlobalStore = {
     selectedIndices: [],
     labels: [],
     tokenList: [],
-    originalText: {},
     inClassNeighbors: [],
     outClassNeighbors: [],
 };
