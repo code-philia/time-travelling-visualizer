@@ -315,9 +315,6 @@ export async function loadVisualization(forceReconfig: boolean = false): Promise
 		const textRes: any = await getText(config.contentPath);
 		data['tokenList'] = textRes['text_list'];
 		extensionContext.workspaceState.update('tokenList', data['tokenList']);
-
-		const originalTextRes: any = await getAttributeResource(config.contentPath, 1, 'originalText');
-		data['originalText'] = originalTextRes['originalText'];
 	}
 
 	// 4. send message to views
