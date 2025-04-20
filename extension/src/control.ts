@@ -8,6 +8,7 @@ import { getIconUri } from './resources';
 import { MessageManager } from './views/messageManager';
 import { fetchTrainingProcessInfo, fetchTrainingProcessStructure, getAttributeResource, getText, triggerStartVisualizing } from './communication/api';
 import { defaultWorkspaceState } from './state';
+import path from 'path';
 
 /**
  * Config
@@ -29,23 +30,33 @@ async function repickConfig( configDescription: string, items: (vscode.QuickPick
 	return picked.label;
 }
 
+function getOpenedFolderPath(): string {
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (workspaceFolders && workspaceFolders.length > 0) {
+        return workspaceFolders[0].uri.fsPath;
+    }
+    return "";
+}
+
 function checkDefaultVisualizationConfig(): api.BasicVisualizationConfig | undefined {
 	const visConfigSet = vscode.workspace.getConfiguration(CONFIG.configurationBaseName);
 	const dataType = visConfigSet.get(CONFIG.ConfigurationID.dataType);
 	const taskType = visConfigSet.get(CONFIG.ConfigurationID.taskType);
-	const contentPath = visConfigSet.get(CONFIG.ConfigurationID.contentPath);
+	const trainingProcess = visConfigSet.get(CONFIG.ConfigurationID.trainingProcess);
 	const visualizationMethod = visConfigSet.get(CONFIG.ConfigurationID.visualizationMethod);
+	const workspacePath = getOpenedFolderPath();
+
 	// TODO create a class for a configuration
 	// that can both define the ID and validate the value
 
 	if (api.Types.VisualizationDataType.has(dataType) &&
 		api.Types.VisualizationTaskType.has(taskType) &&
-		typeof contentPath === 'string' && isDirectory(contentPath) &&
+		typeof trainingProcess === 'string' &&
 		api.Types.VisualizationMethod.has(visualizationMethod)) {
 		return {
 			dataType: dataType,
 			taskType: taskType,
-			contentPath: contentPath,
+			contentPath: path.join(workspacePath, trainingProcess),
 			visualizationMethod: visualizationMethod,
 		};
 	}
@@ -79,9 +90,9 @@ async function reconfigureVisualizationConfig(): Promise<api.BasicVisualizationC
 
 	// const contentPathConfig = config.get('loadVisualization.contentPath');
 	const contentPathConfig = "";
-	var contentPath: string = "";
+	var trainingProcess: string = "";
 	if (!(typeof contentPathConfig === 'string' && isDirectory(contentPathConfig))) {
-		contentPath = await new Promise((resolve, reject) => {
+		trainingProcess = await new Promise((resolve, reject) => {
 			const inputBox: vscode.InputBox = vscode.window.createInputBox();
 			inputBox.prompt = "Please enter the folder path where the visualization should start from";
 			inputBox.title = "Data Folder";
@@ -139,11 +150,11 @@ async function reconfigureVisualizationConfig(): Promise<api.BasicVisualizationC
 			inputBox.show();
 		});
 
-		if (!isDirectory(contentPath)) {
+		if (!isDirectory(trainingProcess)) {
 			return undefined;
 		}
 	} else {
-		contentPath = contentPathConfig;
+		trainingProcess = contentPathConfig;
 	}
 
 	const visualizationMethod = await repickConfig(
@@ -160,13 +171,14 @@ async function reconfigureVisualizationConfig(): Promise<api.BasicVisualizationC
 
 	visConfigSet.update(CONFIG.ConfigurationID.dataType, dataType);
 	visConfigSet.update(CONFIG.ConfigurationID.taskType, taskType);
-	visConfigSet.update(CONFIG.ConfigurationID.contentPath, contentPath);
+	visConfigSet.update(CONFIG.ConfigurationID.trainingProcess, trainingProcess);
 	visConfigSet.update(CONFIG.ConfigurationID.visualizationMethod, visualizationMethod);
+	const workspacePath = getOpenedFolderPath();
 
 	return {
 		dataType: dataType,
 		taskType: taskType,
-		contentPath: contentPath,
+		contentPath: path.join(workspacePath, trainingProcess),
 		visualizationMethod: visualizationMethod,
 	};
 }
@@ -378,7 +390,7 @@ function setDataFolder(file: vscode.Uri | undefined): boolean {
 	const fsPath = file.fsPath;
 	if (isDirectory(fsPath)) {
 		const extensionConfig = vscode.workspace.getConfiguration('timeTravellingVisualizer');
-		extensionConfig.update(CONFIG.ConfigurationID.contentPath, fsPath);
+		extensionConfig.update(CONFIG.ConfigurationID.trainingProcess, fsPath);
 		return true;
 	} else {
 		vscode.window.showErrorMessage("Selected path is not a directory 😮");

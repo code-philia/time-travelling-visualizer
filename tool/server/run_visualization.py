@@ -5,8 +5,8 @@ import logging
 
 from server_utils import generate_dimension_array
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s',
-                    filename='app.log', filemode='w')
+# logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s',
+#                     filename='app.log', filemode='w')
 
 def initialize_config(content_path, vis_method, task_type, vis_config):
     config = {}
