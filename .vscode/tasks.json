@@ -18,8 +18,7 @@
 				"isDefault": true
 			},
             "dependsOn": [
-                "Build Front-end Pages for Extension",
-                "Launch Backend"
+                "Build Front-end Pages for Extension"
             ]
 		},
         {

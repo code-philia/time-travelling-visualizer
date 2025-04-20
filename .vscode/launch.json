@@ -32,7 +32,6 @@
                 "${workspaceFolder}/extension/out/**/*.js"
             ],
             "preLaunchTask": "${defaultBuildTask}",
-            "postDebugTask": "Terminate Backend",
             "sourceMaps": true
         }
     ]
