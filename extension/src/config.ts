@@ -62,7 +62,7 @@ export class ConfigurationID {
 	// basic settings
     static readonly dataType = 'loadVisualization.dataType';
     static readonly taskType = 'loadVisualization.taskType';
-	static readonly contentPath = 'loadVisualization.contentPath';
+	static readonly trainingProcess = 'loadVisualization.trainingProcess';
 	static readonly visualizationMethod = 'loadVisualization.visualizationMethod';
 	
 	// pllot settings

@@ -42,10 +42,10 @@
             "enum": ["Classification", "Code-Retrieval"],
             "description": "Task type to visualize."
           },
-          "timeTravellingVisualizer.loadVisualization.contentPath": {
+          "timeTravellingVisualizer.loadVisualization.trainingProcess": {
             "type": "string",
-            "default": ".",
-            "description": "Folder to load data from."
+            "default": "",
+            "description": "Training process within the currently opened folder."
           },
           "timeTravellingVisualizer.loadVisualization.visualizationMethod": {
             "type": "string",
