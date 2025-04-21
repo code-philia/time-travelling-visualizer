@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as config from './config';
 import { BrowseTreeView } from './views/browseTreeView';
 import { MessageManager } from './views/messageManager';
+import { TrainingProcessTreeView } from './views/trainingProcessTreeView';
 
 export function doViewsRegistration(): vscode.Disposable {
     // Prepare for registration of webview views
@@ -19,11 +20,14 @@ export function doViewsRegistration(): vscode.Disposable {
     );
 
     // Prepare for registration of tree view
-    const browseTreeViewRegistration = new BrowseTreeView();
+    // const browseTreeViewRegistration = new BrowseTreeView();
+    const trainginProcessTreeViewRegistration = new TrainingProcessTreeView();
 
     return vscode.Disposable.from(
         inspectViewRegistration,
         detailViewRegistration,
-        browseTreeViewRegistration
+        // browseTreeViewRegistration,
+        trainginProcessTreeViewRegistration
     );
+
 }

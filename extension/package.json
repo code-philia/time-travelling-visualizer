@@ -24,6 +24,18 @@
           "command": "timeTravellingVisualizer.setAsDataFolderAndLoadVisualizationResult",
           "group": "navigation"
         }
+      ],
+      "view/item/context": [
+        {
+          "command": "trainingProcess.info",
+          "when": "viewItem == 'visualizationResult'",
+          "group": "navigation"
+        },
+        {
+          "command": "trainingProcess.loadResult",
+          "when": "viewItem == 'visualizationResult'",
+          "group": "navigation"
+        }
       ]
     },
     "configuration": [
@@ -52,6 +64,11 @@
             "default": "TimeVis",
             "enum": ["DVI", "TimeVis"],
             "description": "The visualization method for model to use."
+          },
+          "timeTravellingVisualizer.loadVisualization.visualizationID": {
+            "type": "string",
+            "default": "",
+            "description": "The visualization result to show (e.g. 'DVI_1')."
           }
         }
       },
@@ -213,6 +230,14 @@
       {
         "command": "timeTravellingVisualizer.configureAndLoadVisualizationResult",
         "title": "Configure and Visualize Training Process"
+      },
+      {
+        "command": "trainingProcess.info",
+        "title": "Info"
+      },
+      {
+        "command": "trainingProcess.loadResult",
+        "title": "Load Result"
       }
     ],
     "viewsContainers": {
@@ -246,8 +271,8 @@
       ],
       "explorer": [
         {
-            "id": "browse-tree-view",
-            "name": "Training Overview",
+            "id": "training-process-tree-view",
+            "name": "Training Process",
             "icon": "resources/eye_tracking_24dp_5F6368_FILL0_wght300_GRAD0_opsz24.svg"
         }
       ]

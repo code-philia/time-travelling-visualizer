@@ -84,6 +84,7 @@ export class PlotViewManager {
 			if (msg.command === 'epochSwitch') {
 				const targetEpoch: number = msg.data.epoch;
 				const config = getBasicConfig();
+				console.log("In Plot view, config", config);
 				if (!config) {
 					return;
 				}
@@ -97,7 +98,7 @@ export class PlotViewManager {
 				extensionContext.workspaceState.update('currentEpoch', targetEpoch);
 
 				// projection
-				const projectionRes: any = await fetchEpochProjection(config.contentPath, config.visualizationMethod, targetEpoch);
+				const projectionRes: any = await fetchEpochProjection(config.contentPath, config.visualizationID, targetEpoch);
 				extensionContext.workspaceState.update('projection', projectionRes['projection']);
 				extensionContext.workspaceState.update('scope', projectionRes['scope']);
 				
@@ -124,7 +125,7 @@ export class PlotViewManager {
 					extensionContext.workspaceState.update('confidence', ret.confidence);
 
 					if (plotSettings.showBackground) {
-						const bgimgRes = await getBackground(config.contentPath, config.visualizationMethod, targetEpoch, 1200, 1000, extensionContext.workspaceState.get('scope'));
+						const bgimgRes = await getBackground(config.contentPath, config.visualizationID, targetEpoch, 1200, 1000, extensionContext.workspaceState.get('scope'));
 						extensionContext.workspaceState.update('background', bgimgRes);	
 					}
 				}
