@@ -1,9 +1,11 @@
 import * as vscode from 'vscode';
-import * as config from '../config';
+import * as CONFIG from '../config';
 import { getLiveWebviewHtml } from '../devLiveServer';
 import { loadHomePage } from './plotView';
 import path from 'path';
 import { MessageManager } from './messageManager';
+import { getBasicConfig } from '../control';
+import { getAttributeResource, getText } from '../communication/api';
 
 export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
     public abstract webview?: vscode.Webview;
@@ -47,20 +49,19 @@ export class DetailViewProvider extends BaseViewProvider {
     ) {
         this.webview = webviewView.webview;
 
-        webviewView.webview.options = config.getDefaultWebviewOptions();
+        webviewView.webview.options = CONFIG.getDefaultWebviewOptions();
 
-        if (config.isDev) {
+        if (CONFIG.isDev) {
             webviewView.webview.html = getLiveWebviewHtml(webviewView.webview, this.port, false, this.path);
         } else {
             webviewView.webview.html = loadHomePage(
                 webviewView.webview,
-                path.join(config.GlobalStorageContext.webRoot, 'configs', 'extension-detail-view', 'index.html'),
+                path.join(CONFIG.GlobalStorageContext.webRoot, 'configs', 'extension-detail-view', 'index.html'),
                 '(?!http:\\/\\/|https:\\/\\/)([^"]*\\.[^"]+)', // remember to double-back-slash here
-                path.join(config.GlobalStorageContext.webRoot)
+                path.join(CONFIG.GlobalStorageContext.webRoot)
             );
         }
 
-        // webviewView.webview.onDidReceiveMessage(handleMessageDefault);
         webviewView.webview.onDidReceiveMessage(msg => {
             console.log("Detail View received message: ", msg);
         });
@@ -78,27 +79,44 @@ export class TokenViewProvider extends BaseViewProvider {
         this.path = path;
     }
 
-    public resolveWebviewView(
+    public async resolveWebviewView(
         webviewView: vscode.WebviewView,
         context: vscode.WebviewViewResolveContext,
         token: vscode.CancellationToken
     ) {
         this.webview = webviewView.webview;
 
-        webviewView.webview.options = config.getDefaultWebviewOptions();
+        webviewView.webview.options = CONFIG.getDefaultWebviewOptions();
 
-        if (config.isDev) {
+        if (CONFIG.isDev) {
             webviewView.webview.html = getLiveWebviewHtml(webviewView.webview, this.port, false, this.path);
         } else {
             webviewView.webview.html = loadHomePage(
                 webviewView.webview,
-                path.join(config.GlobalStorageContext.webRoot, 'configs', 'extension-panel-view', 'index.html'),
+                path.join(CONFIG.GlobalStorageContext.webRoot, 'configs', 'extension-panel-view', 'index.html'),
                 '(?!http:\\/\\/|https:\\/\\/)([^"]*\\.[^"]+)', // remember to double-back-slash here
-                path.join(config.GlobalStorageContext.webRoot)
+                path.join(CONFIG.GlobalStorageContext.webRoot)
             );
         }
 
-        // webviewView.webview.onDidReceiveMessage(handleMessageDefault);
+        if (MessageManager.getPlotViewMessageManager() !== undefined) {
+            const config = getBasicConfig();
+            if (config && config.taskType) {
+                if (config.taskType === 'Code-Retrieval') {
+                    const labelRes: any = await getAttributeResource(config.contentPath, 1, 'label');
+                    const textRes: any = await getText(config.contentPath);
+                    const msgToTokenView = {
+                        command: 'init',
+                        data: {
+                            labels: labelRes['label'],
+                            tokenList: textRes['text_list']
+                        }
+                    }
+                    this.webview?.postMessage(msgToTokenView);
+                }
+            }
+        }
+
         webviewView.webview.onDidReceiveMessage(msg => {
             console.log("Token View received message: ", msg);
             if(msg.command === 'hoveredIndexSwitch') {
