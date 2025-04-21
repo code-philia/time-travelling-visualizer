@@ -78,6 +78,7 @@ function MessageHandler() {
 
             setValue('textData', messageData.tokenList);
             setValue('inherentLabelData', messageData.labelList);
+            setValue('epoch', messageData.availableEpochs[0]);
 
             notifyEpochSwitch(messageData.availableEpochs[0]);
         }
