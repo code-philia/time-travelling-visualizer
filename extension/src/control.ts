@@ -293,7 +293,6 @@ export async function loadVisualization(forceReconfig: boolean = false): Promise
 		labelTextList?: string[],
 		tokenList?: string[],
 		labelList?: number[],
-		originalText?: Record<string, string>,
 	} = {};
 	data['taskType'] = config.taskType;
 
@@ -352,16 +351,16 @@ export async function loadVisualization(forceReconfig: boolean = false): Promise
 	}
 	MessageManager.sendToDetailView(msgToDetailView);
 
+
 	const msgToTokenView = {
 		command: 'init',
 		data: {
 			labels: data['labelList'],
-			tokenList: data['tokenList'],
-			originalText: data['originalText'],
+			tokenList: data['tokenList']
 		}
 	}
 	MessageManager.sendToTokenView(msgToTokenView);
-	
+
 	return true;
 }
 

@@ -18,6 +18,10 @@ export class MessageManager {
         return this.detailViewMessageManager;
     }
 
+    static getPlotViewMessageManager(): PlotViewMessageManager {
+        return this.plotViewMessageManager;
+    }
+
     static setPlotViewMessageManager(_plotViewMessageManager: PlotViewMessageManager) {
         this.plotViewMessageManager = _plotViewMessageManager;
     }
