@@ -48,8 +48,8 @@ def get_coloring_list(config):
     return color_255.tolist()
 
 # Func: load projection of certain epoch
-def load_projection(content_path, vis_method, epoch):
-    projection_path = os.path.join(content_path, "visualize", vis_method, "projection", f"{epoch}.npy")
+def load_projection(content_path, vis_id, epoch):
+    projection_path = os.path.join(content_path, "visualize", vis_id, "projection", f"{epoch}.npy")
     projection = np.load(projection_path)
     projection_list = projection.tolist()
 
@@ -213,8 +213,15 @@ def get_filter_result(config, content_path, epoch, filters):
 
     return result,''
 
+def paint_background(content_path, vis_id, epoch, width, height, scale):
+    file_path = os.path.join(content_path, 'visualize',vis_id,'background', f'{epoch}.png')
+    if os.path.exists(file_path):
+        return convert_to_base64(file_path)
+    return ""
+
 # Func: compute pixel color, return webp image
-def paint_background(content_path, vis_method, epoch, width, height, scale):
+# FIXME: this function is not used in the current code
+def paint_background_backup(content_path, vis_method, epoch, width, height, scale):
     file_path = os.path.join(content_path, 'visualize',vis_method,'background', f'{epoch}.png')
     if os.path.exists(file_path):
         return convert_to_base64(file_path)

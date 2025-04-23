@@ -41,13 +41,14 @@ class Projector(ProjectorAbstractClass):
     def __init__(self, config):
         self.content_path = config['content_path']
         self.vis_method = config['vis_method']
+        self.vis_id = config['vis_id']
         
         gpu_id = config['vis_config']['gpu_id']
         self.device = torch.device("cuda:{}".format(gpu_id) if torch.cuda.is_available() else "cpu")
         self.vis_model = VisModel(config['vis_config']['encoder_dims'], config['vis_config']['decoder_dims']).to(self.device)
 
     def load(self, iteration):
-        file_path = os.path.join(self.content_path, 'visualize', self.vis_method, 'epochs', f'epoch_{iteration}', 'vis_model.pth')
+        file_path = os.path.join(self.content_path, 'visualize', self.vis_id, 'epochs', f'epoch_{iteration}', 'vis_model.pth')
         save_model = torch.load(file_path, map_location="cpu")
         self.vis_model.load_state_dict(save_model["state_dict"])
         self.vis_model.to(self.device)
@@ -217,7 +218,7 @@ class DVIProjector(Projector):
         super().__init__(config)
 
     def load(self, iteration):
-        file_path = os.path.join(self.content_path, 'visualize', self.vis_method, 'epochs', f'epoch_{iteration}', 'vis_model.pth')
+        file_path = os.path.join(self.content_path, 'visualize', self.vis_id, 'epochs', f'epoch_{iteration}', 'vis_model.pth')
         save_model = torch.load(file_path, map_location="cpu")
         self.vis_model.load_state_dict(save_model["state_dict"])
         self.vis_model.to(self.device)
@@ -230,7 +231,7 @@ class TimeVisProjector(Projector):
         super().__init__(config)
 
     def load(self, iteration):
-        file_path = os.path.join(self.content_path, 'visualize', self.vis_method, 'vis_model.pth')
+        file_path = os.path.join(self.content_path, 'visualize', self.vis_id, 'vis_model.pth')
         save_model = torch.load(file_path, map_location="cpu")
         self.vis_model.load_state_dict(save_model["state_dict"])
         self.vis_model.to(self.device)
@@ -449,10 +450,4 @@ class tfDVIDenseALProjector(ProjectorAbstractClass):
         data = np.expand_dims(data, axis=0)
         representation_data = self.decoder(data).cpu().numpy()
         return representation_data.squeeze(0)
-    
-    
-def construct_projector(vis_method, vis_model, content_path, device):
-    if vis_method == 'DVI':
-        return DVIProjector(vis_model, content_path, 'DIV_model', device)
-    # TODO:1
     

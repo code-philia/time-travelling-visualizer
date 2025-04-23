@@ -429,7 +429,7 @@ export async function startVisualizing(): Promise<boolean> {
 	}
 	vscode.window.showInformationMessage("Start visualizing...");
 	const visConfig = getVisConfig(config.visualizationMethod);
-	await triggerStartVisualizing(config.contentPath, config.visualizationMethod,config.taskType, visConfig );
+	await triggerStartVisualizing(config.contentPath, config.visualizationMethod, config.visualizationID, config.taskType, visConfig );
 	return true;
 }
 

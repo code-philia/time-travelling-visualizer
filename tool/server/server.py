@@ -30,7 +30,6 @@ Api: get epoch structure of one training process
 
 Request:
     content_path (str)
-    vis_method (str)
 Response:
     structure (list[dict]): list of {epoch, previous_epoch}
 """
@@ -53,7 +52,6 @@ Api: get training process info
 
 Request:
     content_path (str)
-    vis_method (str)
 Response:
     color_list (list): list of colors
     label_text_list (list): list of label text
@@ -80,7 +78,7 @@ Api: get minimum info of one epoch
 
 Request:
     content_path (str)
-    vis_method (str)
+    vis_id (str)
     epoch (str): epoch number
 Response:
     config (dict)
@@ -92,11 +90,11 @@ Response:
 def update_projection():
     req = request.get_json()
     content_path = req['content_path']
-    vis_method = req['vis_method']
+    vis_id = req['vis_id']
     epoch = int(req['epoch'])
 
     # NOTE dont't hide exception to backend output
-    projection, scope = load_projection(content_path, vis_method, epoch)
+    projection, scope = load_projection(content_path, vis_id, epoch)
 
     result = jsonify({
         'projection': projection,
@@ -109,13 +107,14 @@ def start_visualizing():
     req = request.get_json()
     content_path = req['content_path']
     vis_method = req['vis_method']
+    vis_id = req['vis_id']
     task_type = req['task_type']
     vis_config = req['vis_config']
 
     print('start visualizing')
     print("vis config:", vis_config)
     
-    visualize_run(content_path, vis_method, task_type, vis_config)
+    visualize_run(content_path, vis_method, vis_id, task_type, vis_config)
     
     return make_response({}, 200)
 
@@ -272,7 +271,7 @@ Api: get background image
 
 Request:
     content_path (str)
-    vis_method (str)
+    vis_id (str)
     width (int)
     height (int)
     scale (list of float)
@@ -284,14 +283,14 @@ Response:
 def get_background():
     req = request.get_json()
     content_path = req['content_path']
-    vis_method = req['vis_method']
+    vis_id = req['vis_id']
     width = int(req['width'])
     height = int(req['height'])
     epoch = int(req['epoch'])
     scale = req['scale']
     
     try:
-        base64_image = paint_background(content_path, vis_method, epoch, width, height, scale)
+        base64_image = paint_background(content_path, vis_id, epoch, width, height, scale)
         result = jsonify({
             'background_image_base64': base64_image
         })

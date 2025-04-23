@@ -8,10 +8,11 @@ from server_utils import generate_dimension_array
 # logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s',
 #                     filename='app.log', filemode='w')
 
-def initialize_config(content_path, vis_method, task_type, vis_config):
+def initialize_config(content_path, vis_method, vis_id, task_type, vis_config):
     config = {}
     config["content_path"] = content_path
     config["vis_method"] = vis_method
+    config["vis_id"] = vis_id
     config["task_type"] = task_type
     config["vis_config"] = vis_config
     
@@ -73,9 +74,11 @@ def init_visualize_component(config):
     
     return visualizer, strategy
 
-def visualize_run(content_path, vis_method, task_type, vis_config):    
+def visualize_run(content_path, vis_method, vis_id, task_type, vis_config):    
     # step 1: initialize config
-    config = initialize_config(content_path, vis_method, task_type, vis_config)
+    config = initialize_config(content_path, vis_method, vis_id, task_type, vis_config)
+    os.makedirs(os.path.join(content_path, 'visualize', vis_id), exist_ok=True)
+    json.dump(config, open(os.path.join(content_path, 'visualize', vis_id, 'info.json'), 'w'), indent=2)
     
     # step 2: initialize data provider, visualizer, and strategy
     visualizer, strategy = init_visualize_component(config)

@@ -13,10 +13,11 @@ export interface BriefProjectionResult {
 /**
  * Interaction with backend
  */
-export function triggerStartVisualizing(contentPath: string, visMethod: string, taskType: string,visConfig: any, options?: { host?: string }) {
+export function triggerStartVisualizing(contentPath: string, visMethod: string, visID: string,taskType: string,visConfig: any, options?: { host?: string }) {
     const data = {
         "content_path": contentPath,
         "vis_method": visMethod,
+        "vis_id": visID,
         "task_type": taskType,
         "vis_config": visConfig
     };
@@ -31,10 +32,10 @@ export function fetchTrainingProcessInfo(contentPath: string, options?: { host?:
     return basicUnsafeGetWithJsonResponse(`/getTrainingProcessInfo?content_path=${contentPath}`, options);
 }
 
-export async function fetchEpochProjection(contentPath: string, visMethod: string, epoch: number, options?: { host: string }){
+export async function fetchEpochProjection(contentPath: string, visID: string, epoch: number, options?: { host: string }){
     const data = {
         "content_path": contentPath,
-        "vis_method": visMethod,
+        "vis_id": visID,
         "epoch": `${epoch}`,
     };
     return basicUnsafePostWithJsonResponse('/updateProjection', data, options);
@@ -65,10 +66,10 @@ export function getAllNeighbors(contentPath: string, epoch: number, options?: { 
     return basicUnsafePostWithJsonResponse('/getAllNeighbors', data, options);
 }
 
-export function getBackground(contentPath: string, visMethod: string, epoch: number | undefined, width: number, height: number, scale: number[] | undefined, options?: { host?: string }) {
+export function getBackground(contentPath: string, visID: string, epoch: number | undefined, width: number, height: number, scale: number[] | undefined, options?: { host?: string }) {
     const data = {
         "content_path": contentPath,
-        "vis_method": visMethod,
+        "vis_id": visID,
         "epoch": `${epoch}`,
         "width": width,
         "height": height,
