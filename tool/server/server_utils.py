@@ -412,11 +412,14 @@ def get_training_parameters():
     return params
 
 
+def nearest_power_of_two(n):
+    return 2 ** (n.bit_length() - 1)
+
 def generate_dimension_array(dimension):
     encoder_dims = [dimension]
-    while len(encoder_dims) < 5:
-        next_dim = 2 ** (int(encoder_dims[-1].bit_length() - 1))
-        next_dim = max(128, next_dim) if next_dim > 128 else next_dim
+    target_length = 6
+    while len(encoder_dims) < target_length - 1:
+        next_dim = max(2, nearest_power_of_two(encoder_dims[-1] // 2))
         encoder_dims.append(next_dim)
     encoder_dims.append(2)
     
