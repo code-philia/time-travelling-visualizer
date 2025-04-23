@@ -31,16 +31,16 @@ Api: get epoch structure of one training process
 Request:
     content_path (str)
 Response:
-    structure (list[dict]): list of {epoch, previous_epoch}
+    available_epochs (list): list of available epochs
 """
 @app.route('/getIterationStructure', methods=["GET"])
 @cross_origin()
 def get_epoch_structure():
     content_path = request.args.get('content_path')
-    available_epochs, error_message = epoch_structure_from_projection(content_path)
+    available_epochs = infer_epoch_structure(content_path)
 
     if available_epochs is None:
-        return make_response(jsonify({'error_message': error_message}), 400)
+        return make_response(jsonify({'error_message': 'getting epoch structure failed'}), 400)
 
     result = jsonify({
         'available_epochs': available_epochs
@@ -60,11 +60,18 @@ Response:
 @cross_origin()
 def get_training_process_info():
     content_path = request.args.get('content_path')
-    config = read_file_as_json(os.path.join(content_path, 'config.json'))
-    # 1. color list
-    color_list  = get_coloring_list(config)
-    # 2. label text list
-    label_text_list = config['dataset']['classes']
+    config = read_file_as_json(os.path.join(content_path, 'dataset', 'info.json'))
+    
+    if config == None or 'classes' not in config:
+        # infer from labels.npy
+        label_file = os.path.join(content_path, 'dataset', 'labels.npy')
+        labels = np.load(label_file, allow_pickle=True)
+        class_num = len(np.unique(labels))
+        color_list  = get_coloring_list(class_num)
+        label_text_list = [str(i) for i in range(class_num)]
+    else:
+        color_list  = get_coloring_list(len(config['classes']))
+        label_text_list = config['classes']
     
     result = jsonify({
         'color_list': color_list,
@@ -97,11 +104,23 @@ def update_projection():
     projection, scope = load_projection(content_path, vis_id, epoch)
 
     result = jsonify({
-        'projection': projection,
+        'projection': projection[:1000],
         'scope': scope
     })
     return make_response(result, 200)
 
+
+"""
+Api: start training visualization model and get visualization result
+
+Request:
+    content_path (str)
+    vis_method (str)
+    task_type (str): "classification", "regression"
+    vis_config (dict): visualization config
+Response:
+    None
+"""
 @app.route('/startVisualizing', methods = ["POST"])
 def start_visualizing():
     req = request.get_json()
@@ -118,37 +137,6 @@ def start_visualizing():
     
     return make_response({}, 200)
 
-
-"""
-Api: get original data of one sample
-
-Request:
-    content_path (str)
-    index (str): sample index
-Response:
-    type (str): data type (image, text, ...)
-    sample (str): base64 encoded image or plain text
-"""
-@app.route('/getSample', methods = ["POST"])
-def get_sample():
-    req = request.get_json()
-    content_path = req['content_path']
-    index = int(req['index'])
-
-    config = read_file_as_json(os.path.join(content_path, 'config.json'))
-
-    try:
-        data_type, data = load_one_sample(config, content_path, index)
-    except Exception as e:
-        return make_response(jsonify({'error_message': 'Error in loading sample'}), 400)
-
-    result = jsonify({
-        'type': data_type,
-        'sample': data
-    })
-    return make_response(result, 200)
-
-
 """
 Api: get text data of all samples
 
@@ -162,48 +150,15 @@ def get_all_text():
     req = request.get_json()
     content_path = req['content_path']
 
-    config = read_file_as_json(os.path.join(content_path, 'config.json'))
-
-    text_list, error_message = get_all_texts(config, content_path)
+    text_list = get_all_texts(content_path)
 
     if text_list is None:
-        return make_response(jsonify({'error_message': error_message}), 400)
+        return make_response(jsonify({'error_message': "getting all texts failed"}), 400)
 
     result = jsonify({
         'text_list': text_list
     })
     return make_response(result, 200)
-
-
-"""
-Api: get all representation of one epoch
-
-Request:
-    content_path (str)
-    epoch (str)
-Response:
-    representation (list)
-"""
-@app.route('/getRepresentation', methods = ["POST"])
-@cross_origin()
-def get_representation_at_epoch():
-    req = request.get_json()
-    content_path = req['content_path']
-    epoch = int(req['epoch'])
-
-    config = read_file_as_json(os.path.join(content_path, 'config.json'))
-
-    try:
-        repr = load_representation(config, content_path, epoch)
-    except Exception as e:
-        return make_response(jsonify({'error_message': 'Error in loading representation'}), 400)
-
-    result = jsonify({
-        'representation': repr
-    })
-    return make_response(result, 200)
-
-
 
 """
 Api: get selected attributes of the dataset
@@ -225,11 +180,9 @@ def get_attributes():
     epoch = req['epoch']
     attributes = req['attributes']
 
-    config = read_file_as_json(os.path.join(content_path, 'config.json'))
-
     result = {}
     for attribute in attributes:
-        result[attribute] = load_single_attribute(config, content_path, epoch, attribute)
+        result[attribute] = load_single_attribute(content_path, epoch, attribute)
 
     result = jsonify(result)
     return make_response(result, 200)
@@ -317,10 +270,8 @@ def get_image_data():
     
     index = req['index']
 
-    config = read_file_as_json(os.path.join(content_path, 'config.json'))
-
     try:
-        base64_image = load_one_image(config, content_path, index)
+        base64_image = load_one_image(content_path, index)
         result = jsonify({
             'image_base64': base64_image
         })
@@ -346,10 +297,8 @@ def getAllNeighbors():
     content_path = req['content_path']
     epoch = int(req['epoch'])
     
-    config = read_file_as_json(os.path.join(content_path, 'config.json'))
-    
     try:
-        inClassNeighbors, outClassNeighbors = calculateAllNeighbors(config, content_path, epoch)
+        inClassNeighbors, outClassNeighbors = calculateAllNeighbors(content_path, epoch)
         result = jsonify({
             'inClassNeighbors': inClassNeighbors,
             'outClassNeighbors': outClassNeighbors
