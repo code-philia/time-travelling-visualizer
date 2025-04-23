@@ -30,5 +30,5 @@ class StrategyAbstractClass(ABC):
             "state_dict": model.state_dict(),
             "optimizer": optimizer.state_dict()
         }
-        os.makedirs(os.path.join(self.config["content_path"],"visualize", self.config["vis_method"], "epochs", f"epoch_{epoch}"), exist_ok=True)
-        torch.save(save_model, os.path.join(self.config["content_path"],"visualize", self.config["vis_method"], "epochs", f"epoch_{epoch}", "vis_model.pth"))
+        os.makedirs(os.path.join(self.config["content_path"],"visualize", self.config["vis_id"], "epochs", f"epoch_{epoch}"), exist_ok=True)
+        torch.save(save_model, os.path.join(self.config["content_path"],"visualize", self.config["vis_id"], "epochs", f"epoch_{epoch}", "vis_model.pth"))
