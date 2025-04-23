@@ -4,6 +4,7 @@ import os
 import json
 import numpy as np
 import torch
+import umap
 
 from tool.visualize.visualize_model import VisModel
 
@@ -237,6 +238,42 @@ class TimeVisProjector(Projector):
         self.vis_model.to(self.device)
         self.vis_model.eval()
         print("Successfully load the TimeVis visualization model for iteration {}".format(iteration))
+
+class UmapProjector():
+    def __init__(self, config):
+        """
+        Initialize UMAP projection parameters.
+
+        Parameters:
+        ----------
+        n_neighbors : int
+            The size of the local neighborhood used for manifold approximation.
+        min_dist : float
+            The minimum distance between points in the low-dimensional space.
+        metric : str
+            The metric to use for computing distances in high-dimensional space.
+        """
+        n_neighbors = config['vis_config']['n_neighbors']
+        min_dist = config['vis_config']['min_dist']
+        metric = config['vis_config']['metric']
+        
+        self.reducer = umap.UMAP(n_neighbors=n_neighbors, min_dist=min_dist, metric=metric)
+
+    def batch_project(self, embeddings):
+        """
+        Perform UMAP dimensionality reduction on high-dimensional embeddings.
+
+        Parameters:
+        ----------
+        embeddings : numpy.ndarray
+            High-dimensional input data of shape [n_samples, dimension].
+
+        Returns:
+        -------
+        numpy.ndarray
+            Low-dimensional projection of shape [n_samples, 2].
+        """
+        return self.reducer.fit_transform(embeddings)
 
 
 class TimeVisDenseALProjector(Projector):

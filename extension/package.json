@@ -62,7 +62,7 @@
           "timeTravellingVisualizer.loadVisualization.visualizationMethod": {
             "type": "string",
             "default": "TimeVis",
-            "enum": ["DVI", "TimeVis"],
+            "enum": ["DVI", "TimeVis", "UMAP"],
             "description": "The visualization method for model to use."
           },
           "timeTravellingVisualizer.loadVisualization.visualizationID": {
@@ -175,6 +175,26 @@
             "type": "number",
             "default": 5,
             "description": "Maximum number of epochs when training visualization model."
+          }
+        }
+      },
+      {
+        "title": "UMAP",
+        "properties": {
+          "timeTravellingVisualizer.UmapSettings.n_neighbors": {
+            "type": "number",
+            "default": 15,
+            "description": "The size of the local neighborhood used for manifold approximation."
+          },
+          "timeTravellingVisualizer.UmapSettings.min_dist": {
+            "type": "number",
+            "default": 0.1,
+            "description": "The minimum distance between points in the low-dimensional space."
+          },
+          "timeTravellingVisualizer.UmapSettings.metric": {
+            "type": "string",
+            "default": "euclidean",
+            "description": "The metric to use for computing distances in high-dimensional space."
           }
         }
       },

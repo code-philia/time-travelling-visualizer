@@ -134,6 +134,23 @@ class ResultGenerator(ResultGeneratorAbstractClass):
         color_rgb = (color * 255).astype(np.uint8)
         return color_rgb
 
+class UmapResultGenerator():
+    def __init__(self, config, data_provider, projector):
+        self.config = config
+        self.data_provider = data_provider
+        self.projector = projector
+        
+    def visualize_all_epochs(self):
+        epochs = self.config['available_epochs']
+        for i in range(len(epochs)):
+            # get and save projection
+            all_data_representation = self.data_provider.get_representation(epochs[i])
+            projection = self.projector.batch_project(all_data_representation)
+            projection_path = os.path.join(self.config['content_path'], "visualize", self.config["vis_id"], "epochs", f"epoch_{epochs[i]}")
+            if not os.path.exists(projection_path):
+                os.makedirs(projection_path)
+            np.save(os.path.join(projection_path, "projection.npy"), projection)
+
 class DenseALResultGenerator(ResultGenerator):
     def __init__(self, data_provider, projector, resolution, cmap='tab10'):
         super().__init__(data_provider, projector, resolution, cmap)

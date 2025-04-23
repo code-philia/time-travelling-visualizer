@@ -30,5 +30,5 @@ export class StringSelection {
 export class Types {
     static readonly VisualizationDataType: StringSelection = new StringSelection('Image', 'Text');
     static readonly VisualizationTaskType: StringSelection = new StringSelection('Classification', 'Code-Retrieval');
-    static readonly VisualizationMethod: StringSelection = new StringSelection('TrustVis', 'TimeVis', 'DVI');
+    static readonly VisualizationMethod: StringSelection = new StringSelection('UMAP', 'TimeVis', 'DVI');
 }
