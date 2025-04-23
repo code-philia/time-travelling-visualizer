@@ -16,31 +16,24 @@ import torch
 sys.path.append('..')
 from visualize.visualize_model import VisModel
 
-# Func: infer available epochs through projection files, return a list of available epochs
-# TODO consider current vismethod into account
-def epoch_structure_from_projection(content_path):
-    visMethods = ['DVI', 'TimeVis']
-    for visMethod in visMethods:
-        projection_folder = os.path.join(content_path, "visualize", visMethod, "projection")
-        if not os.path.exists(projection_folder):
-            continue
-
-        files = os.listdir(projection_folder)
-
-        file_numbers = [int(file.rstrip('.npy')) for file in files if file.endswith('.npy')]
-        file_numbers = sorted(file_numbers)
-        if file_numbers != []:
-            return file_numbers, ''
-
-    return None, "No projection files found, can't infer epoch structure"
+# Func: infer available epochs files, return a list of available epochs
+def infer_epoch_structure(content_path):
+    epochs_dir = os.path.join(content_path, 'epochs')
+    available_epochs = []
+    if os.path.exists(epochs_dir) and os.path.isdir(epochs_dir):
+        for folder_name in os.listdir(epochs_dir):
+            if folder_name.startswith("epoch_"):
+                try:
+                    k = int(folder_name.split("_")[1])
+                    available_epochs.append(k)
+                except ValueError:
+                    continue
+    
+    available_epochs.sort()
+    return available_epochs
 
 # Func: get coloring list
-def get_coloring_list(config):
-    if 'classes' in config['dataset']:
-        classes = config['dataset']['classes']
-        class_num = len(classes)
-    else:
-        class_num = 10
+def get_coloring_list(class_num):
     # color = get_standard_classes_color(class_num) * 255
     color_map = plt.get_cmap('tab10')
     color = color_map(range(class_num))
@@ -49,7 +42,7 @@ def get_coloring_list(config):
 
 # Func: load projection of certain epoch
 def load_projection(content_path, vis_id, epoch):
-    projection_path = os.path.join(content_path, "visualize", vis_id, "projection", f"{epoch}.npy")
+    projection_path = os.path.join(content_path, "visualize", vis_id, "epochs", f"epoch_{epoch}", "projection.npy")
     projection = np.load(projection_path)
     projection_list = projection.tolist()
 
@@ -95,39 +88,22 @@ def load_one_sample(config, content_path, index):
 
 
 # Func: load all text samples
-def get_all_texts(config, content_path):
-    attributes = config['dataset']['attributes']
-    if 'sample' not in attributes:
-        return None, 'sample is not in attributes'
-
-    sampleConfig = attributes['sample']
-    if sampleConfig['dataType'] != 'text':
-        return None, 'sample is not text'
-
+def get_all_texts(content_path):
     text_list = []
-    if sampleConfig['source']['type'] == 'folder':
-        # FIXME strange pattern match
-        parent_directory = os.path.dirname(sampleConfig['source']['pattern'])
-        parent_directory = os.path.join(content_path, parent_directory)
+    
+    parent_directory = os.path.join(content_path, 'dataset', 'text')
 
-        files_and_folders = os.listdir(parent_directory)
-        numbered_files = [f for f in files_and_folders if f.endswith('.txt') and f[-5].isdigit()]
-        numbered_files.sort(key=lambda f: int(re.search(r'[0-9]+', f)[0]))
+    files_and_folders = os.listdir(parent_directory)
+    numbered_files = [f for f in files_and_folders if f.endswith('.txt') and f[-5].isdigit()]
+    numbered_files.sort(key=lambda f: int(re.search(r'[0-9]+', f)[0]))
 
-        # TODO: if we know index of samples, we can directly read the file by index
-        for file_name in numbered_files:
-            file_path = os.path.join(parent_directory, file_name)
-            with open(file_path, 'r') as file:
-                content = file.read()
-                text_list.append(content)
-
-    elif sampleConfig['source']['type'] == 'file':
-        with open(sampleConfig['source']['pattern'], 'r') as f:
-            text_list = f.readlines()
-    else:
-        return None, 'Unsupported source type: {}'.format(sampleConfig['source']['type'])
-
-    return text_list, ''
+    for file_name in numbered_files:
+        file_path = os.path.join(parent_directory, file_name)
+        with open(file_path, 'r') as file:
+            content = file.read()
+            text_list.append(content)
+            
+    return text_list
 
 # Func: given label file path, return python list of labels
 def read_label_file(file_path):
@@ -222,7 +198,7 @@ def paint_background(content_path, vis_id, epoch, width, height, scale):
 # Func: compute pixel color, return webp image
 # FIXME: this function is not used in the current code
 def paint_background_backup(content_path, vis_method, epoch, width, height, scale):
-    file_path = os.path.join(content_path, 'visualize',vis_method,'background', f'{epoch}.png')
+    file_path = os.path.join(content_path, 'visualize',vis_method,'epochs', f'epoch_{epoch}', 'background.png')
     if os.path.exists(file_path):
         return convert_to_base64(file_path)
 
@@ -337,28 +313,23 @@ def batch_run(model, data, desc = "batch run", batch_size=512):
                 output = np.concatenate((output, pred), axis=0)
     return output
 
-def load_one_image(config, content_path, index):
-    attributes = config['dataset']['attributes']
-    if 'image' not in attributes:
-        raise NotImplementedError("image is not in attributes")
+def load_one_image(content_path, index):
+    file_path = os.path.join(content_path, 'dataset', 'image', f'{index}.png')
+    return convert_to_base64(file_path)
 
-    file_path_pattern = attributes['image']['source']['pattern']
-    file_path = file_path_pattern.replace('${index}', str(index))
-    file_path = os.path.join(content_path, file_path)
+def load_one_text(content_path, index):
+    file_path = os.path.join(content_path, 'dataset', 'text', f'{index}.txt')
+    with open(file_path, 'r') as f:
+        content = f.read()
+    return content
 
-    with open(file_path, "rb") as image_file:
-        base64_image = base64.b64encode(image_file.read()).decode('utf-8')
-
-    return base64_image
-
-
-def calculateAllNeighbors(config, content_path, epoch, max_neighbors=10):
-    label_list = load_single_attribute(config, content_path, epoch, 'label')
-    feature_list = load_single_attribute(config, content_path, epoch, 'representation')
+def calculateAllNeighbors(content_path, epoch, max_neighbors=10):
+    label_list = load_single_attribute(content_path, epoch, 'label')
+    feature_list = load_single_attribute(content_path, epoch, 'representation')
     
     labels = np.array(label_list)
     features = np.array(feature_list)
-    num_samples = len(feature_list)  
+    num_samples = len(feature_list)
     
     in_class_neighbors = [[] for _ in range(num_samples)]
     out_class_neighbors = [[] for _ in range(num_samples)]
@@ -377,21 +348,25 @@ def calculateAllNeighbors(config, content_path, epoch, max_neighbors=10):
     return in_class_neighbors, out_class_neighbors
 
 # Func: Load a single attribute from a file based on the configuration and epoch
-def load_single_attribute(config, content_path, epoch, attribute):
-    attributes = config['dataset']['attributes']
-    if attribute not in attributes:
-        raise NotImplementedError(f"{attribute} not found in config file")
-
-    # TODO other types of attributes?
-    # how does 'dataType' and 'sourceType' work?
+def load_single_attribute(content_path, epoch, attribute):
+    if attribute == 'label':
+        file_path = os.path.join(content_path, 'dataset', 'labels.npy')
+        attr_data = read_label_file(file_path)
+    elif attribute == 'intra_similarity':
+        file_path = os.path.join(content_path, 'epochs', f'epoch_{epoch}', 'intra_similarity.npy')
+        attr_data = read_from_file(file_path)
+    elif attribute == 'inter_similarity':
+        file_path = os.path.join(content_path, 'epochs', f'epoch_{epoch}', 'inter_similarity.npy')
+        attr_data = read_from_file(file_path)
+    elif attribute == 'representation':
+        file_path = os.path.join(content_path, 'epochs', f'epoch_{epoch}', 'embeddings.npy')
+        attr_data = read_from_file(file_path)
+    elif attribute == 'prediction':
+        file_path = os.path.join(content_path, 'epochs', f'epoch_{epoch}', 'predictions.npy')
+        attr_data = read_from_file(file_path)
+    else:
+        raise NotImplementedError(f"Unknown attribute: {attribute}")
     
-    # TODO what if the placeholder is not related to 'epoch'? e.g. ${index}
-
-    file_path_pattern = attributes[attribute]['source']['pattern']
-    file_path = os.path.join(content_path, file_path_pattern)
-    file_path = file_path.replace('${epoch}', str(epoch))
-
-    attr_data = read_from_file(file_path)
     return attr_data
 
 # FIXME this is not accepting specification from "dataType" field
@@ -421,6 +396,9 @@ def read_from_file(file_path):
     return result
 
 def read_file_as_json(file_path: str):
+    if not os.path.exists(file_path):
+        return None
+    
     with open(file_path, "r") as f:
         return json.load(f)
     
