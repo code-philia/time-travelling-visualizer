@@ -95,6 +95,10 @@ export class ConfigurationID {
 	static readonly TimePatient = 'TimeVisSettings.patient';
 	static readonly TimeMaxEpochs = 'TimeVisSettings.max_epochs';
 
+	static readonly UmapNNeighbors = 'UmapSettings.n_neighbors';
+	static readonly UmapMinDist = 'UmapSettings.min_dist';
+	static readonly UmapMetric = 'UmapSettings.metric';
+
     private constructor() {}
 }
 

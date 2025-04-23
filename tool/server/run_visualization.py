@@ -37,28 +37,32 @@ def initialize_config(content_path, vis_method, vis_id, task_type, vis_config):
     config["available_epochs"] = available_epochs
     
     # vis_model dims
-    epoch_0 = available_epochs[0]
-    embedding_path = os.path.join(content_path, 'epochs', f'epoch_{epoch_0}', 'embeddings.npy')
-    embedding = np.load(embedding_path)
-    encoder_dims, decoder_dims = generate_dimension_array(embedding.shape[1])
-    config['vis_config']['encoder_dims'] = encoder_dims
-    config['vis_config']['decoder_dims'] = decoder_dims
-    
-    resolution_str = config['vis_config']['resolution']
-    r = resolution_str.split(",")
-    config['vis_config']['resolution'] = [int(i) for i in r]
+    if vis_method == "DVI" or vis_method == "TimeVis":
+        epoch_0 = available_epochs[0]
+        embedding_path = os.path.join(content_path, 'epochs', f'epoch_{epoch_0}', 'embeddings.npy')
+        embedding = np.load(embedding_path)
+        encoder_dims, decoder_dims = generate_dimension_array(embedding.shape[1])
+        config['vis_config']['encoder_dims'] = encoder_dims
+        config['vis_config']['decoder_dims'] = decoder_dims
+        
+        resolution_str = config['vis_config']['resolution']
+        r = resolution_str.split(",")
+        config['vis_config']['resolution'] = [int(i) for i in r]
     
     return config
 
 def init_visualize_component(config):
     import torch
-    from visualize.strategy.projector import DVIProjector, TimeVisProjector
+    from visualize.strategy.projector import DVIProjector, TimeVisProjector, UmapProjector
     from visualize.strategy.DVIStrategy import DeepVisualInsight
     from visualize.strategy.TimeVisStrategy import TimeVis
     from visualize.data_provider import DataProvider
-    from visualize.result_generator import ResultGenerator
+    from visualize.result_generator import ResultGenerator, UmapResultGenerator
     
-    device = torch.device("cuda:{}".format(config['vis_config']['gpu_id']) if torch.cuda.is_available() else "cpu")
+    if 'gpu_id' not in config['vis_config'] or config['vis_config']['gpu_id'] == -1:
+        device = torch.device("cpu")
+    else:
+        device = torch.device("cuda:{}".format(config['vis_config']['gpu_id']) if torch.cuda.is_available() else "cpu")
     data_provider = DataProvider(config, device)    
     
     if config['vis_method'] == "DVI":
@@ -69,6 +73,10 @@ def init_visualize_component(config):
         projector = TimeVisProjector(config)
         visualizer = ResultGenerator(config, data_provider, projector)
         strategy = TimeVis(config, data_provider)
+    elif config['vis_method'] == "UMAP":
+        projector = UmapProjector(config)
+        visualizer = UmapResultGenerator(config, data_provider, projector)
+        strategy = None
     else:
         raise NotImplementedError
     
@@ -83,13 +91,13 @@ def visualize_run(content_path, vis_method, vis_id, task_type, vis_config):
     # step 2: initialize data provider, visualizer, and strategy
     visualizer, strategy = init_visualize_component(config)
     
-    # step 3: run the visualization strategy
-    # now we assume that all the metries are already saved to train visualization model
-    # 3.1 trian visualization model
-    logging.info("Start training visualization model...")
-    strategy.train_vis_model()
-    logging.info("Train visualization model finished.")
-    
+    if vis_method == "DVI" or vis_method == "TimeVis":
+        # now we assume that all the metries are already saved to train visualization model
+        # 3.1 trian visualization model
+        logging.info("Start training visualization model...")
+        strategy.train_vis_model()
+        logging.info("Train visualization model finished.")
+        
     # 3.2 generate visualization results
     logging.info("Start generating visualization results...")
     visualizer.visualize_all_epochs()

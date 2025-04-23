@@ -162,7 +162,7 @@ async function reconfigureVisualizationConfig(): Promise<api.BasicVisualizationC
 	const visualizationMethod = await repickConfig(
 		"Select the visualization method",
 		[
-			{ label: "TrustVis", description: "(default)" },
+			{ label: "UMAP", description: "(default)" },
 			{ label: "TimeVis" },
 			{ label: "DVI" },
 		]
@@ -263,6 +263,13 @@ export function getVisConfig(visualizationMethod: string) {
 			max_epochs: visConfigSet.get(CONFIG.ConfigurationID.DVIMaxEpochs),
 		};
 	}
+	else if (visualizationMethod === "UMAP") {
+        return {
+            n_neighbors: visConfigSet.get(CONFIG.ConfigurationID.UmapNNeighbors),
+            min_dist: visConfigSet.get(CONFIG.ConfigurationID.UmapMinDist),
+            metric: visConfigSet.get(CONFIG.ConfigurationID.UmapMetric),
+        };
+    }
 	return {};
 }
 

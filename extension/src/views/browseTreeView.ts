@@ -23,7 +23,7 @@ interface BasicDataset {
     attributes?: TrainingProcessAttribute[];
 }
 
-const supportedBuiltinVisualizationMethods = ['DVI', 'TrustVis', 'TimeVis'] as const;
+const supportedBuiltinVisualizationMethods = ['DVI', 'TimeVis', 'UMAP'] as const;
 type SupportedBuiltinVisualizationMethod = typeof supportedBuiltinVisualizationMethods[number];
 
 interface BuiltInVisualizationMethodDescription {
@@ -37,13 +37,13 @@ const supportedBuiltInVisualizationMethodDescriptions: BuiltInVisualizationMetho
         // desc: 'Document Visualization Interface'
     },
     {
-        name: 'TrustVis',
-        // desc: 'Trustworthiness Visualization'
-    },
-    {
         name: 'TimeVis',
         // desc: 'Time Series Visualization'
-    }
+    },
+    {
+        name: 'UMAP',
+        // desc: 'Trustworthiness Visualization'
+    },
 ];
 
 type VisualizationMethodStatus = 'not-started' | 'model-training' | 'model-ready' | 'projection-calculating' | 'projection-cached';
@@ -199,6 +199,11 @@ const placeholderTreeData: TrainingProcessTreeData = {
                     name: 'TimeVis',
                     status: 'projection-cached',
                     cachedProjectionPath: './visualize/TimeVis'
+                },
+                {
+                    name: 'UMAP',
+                    status: 'projection-cached',
+                    cachedProjectionPath: './visualize/UMAP'
                 }
             ]
         }
