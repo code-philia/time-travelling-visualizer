@@ -165,6 +165,7 @@ async function reconfigureVisualizationConfig(): Promise<api.BasicVisualizationC
 			{ label: "UMAP", description: "(default)" },
 			{ label: "TimeVis" },
 			{ label: "DVI" },
+			{ label: "DynaVis" },
 		]
 	);
 	if (!visualizationMethod) {
@@ -269,7 +270,22 @@ export function getVisConfig(visualizationMethod: string) {
             min_dist: visConfigSet.get(CONFIG.ConfigurationID.UmapMinDist),
             metric: visConfigSet.get(CONFIG.ConfigurationID.UmapMetric),
         };
-    }
+	}
+	else if (visualizationMethod === "DynaVis") {
+		return {
+			gpu_id: visConfigSet.get(CONFIG.ConfigurationID.DynaVisGpuId),
+			resolution: visConfigSet.get(CONFIG.ConfigurationID.DynaVisResolution),
+			reconstruct_loss_weight: visConfigSet.get(CONFIG.ConfigurationID.DynaVisReconstructLossWeight),
+			temporal_loss_weight: visConfigSet.get(CONFIG.ConfigurationID.DynaVisTemporalLossWeight),
+			velocity_loss_weight: visConfigSet.get(CONFIG.ConfigurationID.DynaVisVelocityLossWeight),
+			n_neighbors: visConfigSet.get(CONFIG.ConfigurationID.DynaVisNNeighbors),
+			s_n_epochs: visConfigSet.get(CONFIG.ConfigurationID.DynaVisSNEpochs),
+			b_n_epochs: visConfigSet.get(CONFIG.ConfigurationID.DynaVisBNEpochs),
+			t_n_epochs: visConfigSet.get(CONFIG.ConfigurationID.DynaVisTNEpochs),
+			patient: visConfigSet.get(CONFIG.ConfigurationID.DynaVisPatient),
+			max_epochs: visConfigSet.get(CONFIG.ConfigurationID.DynaVisMaxEpochs),
+		};
+	}
 	return {};
 }
 

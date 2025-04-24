@@ -62,7 +62,7 @@
           "timeTravellingVisualizer.loadVisualization.visualizationMethod": {
             "type": "string",
             "default": "TimeVis",
-            "enum": ["DVI", "TimeVis", "UMAP"],
+            "enum": ["DVI", "TimeVis", "DynaVis", "UMAP"],
             "description": "The visualization method for model to use."
           },
           "timeTravellingVisualizer.loadVisualization.visualizationID": {
@@ -163,7 +163,7 @@
           },
           "timeTravellingVisualizer.TimeVisSettings.t_n_epochs": {
             "type": "number",
-            "default": 0,
+            "default": 5,
             "description": "Number of epochs for edges to be considered as neighbors."
           },
           "timeTravellingVisualizer.TimeVisSettings.patient": {
@@ -172,6 +172,72 @@
             "description": "Number of epochs to wait."
           },
           "timeTravellingVisualizer.TimeVisSettings.max_epochs": {
+            "type": "number",
+            "default": 5,
+            "description": "Maximum number of epochs when training visualization model."
+          }
+        }
+      },
+      {
+        "title": "DynaVis",
+        "properties": {
+          "timeTravellingVisualizer.DynaVisSettings.gpu_id": {
+            "type": "number",
+            "default": 0,
+            "description": "Single GPU index to use, if not using GPU, set to -1."
+          },
+          "timeTravellingVisualizer.DynaVisSettings.resolution": {
+            "type": "string",
+            "default": "1000,800",
+            "description": "Resolution of the background in pixels, fill in as 'width,height'."
+          },
+          "timeTravellingVisualizer.DynaVisSettings.reconstruct_loss_weight": {
+            "type": "number",
+            "default": 1.0,
+            "minimum": 0,
+            "maximum": 10,
+            "description": "Weight for reconstruction loss."
+          },
+          "timeTravellingVisualizer.DynaVisSettings.temporal_loss_weight": {
+            "type": "number",
+            "default": 3.0,
+            "minimum": 0,
+            "maximum": 10,
+            "description": "Weight for temporal loss."
+          },
+          "timeTravellingVisualizer.DynaVisSettings.velocity_loss_weight": {
+            "type": "number",
+            "default": 2.0,
+            "minimum": 0,
+            "maximum": 10,
+            "description": "Weight for velocity loss."
+          },
+          "timeTravellingVisualizer.DynaVisSettings.n_neighbors": {
+            "type": "number",
+            "default": 15,
+            "description": "Number of neighbors taken into account for the temporal loss."
+          },
+          "timeTravellingVisualizer.DynaVisSettings.s_n_epochs": {
+            "type": "number",
+            "default": 10,
+            "description": "Number of epochs for samples to be considered as neighbors."
+          },
+          "timeTravellingVisualizer.DynaVisSettings.b_n_epochs": {
+            "type": "number",
+            "default": 5,
+            "description": "Number of epochs for edges to be considered as neighbors."
+          },
+          "timeTravellingVisualizer.DynaVisSettings.t_n_epochs": {
+            "type": "number",
+            "default": 5,
+            "description": "Number of epochs for edges to be considered as neighbors."
+          },
+          "timeTravellingVisualizer.DynaVisSettings.patient": {
+            "type": "number",
+            "default": 3,
+            "description": "Number of epochs to wait."
+          },
+          "timeTravellingVisualizer.DynaVisSettings.max_epochs": {
             "type": "number",
             "default": 5,
             "description": "Maximum number of epochs when training visualization model."

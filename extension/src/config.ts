@@ -95,6 +95,18 @@ export class ConfigurationID {
 	static readonly TimePatient = 'TimeVisSettings.patient';
 	static readonly TimeMaxEpochs = 'TimeVisSettings.max_epochs';
 
+	static readonly DynaVisGpuId = 'DynaVisSettings.gpu_id';
+	static readonly DynaVisResolution = 'DynaVisSettings.resolution';
+	static readonly DynaVisReconstructLossWeight = 'DynaVisSettings.reconstruct_loss_weight';
+	static readonly DynaVisTemporalLossWeight = 'DynaVisSettings.temporal_loss_weight';
+	static readonly DynaVisVelocityLossWeight = 'DynaVisSettings.velocity_loss_weight';
+	static readonly DynaVisNNeighbors = 'DynaVisSettings.n_neighbors';
+	static readonly DynaVisSNEpochs = 'DynaVisSettings.s_n_epochs';
+	static readonly DynaVisBNEpochs = 'DynaVisSettings.b_n_epochs';
+	static readonly DynaVisTNEpochs = 'DynaVisSettings.t_n_epochs';
+	static readonly DynaVisPatient = 'DynaVisSettings.patient';
+	static readonly DynaVisMaxEpochs = 'DynaVisSettings.max_epochs';
+
 	static readonly UmapNNeighbors = 'UmapSettings.n_neighbors';
 	static readonly UmapMinDist = 'UmapSettings.min_dist';
 	static readonly UmapMetric = 'UmapSettings.metric';
