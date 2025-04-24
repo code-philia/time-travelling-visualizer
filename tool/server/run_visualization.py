@@ -1,7 +1,6 @@
 import os
 import json
 import numpy as np
-import logging
 
 from server_utils import generate_dimension_array
 
@@ -31,17 +30,18 @@ def initialize_config(content_path, vis_method, vis_id, task_type, vis_config):
                     k = int(folder_name.split("_")[1])
                     available_epochs.append(k)
                 except ValueError:
-                    logging.warning(f"Invalid epoch folder name: {folder_name}")
+                    print(f"Invalid epoch folder name: {folder_name}")
     
     available_epochs.sort()
     config["available_epochs"] = available_epochs
     
     # vis_model dims
-    if vis_method == "DVI" or vis_method == "TimeVis":
+    if vis_method == "DVI" or vis_method == "TimeVis" or vis_method == "DynaVis":
         epoch_0 = available_epochs[0]
         embedding_path = os.path.join(content_path, 'epochs', f'epoch_{epoch_0}', 'embeddings.npy')
         embedding = np.load(embedding_path)
         encoder_dims, decoder_dims = generate_dimension_array(embedding.shape[1])
+        config['vis_config']['dimension'] = embedding.shape[1]
         config['vis_config']['encoder_dims'] = encoder_dims
         config['vis_config']['decoder_dims'] = decoder_dims
         
@@ -53,9 +53,10 @@ def initialize_config(content_path, vis_method, vis_id, task_type, vis_config):
 
 def init_visualize_component(config):
     import torch
-    from visualize.strategy.projector import DVIProjector, TimeVisProjector, UmapProjector
-    from visualize.strategy.DVIStrategy import DeepVisualInsight
-    from visualize.strategy.TimeVisStrategy import TimeVis
+    from visualize.strategy.projector import DVIProjector, TimeVisProjector, UmapProjector, DynaVisProjector
+    from visualize.strategy.dvi_strategy import DeepVisualInsight
+    from visualize.strategy.timevis_strategy import TimeVis
+    from visualize.strategy.dynavis_strategy import DynaVis
     from visualize.data_provider import DataProvider
     from visualize.result_generator import ResultGenerator, UmapResultGenerator
     
@@ -63,20 +64,30 @@ def init_visualize_component(config):
         device = torch.device("cpu")
     else:
         device = torch.device("cuda:{}".format(config['vis_config']['gpu_id']) if torch.cuda.is_available() else "cpu")
-    data_provider = DataProvider(config, device)    
     
     if config['vis_method'] == "DVI":
+        data_provider = DataProvider(config, device)  
         projector = DVIProjector(config)
         visualizer = ResultGenerator(config, data_provider, projector)
         strategy = DeepVisualInsight(config, data_provider)
     elif config['vis_method'] == "TimeVis":
+        data_provider = DataProvider(config, device)  
         projector = TimeVisProjector(config)
         visualizer = ResultGenerator(config, data_provider, projector)
         strategy = TimeVis(config, data_provider)
+    elif config['vis_method'] == "DynaVis":
+        if 'selected_idxs' in config['vis_config']:
+            selected_idxs = config['vis_config']['selected_idxs']
+        else:
+            selected_idxs = list(range(100))
+        data_provider = DataProvider(config, device, selected_idxs)
+        data_provider = DataProvider(config, device)  
+        projector = DynaVisProjector(config)
+        visualizer = ResultGenerator(config, data_provider, projector)
+        strategy = DynaVis(config, data_provider, selected_idxs)
     elif config['vis_method'] == "UMAP":
         projector = UmapProjector(config)
         visualizer = UmapResultGenerator(config, data_provider, projector)
-        strategy = None
     else:
         raise NotImplementedError
     
@@ -91,14 +102,14 @@ def visualize_run(content_path, vis_method, vis_id, task_type, vis_config):
     # step 2: initialize data provider, visualizer, and strategy
     visualizer, strategy = init_visualize_component(config)
     
-    if vis_method == "DVI" or vis_method == "TimeVis":
+    if vis_method == "DVI" or vis_method == "TimeVis" or vis_method == "DynaVis":
         # now we assume that all the metries are already saved to train visualization model
         # 3.1 trian visualization model
-        logging.info("Start training visualization model...")
+        print("Start training visualization model...")
         strategy.train_vis_model()
-        logging.info("Train visualization model finished.")
+        print("Train visualization model finished.")
         
     # 3.2 generate visualization results
-    logging.info("Start generating visualization results...")
+    print("Start generating visualization results...")
     visualizer.visualize_all_epochs()
-    logging.info("Generate visualization results finished, visualization process completed successfully!")
+    print("Generate visualization results finished, visualization process completed successfully!")

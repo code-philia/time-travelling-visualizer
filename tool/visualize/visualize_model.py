@@ -1,45 +1,5 @@
 from torch import nn
-
-
-class SingleVisualizationModel(nn.Module):
-    def __init__(self, input_dims, output_dims, units, hidden_layer=3):
-        super(SingleVisualizationModel, self).__init__()
-
-        self.input_dims = input_dims
-        self.output_dims = output_dims
-        self.units = units
-        self.hidden_layer = hidden_layer
-        self._init_autoencoder()
-    
-    # TODO find the best model architecture
-    def _init_autoencoder(self):
-        self.encoder = nn.Sequential(
-            nn.Linear(self.input_dims, self.units),
-            nn.ReLU(True))
-        for h in range(self.hidden_layer):
-            self.encoder.add_module("{}".format(2*h+2), nn.Linear(self.units, self.units))
-            self.encoder.add_module("{}".format(2*h+3), nn.ReLU(True))
-        self.encoder.add_module("{}".format(2*(self.hidden_layer+1)), nn.Linear(self.units, self.output_dims))
-
-        self.decoder = nn.Sequential(
-            nn.Linear(self.output_dims, self.units),
-            nn.ReLU(True))
-        for h in range(self.hidden_layer):
-            self.decoder.add_module("{}".format(2*h+2), nn.Linear(self.units, self.units))
-            self.decoder.add_module("{}".format(2*h+3), nn.ReLU(True))
-        self.decoder.add_module("{}".format(2*(self.hidden_layer+1)), nn.Linear(self.units, self.input_dims))
-
-    def forward(self, edge_to, edge_from):
-        outputs = dict()
-        embedding_to = self.encoder(edge_to)
-        embedding_from = self.encoder(edge_from)
-        recon_to = self.decoder(embedding_to)
-        recon_from = self.decoder(embedding_from)
-        
-        outputs["umap"] = (embedding_to, embedding_from)
-        outputs["recon"] = (recon_to, recon_from)
-
-        return outputs
+import torch.nn.init as init
 
 class VisModel(nn.Module):
     """define you own visualizatio model by specifying the structure
@@ -84,6 +44,55 @@ class VisModel(nn.Module):
         recon_to = self.decoder(embedding_to)
         recon_from = self.decoder(embedding_from)
         
+        outputs["umap"] = (embedding_to, embedding_from)
+        outputs["recon"] = (recon_to, recon_from)
+
+        return outputs
+
+class SingleVisualizationModel(nn.Module):
+    def __init__(self, input_dims, output_dims, units, hidden_layer=3, device='cpu'):
+        super(SingleVisualizationModel, self).__init__()
+        self.input_dims = input_dims
+        self.output_dims = output_dims
+        self.units = units
+        self.hidden_layer = hidden_layer
+        self.device = device
+        self._init_autoencoder()
+        
+    # TODO find the best model architecture
+    def _init_autoencoder(self):
+        # Encoder
+        self.encoder = nn.Sequential(
+            nn.Linear(self.input_dims, self.units),
+            nn.BatchNorm1d(self.units),
+            nn.ReLU(True)
+        )
+        for _ in range(self.hidden_layer):
+            self.encoder.add_module("encoder_hidden_{}".format(_), nn.Linear(self.units, self.units))
+            self.encoder.add_module("encoder_bn_{}".format(_), nn.BatchNorm1d(self.units))
+            self.encoder.add_module("encoder_relu_{}".format(_), nn.ReLU(True))
+        self.encoder.add_module("encoder_output", nn.Linear(self.units, self.output_dims))
+        init.xavier_uniform_(self.encoder[-1].weight)
+
+        # Decoder
+        self.decoder = nn.Sequential(
+            nn.Linear(self.output_dims, self.units),
+            nn.BatchNorm1d(self.units),
+            nn.ReLU(True)
+        )
+        for _ in range(self.hidden_layer):
+            self.decoder.add_module("decoder_hidden_{}".format(_), nn.Linear(self.units, self.units))
+            self.decoder.add_module("decoder_bn_{}".format(_), nn.BatchNorm1d(self.units))
+            self.decoder.add_module("decoder_relu_{}".format(_), nn.ReLU(True))
+        self.decoder.add_module("decoder_output", nn.Linear(self.units, self.input_dims))
+        init.xavier_uniform_(self.decoder[-1].weight)
+
+    def forward(self, edge_to, edge_from):
+        embedding_to = self.encoder(edge_to)
+        embedding_from = self.encoder(edge_from)
+        recon_to = self.decoder(embedding_to)
+        recon_from = self.decoder(embedding_from)
+        outputs = dict()
         outputs["umap"] = (embedding_to, embedding_from)
         outputs["recon"] = (recon_to, recon_from)
 

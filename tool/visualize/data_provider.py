@@ -5,8 +5,9 @@ import numpy as np
 import torch
 from utils import *
 class DataProvider():
-    def __init__(self, config, device = None):
+    def __init__(self, config, device = None, selected_idxs=None):
         self.config = config
+        self.selected_idxs = selected_idxs
         sys.path.append(self.config["content_path"]) # in order to locate model.py of subject model
         if device is not None:
             self.device = device
@@ -65,7 +66,12 @@ class DataProvider():
     #                                                       REPRESENTATION                                                 #
     ########################################################################################################################    
     # Save train and test data representation together, distinguished by index
-    def get_representation(self, epoch, type="all"):
+    def get_representation(self, epoch, type="all", select_sample=None):
+        if select_sample is not None:
+            select_idx = select_sample
+        else:
+            select_idx = self.selected_idxs
+        
         representation_loc = os.path.join(self.config["content_path"],"epochs",f"epoch_{epoch}","embeddings.npy")
         try:
             all_representation = np.load(representation_loc)
@@ -84,6 +90,10 @@ class DataProvider():
                 return all_representation
             
             index = index_dict[type]
+            
+            if select_idx is not None:
+                index = [i for i in index if i in select_idx]
+            
             return all_representation[index]
                 
         except Exception as e:
@@ -105,3 +115,6 @@ class DataProvider():
         data = data.to(self.device)
         pred = batch_run(pred_func, data, desc="getting prediction")
         return pred
+
+    def get_available_epochs(self):
+        return self.config["available_epochs"]

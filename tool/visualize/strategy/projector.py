@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import umap
 
-from tool.visualize.visualize_model import VisModel
+from tool.visualize.visualize_model import VisModel, SingleVisualizationModel
 
 # ------------------
 # Projector:
@@ -40,13 +40,15 @@ class ProjectorAbstractClass(ABC):
 
 class Projector(ProjectorAbstractClass):
     def __init__(self, config):
+        self.config = config
         self.content_path = config['content_path']
         self.vis_method = config['vis_method']
         self.vis_id = config['vis_id']
         
-        gpu_id = config['vis_config']['gpu_id']
+    def init_model(self):
+        gpu_id = self.config['vis_config']['gpu_id']
         self.device = torch.device("cuda:{}".format(gpu_id) if torch.cuda.is_available() else "cpu")
-        self.vis_model = VisModel(config['vis_config']['encoder_dims'], config['vis_config']['decoder_dims']).to(self.device)
+        self.vis_model = VisModel(self.config['vis_config']['encoder_dims'], self.config['vis_config']['decoder_dims']).to(self.device)
 
     def load(self, iteration):
         file_path = os.path.join(self.content_path, 'visualize', self.vis_id, 'epochs', f'epoch_{iteration}', 'vis_model.pth')
@@ -213,10 +215,10 @@ class EvalProjector(DeepDebuggerProjector):
         print("Successfully load the visualization model for range ({},{})...".format(s,e))
         
 
-
 class DVIProjector(Projector):
     def __init__(self, config) -> None:
         super().__init__(config)
+        self.init_model()
 
     def load(self, iteration):
         file_path = os.path.join(self.content_path, 'visualize', self.vis_id, 'epochs', f'epoch_{iteration}', 'vis_model.pth')
@@ -224,12 +226,12 @@ class DVIProjector(Projector):
         self.vis_model.load_state_dict(save_model["state_dict"])
         self.vis_model.to(self.device)
         self.vis_model.eval()
-        print("Successfully load the DVI visualization model for iteration {}".format(iteration))
 
 
 class TimeVisProjector(Projector):
     def __init__(self, config) -> None:
         super().__init__(config)
+        self.init_model()
 
     def load(self, iteration):
         file_path = os.path.join(self.content_path, 'visualize', self.vis_id, 'vis_model.pth')
@@ -237,7 +239,29 @@ class TimeVisProjector(Projector):
         self.vis_model.load_state_dict(save_model["state_dict"])
         self.vis_model.to(self.device)
         self.vis_model.eval()
-        print("Successfully load the TimeVis visualization model for iteration {}".format(iteration))
+        
+class DynaVisProjector(Projector):
+    def __init__(self, config) -> None:
+        super().__init__(config)
+        self.init_model()
+    
+    def init_model(self):
+        gpu_id = self.config['vis_config']['gpu_id']
+        self.device = torch.device("cuda:{}".format(gpu_id) if torch.cuda.is_available() else "cpu")
+        self.vis_model = SingleVisualizationModel(
+            input_dims = self.config['vis_config']['dimension'],
+            output_dims = 2,
+            units = 256,
+            hidden_layer = 3,
+            device = self.device
+        )
+    
+    def load(self, iteration):
+        file_path = os.path.join(self.content_path, 'visualize', self.vis_id, 'vis_model.pth')
+        save_model = torch.load(file_path, map_location="cpu")
+        self.vis_model.load_state_dict(save_model["state_dict"])
+        self.vis_model.to(self.device)
+        self.vis_model.eval()
 
 class UmapProjector():
     def __init__(self, config):

@@ -23,7 +23,7 @@ interface BasicDataset {
     attributes?: TrainingProcessAttribute[];
 }
 
-const supportedBuiltinVisualizationMethods = ['DVI', 'TimeVis', 'UMAP'] as const;
+const supportedBuiltinVisualizationMethods = ['DVI', 'TimeVis', 'DynaVis', 'UMAP'] as const;
 type SupportedBuiltinVisualizationMethod = typeof supportedBuiltinVisualizationMethods[number];
 
 interface BuiltInVisualizationMethodDescription {
@@ -39,6 +39,10 @@ const supportedBuiltInVisualizationMethodDescriptions: BuiltInVisualizationMetho
     {
         name: 'TimeVis',
         // desc: 'Time Series Visualization'
+    },
+    {
+        name: 'DynaVis',
+        // desc: 'Dynamic Visualization'
     },
     {
         name: 'UMAP',
