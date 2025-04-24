@@ -13,7 +13,18 @@ import path from 'path';
 /**
  * Config
  */
-async function repickConfig( configDescription: string, items: (vscode.QuickPickItem & { iconId?: string })[]): Promise<string> {
+async function repickConfig(configDescription: string, items?: (vscode.QuickPickItem & { iconId?: string })[]): Promise<string> {
+	if (!items || items.length === 0) {
+		const inputBox = await vscode.window.showInputBox({
+			prompt: configDescription,
+			placeHolder: "Enter your value",
+		});
+		if (!inputBox) {
+			const time = new Date().toISOString().replace(/[-:.]/g, "").slice(0, 15); // Format: YYYYMMDDTHHMMSS
+			return `visualization_${time}`;
+		}
+		return inputBox;
+	}
 	const quickPickitems: vscode.QuickPickItem[] = items.map(item => {
 		return {
 			...item,
@@ -453,6 +464,45 @@ export async function startVisualizing(): Promise<boolean> {
 	vscode.window.showInformationMessage("Start visualizing...");
 	const visConfig = getVisConfig(config.visualizationMethod);
 	await triggerStartVisualizing(config.contentPath, config.visualizationMethod, config.visualizationID, config.taskType, visConfig );
+	return true;
+}
+
+export async function startVisualizingThroughTreeItem(trainingProcess: string): Promise<boolean> {
+    const dataType = await repickConfig(
+        "Select the type of your data",
+        [
+            { iconId: "image-type", label: "Image" },
+            { iconId: "text-type", label: "Text" },
+        ]
+    );
+    const taskType = await repickConfig(
+        "Select the type of your model task",
+        [
+            { iconId: "classification-task", label: "Classification" },
+            { iconId: "non-classification-task", label: "Code-Retrieval" },
+        ]
+	);
+	const visualizationMethod = await repickConfig(
+		"Select the visualization method",
+		[
+			{ label: "UMAP", description: "(default)" },
+			{ label: "TimeVis" },
+			{ label: "DVI" },
+			{ label: "DynaVis" },
+		]
+	);
+	const visualizationID = await repickConfig(
+		"Enter the output folder name (e.g. TimeVis_1)"
+	);
+
+    // Wait for settings to update before proceeding
+	await updateBasicConfig(dataType, taskType, trainingProcess, visualizationMethod, visualizationID);
+	
+	vscode.window.showInformationMessage("Start visualizing...");
+	const visConfig = getVisConfig(visualizationMethod);
+
+	const workspacePath = getOpenedFolderPath();
+	await triggerStartVisualizing(path.join(workspacePath, trainingProcess), visualizationMethod, visualizationID, taskType, visConfig );
 	return true;
 }
 

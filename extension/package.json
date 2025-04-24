@@ -35,6 +35,11 @@
           "command": "trainingProcess.loadResult",
           "when": "viewItem == 'visualizationResult'",
           "group": "navigation"
+        },
+        {
+          "command": "trainingProcess.startVisualizing",
+          "when": "viewItem == 'trainingProcess'",
+          "group": "navigation"
         }
       ]
     },
@@ -324,6 +329,10 @@
       {
         "command": "trainingProcess.loadResult",
         "title": "Load Result"
+      },
+      {
+        "command": "trainingProcess.startVisualizing",
+        "title": "Start Visualizing"
       }
     ],
     "viewsContainers": {
