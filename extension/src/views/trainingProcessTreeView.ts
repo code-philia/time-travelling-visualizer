@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { getOpenedFolderPath, loadVisualizationThroughTreeItem } from '../control';
+import { getOpenedFolderPath, loadVisualizationThroughTreeItem, startVisualizingThroughTreeItem } from '../control';
 
 class TreeItem extends vscode.TreeItem {
     constructor(
@@ -101,8 +101,9 @@ class TreeDataProvider implements vscode.TreeDataProvider<TreeItem> {
                 visualizeItem,
             ];
             const rootItem = new TreeItem(process, 'root-folder', children, `Training Process`, {
-                resourceUri: vscode.Uri.file(processPath),
+                resourceUri: vscode.Uri.file(processPath)
             });
+            rootItem.contextValue = 'trainingProcess';
             children.forEach(child => child.parent = rootItem); // Set parent for root children
             return rootItem;
         });
@@ -128,6 +129,7 @@ export class TrainingProcessTreeView implements vscode.Disposable {
         // Register commands for context menu actions
         vscode.commands.registerCommand('trainingProcess.info', this.showInfo);
         vscode.commands.registerCommand('trainingProcess.loadResult', this.loadResult);
+        vscode.commands.registerCommand('trainingProcess.startVisualizing', this.startVisualizing);
 
         // Initialize file watcher
         const workspacePath = getOpenedFolderPath();
@@ -176,6 +178,15 @@ export class TrainingProcessTreeView implements vscode.Disposable {
             return;
         }
         loadVisualizationThroughTreeItem(parentProcess, itemName);
+    }
+
+    private startVisualizing(item: TreeItem): void{
+        const itemName = item.label;
+        if (!itemName) {
+            vscode.window.showErrorMessage('Unable to retrieve item name.');
+            return;
+        }
+        startVisualizingThroughTreeItem(itemName);
     }
 
     dispose() {
