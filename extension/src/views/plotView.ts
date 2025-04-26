@@ -200,6 +200,7 @@ export class PlotViewManager {
 					}
 				}
 				MessageManager.sendToTokenView(msgToTokenView);
+				MessageManager.sendToRightView(msgToTokenView);
 			}
 		});
 

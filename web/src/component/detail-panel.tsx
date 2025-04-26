@@ -3,6 +3,7 @@ import { TagOutlined, NumberOutlined, BarChartOutlined, PictureOutlined, ArrowDo
 import styled from 'styled-components';
 import { softmax } from './utils';
 import { useDefaultStore } from '../state/state.detailView';
+import { Divider } from 'antd';
 
 export function DetailPanel() {
     const { hoveredIndex, labels, predProbability, labelDict , imageData} =
@@ -82,7 +83,9 @@ export function DetailPanel() {
                     )}
                 </ImageDisplayArea>
             </ImagePanel>
-
+            
+            <Divider></Divider>
+            
             <DataPanel>
                 <DataItem>
                     <DataLabel>
@@ -91,6 +94,8 @@ export function DetailPanel() {
                     </DataLabel>
                     <DataValue>{hoveredIndex === undefined ? '' : hoveredIndex}</DataValue>
                 </DataItem>
+                
+                <Divider></Divider>
 
                 <DataItem>
                     <DataLabel>
@@ -100,6 +105,8 @@ export function DetailPanel() {
                     <DataValue>{hoveredIndex === undefined ? '' :labelDict.get(labels[hoveredIndex])}</DataValue>
                 </DataItem>
 
+                <Divider></Divider>
+                
                 <PredictionBlock>
                     <DataLabel>
                         <IconWrapper><BarChartOutlined /></IconWrapper>
@@ -121,6 +128,8 @@ export function DetailPanel() {
                 </PredictionBlock>
             </DataPanel>
 
+            <Divider></Divider>
+            
             <DataPanel>
                 <DataLabel>
                     <IconWrapper>< HistoryOutlined /></IconWrapper>

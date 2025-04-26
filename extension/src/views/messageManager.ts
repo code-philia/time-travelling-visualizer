@@ -1,13 +1,19 @@
-import { DetailViewMessageManager, TokenViewMessageManager, PlotViewMessageManager } from "./viewMessageManager";
+import { DetailViewMessageManager, TokenViewMessageManager, PlotViewMessageManager, RightViewMessageManager } from "./viewMessageManager";
 
 export class MessageManager { 
     private static tokenViewMessageManager: TokenViewMessageManager;
     private static detailViewMessageManager: DetailViewMessageManager;
     private static plotViewMessageManager: PlotViewMessageManager;
+    private static rightViewMessageManager: RightViewMessageManager;
 
     static initializeView() {
         this.tokenViewMessageManager = new TokenViewMessageManager();
         this.detailViewMessageManager = new DetailViewMessageManager();
+        this.rightViewMessageManager = new RightViewMessageManager();
+    }
+
+    static getRightViewMessageManager(): RightViewMessageManager {
+        return this.rightViewMessageManager;
     }
 
     static getTokenViewMessageManager(): TokenViewMessageManager {
@@ -45,5 +51,12 @@ export class MessageManager {
             return Promise.resolve(false);
         }
         return this.detailViewMessageManager.postMessage(msg);
+    }
+
+    static sendToRightView(msg: any): Promise<boolean> {
+        if (!this.rightViewMessageManager) {
+            return Promise.resolve(false);
+        }
+        return this.rightViewMessageManager.postMessage(msg);
     }
 }

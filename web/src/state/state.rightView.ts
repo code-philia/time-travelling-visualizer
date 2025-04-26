@@ -4,79 +4,24 @@ import { shallow } from "zustand/shallow";
 import { useStoreWithEqualityFn } from "zustand/traditional";
 import { BUILD_CONSTANTS } from "../constants";
 import { subscribeWithSelector } from "zustand/middleware";
-import { SelectedListener } from "../component/canvas/types";
 
-export type BaseMutableGlobalStore = {
-    epoch: number;
-    availableEpochs: number[];
+type BaseMutableGlobalStore = {
+    selectedIndices: number[];
+    tokenList: string[];
     colorDict: Map<number, [number, number, number]>;
     labelDict: Map<number, string>;
-
-    projection: number[][];
-    textData: string[];
-    attentionData: number[][];
-    originalTextData: Record<string, string>;
-    inherentLabelData: number[];
-    prediction: number[];
-    confidence: number[];
-    predProbability: number[][];
-    inClassNeighbors: number[][];
-    outClassNeighbors: number[][];
-    background: string;
-
-    // settings
-    showIndex: boolean;
-    showLabel: boolean;
-    showTrail: boolean;
-    revealNeighborSameType: boolean;
-    revealNeighborCrossType: boolean;
-    showBackground: boolean;
-
-    // filter
+    
     shownData: string[];
+};
 
-    // hovered
-    hoveredIndex: number | undefined;
-    selectedIndices: number[];
-    selectedListener: SelectedListener;
-}
-
-export let initMutableGlobalStore: BaseMutableGlobalStore = {
-    epoch: 1,
-    availableEpochs: [],
+let initMutableGlobalStore: BaseMutableGlobalStore = {
+    selectedIndices: [],
+    tokenList: [],
     colorDict: new Map(),
     labelDict: new Map(),
 
-    // FIXME we should use null for not loaded data
-    projection: [],
-    textData: [],
-    attentionData: [],
-    originalTextData: {},
-    inherentLabelData: [],
-    prediction: [],
-    confidence: [],
-    predProbability: [],
-    inClassNeighbors: [],
-    outClassNeighbors: [],
-    background: '',
-
-    // settings
-    showIndex: true,
-    showLabel: true,
-    showTrail: false,
-    revealNeighborSameType: true,
-    revealNeighborCrossType: true,
-    showBackground: false,
-
-    // filter
     shownData: ["train", "test"],
-
-    // hovered
-    hoveredIndex: undefined,
-    selectedIndices: [],
-    selectedListener: new SelectedListener(),
 };
-
 type SetFunction<T> = (setState: (state: T) => T | Partial<T>) => void;
 
 type SettersOnAttr<T> = {

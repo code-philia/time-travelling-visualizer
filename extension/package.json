@@ -346,6 +346,11 @@
             "id": "detail-panel",
             "title": "Details",
             "icon": "resources/eye_tracking_24dp_5F6368_FILL0_wght300_GRAD0_opsz24.svg"
+        },
+        {
+          "id": "right-panel",
+          "title": "Right View",
+          "icon": "resources/eye_tracking_24dp_5F6368_FILL0_wght300_GRAD0_opsz24.svg"
         }
       ]
     },
@@ -362,6 +367,13 @@
           "type": "webview",
           "id": "visualizer-detail-view",
           "name": "Details"
+        }
+      ],
+      "right-panel": [
+        {
+          "type": "webview",
+          "id": "visualizer-right-view",
+          "name": "Right View"
         }
       ],
       "explorer": [
