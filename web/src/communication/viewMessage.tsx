@@ -39,3 +39,12 @@ export function notifySelectedIndicesSwitch(e: number[]) {
     };
     window.vscode?.postMessage(message, '*');
 }
+
+export function notifyshownDataSwitch(e: string[]) {
+    const data = { shownData: e };
+    const message = {
+        command: 'shownDataSwitch',
+        data: data
+    };
+    window.vscode?.postMessage(message, '*');
+}

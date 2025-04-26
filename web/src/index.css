@@ -329,8 +329,7 @@ body {
   display: flex;
   flex-direction: column;
 
-  width: 14em;
-  max-width: 14em;
+  width: 100%;
   padding: 1em;
   
   overflow-y: auto;

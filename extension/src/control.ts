@@ -413,9 +413,18 @@ export async function loadVisualization(forceReconfig: boolean = false): Promise
 			labels: data['labelList'],
 			labelTextList: data['labelTextList']
 		}
-	}
+	};
 	MessageManager.sendToDetailView(msgToDetailView);
 
+	const msgToRightView = {
+		command: 'init',
+		data: {
+			labelTextList: data['labelTextList'],
+			colorList: data['colorList'],
+			tokenList: data['tokenList'],
+		}
+	};
+	MessageManager.sendToRightView(msgToRightView);
 
 	const msgToTokenView = {
 		command: 'init',
@@ -423,7 +432,7 @@ export async function loadVisualization(forceReconfig: boolean = false): Promise
 			labels: data['labelList'],
 			tokenList: data['tokenList']
 		}
-	}
+	};
 	MessageManager.sendToTokenView(msgToTokenView);
 
 	return true;

@@ -104,6 +104,10 @@ function MessageHandler() {
             const messageData = message.data;
             setValue('hoveredIndex', messageData.hoveredIndex);
         }
+        else if(message.command === 'updateshownData'){
+            const messageData = message.data;
+            setValue('shownData', messageData.shownData);
+        }
     };
 
     useEffect(() => {

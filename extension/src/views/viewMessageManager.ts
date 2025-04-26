@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as config from '../config';
-import { BaseViewProvider,TokenViewProvider, DetailViewProvider } from './viewProvider';
+import { BaseViewProvider,TokenViewProvider, DetailViewProvider, RightViewProvider } from './viewProvider';
 
 /**
  * This is a middle layer between the view provider/panel and message.
@@ -68,5 +68,21 @@ export class PlotViewMessageManager{
 			return false;
 		}
 		return await PlotViewMessageManager.panel.webview.postMessage(msg);
+    }
+}
+
+export class RightViewMessageManager extends ViewMessageManager {
+    constructor() {
+        super();
+        if (!this.provider) {
+            this.provider = new RightViewProvider(
+                config.isDev ? config.panelWebviewPort : undefined,
+                config.isDev ? '' : undefined
+            );
+        }
+    }
+
+    public getWebViewProvider(): RightViewProvider {
+        return this.provider as RightViewProvider;
     }
 }
