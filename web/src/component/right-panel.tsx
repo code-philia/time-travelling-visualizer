@@ -1,4 +1,4 @@
-import { AutoComplete, Divider, Input, List, Tag, RefSelectProps, Checkbox } from 'antd';
+import { AutoComplete, Divider, Input, List, Tag, RefSelectProps, Checkbox, Tooltip, Switch } from 'antd';
 import { useDefaultStore } from '../state/state.rightView';
 import { useEffect, useRef, useState } from 'react';
 import { ComponentBlock, FunctionalBlock } from './custom/basic-components';
@@ -65,8 +65,8 @@ function hexToRgbArray(hex: string): [number, number, number] {
 
 export function RightPanel() {
     // TODO this is too messy all using useStore
-    const { tokenList, labelDict, colorDict, setColorDict, selectedIndices, setSelectedIndices, setshownData } =
-        useDefaultStore(["tokenList","labelDict", "colorDict", "setColorDict", "selectedIndices", "setSelectedIndices", "setshownData"]);
+    const { tokenList, labelDict, colorDict, setColorDict, selectedIndices, setSelectedIndices, setShownData } =
+        useDefaultStore(["tokenList","labelDict", "colorDict", "setColorDict", "selectedIndices", "setSelectedIndices", "setShownData"]);
 
     function changeLabelColor(i: number, newColor: [number, number, number]) {
         setColorDict(new Map([...colorDict, [i, newColor]]));
@@ -188,13 +188,11 @@ export function RightPanel() {
         <div className="info-column">
             <FunctionalBlock label="Search">
                 <AutoComplete
-                    style={{ marginTop: '3px' }}
-
+                    style={{ marginTop: '3px'}} // Set width to 100% for responsiveness
                     ref={searchElementRef}
                     options={searchHistoryRender(searchHistoryFiltered)}
                     value={searchValue}
                     open={false}
-
                     onChange={(value: string) => { handleSearch(value) }}
                     onBlur={() => {
                         addHistory(searchValue);    // TODO only add successful history
@@ -215,7 +213,6 @@ export function RightPanel() {
                     onClear={() => {
                         setSearchHistoryOpen(false);
                     }}
-
                     defaultActiveFirstOption={false}
                     notFoundContent={<div className='alt-text placeholder-block'>No item found</div>}
                     allowClear
@@ -297,33 +294,108 @@ export function RightPanel() {
             </FunctionalBlock>
             <Divider />
             <FunctionalBlock label="Filter">
-                <ComponentBlock label="dataset">
-                    <Checkbox.Group
-                        options={[
-                            { label: 'Train Data', value: 'train' },
-                            { label: 'Test Data', value: 'test' },
-                        ]}
-                        defaultValue={['train', 'test']}
-                        onChange={(checkedValues) => {
-                            console.log('Dataset filter changed:', checkedValues);
-                            setshownData(checkedValues as string[]);
-                            notifyshownDataSwitch(checkedValues as string[]);
-                        }}
-                    />
-                </ComponentBlock>
-                <ComponentBlock label="prediction">
-                    <Checkbox
-                        defaultChecked={false}
-                        onChange={(e) => {
-                            console.log('Prediction error filter changed:', e.target.checked);
-                        }}
-                    >
-                        Prediction Error
-                    </Checkbox>
-                </ComponentBlock>
+                <Checkbox.Group
+                    options={[
+                        { label: 'Train Data', value: 'train' },
+                        { label: 'Test Data', value: 'test' },
+                    ]}
+                    defaultValue={['train', 'test']}
+                    onChange={(checkedValues) => {
+                        console.log('Dataset filter changed:', checkedValues);
+                        setShownData(checkedValues as string[]);
+                        notifyshownDataSwitch(checkedValues as string[]);
+                    }}
+                />
+            </FunctionalBlock>
+            <FunctionalBlock label="Highlight">
+                <HighlightOptionBlock />
             </FunctionalBlock>
         </div>
     )
 }
 
 export default RightPanel;
+
+
+function HighlightOptionBlock() {
+    const [highlightTypes, setHighlightTypes] = useState([
+        { type: 'prediction_error', label: 'Prediction Error', enabled: false, icon: '❌', description: 'Samples with wrong prediction at current epoch.', count: 0 },
+        { type: 'prediction_flip', label: 'Prediction Flip', enabled: false, icon: '🔄', description: 'Samples with different predictions between current epoch and last epoch.', count: 0 }
+    ]);
+
+    const handleToggleHighlightType = (type: string) => {
+        highlightTypes.forEach(highlight => {
+            if (highlight.type === type) {
+                if (highlight.type === 'prediction_error') {
+                    console.log('Prediction error filter changed:', !highlight.enabled);
+                    // setShowSuspiciousLabel(!highlight.enabled);
+                }
+                else if (highlight.type === 'prediction_flip') {
+                    console.log('Prediction flip filter changed:', !highlight.enabled);
+                    // setShowOutliers(!highlight.enabled);
+                }
+                return;
+            }
+        });
+        const updatedhighlightTypes = highlightTypes.map(highlight => highlight.type === type ? { ...highlight, enabled: !highlight.enabled } : highlight);
+        setHighlightTypes(updatedhighlightTypes);
+    };
+
+    const renderHighlightTypeItem = (highlight: { type: string, label: string, enabled: boolean, icon: string, description: string, count: number }) => {
+        const countColor = highlight.count === 0 ? '#52c41a' : '#ff4d4f';
+        return (
+            <List.Item
+                className={`highlight-type-item ${highlight.enabled ? 'enabled' : 'disabled'}`}
+                onClick={() => handleToggleHighlightType(highlight.type)}
+                style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'flex-start',
+                    width: '100%',
+                    paddingLeft: '4px', // Reduce left padding
+                }}
+            >
+                <div
+                    className="highlight-header"
+                    style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}
+                >
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <div className="highlight-icon" style={{ marginRight: '8px', fontSize: '14px' }}>
+                            {highlight.icon}
+                        </div>
+                        <div className="highlight-label" >
+                            {highlight.label}
+                        </div>
+                    </div>
+                    <div className="highlight-toggle" style={{ marginRight: '12px' }}>
+                        <Switch
+                            size="small"
+                            checked={highlight.enabled}
+                            onChange={() => handleToggleHighlightType(highlight.type)}
+                        />
+                    </div>
+                </div>
+                <div
+                    className="highlight-count"
+                    style={{ marginTop: '4px', color: countColor, fontSize: '10px' }}
+                >
+                    Found: <span>{highlight.count}</span>
+                </div>
+            </List.Item>
+        );
+    };
+
+    return (
+        <div
+            className="highlight-detection-container"
+        >
+            <List
+                size="small"
+                bordered={false}
+                dataSource={highlightTypes}
+                renderItem={renderHighlightTypeItem}
+                locale={{ emptyText: 'No highlight types configured' }}
+            />
+        </div>
+    );
+}
