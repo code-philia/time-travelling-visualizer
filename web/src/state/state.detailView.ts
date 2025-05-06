@@ -4,19 +4,29 @@ import { shallow } from "zustand/shallow";
 import { useStoreWithEqualityFn } from "zustand/traditional";
 import { subscribeWithSelector } from "zustand/middleware";
 
+export type PredictionData = {
+    prediction: number[];
+    confidence: number[];
+    probability: number[][];
+};
+
 type BaseMutableGlobalStore = {
+    availableEpochs: number[];
     labelDict: Map<number, string>;
     hoveredIndex: number | undefined;
     labels: number[];
-    predProbability: number[][];
+    epoch: number;
+    allPredictionData: Record<number, PredictionData>;
     imageData: string;
 };
 
 let initMutableGlobalStore: BaseMutableGlobalStore = {
+    availableEpochs: [],
     labelDict: new Map<number, string>(),
     hoveredIndex: undefined,
     labels: [],
-    predProbability: [],
+    epoch: 1,
+    allPredictionData: {},
     imageData: "",
 };
 

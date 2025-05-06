@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useDefaultStore } from '../state/state.plotView';
 import ChartComponent from './canvas/vchart';
 import { notifyEpochSwitch } from '../communication/viewMessage';
@@ -31,15 +31,24 @@ function useDeepCompareMemoize(value: Array<number>) {
     return ref.current
 }
 
-function Timeline({ epoch, epochs, onSwitchEpoch }: { epoch: number, epochs: number[], onSwitchEpoch: (epoch: number) => void }) {
+function Timeline({ epoch, epochs, progress, onSwitchEpoch }: { epoch: number, epochs: number[], progress: number,  onSwitchEpoch: (epoch: number) => void }) {
     epochs = useDeepCompareMemoize(epochs);
+    const [isPlaying, setIsPlaying] = useState(false);
+    const intervalRef = useRef<any | null>(null);
+    const currentEpochIndexRef = useRef<number>(epochs.indexOf(epoch));
+    const nodeOffset = 40;
 
     // Set the initial epoch from the passed epochs array
     useEffect(() => {
         if (epochs.length > 0) {
-            onSwitchEpoch(epochs[0]);
+            onSwitchEpoch( epochs[0]);
+            currentEpochIndexRef.current = 0;
         }
     }, [epochs]);
+
+    useEffect(() => {
+        currentEpochIndexRef.current = epochs.indexOf(epoch);
+    }, [epochs, epoch]);
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
@@ -55,11 +64,35 @@ function Timeline({ epoch, epochs, onSwitchEpoch }: { epoch: number, epochs: num
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [epochs, epoch]);
 
+    const togglePlayPause = () => {
+        if (isPlaying) {
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+                intervalRef.current = null;
+            }
+        } else {
+            intervalRef.current = setInterval(() => {
+                const nextIndex = (currentEpochIndexRef.current + 1) % epochs.length;
+                if (nextIndex === 0) {
+                    if (intervalRef.current) {
+                        clearInterval(intervalRef.current);
+                        intervalRef.current = null;
+                    }
+                    setIsPlaying(false);
+                } else {
+                    onSwitchEpoch(epochs[nextIndex]);
+                    currentEpochIndexRef.current = nextIndex;
+                }
+            }, 1000);
+        }
+        setIsPlaying(!isPlaying);
+    };
+
     const nodes = useMemo(() => {
         if (epochs.length > 0) {
             return epochs.map((epoch, index) => ({
                 value: epoch,
-                x: index * 40,
+                x: index * 40 + nodeOffset,
                 y: 30,
             }));
         }
@@ -77,7 +110,7 @@ function Timeline({ epoch, epochs, onSwitchEpoch }: { epoch: number, epochs: num
 
             // Set the SVG dimensions to fit all nodes
             return {
-                width: maxX - minX,
+                width: maxX - minX + nodeOffset,
                 height: maxY - minY,
             }
         } else {
@@ -88,9 +121,18 @@ function Timeline({ epoch, epochs, onSwitchEpoch }: { epoch: number, epochs: num
         }
     }, [nodes]);
 
+    useEffect(() => {
+        return () => {
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+            }
+        };
+    }, []);
+
     // Render nodes and links (simple lines between nodes)
     return (
-        <svg
+        <div style={{ position: 'relative' }}>
+            <svg
             width={svgDimensions.width}
             height={svgDimensions.height}
             // viewBox={`0 0 ${svgDimensions.width} ${svgDimensions.height}`}
@@ -101,6 +143,8 @@ function Timeline({ epoch, epochs, onSwitchEpoch }: { epoch: number, epochs: num
                 {nodes.map((node, index) => {
                     if (index < nodes.length - 1) {
                         const nextNode = nodes[index + 1];
+                        const nextNodeId = (nextNode.x - nodeOffset) / 40 + 1;
+                        const isLinkLoaded = progress >= nextNodeId;
                         return (
                             <line
                                 key={`link-${index}`}
@@ -108,8 +152,12 @@ function Timeline({ epoch, epochs, onSwitchEpoch }: { epoch: number, epochs: num
                                 y1={node.y}
                                 x2={nextNode.x}
                                 y2={nextNode.y}
-                                stroke="#72A8F0"
+                                stroke={isLinkLoaded ? '#72A8F0' : '#e0e0e0'}
                                 strokeWidth="1"
+                                style={{
+                                    transition: 'stroke 0.5s ease-in-out',
+                                    strokeLinecap: 'round'
+                                }}
                             />
                         );
                     }
@@ -117,34 +165,74 @@ function Timeline({ epoch, epochs, onSwitchEpoch }: { epoch: number, epochs: num
                 })}
 
                 {/* Nodes */}
-                {nodes.map((node, index) => (
-                    <g key={index} transform={`translate(${node.x}, ${node.y})`}>
-                        <circle
-                            r="8"
-                            fill={node.value === epoch ? '#3278F0' : '#72A8F0'}
-                            strokeWidth="1"
-                            stroke={node.value === epoch ? '#3278F0' : '#72A8F0'}
-                            className="timeline-node"
-                            onClick={() => onSwitchEpoch(node.value)}
-                        />
-                        <text
-                            x="0"
-                            y="-14"
-                            textAnchor="middle"
-                            style={{ fill: node.value === epoch ? '#3278F0' : '#72A8F0' }}
-                        >
-                            {node.value}
-                        </text>
-                    </g>
-                ))}
+                {nodes.map((node, index) => {
+                    const nodeId = (node.x - nodeOffset) / 40 + 1;
+                    const isLoaded = progress >= nodeId;
+
+                    return (
+                        <g key={index} transform={`translate(${node.x}, ${node.y})`}>
+                            <circle
+                                r="8"
+                                fill={isLoaded ? (node.value === epoch ? '#3278F0' : '#72A8F0') : '#e0e0e0'}
+                                stroke={isLoaded ? (node.value === epoch ? '#3278F0' : '#72A8F0') : '#e0e0e0'}
+                                className="timeline-node"
+                                style={{
+                                    transition: 'all 0.5s ease-in-out',
+                                    cursor: 'pointer'
+                                }}
+                                onClick={() => onSwitchEpoch(node.value)}
+                            />
+                            <text
+                                x="0"
+                                y="-14"
+                                style={{
+                                    fill: isLoaded ? (node.value === epoch ? '#3278F0' : '#72A8F0') : '#e0e0e0',
+                                    transition: 'fill 0.5s ease-in-out',
+                                    fontSize: '12px',
+                                    userSelect: 'none'
+                                }}
+                                textAnchor="middle"
+                            >
+                                {node.value}
+                            </text>
+                        </g>
+                    );
+                })}
             </g>
-        </svg>
+            </svg>
+
+            {/* Play/Pause Button */}
+            <button
+                onClick={togglePlayPause}
+                style={{
+                    position: 'absolute',
+                    top: '48%',
+                    transform: 'translateY(-50%)',
+                    backgroundColor: '#3278F0',
+                    border: 'none',
+                    borderRadius: '30%',
+                    width: '25px',
+                    height: '25px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#fff',
+                    fontSize: '10px',
+                    transition: 'background-color 0.3s ease',
+                    zIndex: 1,
+                }}
+            >
+                {isPlaying ? '❚❚' : '▶'}
+            </button>
+        </div>
     );
 };
 
 export function MainBlock() {
     const { epoch, setEpoch } = useDefaultStore(['epoch', 'setEpoch']);
     const { availableEpochs } = useDefaultStore(['availableEpochs']);
+    const { progress } = useDefaultStore(['progress']);
 
     // only consider single container for now
     return (
@@ -155,7 +243,7 @@ export function MainBlock() {
             <div id="footer">
                 <div className="functional-block-title">Epochs</div>
                 <div style={{ overflow: "auto" }}>
-                    <Timeline epoch={epoch} epochs={availableEpochs} onSwitchEpoch={(e) => {
+                    <Timeline epoch={epoch} epochs={availableEpochs} progress={ progress} onSwitchEpoch={(e) => {
                         setEpoch(e);
                         notifyEpochSwitch(e);
                     }} />

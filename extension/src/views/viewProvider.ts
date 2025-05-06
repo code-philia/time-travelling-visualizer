@@ -5,7 +5,7 @@ import { loadHomePage } from './plotView';
 import path from 'path';
 import { MessageManager } from './messageManager';
 import { getBasicConfig } from '../control';
-import { getAttributeResource, getText } from '../communication/api';
+import { fetchTrainingProcessInfo, getAttributeResource, getText } from '../communication/api';
 
 export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
     public abstract webview?: vscode.Webview;
@@ -42,7 +42,7 @@ export class DetailViewProvider extends BaseViewProvider {
         this.path = path;
     }
 
-    public resolveWebviewView(
+    public async resolveWebviewView(
         webviewView: vscode.WebviewView,
         context: vscode.WebviewViewResolveContext,
         token: vscode.CancellationToken
@@ -60,6 +60,37 @@ export class DetailViewProvider extends BaseViewProvider {
                 '(?!http:\\/\\/|https:\\/\\/)([^"]*\\.[^"]+)', // remember to double-back-slash here
                 path.join(CONFIG.GlobalStorageContext.webRoot)
             );
+        }
+
+        if (MessageManager.getPlotViewMessageManager() !== undefined) {
+            const config = getBasicConfig();
+            if (config) {
+                const data: {
+                    labelTextList?: string[],
+                    labelList?: number[],
+                } = {};
+                
+                const trainingInfoRes: any = await fetchTrainingProcessInfo(config.contentPath);
+                data['labelTextList'] = trainingInfoRes['label_text_list'];
+                if (data['labelTextList']) {
+                    const labelDict = new Map<number, string>();
+                    for (let i = 0; i < data['labelTextList'].length; i++) {
+                        labelDict.set(i, data['labelTextList'][i]);
+                    }
+                }
+
+                const labelRes: any = await getAttributeResource(config.contentPath, 1, 'label');
+                data['labelList'] = labelRes['label'];
+                
+                const msgToDetailView = {
+                    command: 'init',
+                    data: {
+                        labels: data['labelList'],
+                        labelTextList: data['labelTextList']
+                    }
+                };
+                this.webview?.postMessage(msgToDetailView);
+            }
         }
 
         webviewView.webview.onDidReceiveMessage(msg => {
@@ -195,6 +226,16 @@ export class RightViewProvider extends BaseViewProvider {
                     command: 'updateshownData',
                     data: {
                         shownData: shownData
+                    }
+                }
+                MessageManager.sendToPlotView(msgToPlotView);
+            }
+            else if(msg.command === 'highlightDataSwitch') {
+                const highlightData = msg.data.highlightData;
+                const msgToPlotView = {
+                    command: 'updateHighlightData',
+                    data: {
+                        highlightData: highlightData
                     }
                 }
                 MessageManager.sendToPlotView(msgToPlotView);

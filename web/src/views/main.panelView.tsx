@@ -2,7 +2,7 @@ import { StrictMode, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BottomPanel } from '../component/bottom-panel';
 import '../index.css';
-import { useDefaultStore } from '../state/state.tokenView';
+import { Neighborhood, useDefaultStore } from '../state/state.tokenView';
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
@@ -21,6 +21,7 @@ function AppPanelViewOnly() {
 
 function MessageHandler() {
     const { setValue } = useDefaultStore(['setValue']);
+    const allNeighborsCopy: Record<number, Neighborhood> = {};
 
     useEffect(() => {
         const handleMessage = (event: MessageEvent) => {
@@ -48,10 +49,17 @@ function MessageHandler() {
                 const messageData = message.data;
                 setValue('hoveredIndex', messageData.hoveredIndex);
             }
+            else if (message.command === 'updateEpoch') {
+                const messageData = message.data;
+                setValue('epoch', messageData.epoch);
+            }
             else if (message.command === 'updateNeighbors') {
                 const messageData = message.data;
-                setValue('inClassNeighbors', messageData.inClassNeighbors);
-                setValue('outClassNeighbors', messageData.outClassNeighbors);
+                allNeighborsCopy[messageData.epoch] = {
+                    inClassNeighbors: messageData.inClassNeighbors,
+                    outClassNeighbors: messageData.outClassNeighbors,
+                };
+                setValue('allNeighbors', allNeighborsCopy);
             }
         };
         

@@ -1,7 +1,7 @@
 // ChartComponent.tsx
 import { memo, useEffect, useRef, useState } from 'react';
 import VChart from '@visactor/vchart';
-import { Edge, SelectedListener } from './types';
+import { Edge } from './types';
 import { useDefaultStore } from "../../state/state.plotView";
 import { createEdges, softmax, transferArray2Color } from './utils';
 import { notifyHoveredIndexSwitch, notifySelectedIndicesSwitch } from '../../communication/viewMessage';
@@ -12,14 +12,12 @@ export const ChartComponent = memo(() => {
     const vchartRef = useRef<VChart | null>(null);
 
     // Here are data from useStore
-    const { projection, inherentLabelData, predProbability } = useDefaultStore(["projection", "inherentLabelData", "predProbability"]);
-    const { labelDict, colorDict } = useDefaultStore(["labelDict", "colorDict"]);
-    const { filterValue, filterType } = useDefaultStore(["filterValue", "filterType"]);
-    const { filterState } = useDefaultStore(["filterState"]);
+    const { epoch, allEpochData} = useDefaultStore(["epoch", "allEpochData"]);
+    const { inherentLabelData, labelDict, colorDict } = useDefaultStore(["inherentLabelData", "labelDict", "colorDict"]);
+    // const { filterValue, filterType } = useDefaultStore(["filterValue", "filterType"]);
+    // const { filterState } = useDefaultStore(["filterState"]);
     const { showIndex, showLabel,showBackground, textData } = useDefaultStore(["showIndex", "showLabel", "showBackground","textData"])
     const { availableEpochs } = useDefaultStore(["availableEpochs"]);
-    const { background } = useDefaultStore(["background"]);
-    const { inClassNeighbors, outClassNeighbors} = useDefaultStore(["inClassNeighbors", "outClassNeighbors"]);
     const { revealNeighborCrossType, revealNeighborSameType } = useDefaultStore(["revealNeighborCrossType", "revealNeighborSameType"]);
     const { hoveredIndex, setHoveredIndex, selectedIndices, setSelectedIndices, selectedListener } = useDefaultStore(["hoveredIndex", "setHoveredIndex", "selectedIndices", "setSelectedIndices", "selectedListener"]);
 
@@ -53,16 +51,21 @@ export const ChartComponent = memo(() => {
             return;
         }
         // create data
+        const epochData = allEpochData[epoch];
+        if (!epochData) {
+            return;
+        }
+
         samplesRef.current = [];
         let x_min = Infinity, y_min = Infinity, x_max = -Infinity, y_max = -Infinity;
 
-        projection.map((p, i) => {
+        epochData.projection.map((p, i) => {
             const x = parseFloat(p[0].toFixed(3));
             const y = parseFloat(p[1].toFixed(3));
             let confidence = 1.0;
             let pred = inherentLabelData[i];
-            if (predProbability && predProbability.length > 0) {
-                let props = predProbability[i];
+            if (epochData.predProbability && epochData.predProbability.length > 0) {
+                let props = epochData.predProbability[i];
                 let softmaxValues = softmax(props);
                 confidence = Math.max(...softmaxValues);
                 pred = softmaxValues.indexOf(confidence);
@@ -85,7 +88,7 @@ export const ChartComponent = memo(() => {
             if (x > x_max) x_max = x;
             if (y > y_max) y_max = y;
         });
-        edgesRef.current = createEdges(inClassNeighbors, outClassNeighbors, [], []);
+        edgesRef.current = createEdges(epochData.inClassNeighbors, epochData.outClassNeighbors, [], []);
 
         x_min = x_min - PADDING;
         y_min = y_min - PADDING;
@@ -154,7 +157,7 @@ export const ChartComponent = memo(() => {
                         interactive: false,
                         style: {
                             background: () => {
-                                return showBackground ? background : '';
+                                return showBackground ? epochData.background : '';
                             },
                             fill: 'transparent',
                             fillOpacity: 0.6
@@ -383,7 +386,7 @@ export const ChartComponent = memo(() => {
             const vchart = new VChart(spec, { dom: chartRef.current });
             vchartRef.current = vchart;
 
-            vchartRef.current.on('pointerover', { id: 'point-series' }, (e: { datum: { pointId: number | undefined; }; }) => {
+            vchartRef.current.on('pointerover', { id: 'point-series' }, (e) => {
                 setHoveredIndex(e.datum?.pointId);
                 notifyHoveredIndexSwitch(e.datum?.pointId);
             });
@@ -391,7 +394,7 @@ export const ChartComponent = memo(() => {
                 setHoveredIndex(undefined);
                 notifyHoveredIndexSwitch(undefined);
             });
-            vchartRef.current.on('click', { id: 'point-series' }, (e: { datum: { pointId: any; }; }) => {
+            vchartRef.current.on('click', { id: 'point-series' }, (e) => {
                 const pointId = e.datum?.pointId;
                 selectedListener.switchSelected(pointId);
             });
@@ -400,7 +403,7 @@ export const ChartComponent = memo(() => {
             vchartRef.current.updateSpec(spec);
         }
         vchartRef.current.renderSync();
-    }, [projection, background, filterState, showIndex, showLabel, showBackground]);
+    }, [epoch, allEpochData, showIndex, showLabel, showBackground, shownData, highlightData, index, availableEpochs]);
 
 
     /*
@@ -429,13 +432,13 @@ export const ChartComponent = memo(() => {
 
         const selectedNeighbors: number[] = [];
         edgesRef.current.forEach((edge, _) => {
-            if (edge.from == hoveredIndex) {
+            if (edge.from == hoveredIndex || selectedIndices.includes(edge.from)) {
                 selectedNeighbors.push(edge.to);
             }
         });
         vchartRef.current?.updateState({
             as_neighbor: {
-                filter: (datum: { pointId: number; }) => {
+                filter: (datum) => {
                     return selectedNeighbors.includes(datum.pointId);
                 }
             }
@@ -443,12 +446,12 @@ export const ChartComponent = memo(() => {
 
         vchartRef.current?.updateState({
             locked: {
-                filter: (datum: { pointId: number; }) => {
+                filter: (datum) => {
                     return selectedIndices.includes(datum.pointId);
                 }
             }
         });
-    }, [projection, hoveredIndex, selectedIndices]);
+    }, [epoch, allEpochData, hoveredIndex, selectedIndices]);
 
     /*
         Show neighborhood relationship
@@ -460,7 +463,7 @@ export const ChartComponent = memo(() => {
 
         const endpoints: { edgeId: number, from: number, to: number, x: number, y: number, type: string, status: string }[] = [];
         edgesRef.current.forEach((edge, index) => {
-            if (edge.from === hoveredIndex) {
+            if (edge.from === hoveredIndex || selectedIndices.includes(edge.from)) {
                 if ((revealNeighborCrossType && edge.type === 'crossType') || (revealNeighborSameType && edge.type === 'sameType')) {
                     endpoints.push({ edgeId: index, from: edge.from, to: edge.to, x: samplesRef.current[edge.from].x, y: samplesRef.current[edge.from].y, type: edge.type, status: edge.status });
                     endpoints.push({ edgeId: index, from: edge.from, to: edge.to, x: samplesRef.current[edge.to].x, y: samplesRef.current[edge.to].y, type: edge.type, status: edge.status });
@@ -469,7 +472,7 @@ export const ChartComponent = memo(() => {
         });
         vchartRef.current?.updateDataSync('edges', endpoints);
 
-    }, [revealNeighborCrossType, revealNeighborSameType, hoveredIndex]);
+    }, [revealNeighborCrossType, revealNeighborSameType, hoveredIndex,selectedIndices]);
 
 
      /*

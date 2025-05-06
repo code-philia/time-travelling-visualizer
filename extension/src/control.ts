@@ -435,7 +435,83 @@ export async function loadVisualization(forceReconfig: boolean = false): Promise
 	};
 	MessageManager.sendToTokenView(msgToTokenView);
 
+	loadAllEpochData(config, data['availableEpochs'] || []);
 	return true;
+}
+
+async function loadAllEpochData(config: api.BasicVisualizationConfig, availableEpochs: number[] ): Promise<void> {
+	for (const epoch of availableEpochs) {
+		await loadEpochData(config, epoch);
+	}
+}
+
+async function loadEpochData(config: api.BasicVisualizationConfig, epoch: number): Promise<void> {
+	// projection
+	const projectionRes: any = await fetchEpochProjection(config.contentPath, config.visualizationID, epoch);
+	
+	// neighborhood
+	let inClassNeighbors: number[][] = [];
+	let outClassNeighbors: number[][] = [];
+	if (config.taskType === 'Code-Retrieval') {
+		const sameTypeNeighborRes: any = await getAttributeResource(config.contentPath, epoch, 'intra_similarity');
+		const crossTypeNeighborRes: any = await getAttributeResource(config.contentPath, epoch, 'inter_similarity');
+		inClassNeighbors = sameTypeNeighborRes['intra_similarity'].map((row: number[]) => row.slice(0, 5));
+		outClassNeighbors = crossTypeNeighborRes['inter_similarity'].map((row: number[]) => row.slice(0, 5));
+	}
+	else if (config.taskType === 'Classification') {
+		const neighborsRes: any = await getAllNeighbors(config.contentPath, epoch);
+		inClassNeighbors = neighborsRes['inClassNeighbors'];
+		outClassNeighbors = neighborsRes['outClassNeighbors'];
+	}
+
+	// classification info
+	let predProbability: number[][] = [];
+	let bgimg: string = '';
+	if (config.taskType === 'Classification') {
+		const predRes: any = await getAttributeResource(config.contentPath, epoch, 'prediction');
+		predProbability = predRes['prediction'];
+
+		const bgimgRes = await getBackground(config.contentPath, config.visualizationID, epoch, 1200, 1000, projectionRes['scope']);
+		bgimg = bgimgRes;
+	}
+	const predAndConf = convertPropsToPredictions(predProbability);
+
+	const msgToPlotView = {
+		command: 'updateEpochData',
+		data: {
+			epoch: epoch,
+			taskType: config.taskType,
+			projection: projectionRes['projection'],
+			inClassNeighbors: inClassNeighbors,
+			outClassNeighbors: outClassNeighbors,
+			prediction: predAndConf.pred,
+			confidence: predAndConf.confidence,
+			predProbability: predProbability,
+			background: bgimg
+		}
+	};
+	MessageManager.sendToPlotView(msgToPlotView);
+
+	const msgToDetailView = {
+		command: 'updatePrediction',
+		data: {
+			epoch: epoch,
+			prediction: predAndConf.pred,
+			confidence: predAndConf.confidence,
+			probability: predProbability,
+		}
+	}
+	MessageManager.sendToDetailView(msgToDetailView);
+
+	const msgToTokenView = {
+		command: 'updateNeighbors',
+		data: {
+			epoch: epoch,
+			inClassNeighbors: inClassNeighbors,
+			outClassNeighbors: outClassNeighbors,
+		}
+	}
+	MessageManager.sendToTokenView(msgToTokenView);
 }
 
 export async function loadVisualizationThroughTreeItem(trainingProcess: string, visualizationID: string): Promise<boolean> {
