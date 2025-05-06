@@ -2,7 +2,7 @@ import { AutoComplete, Divider, Input, List, Tag, RefSelectProps, Checkbox, Tool
 import { useDefaultStore } from '../state/state.rightView';
 import { useEffect, useRef, useState } from 'react';
 import { ComponentBlock, FunctionalBlock } from './custom/basic-components';
-import { notifySelectedIndicesSwitch, notifyshownDataSwitch } from '../communication/viewMessage';
+import { notifyHighlightDataSwitch, notifySelectedIndicesSwitch, notifyshownDataSwitch } from '../communication/viewMessage';
 
 type SampleTag = {
     num: number;
@@ -339,6 +339,12 @@ function HighlightOptionBlock() {
         });
         const updatedhighlightTypes = highlightTypes.map(highlight => highlight.type === type ? { ...highlight, enabled: !highlight.enabled } : highlight);
         setHighlightTypes(updatedhighlightTypes);
+
+        const enabledTypes = updatedhighlightTypes
+            .filter(highlight => highlight.enabled)
+            .map(highlight => highlight.type);
+
+        notifyHighlightDataSwitch(enabledTypes);
     };
 
     const renderHighlightTypeItem = (highlight: { type: string, label: string, enabled: boolean, icon: string, description: string, count: number }) => {

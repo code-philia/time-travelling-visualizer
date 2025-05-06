@@ -364,6 +364,8 @@ def load_single_attribute(content_path, epoch, attribute):
     elif attribute == 'prediction':
         file_path = os.path.join(content_path, 'epochs', f'epoch_{epoch}', 'predictions.npy')
         attr_data = read_from_file(file_path)
+    elif attribute == 'index':
+        attr_data = load_or_create_index(content_path)
     else:
         raise NotImplementedError(f"Unknown attribute: {attribute}")
     
@@ -401,7 +403,28 @@ def read_file_as_json(file_path: str):
     
     with open(file_path, "r") as f:
         return json.load(f)
+
+def load_or_create_index(content_path):
+    index_file_path = os.path.join(content_path, 'dataset', 'index.json')
+    if os.path.exists(index_file_path):
+        with open(index_file_path, 'r') as f:
+            index_data = json.load(f)
+        return index_data
+
+    # If index.json does not exist, create it
+    label = load_single_attribute(content_path, 0, 'label')
+    num_samples = len(label)
     
+    index_data = {
+        'train': list(range(num_samples)),
+        'test': []
+    }
+    
+    # Save the index data to a file
+    with open(index_file_path, 'w') as f:
+        json.dump(index_data, f)
+
+    return index_data
 
 def get_training_parameters():
     server_path = os.path.dirname(os.path.realpath(__file__))

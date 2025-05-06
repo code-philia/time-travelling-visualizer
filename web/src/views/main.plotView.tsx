@@ -79,6 +79,7 @@ function MessageHandler() {
 
             setValue('textData', messageData.tokenList);
             setValue('inherentLabelData', messageData.labelList);
+            setValue('index', messageData.index);
             setValue('epoch', messageData.availableEpochs[0]);
 
             notifyEpochSwitch(messageData.availableEpochs[0]);
@@ -111,6 +112,10 @@ function MessageHandler() {
         else if(message.command === 'updateshownData'){
             const messageData = message.data;
             setValue('shownData', messageData.shownData);
+        }
+        else if (message.command === 'updateHighlightData') {
+            const messageData = message.data;
+            setValue('highlightData', messageData.highlightData);
         }
     };
 
