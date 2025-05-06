@@ -190,7 +190,7 @@ def get_filter_result(config, content_path, epoch, filters):
     return result,''
 
 def paint_background(content_path, vis_id, epoch, width, height, scale):
-    file_path = os.path.join(content_path, 'visualize',vis_id,'background', f'{epoch}.png')
+    file_path = os.path.join(content_path, 'visualize',vis_id,'epochs',f'epoch_{epoch}', 'background.png')
     if os.path.exists(file_path):
         return convert_to_base64(file_path)
     return ""
