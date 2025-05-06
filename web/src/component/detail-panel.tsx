@@ -6,8 +6,8 @@ import { useDefaultStore } from '../state/state.detailView';
 import { Divider } from 'antd';
 
 export function DetailPanel() {
-    const { hoveredIndex, labels, predProbability, labelDict , imageData} =
-        useDefaultStore(['hoveredIndex', 'labels', 'predProbability', 'labelDict', 'imageData']);
+    const { availableEpochs, hoveredIndex, labels, epoch, allPredictionData, labelDict , imageData} =
+        useDefaultStore(['availableEpochs', 'hoveredIndex', 'labels', 'epoch', 'allPredictionData', 'labelDict', 'imageData']);
 
     const [image, setImage] = useState<string>('');
     const [predictions, setPredictions] = useState<{ value: number, confidence: number, correct: boolean }[]>([]);
@@ -16,7 +16,7 @@ export function DetailPanel() {
 
     useEffect(() => {
         console.log("hoveredIndex in detail panel: ", hoveredIndex);
-        if (!hoveredIndex || !labels || !predProbability) {
+        if (!hoveredIndex || !labels || !allPredictionData[epoch]) {
             setImage('');
             setPredictions([]);
             setHistoryPrediction([]);
@@ -27,11 +27,11 @@ export function DetailPanel() {
         setImage(imageData);
 
         // current epoch prediction
-        if (!predProbability[hoveredIndex]) { 
+        if (!allPredictionData[epoch].probability[hoveredIndex]) { 
             setPredictions([]);
         }
         else {
-            const softmaxProps = softmax(predProbability[hoveredIndex]);
+            const softmaxProps = softmax(allPredictionData[epoch].probability[hoveredIndex]);
             const sortedProps = [...softmaxProps];
             sortedProps.sort((a, b) => b - a);
             const topThreeConfidences = sortedProps.slice(0, 3);
@@ -45,19 +45,19 @@ export function DetailPanel() {
         }
 
         // history prediction
-        const historyPrediction: {epoch: number, prediction: number, confidence: number, correct: boolean}[] = [];
-        // const epochId = availableEpochs.indexOf(epoch);
-        // for (let i = epochId - 1; i >= Math.max(0, epochId - 5); i--) {
-        //     const e = availableEpochs[i];
-        //     const pred = allPrediction[e][hoveredIndex];
-        //     historyPrediction.push({
-        //         epoch: e,
-        //         prediction: pred,
-        //         confidence: allConfidence[e][hoveredIndex],
-        //         correct: labels[hoveredIndex] === pred
-        //     });
-        // }
-        setHistoryPrediction(historyPrediction);
+        const historyPredictionNew: {epoch: number, prediction: number, confidence: number, correct: boolean}[] = [];
+        const epochId = availableEpochs.indexOf(epoch);
+        for (let i = epochId - 1; i >= Math.max(0, epochId - 5); i--) {
+            const e = availableEpochs[i];
+            const pred = allPredictionData[e].prediction[hoveredIndex];
+            historyPredictionNew.push({
+                epoch: e,
+                prediction: pred,
+                confidence: allPredictionData[e].prediction[hoveredIndex],
+                correct: labels[hoveredIndex] === pred
+            });
+        }
+        setHistoryPrediction(historyPredictionNew);
 
         // loss attribution
         const sampleLoss = [
@@ -65,7 +65,7 @@ export function DetailPanel() {
             { name: "L2-Regularization", value: Math.random() },
         ];
         setLossAttribution(sampleLoss);
-    }, [hoveredIndex, imageData]);
+    }, [hoveredIndex, imageData, epoch, allPredictionData, availableEpochs]);
 
 
     return (

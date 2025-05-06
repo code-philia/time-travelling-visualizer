@@ -6,23 +6,28 @@ import { BUILD_CONSTANTS } from "../constants";
 import { subscribeWithSelector } from "zustand/middleware";
 import { SelectedListener } from "../component/canvas/types";
 
-export type BaseMutableGlobalStore = {
-    epoch: number;
-    availableEpochs: number[];
-    colorDict: Map<number, [number, number, number]>;
-    labelDict: Map<number, string>;
-
+export type EpochData = {
     projection: number[][];
-    textData: string[];
-    attentionData: number[][];
-    originalTextData: Record<string, string>;
-    inherentLabelData: number[];
     prediction: number[];
     confidence: number[];
     predProbability: number[][];
     inClassNeighbors: number[][];
     outClassNeighbors: number[][];
     background: string;
+};
+
+export type BaseMutableGlobalStore = {
+    epoch: number;
+    availableEpochs: number[];
+    colorDict: Map<number, [number, number, number]>;
+    labelDict: Map<number, string>;
+
+    textData: string[];
+    attentionData: number[][];
+    originalTextData: Record<string, string>;
+    inherentLabelData: number[];
+    allEpochData: Record<number, EpochData>;
+    progress: number;
 
     // settings
     showIndex: boolean;
@@ -48,17 +53,12 @@ export let initMutableGlobalStore: BaseMutableGlobalStore = {
     labelDict: new Map(),
 
     // FIXME we should use null for not loaded data
-    projection: [],
     textData: [],
     attentionData: [],
     originalTextData: {},
     inherentLabelData: [],
-    prediction: [],
-    confidence: [],
-    predProbability: [],
-    inClassNeighbors: [],
-    outClassNeighbors: [],
-    background: '',
+    allEpochData: {},
+    progress: 0,
 
     // settings
     showIndex: true,

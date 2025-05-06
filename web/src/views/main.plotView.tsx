@@ -1,7 +1,7 @@
 import { StrictMode, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { MainBlock } from "../component/main-block.tsx";
-import { useDefaultStore } from "../state/state.plotView.ts";
+import { EpochData, useDefaultStore } from "../state/state.plotView.ts";
 import "../index.css";
 import { notifyEpochSwitch } from "../communication/viewMessage.tsx";
 
@@ -22,8 +22,9 @@ function AppPlotViewOnly() {
 
 function MessageHandler() {
     const { setValue } = useDefaultStore(['setValue']);
+    const allEpochDataCopy: Record<number, EpochData> = {};
 
-    const handleMessage = (event: MessageEvent) => {
+    const handleMessage =(event: MessageEvent) => {
         const message = event.data;
         if (!message) {
             console.error("Invalid message:", message);
@@ -84,17 +85,20 @@ function MessageHandler() {
         }
         else if(message.command === 'updateEpochData'){
             const messageData = message.data;
-            setValue('projection', messageData.projection);
-            setValue('inClassNeighbors', messageData.inClassNeighbors);
-            setValue('outClassNeighbors', messageData.outClassNeighbors);
-            setValue('prediction', messageData.prediction);
-            setValue('confidence', messageData.confidence);
-            setValue('predProbability', messageData.predProbability);
-            setValue('background', messageData.background);
-        }
-        else if(message.command === 'updateBackground'){
-            const messageData = message.data;
-            setValue('background', messageData.background);
+            const newEpochData: EpochData = {
+                projection: messageData.projection,
+                prediction: messageData.prediction,
+                confidence: messageData.confidence,
+                predProbability: messageData.predProbability,
+                inClassNeighbors: messageData.inClassNeighbors,
+                outClassNeighbors: messageData.outClassNeighbors,
+                background: messageData.background,
+            };
+            allEpochDataCopy[messageData.epoch] = newEpochData;
+            setValue('allEpochData', allEpochDataCopy);
+
+            const progress = Object.keys(allEpochDataCopy).length;
+            setValue('progress', progress);
         }
         else if(message.command === 'updateSelectedIndices'){
             const messageData = message.data;

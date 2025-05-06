@@ -81,87 +81,16 @@ export class PlotViewManager {
 		
 		panel.webview.onDidReceiveMessage(async (msg) => {
 			console.log("Plot View received message: ", msg);
-			if (msg.command === 'epochSwitch') {
+			if (msg.command === 'epochSwitch') { 
 				const targetEpoch: number = msg.data.epoch;
-				const config = getBasicConfig();
-				console.log("In Plot view, config", config);
-				if (!config) {
-					return;
-				}
-				const plotSettings = getPlotSettings();
-
-				const extensionContext = CONFIG.GlobalStorageContext.extensionContext;
-				if (!extensionContext) {
-					vscode.window.showErrorMessage("Extension context is not available.");
-					return;
-				}
-				extensionContext.workspaceState.update('currentEpoch', targetEpoch);
-
-				// projection
-				const projectionRes: any = await fetchEpochProjection(config.contentPath, config.visualizationID, targetEpoch);
-				extensionContext.workspaceState.update('projection', projectionRes['projection']);
-				extensionContext.workspaceState.update('scope', projectionRes['scope']);
-				
-				// neighborhood
-				if (config.taskType === 'Code-Retrieval') {
-					const sameTypeNeighborRes: any = await getAttributeResource(config.contentPath, targetEpoch, 'intra_similarity');
-					const crossTypeNeighborRes: any = await getAttributeResource(config.contentPath, targetEpoch, 'inter_similarity');
-					extensionContext.workspaceState.update('inClassNeighbors',sameTypeNeighborRes['intra_similarity'].map((row: number[]) => row.slice(0, 5)));
-					extensionContext.workspaceState.update('outClassNeighbors',crossTypeNeighborRes['inter_similarity'].map((row: number[]) => row.slice(0, 5)));
-				}
-				else if (config.taskType === 'Classification') {
-					const neighborsRes: any = await getAllNeighbors(config.contentPath, targetEpoch);
-					extensionContext.workspaceState.update('inClassNeighbors', neighborsRes['inClassNeighbors']);
-					extensionContext.workspaceState.update('outClassNeighbors', neighborsRes['outClassNeighbors']);
-				}
-
-				// classification info
-				if (config.taskType === 'Classification') {
-					const predRes: any = await getAttributeResource(config.contentPath, targetEpoch, 'prediction');
-					extensionContext.workspaceState.update('predProbability', predRes['prediction']);
-
-					const ret = convertPropsToPredictions(predRes['prediction']);
-					extensionContext.workspaceState.update('prediction', ret.pred);
-					extensionContext.workspaceState.update('confidence', ret.confidence);
-
-					if (plotSettings.showBackground) {
-						const bgimgRes = await getBackground(config.contentPath, config.visualizationID, targetEpoch, 1200, 1000, extensionContext.workspaceState.get('scope'));
-						extensionContext.workspaceState.update('background', bgimgRes);	
-					}
-				}
-
-				const msgToPlotView = {
-					command: 'updateEpochData',
+				const msgBack = {
+					command: 'updateEpoch',
 					data: {
 						epoch: targetEpoch,
-						taskType: config.taskType,
-						projection: projectionRes['projection'],
-						inClassNeighbors: extensionContext.workspaceState.get('inClassNeighbors'),
-						outClassNeighbors: extensionContext.workspaceState.get('outClassNeighbors'),
-						prediction: extensionContext.workspaceState.get('prediction'),
-						confidence: extensionContext.workspaceState.get('confidence'),
-						predProbability: extensionContext.workspaceState.get('predProbability'),
-						background: extensionContext.workspaceState.get('background')
-					}
-				};
-				MessageManager.sendToPlotView(msgToPlotView);
-
-				const msgToDetailView = {
-					command: 'epochSwitch',
-					data: {
-						predProbability: extensionContext.workspaceState.get('predProbability'),
 					}
 				}
-				MessageManager.sendToDetailView(msgToDetailView);
-
-				const msgToTokenView = {
-					command: 'updateNeighbors',
-					data: {
-						inClassNeighbors: extensionContext.workspaceState.get('inClassNeighbors'),
-						outClassNeighbors: extensionContext.workspaceState.get('outClassNeighbors'),
-					}
-				}
-				MessageManager.sendToTokenView(msgToTokenView);
+				MessageManager.sendToDetailView(msgBack);
+				MessageManager.sendToTokenView(msgBack);
 			}
 			else if (msg.command === 'hoveredIndexSwitch') {
 				const hoveredIndex: number = msg.data.hoveredIndex;

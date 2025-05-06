@@ -98,7 +98,7 @@ export function BottomPanel() {
     const { labels, tokenList, hoveredIndex, setHoveredIndex, selectedIndices, setSelectedIndices } =
         useDefaultStore(['labels', 'tokenList', 'hoveredIndex', 'setHoveredIndex', 'selectedIndices', 'setSelectedIndices']);
     
-    const { inClassNeighbors, outClassNeighbors } = useDefaultStore(['inClassNeighbors', 'outClassNeighbors']);
+    const { epoch, allNeighbors } = useDefaultStore(['epoch', 'allNeighbors']);
 
     const generateRandomColor = () => {
         const r = Math.floor(200 + Math.random() * 55);
@@ -114,7 +114,7 @@ export function BottomPanel() {
         const isDoc = labels[index] === 0;
         const isSelected = selectedIndices.includes(index);
         const isHighlighted = hoveredIndex === index;
-        const isNeighbor = (hoveredIndex !== null && hoveredIndex !== undefined && (inClassNeighbors[hoveredIndex]?.includes(index) || outClassNeighbors[hoveredIndex]?.includes(index)));
+        const isNeighbor = (hoveredIndex !== null && hoveredIndex !== undefined && (allNeighbors[epoch].inClassNeighbors[hoveredIndex]?.includes(index) || allNeighbors[epoch].outClassNeighbors[hoveredIndex]?.includes(index)));
 
         const tokenSpan: TokenSpan = {
             text: token,

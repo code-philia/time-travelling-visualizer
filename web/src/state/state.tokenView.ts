@@ -5,13 +5,18 @@ import { useStoreWithEqualityFn } from "zustand/traditional";
 import { BUILD_CONSTANTS } from "../constants";
 import { subscribeWithSelector } from "zustand/middleware";
 
+export type Neighborhood = {
+    inClassNeighbors: number[][];
+    outClassNeighbors: number[][];
+};
+
 type BaseMutableGlobalStore = {
     hoveredIndex: number | undefined;
     selectedIndices: number[];
     labels: number[];
     tokenList: string[];
-    inClassNeighbors: number[][];
-    outClassNeighbors: number[][];
+    epoch: number;
+    allNeighbors: Record<number, Neighborhood>;
 };
 
 let initMutableGlobalStore: BaseMutableGlobalStore = {
@@ -19,8 +24,8 @@ let initMutableGlobalStore: BaseMutableGlobalStore = {
     selectedIndices: [],
     labels: [],
     tokenList: [],
-    inClassNeighbors: [],
-    outClassNeighbors: [],
+    epoch: 1,
+    allNeighbors: {},
 };
 type SetFunction<T> = (setState: (state: T) => T | Partial<T>) => void;
 

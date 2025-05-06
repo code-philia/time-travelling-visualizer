@@ -2,7 +2,7 @@ import { StrictMode, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import DetailPanel from '../component/detail-panel';
 import '../index.css';
-import { useDefaultStore } from '../state/state.detailView';
+import { PredictionData, useDefaultStore } from '../state/state.detailView';
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
@@ -20,9 +20,11 @@ function AppDetailPanelViewOnly() {
 }
 
 function MessageHandler() {
-    const { setHoveredIndex, setLabels, setPredProbability, setLabelDict, setImageData } =
-        useDefaultStore(['setHoveredIndex', 'setLabels', 'setPredProbability', 'setLabelDict', 'setImageData']);
+    const { setHoveredIndex, setLabels, setAllPredictionData, setEpoch, setLabelDict, setImageData } =
+        useDefaultStore(['setHoveredIndex', 'setLabels', 'setEpoch', 'setAllPredictionData', 'setLabelDict', 'setImageData']);
 
+    const allPredictionDataCopy: Record<number, PredictionData> = {};
+    
     const handleMessage = (event: MessageEvent) => {
         const message = event.data;
         if (!message) {
@@ -39,9 +41,18 @@ function MessageHandler() {
             setLabelDict(labelDict);
             setLabels(message.data.labels);
         }
-        else if (message.command === "epochSwitch") {
-            setPredProbability(message.data.predProbability);
+        else if (message.command === "updatePrediction") {
+            allPredictionDataCopy[message.data.epoch] = {
+                prediction: message.data.prediction,
+                confidence: message.data.confidence,
+                probability: message.data.probability,
+            };
+            setAllPredictionData(allPredictionDataCopy);
         }
+        else if (message.command === 'updateEpoch') {
+            const messageData = message.data;
+            setEpoch(messageData.epoch);
+        } 
         else if (message.command === "updateHoveredIndex") {
             setHoveredIndex(message.data.hoveredIndex);
             setImageData(message.data.image);
