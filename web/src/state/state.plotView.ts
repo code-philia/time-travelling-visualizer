@@ -38,7 +38,9 @@ export type BaseMutableGlobalStore = {
     showBackground: boolean;
 
     // filter
+    index: Record<string, number[]>;
     shownData: string[];
+    highlightData: string[];
 
     // hovered
     hoveredIndex: number | undefined;
@@ -69,7 +71,9 @@ export let initMutableGlobalStore: BaseMutableGlobalStore = {
     showBackground: false,
 
     // filter
+    index: {},
     shownData: ["train", "test"],
+    highlightData: [],
 
     // hovered
     hoveredIndex: undefined,

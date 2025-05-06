@@ -48,3 +48,12 @@ export function notifyshownDataSwitch(e: string[]) {
     };
     window.vscode?.postMessage(message, '*');
 }
+
+export function notifyHighlightDataSwitch(e: string[]) {
+    const data = { highlightData: e };
+    const message = {
+        command: 'highlightDataSwitch',
+        data: data
+    };
+    window.vscode?.postMessage(message, '*');
+}

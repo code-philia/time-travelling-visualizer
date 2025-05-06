@@ -393,6 +393,10 @@ export async function loadVisualization(forceReconfig: boolean = false): Promise
 		extensionContext.workspaceState.update('tokenList', data['tokenList']);
 	}
 
+	const indexRes: any = await getAttributeResource(config.contentPath, 1, 'index');
+	data['index'] = indexRes['index'];
+	
+
 	// 4. send message to views
 	const settings = getPlotSettings();
 	const msgToPlotView = {

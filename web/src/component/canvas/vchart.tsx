@@ -20,9 +20,12 @@ export const ChartComponent = memo(() => {
     const { availableEpochs } = useDefaultStore(["availableEpochs"]);
     const { revealNeighborCrossType, revealNeighborSameType } = useDefaultStore(["revealNeighborCrossType", "revealNeighborSameType"]);
     const { hoveredIndex, setHoveredIndex, selectedIndices, setSelectedIndices, selectedListener } = useDefaultStore(["hoveredIndex", "setHoveredIndex", "selectedIndices", "setSelectedIndices", "selectedListener"]);
+    const { shownData, highlightData, index } = useDefaultStore(["shownData", "highlightData", "index"]);
 
     const samplesRef = useRef<{ pointId: number, x: number; y: number; label: number; pred: number; label_desc: string; pred_desc: string; confidence: number; textSample: string }[]>([]);
     const edgesRef = useRef<Edge[]>([]);
+    const wrongRef = useRef<number[]>([]);
+    const flipRef = useRef<number[]>([]);
 
     // listen to selectedIndices change in canvas
     useEffect(() => {
@@ -57,6 +60,8 @@ export const ChartComponent = memo(() => {
         }
 
         samplesRef.current = [];
+        wrongRef.current = [];
+        flipRef.current = [];
         let x_min = Infinity, y_min = Infinity, x_max = -Infinity, y_max = -Infinity;
 
         epochData.projection.map((p, i) => {
@@ -83,6 +88,17 @@ export const ChartComponent = memo(() => {
                 textSample: textData? textData[i] ?? '': ''
             });
 
+            if (pred !== inherentLabelData[i]) {
+                wrongRef.current.push(i);
+            }
+            const epochId = availableEpochs.indexOf(epoch);
+            if (epochId > 0 && epochData.predProbability && epochData.predProbability.length > 0) {
+                const lastEpochData = allEpochData[availableEpochs[epochId - 1]];
+                if (lastEpochData.prediction[i] !== pred) {
+                    flipRef.current.push(i);
+                }
+            }
+
             if (x < x_min) x_min = x;
             if (y < y_min) y_min = y;
             if (x > x_max) x_max = x;
@@ -108,16 +124,19 @@ export const ChartComponent = memo(() => {
                         {
                             type: 'filter',
                             options: {
-                                callback: (datum: { label_desc: string; pred_desc: string; }) => {
-                                    if (filterState) {
-                                        const filterValues = filterValue.split(',').map(value => value.trim());
-                                        if (filterType === 'label') {
-                                            return filterValues.includes(datum.label_desc);
-                                        } else if (filterType === 'prediction') {
-                                            return filterValues.includes(datum.pred_desc);
-                                        }
-                                    }
-                                    return true;
+                                // callback: (datum: { label_desc: string; pred_desc: string; }) => {
+                                //     if (filterState) {
+                                //         const filterValues = filterValue.split(',').map(value => value.trim());
+                                //         if (filterType === 'label') {
+                                //             return filterValues.includes(datum.label_desc);
+                                //         } else if (filterType === 'prediction') {
+                                //             return filterValues.includes(datum.pred_desc);
+                                //         }
+                                //     }
+                                //     return true;
+                                // }
+                                callback: (datum: { pointId: number; }) => {
+                                    return shownData.some((key) => index[key]?.includes(datum.pointId));
                                 }
                             }
                         }
@@ -290,7 +309,23 @@ export const ChartComponent = memo(() => {
                             },
                             fillOpacity: (datum: { confidence: number; }) => {
                                 return datum.confidence;
-                            }
+                            },
+                            outerBorder: (datum: { pointId: number; }) => {
+                                if (highlightData.includes('prediction_error') && wrongRef.current.includes(datum.pointId)) {
+                                    return {
+                                        distance: 1.5,
+                                        lineWidth: 1.5,
+                                        stroke: 'rgba(255, 0, 0, 0.75)'
+                                    }
+                                }
+                                else if (highlightData.includes('prediction_flip') && flipRef.current.includes(datum.pointId)) {
+                                    return {
+                                        distance: 1.3,
+                                        lineWidth: 1.5,
+                                        stroke: 'rgba(254, 121, 61,0.75)'
+                                    }
+                                }
+                            },
                         }
                     },
                     label: [
