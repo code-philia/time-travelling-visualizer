@@ -35,3 +35,4 @@ typing_extensions
 umap
 umap-learn
 zipp==3.15.0
+openai
