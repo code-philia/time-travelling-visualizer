@@ -180,9 +180,9 @@ export function RightPanel() {
     useEffect(() => {
         setSelectedItems(Array.from(selectedIndices).map((num) => ({
             num,
-            title: tokenList[num]!
+            title: tokenList ? tokenList[num] ?? '' : ''
         })));
-    },[selectedIndices, tokenList]);
+    }, [selectedIndices, tokenList]);
 
     return (
         <div className="info-column">

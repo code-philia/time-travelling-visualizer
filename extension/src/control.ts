@@ -6,9 +6,9 @@ import { PlotViewManager } from "./views/plotView";
 import { isDirectory } from './ioUtils';
 import { getIconUri } from './resources';
 import { MessageManager } from './views/messageManager';
-import { fetchTrainingProcessInfo, fetchTrainingProcessStructure, getAttributeResource, getText, triggerStartVisualizing } from './communication/api';
-import { defaultWorkspaceState } from './state';
+import { fetchEpochProjection, fetchTrainingProcessInfo, fetchTrainingProcessStructure, getAllNeighbors, getAttributeResource, getBackground, getText, triggerStartVisualizing } from './communication/api';
 import path from 'path';
+import { convertPropsToPredictions } from './utils';
 
 /**
  * Config
@@ -233,13 +233,13 @@ export function getBasicConfig() {
 	} as api.BasicVisualizationConfig | undefined;;
 }
 
-function updateBasicConfig(dataType: string, taskType: string, trainingProcess: string, visualizationMethod: string, visualizationID: string): Promise<void> {
+function updateBasicConfig(dataType: string, taskType: string, trainingProcess: string, visualizationID: string): Promise<void> {
     const visConfigSet = vscode.workspace.getConfiguration(CONFIG.configurationBaseName);
     return Promise.all([
         visConfigSet.update(CONFIG.ConfigurationID.dataType, dataType, vscode.ConfigurationTarget.Global), // Update user settings
         visConfigSet.update(CONFIG.ConfigurationID.taskType, taskType, vscode.ConfigurationTarget.Global), // Update user settings
         visConfigSet.update(CONFIG.ConfigurationID.trainingProcess, trainingProcess, vscode.ConfigurationTarget.Global), // Update user settings
-        visConfigSet.update(CONFIG.ConfigurationID.visualizationMethod, visualizationMethod, vscode.ConfigurationTarget.Global), // Update user settings
+        // visConfigSet.update(CONFIG.ConfigurationID.visualizationMethod, visualizationMethod, vscode.ConfigurationTarget.Global), // Update user settings
         visConfigSet.update(CONFIG.ConfigurationID.visualizationID, visualizationID, vscode.ConfigurationTarget.Global), // Update user settings
     ]).then(() => {
     }).catch((err) => {
@@ -323,16 +323,6 @@ export function getPlotSettings(){
  * Load the visualization result
  */
 export async function loadVisualization(forceReconfig: boolean = false): Promise<boolean> {
-	// 0. clear the workspace state
-	const extensionContext = CONFIG.GlobalStorageContext.extensionContext;
-	if(!extensionContext) {
-		vscode.window.showErrorMessage("Cannot start visualization: extension context not found");
-		return false;
-	}
-    Object.entries(defaultWorkspaceState).forEach(([key, value]) => {
-        extensionContext.workspaceState.update(key, value);
-    });
-
 	// 1. create or show plot view
 	if (!(PlotViewManager.view)) {
 		try {
@@ -358,6 +348,7 @@ export async function loadVisualization(forceReconfig: boolean = false): Promise
 		labelTextList?: string[],
 		tokenList?: string[],
 		labelList?: number[],
+		index?: Record<string, number[]>,
 	} = {};
 	data['taskType'] = config.taskType;
 
@@ -371,7 +362,6 @@ export async function loadVisualization(forceReconfig: boolean = false): Promise
 		for (let i = 0; i < data['colorList'].length; i++) {
 			colorDict.set(i, [data['colorList'][i][0], data['colorList'][i][1], data['colorList'][i][2]]);
 		}
-		extensionContext.workspaceState.update('colorDict', colorDict);
 	}
 
 	data['labelTextList'] = trainingInfoRes['label_text_list'];
@@ -380,17 +370,14 @@ export async function loadVisualization(forceReconfig: boolean = false): Promise
 		for (let i = 0; i < data['labelTextList'].length; i++) {
 			labelDict.set(i, data['labelTextList'][i]);
 		}
-		extensionContext.workspaceState.update('labelDict', labelDict);
 	}
 
 	const labelRes: any = await getAttributeResource(config.contentPath, 1, 'label');
 	data['labelList'] = labelRes['label'];
-	extensionContext.workspaceState.update('labelList', data['labelList']);
 
 	if (config.taskType === "Code-Retrieval") {
 		const textRes: any = await getText(config.contentPath);
 		data['tokenList'] = textRes['text_list'];
-		extensionContext.workspaceState.update('tokenList', data['tokenList']);
 	}
 
 	const indexRes: any = await getAttributeResource(config.contentPath, 1, 'index');
@@ -535,7 +522,7 @@ export async function loadVisualizationThroughTreeItem(trainingProcess: string, 
     );
 
     // Wait for settings to update before proceeding
-    await updateBasicConfig(dataType, taskType, trainingProcess, visualizationID.split('_')[0], visualizationID);
+    await updateBasicConfig(dataType, taskType, trainingProcess, visualizationID);
 
     // Call loadVisualization after settings are updated
     return await loadVisualization();
@@ -585,7 +572,7 @@ export async function startVisualizingThroughTreeItem(trainingProcess: string): 
 	);
 
     // Wait for settings to update before proceeding
-	await updateBasicConfig(dataType, taskType, trainingProcess, visualizationMethod, visualizationID);
+	await updateBasicConfig(dataType, taskType, trainingProcess, visualizationID);
 	
 	vscode.window.showInformationMessage("Start visualizing...");
 	const visConfig = getVisConfig(visualizationMethod);

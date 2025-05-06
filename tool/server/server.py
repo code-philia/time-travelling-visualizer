@@ -104,7 +104,7 @@ def update_projection():
     projection, scope = load_projection(content_path, vis_id, epoch)
 
     result = jsonify({
-        'projection': projection[:1000],
+        'projection': projection,
         'scope': scope
     })
     return make_response(result, 200)
