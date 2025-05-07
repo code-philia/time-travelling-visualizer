@@ -1,19 +1,19 @@
 import { StrictMode, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BottomPanel } from '../component/bottom-panel';
 import '../index.css';
-import { Neighborhood, useDefaultStore } from '../state/state.tokenView';
+import { FunctionPanel } from '../component/function-panel';
+import { useDefaultStore } from '../state/state.rightView';
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
-        <AppPanelViewOnly />
+        <AppFunctionPanelViewOnly />
     </StrictMode>
 );
 
-function AppPanelViewOnly() {
+function AppFunctionPanelViewOnly() {
     return (
         <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <BottomPanel></BottomPanel>
+            <FunctionPanel />
             <MessageHandler></MessageHandler>
         </div>
     );
@@ -21,7 +21,6 @@ function AppPanelViewOnly() {
 
 function MessageHandler() {
     const { setValue } = useDefaultStore(['setValue']);
-    const allNeighborsCopy: Record<number, Neighborhood> = {};
 
     useEffect(() => {
         const handleMessage = (event: MessageEvent) => {
@@ -33,8 +32,18 @@ function MessageHandler() {
             console.log('token web received message:', message);
             if (message.command === 'init') {
                 const messageData = message.data;
-                setValue('labels', messageData.labels);
-                setValue('tokenList', messageData.tokenList);
+                    const colorDict = new Map<number, [number, number, number]>();
+                    messageData.colorList.forEach((c: [number,number,number], i: number) => {
+                        colorDict.set(i, c);                    
+                    });
+                    setValue('colorDict', colorDict);
+
+                    const labelDict = new Map<number, string>();
+                    messageData.labelTextList.forEach((l: string, i: number) => {
+                        labelDict.set(i, l);
+                    });
+                    setValue('labelDict', labelDict);
+                    setValue('tokenList', messageData.tokenList);
             }
             else if(message.command === 'updateSelectedIndices') {
                 const messageData = message.data;
@@ -45,22 +54,6 @@ function MessageHandler() {
                     setValue('selectedIndices', []);
                 }
             }
-            else if (message.command === 'updateHoveredIndex') {
-                const messageData = message.data;
-                setValue('hoveredIndex', messageData.hoveredIndex);
-            }
-            else if (message.command === 'updateEpoch') {
-                const messageData = message.data;
-                setValue('epoch', messageData.epoch);
-            }
-            else if (message.command === 'updateNeighbors') {
-                const messageData = message.data;
-                allNeighborsCopy[messageData.epoch] = {
-                    originalNeighbors: messageData.originalNeighbors,
-                    projectionNeighbors: messageData.projectionNeighbors,
-                };
-                setValue('allNeighbors', allNeighborsCopy);
-            }
         };
         
         window.addEventListener('message', handleMessage);
@@ -69,7 +62,7 @@ function MessageHandler() {
         };
     }, []);
 
-    return <></>
+    return <></>;
 }
 
 window.vscode?.postMessage({ state: 'load' }, '*');

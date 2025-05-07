@@ -63,7 +63,7 @@ function hexToRgbArray(hex: string): [number, number, number] {
     return [r, g, b];
 }
 
-export function RightPanel() {
+export function FunctionPanel() {
     // TODO this is too messy all using useStore
     const { tokenList, labelDict, colorDict, setColorDict, selectedIndices, setSelectedIndices, setShownData } =
         useDefaultStore(["tokenList","labelDict", "colorDict", "setColorDict", "selectedIndices", "setSelectedIndices", "setShownData"]);
@@ -314,7 +314,7 @@ export function RightPanel() {
     )
 }
 
-export default RightPanel;
+export default FunctionPanel;
 
 
 function HighlightOptionBlock() {

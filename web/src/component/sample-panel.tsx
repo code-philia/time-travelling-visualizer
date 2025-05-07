@@ -5,7 +5,7 @@ import { softmax } from './utils';
 import { useDefaultStore } from '../state/state.detailView';
 import { Divider } from 'antd';
 
-export function DetailPanel() {
+export function SamplePanel() {
     const { availableEpochs, hoveredIndex, labels, epoch, allPredictionData, labelDict , imageData} =
         useDefaultStore(['availableEpochs', 'hoveredIndex', 'labels', 'epoch', 'allPredictionData', 'labelDict', 'imageData']);
 
@@ -141,7 +141,7 @@ export function DetailPanel() {
     );
 };
 
-export default DetailPanel;
+export default SamplePanel;
 
 const ImageOverviewContainer = styled.div`
     display: flex;

@@ -94,7 +94,7 @@ function TokenBlock({ label, tokens, hoveredIndex, selectedIndices, onHover, onC
     );
 }
 
-export function BottomPanel() {
+export function TokenPanel() {
     const { labels, tokenList, hoveredIndex, setHoveredIndex, selectedIndices, setSelectedIndices } =
         useDefaultStore(['labels', 'tokenList', 'hoveredIndex', 'setHoveredIndex', 'selectedIndices', 'setSelectedIndices']);
     
@@ -215,4 +215,4 @@ export function BottomPanel() {
     );
 }
 
-export default BottomPanel;
+export default TokenPanel;

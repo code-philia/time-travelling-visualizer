@@ -340,17 +340,17 @@
         {
             "id": "visualizer-panel",
             "title": "Tokens Overview",
-            "icon": "resources/eye_tracking_24dp_5F6368_FILL0_wght300_GRAD0_opsz24.svg"
+            "icon": "resources/text_fields_24dp_5F6368_FILL0_wght300_GRAD0_opsz24.svg"
         },
         {
             "id": "detail-panel",
-            "title": "Details",
+            "title": "Sample Inspector",
             "icon": "resources/eye_tracking_24dp_5F6368_FILL0_wght300_GRAD0_opsz24.svg"
         },
         {
           "id": "right-panel",
           "title": "Functional Panel",
-          "icon": "resources/eye_tracking_24dp_5F6368_FILL0_wght300_GRAD0_opsz24.svg"
+          "icon": "resources/settings_24dp_5F6368_FILL0_wght300_GRAD0_opsz24.svg"
         }
       ]
     },
