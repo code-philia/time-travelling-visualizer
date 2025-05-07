@@ -1,5 +1,5 @@
 import {useEffect, useState } from 'react';
-import { TagOutlined, NumberOutlined, BarChartOutlined, PictureOutlined, ArrowDownOutlined, HistoryOutlined } from '@ant-design/icons';
+import { TagOutlined, NumberOutlined, BarChartOutlined, PictureOutlined, HistoryOutlined } from '@ant-design/icons';
 import styled from 'styled-components';
 import { softmax } from './utils';
 import { useDefaultStore } from '../state/state.detailView';
@@ -11,7 +11,6 @@ export function DetailPanel() {
 
     const [image, setImage] = useState<string>('');
     const [predictions, setPredictions] = useState<{ value: number, confidence: number, correct: boolean }[]>([]);
-    const [lossAttribution, setLossAttribution] = useState<{ name: string, value: number }[]>([]);
     const [historyPrediction, setHistoryPrediction] = useState<{ epoch: number, prediction: number, confidence: number, correct: boolean }[]>([]);
 
     useEffect(() => {
@@ -20,7 +19,6 @@ export function DetailPanel() {
             setImage('');
             setPredictions([]);
             setHistoryPrediction([]);
-            setLossAttribution([]);
             return;
         }
 
@@ -53,18 +51,12 @@ export function DetailPanel() {
             historyPredictionNew.push({
                 epoch: e,
                 prediction: pred,
-                confidence: allPredictionData[e].prediction[hoveredIndex],
+                confidence: allPredictionData[e].confidence[hoveredIndex],
                 correct: labels[hoveredIndex] === pred
             });
         }
         setHistoryPrediction(historyPredictionNew);
 
-        // loss attribution
-        const sampleLoss = [
-            { name: "CrossEntropy", value: Math.random() },
-            { name: "L2-Regularization", value: Math.random() },
-        ];
-        setLossAttribution(sampleLoss);
     }, [hoveredIndex, imageData, epoch, allPredictionData, availableEpochs]);
 
 
@@ -145,35 +137,6 @@ export function DetailPanel() {
                     ))}
                 </PredictionHistoryContainer>
             </DataPanel>
-
-            <DataPanel> 
-            </DataPanel>
-{/* 
-            <DataPanel>
-                <DataLabel>
-                    <IconWrapper><ArrowDownOutlined /></IconWrapper>
-                    Sample Loss
-                </DataLabel>
-
-                <FormulaContainer>
-                    <MathJaxProvider>
-                        <MathJaxFormula formula="$$\text{Loss} = {\text{CrossEntropy}(y, \hat{y})} + {\lambda \|\theta\|^2}$$" />
-                    </MathJaxProvider>
-                </FormulaContainer>
-
-                <LossBreakdown>
-                    {lossAttribution.map((component, index) => (
-                        <LossComponent key={index}>
-                            <LossComponentBox>
-                                {component.name}
-                            </LossComponentBox>
-                            <LossComponentValue>
-                                {component.value.toFixed(4)}
-                            </LossComponentValue>
-                        </LossComponent>
-                    ))}
-                </LossBreakdown>
-            </DataPanel> */}
         </ImageOverviewContainer>
     );
 };
@@ -252,7 +215,7 @@ const PredictionValue = styled.span`
     font-family: 'Consolas', monospace;
     font-size: 13px;
     color: #262626;
-    min-width: 60px;
+    width: 60px;
     flex-shrink: 0;
     overflow: hidden;
 `;
@@ -361,44 +324,4 @@ const HistoryConfidence = styled.span`
     color: #8c8c8c;
     min-width: 40px;
     text-align: right;
-`;
-
-// ================== Formula ======================
-const FormulaContainer = styled.div`
-    height: 50%;
-    width: 100%;
-    font-size: 15px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-`;
-
-const LossBreakdown = styled.div`
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 16px;
-`;
-
-const LossComponent = styled.div`
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-`;
-
-const LossComponentBox = styled.div`
-    padding: 4px 8px;
-    background-color: #e6f7ff;
-    border-radius: 4px;
-    font-family: 'Consolas', monospace;
-    font-size: 12px;
-    color: #262626;
-`;
-
-const LossComponentValue = styled.span`
-    font-size: 12px;
-    color: #595959;
 `;
