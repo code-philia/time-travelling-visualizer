@@ -402,7 +402,8 @@ export async function loadVisualization(forceReconfig: boolean = false): Promise
 		command: 'init',
 		data: {
 			labels: data['labelList'],
-			labelTextList: data['labelTextList']
+			labelTextList: data['labelTextList'],
+			availableEpochs: data['availableEpochs'],
 		}
 	};
 	MessageManager.sendToDetailView(msgToDetailView);

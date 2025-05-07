@@ -20,8 +20,8 @@ function AppDetailPanelViewOnly() {
 }
 
 function MessageHandler() {
-    const { setHoveredIndex, setLabels, setAllPredictionData, setEpoch, setLabelDict, setImageData } =
-        useDefaultStore(['setHoveredIndex', 'setLabels', 'setEpoch', 'setAllPredictionData', 'setLabelDict', 'setImageData']);
+    const { setHoveredIndex, setLabels, setAllPredictionData, setEpoch, setLabelDict, setAvailableEpochs, setImageData } =
+        useDefaultStore(['setHoveredIndex', 'setLabels', 'setEpoch', 'setAllPredictionData', 'setLabelDict', 'setAvailableEpochs', 'setImageData']);
 
     const allPredictionDataCopy: Record<number, PredictionData> = {};
     
@@ -40,6 +40,7 @@ function MessageHandler() {
             }
             setLabelDict(labelDict);
             setLabels(message.data.labels);
+            setAvailableEpochs(message.data.availableEpochs);
         }
         else if (message.command === "updatePrediction") {
             allPredictionDataCopy[message.data.epoch] = {
