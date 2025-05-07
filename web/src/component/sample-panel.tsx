@@ -61,8 +61,8 @@ export function SamplePanel() {
 
 
     return (
-        <ImageOverviewContainer>
-            <ImagePanel>
+        <SampleInspectorContainer>
+            <DataItemMultiLine>
                 <DataLabel>
                     <IconWrapper><PictureOutlined /></IconWrapper>
                     Original Data
@@ -74,55 +74,45 @@ export function SamplePanel() {
                         <StyledImage src={image} alt="Image Overview" />
                     )}
                 </ImageDisplayArea>
-            </ImagePanel>
+            </DataItemMultiLine>
+                        
+            <DataItemInLine>
+                <DataLabel>
+                    <IconWrapper><NumberOutlined /></IconWrapper>
+                    Index
+                </DataLabel>
+                <DataValue>{hoveredIndex === undefined ? '' : hoveredIndex}</DataValue>
+            </DataItemInLine>
             
-            <Divider></Divider>
+            <DataItemInLine>
+                <DataLabel>
+                    <IconWrapper><TagOutlined /></IconWrapper>
+                    Label
+                </DataLabel>
+                <DataValue>{hoveredIndex === undefined ? '' :labelDict.get(labels[hoveredIndex])}</DataValue>
+            </DataItemInLine>
             
-            <DataPanel>
-                <DataItem>
-                    <DataLabel>
-                        <IconWrapper><NumberOutlined /></IconWrapper>
-                        Index
-                    </DataLabel>
-                    <DataValue>{hoveredIndex === undefined ? '' : hoveredIndex}</DataValue>
-                </DataItem>
-                
-                <Divider></Divider>
+            <DataItemMultiLine>
+                <DataLabel>
+                    <IconWrapper><BarChartOutlined /></IconWrapper>
+                    Prediction
+                </DataLabel>
+                <PredictionContainer>
+                    {predictions.map((prediction, index) => (
+                        <PredictionItem key={index}>
+                            <PredictionValue>
+                                {labelDict.get(prediction.value)}
+                            </PredictionValue>
+                            <ConfidenceBar $confidence={prediction.confidence} $correct={prediction.correct} />
+                            <ConfidenceValue>
+                                {(prediction.confidence * 100).toFixed(1)}%
+                            </ConfidenceValue>
+                        </PredictionItem>
+                    ))}
+                </PredictionContainer>
+            </DataItemMultiLine>
 
-                <DataItem>
-                    <DataLabel>
-                        <IconWrapper><TagOutlined /></IconWrapper>
-                        Label
-                    </DataLabel>
-                    <DataValue>{hoveredIndex === undefined ? '' :labelDict.get(labels[hoveredIndex])}</DataValue>
-                </DataItem>
-
-                <Divider></Divider>
-                
-                <PredictionBlock>
-                    <DataLabel>
-                        <IconWrapper><BarChartOutlined /></IconWrapper>
-                        Prediction
-                    </DataLabel>
-                    <PredictionContainer>
-                        {predictions.map((prediction, index) => (
-                            <PredictionItem key={index}>
-                                <PredictionValue>
-                                    {labelDict.get(prediction.value)}
-                                </PredictionValue>
-                                <ConfidenceBar $confidence={prediction.confidence} $correct={prediction.correct} />
-                                <ConfidenceValue>
-                                    {(prediction.confidence * 100).toFixed(1)}%
-                                </ConfidenceValue>
-                            </PredictionItem>
-                        ))}
-                    </PredictionContainer>
-                </PredictionBlock>
-            </DataPanel>
-
-            <Divider></Divider>
-            
-            <DataPanel>
+            <DataItemMultiLine>
                 <DataLabel>
                     <IconWrapper>< HistoryOutlined /></IconWrapper>
                     Prediction History
@@ -136,14 +126,14 @@ export function SamplePanel() {
                         </PredictionHistoryItem>
                     ))}
                 </PredictionHistoryContainer>
-            </DataPanel>
-        </ImageOverviewContainer>
+            </DataItemMultiLine>
+        </SampleInspectorContainer>
     );
 };
 
 export default SamplePanel;
 
-const ImageOverviewContainer = styled.div`
+const SampleInspectorContainer = styled.div`
     display: flex;
     flex-wrap: wrap;
     justify-content: space-between;
@@ -159,19 +149,18 @@ const ImageOverviewContainer = styled.div`
     }
 `;
 
-const DataPanel = styled.div`
-    flex: 1;
-    display: flex;
-    height: 100%;
-    flex-direction: column;
-    gap: 20px;
-    align-items: flex-start;
-`;
 
-const DataItem = styled.div`
+const DataItemInLine = styled.div`
     display: flex;
     align-items: center;
     gap: 20px;
+`;
+
+const DataItemMultiLine = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
 `;
 
 const DataLabel = styled.span`
@@ -188,13 +177,6 @@ const DataValue = styled.span`
     font-size: 14px;
     color: #262626;
     font-weight: 600;
-`;
-
-const PredictionBlock = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    align-items: flex-start;
 `;
 
 const PredictionContainer = styled.div`
@@ -240,21 +222,9 @@ const IconWrapper = styled.span`
     font-size: 14px;
 `;
 
-const ImagePanel = styled.div`
-    flex: 1;
-    flex-direction: column;
-    padding-bottom: 10px;
-    height: 100%;
-    width: 100%;
-    display: flex;
-    overflow: hidden;
-    gap: 10px;
-    position: relative;
-`;
-
 const ImageDisplayArea = styled.div<{ $isEmpty: boolean }>`
-    width: calc(100% - 20px);
-    height: 100%;
+    width: 100px;
+    height: 100px;
     border: 2px dashed #d9d9d9;
     border-radius: 8px;
     display: flex;
