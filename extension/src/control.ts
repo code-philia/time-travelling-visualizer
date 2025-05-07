@@ -6,7 +6,7 @@ import { PlotViewManager } from "./views/plotView";
 import { isDirectory } from './ioUtils';
 import { getIconUri } from './resources';
 import { MessageManager } from './views/messageManager';
-import { fetchEpochProjection, fetchTrainingProcessInfo, fetchTrainingProcessStructure, getAllNeighbors, getAttributeResource, getBackground, getText, triggerStartVisualizing } from './communication/api';
+import { fetchEpochProjection, fetchTrainingProcessInfo, fetchTrainingProcessStructure, getAttributeResource, getBackground, getOriginalNeighbors, getProjectionNeighbors, getText, triggerStartVisualizing } from './communication/api';
 import path from 'path';
 import { convertPropsToPredictions } from './utils';
 
@@ -306,16 +306,16 @@ export function getPlotSettings(){
 	const showLabel = plotSettings.get(CONFIG.ConfigurationID.showLabel);
 	const showBackground = plotSettings.get(CONFIG.ConfigurationID.showBackground);
 	const showTrail = plotSettings.get(CONFIG.ConfigurationID.showTrail);
-	const revealNeighborSameType = plotSettings.get(CONFIG.ConfigurationID.revealNeighborSameType);
-	const revealNeighborCrossType = plotSettings.get(CONFIG.ConfigurationID.revealNeighborCrossType);
+	const revealOriginalNeighbors = plotSettings.get(CONFIG.ConfigurationID.revealOriginalNeighbors);
+	const revealProjectionNeighbors = plotSettings.get(CONFIG.ConfigurationID.revealProjectionNeighbors);
 
 	return {
 		showIndex: showIndex,
 		showLabel: showLabel,
 		showBackground: showBackground,
 		showTrail: showTrail,
-		revealNeighborSameType: revealNeighborSameType,
-		revealNeighborCrossType: revealNeighborCrossType
+		revealOriginalNeighbors: revealOriginalNeighbors,
+		revealProjectionNeighbors: revealProjectionNeighbors
 	};
 }
 
@@ -441,18 +441,19 @@ async function loadEpochData(config: api.BasicVisualizationConfig, epoch: number
 	const projectionRes: any = await fetchEpochProjection(config.contentPath, config.visualizationID, epoch);
 	
 	// neighborhood
-	let inClassNeighbors: number[][] = [];
-	let outClassNeighbors: number[][] = [];
-	if (config.taskType === 'Code-Retrieval') {
-		const sameTypeNeighborRes: any = await getAttributeResource(config.contentPath, epoch, 'intra_similarity');
-		const crossTypeNeighborRes: any = await getAttributeResource(config.contentPath, epoch, 'inter_similarity');
-		inClassNeighbors = sameTypeNeighborRes['intra_similarity'].map((row: number[]) => row.slice(0, 5));
-		outClassNeighbors = crossTypeNeighborRes['inter_similarity'].map((row: number[]) => row.slice(0, 5));
+	let originalNeighbors: number[][] = [];
+	let projectionNeighbors: number[][] = [];
+	if (config.taskType === 'Code-Retrieval') { // FIXME: temp solution
+		const projectionNeighborsRes: any = await getProjectionNeighbors(config.contentPath, config.visualizationID, epoch);
+		projectionNeighbors = projectionNeighborsRes['neighbors'];
+		originalNeighbors = projectionNeighborsRes['neighbors'];
 	}
 	else if (config.taskType === 'Classification') {
-		const neighborsRes: any = await getAllNeighbors(config.contentPath, epoch);
-		inClassNeighbors = neighborsRes['inClassNeighbors'];
-		outClassNeighbors = neighborsRes['outClassNeighbors'];
+		const originalNeighborsRes: any = await getOriginalNeighbors(config.contentPath, epoch);
+		originalNeighbors = originalNeighborsRes['neighbors'];
+
+		const projectionNeighborsRes: any = await getProjectionNeighbors(config.contentPath, config.visualizationID, epoch);
+		projectionNeighbors = projectionNeighborsRes['neighbors'];
 	}
 
 	// classification info
@@ -473,8 +474,8 @@ async function loadEpochData(config: api.BasicVisualizationConfig, epoch: number
 			epoch: epoch,
 			taskType: config.taskType,
 			projection: projectionRes['projection'],
-			inClassNeighbors: inClassNeighbors,
-			outClassNeighbors: outClassNeighbors,
+			originalNeighbors: originalNeighbors,
+			projectionNeighbors: projectionNeighbors,
 			prediction: predAndConf.pred,
 			confidence: predAndConf.confidence,
 			predProbability: predProbability,
@@ -498,8 +499,8 @@ async function loadEpochData(config: api.BasicVisualizationConfig, epoch: number
 		command: 'updateNeighbors',
 		data: {
 			epoch: epoch,
-			inClassNeighbors: inClassNeighbors,
-			outClassNeighbors: outClassNeighbors,
+			originalNeighbors: originalNeighbors,
+			projectionNeighbors: projectionNeighbors,
 		}
 	}
 	MessageManager.sendToTokenView(msgToTokenView);

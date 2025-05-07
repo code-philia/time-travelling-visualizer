@@ -114,7 +114,7 @@ export function BottomPanel() {
         const isDoc = labels[index] === 0;
         const isSelected = selectedIndices.includes(index);
         const isHighlighted = hoveredIndex === index;
-        const isNeighbor = (hoveredIndex !== null && hoveredIndex !== undefined && (allNeighbors[epoch].inClassNeighbors[hoveredIndex]?.includes(index) || allNeighbors[epoch].outClassNeighbors[hoveredIndex]?.includes(index)));
+        const isNeighbor = (hoveredIndex !== null && hoveredIndex !== undefined && (allNeighbors[epoch].originalNeighbors[hoveredIndex]?.includes(index) || allNeighbors[epoch].projectionNeighbors[hoveredIndex]?.includes(index)));
 
         const tokenSpan: TokenSpan = {
             text: token,

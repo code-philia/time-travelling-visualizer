@@ -37,8 +37,8 @@ function MessageHandler() {
             setValue('showLabel', messageData.showLabel);
             setValue('showBackground', messageData.showBackground);
             setValue('showTrail', messageData.showTrail);
-            setValue('revealNeighborSameType', messageData.revealNeighborSameType);
-            setValue('revealNeighborCrossType', messageData.revealNeighborCrossType);
+            setValue('revealOriginalNeighbors', messageData.revealOriginalNeighbors);
+            setValue('revealProjectionNeighbors', messageData.revealProjectionNeighbors);
         }
         else if (message.command === 'updatePlotSettings') { 
             const messageData = message.data;
@@ -54,11 +54,11 @@ function MessageHandler() {
             if (messageData.showTrail !== undefined) {
                 setValue('showTrail', messageData.showTrail);
             }
-            if (messageData.revealNeighborSameType !== undefined) {
-                setValue('revealNeighborSameType', messageData.revealNeighborSameType);
+            if (messageData.revealOriginalNeighbors !== undefined) {
+                setValue('revealOriginalNeighbors', messageData.revealOriginalNeighbors);
             }
-            if (messageData.revealNeighborCrossType !== undefined) {
-                setValue('revealNeighborCrossType', messageData.revealNeighborCrossType);
+            if (messageData.revealProjectionNeighbors !== undefined) {
+                setValue('revealProjectionNeighbors', messageData.revealProjectionNeighbors);
             }
         }
         else if (message.command === 'initTrainingInfo') {
@@ -91,8 +91,8 @@ function MessageHandler() {
                 prediction: messageData.prediction,
                 confidence: messageData.confidence,
                 predProbability: messageData.predProbability,
-                inClassNeighbors: messageData.inClassNeighbors,
-                outClassNeighbors: messageData.outClassNeighbors,
+                originalNeighbors: messageData.originalNeighbors,
+                projectionNeighbors: messageData.projectionNeighbors,
                 background: messageData.background,
             };
             allEpochDataCopy[messageData.epoch] = newEpochData;

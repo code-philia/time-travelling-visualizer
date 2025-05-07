@@ -281,32 +281,59 @@ def get_image_data():
 
 
 """
-Api: get all neighbors of one sample
+Api: get high dimensional neighbors of one sample
 
 Request:
     content_path (str)
     epoch (str)
 Response:
-    inClassNeighbors (array[][])
-    outClassNeighbors (array[][])
+    neighbors (array[][])
 """
-@app.route('/getAllNeighbors', methods = ["POST"])
+@app.route('/getOriginalNeighbors', methods = ["POST"])
 @cross_origin()
-def getAllNeighbors():
+def getOriginalNeighbors():
     req = request.get_json()
     content_path = req['content_path']
     epoch = int(req['epoch'])
     
     try:
-        inClassNeighbors, outClassNeighbors = calculateAllNeighbors(content_path, epoch)
+        neighbors = calculate_high_dimensional_neighbors(content_path, epoch)
         result = jsonify({
-            'inClassNeighbors': inClassNeighbors,
-            'outClassNeighbors': outClassNeighbors
+            'neighbors': neighbors,
         })
         return make_response(result, 200)
     except Exception as e:
         print(e)
         return make_response(jsonify({'error_message': 'Error in calculating neighbors'}), 400)
+
+"""
+Api: get projection neighbors of one sample
+
+Request:
+    content_path (str)
+    vis_id (str)
+    epoch (str)
+Response:
+    neighbors (array[][])
+"""
+@app.route('/getProjectionNeighbors', methods = ["POST"])
+@cross_origin()
+def getProjectionNeighbors():
+    req = request.get_json()
+    content_path = req['content_path']
+    vis_id = req['vis_id']
+    epoch = int(req['epoch'])
+    
+    try:
+        neighbors = calculate_projection_neighbors(content_path, vis_id, epoch)
+        result = jsonify({
+            'neighbors': neighbors,
+        })
+        return make_response(result, 200)
+    except Exception as e:
+        print(e)
+        return make_response(jsonify({'error_message': 'Error in calculating neighbors'}), 400)
+
     
 
 @app.route('/getLLMResponse', methods = ["POST"])

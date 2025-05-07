@@ -33,11 +33,11 @@ export function createEdges(
         currentNeighborsSameType.forEach(neighbor => {
             if (previousNeighborsSameType.has(neighbor)) {
                 if (node != neighbor) {
-                    edges.push({ from: node, to: neighbor, type: 'sameType', status: 'maintain' });
+                    edges.push({ from: node, to: neighbor, type: 'higDim', status: 'maintain' });
                 }
             } else {
                 if (node != neighbor) {
-                    edges.push({ from: node, to: neighbor, type: 'sameType', status: 'connect' });
+                    edges.push({ from: node, to: neighbor, type: 'highDim', status: 'connect' });
                 }
             }
         });
@@ -45,7 +45,7 @@ export function createEdges(
         previousNeighborsSameType.forEach(neighbor => {
             if (!currentNeighborsSameType.has(neighbor)) {
                 if (node != neighbor) {
-                    edges.push({ from: node, to: neighbor, type: 'sameType', status: 'disconnect' });
+                    edges.push({ from: node, to: neighbor, type: 'highDim', status: 'disconnect' });
                 }
             }
         });
@@ -54,11 +54,11 @@ export function createEdges(
         currentNeighborsCrossType.forEach(neighbor => {
             if (previousNeighborsCrossType.has(neighbor)) {
                 if (node != neighbor) {
-                    edges.push({ from: node, to: neighbor, type: 'crossType', status: 'maintain' });
+                    edges.push({ from: node, to: neighbor, type: 'lowDim', status: 'maintain' });
                 }
             } else {
                 if (node != neighbor) {
-                    edges.push({ from: node, to: neighbor, type: 'crossType', status: 'connect' });
+                    edges.push({ from: node, to: neighbor, type: 'lowDim', status: 'connect' });
                 }
             }
         });
@@ -66,7 +66,7 @@ export function createEdges(
         previousNeighborsCrossType.forEach(neighbor => {
             if (!currentNeighborsCrossType.has(neighbor)) {
                 if (node != neighbor) {
-                    edges.push({ from: node, to: neighbor, type: 'crossType', status: 'disconnect' });
+                    edges.push({ from: node, to: neighbor, type: 'lowDim', status: 'disconnect' });
                 }
             }
         });

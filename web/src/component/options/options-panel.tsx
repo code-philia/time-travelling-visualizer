@@ -24,7 +24,7 @@ const validVisMethods: DefaultOptionType['items'] = [
 
 export function OptionsPanel() {
     const { showNumber, showText, setShowNumber, setShowText } = useDefaultStore(["showNumber", "showText", "setShowNumber", "setShowText"]);
-    const { revealNeighborSameType, revealNeighborCrossType, setRevealNeighborSameType, setRevealNeighborCrossType } = useDefaultStore(["revealNeighborSameType", "revealNeighborCrossType", "setRevealNeighborSameType", "setRevealNeighborCrossType"]);
+    const { revealOriginalNeighbors, revealProjectionNeighbors, setRevealNeighborSameType, setRevealNeighborCrossType } = useDefaultStore(["revealOriginalNeighbors", "revealProjectionNeighbors", "setRevealNeighborSameType", "setRevealNeighborCrossType"]);
 
     const [ dataType, setDataType ] = useState<string>("Image");
     const { contentPath, setContentPath } = useDefaultStore(["contentPath", "setContentPath"]);
@@ -78,14 +78,14 @@ export function OptionsPanel() {
 
     useEffect(() => {
         const options = [];
-        if (revealNeighborSameType) {
+        if (revealOriginalNeighbors) {
             options.push('same-type');
         }
-        if (revealNeighborCrossType) {
+        if (revealProjectionNeighbors) {
             options.push('cross-type');
         }
         setRevealNeighborChecked(options);
-    }, [setRevealNeighborChecked, revealNeighborSameType, revealNeighborCrossType]);
+    }, [setRevealNeighborChecked, revealOriginalNeighbors, revealProjectionNeighbors]);
 
     useEffect(() => {
         setRevealNeighborSameType(revealNeighborChecked.includes('same-type'));

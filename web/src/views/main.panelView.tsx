@@ -56,8 +56,8 @@ function MessageHandler() {
             else if (message.command === 'updateNeighbors') {
                 const messageData = message.data;
                 allNeighborsCopy[messageData.epoch] = {
-                    inClassNeighbors: messageData.inClassNeighbors,
-                    outClassNeighbors: messageData.outClassNeighbors,
+                    originalNeighbors: messageData.originalNeighbors,
+                    projectionNeighbors: messageData.projectionNeighbors,
                 };
                 setValue('allNeighbors', allNeighborsCopy);
             }

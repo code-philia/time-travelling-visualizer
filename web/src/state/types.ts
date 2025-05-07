@@ -78,8 +78,8 @@ export type BaseMutableGlobalStore = {
     backendHost: string;
     showNumber: boolean;
     showText: boolean;
-    revealNeighborSameType: boolean;
-    revealNeighborCrossType: boolean;
+    revealOriginalNeighbors: boolean;
+    revealProjectionNeighbors: boolean;
     showMetadata: boolean;
     neighborSameType: number[][];
     neighborCrossType: number[][];
@@ -134,8 +134,8 @@ export let initMutableGlobalStore: BaseMutableGlobalStore = {
     backendHost: '127.0.0.1:5050',      // pointing to localhost could yield request stalling and not found
     showNumber: true,
     showText: true,
-    revealNeighborSameType: false,
-    revealNeighborCrossType: false,
+    revealOriginalNeighbors: false,
+    revealProjectionNeighbors: false,
     showMetadata: false,
     neighborSameType: [],
     neighborCrossType: [],

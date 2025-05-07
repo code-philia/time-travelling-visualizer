@@ -323,29 +323,39 @@ def load_one_text(content_path, index):
         content = f.read()
     return content
 
-def calculateAllNeighbors(content_path, epoch, max_neighbors=10):
-    label_list = load_single_attribute(content_path, epoch, 'label')
-    feature_list = load_single_attribute(content_path, epoch, 'representation')
-    
-    labels = np.array(label_list)
-    features = np.array(feature_list)
-    num_samples = len(feature_list)
-    
-    in_class_neighbors = [[] for _ in range(num_samples)]
-    out_class_neighbors = [[] for _ in range(num_samples)]
-    
+
+def calculate_high_dimensional_neighbors(content_path, epoch, max_neighbors=10):
+    featrue_list = load_single_attribute(content_path, epoch, 'representation')
+
+    features = np.array(featrue_list)
+    num_samples = len(features)
     nbrs = NearestNeighbors(n_neighbors=max_neighbors + 1, algorithm='auto').fit(features)
     distances, indices = nbrs.kneighbors(features)
     
+    neighbors = [[] for _ in range(num_samples)]
     for i in range(num_samples):
         for j in range(1, max_neighbors + 1):
             neighbor_idx = indices[i][j]
-            if labels[neighbor_idx] == labels[i]:
-                in_class_neighbors[i].append(int(neighbor_idx))
-            else:
-                out_class_neighbors[i].append(int(neighbor_idx))
+            neighbors[i].append(int(neighbor_idx))
     
-    return in_class_neighbors, out_class_neighbors
+    return neighbors
+
+def calculate_projection_neighbors(content_path, vis_id, epoch, max_neighbors=10):
+    projection_list, _ = load_projection(content_path, vis_id, epoch)
+    projection = np.array(projection_list)
+    num_samples = len(projection)
+    
+    nbrs = NearestNeighbors(n_neighbors=max_neighbors + 1, algorithm='auto').fit(projection)
+    distances, indices = nbrs.kneighbors(projection)
+    
+    neighbors = [[] for _ in range(num_samples)]
+    for i in range(num_samples):
+        for j in range(1, max_neighbors + 1):
+            neighbor_idx = indices[i][j]
+            neighbors[i].append(int(neighbor_idx))
+    
+    return neighbors
+
 
 # Func: Load a single attribute from a file based on the configuration and epoch
 def load_single_attribute(content_path, epoch, attribute):
