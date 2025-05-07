@@ -58,12 +58,22 @@ export function getAttributeResource(contentPath: string, epoch: number, attribu
     return basicUnsafePostWithJsonResponse('/getAttributes', data, options);
 }
 
-export function getAllNeighbors(contentPath: string, epoch: number, options?: { host?: string }) {
+
+export function getOriginalNeighbors(contentPath: string, epoch: number, options?: { host?: string }) {
     const data = {
         "content_path": contentPath,
         "epoch": epoch
     };
-    return basicUnsafePostWithJsonResponse('/getAllNeighbors', data, options);
+    return basicUnsafePostWithJsonResponse('/getOriginalNeighbors', data, options);
+}
+
+export function getProjectionNeighbors(contentPath: string, vis_id: string, epoch: number, options?: { host?: string }) {
+    const data = {
+        "content_path": contentPath,
+        "vis_id": vis_id,
+        "epoch": epoch
+    };
+    return basicUnsafePostWithJsonResponse('/getProjectionNeighbors', data, options);
 }
 
 export function getBackground(contentPath: string, visID: string, epoch: number | undefined, width: number, height: number, scale: number[] | undefined, options?: { host?: string }) {

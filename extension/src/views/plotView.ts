@@ -2,12 +2,11 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as CONFIG from '../config';
 import { readFileSync } from 'fs';
-import { getBasicConfig, getPlotSettings } from '../control';
+import { getBasicConfig } from '../control';
 import { getLiveWebviewHtml } from '../devLiveServer';
 import { MessageManager } from './messageManager';
 import { PlotViewMessageManager } from './viewMessageManager';
-import { fetchEpochProjection, getAllNeighbors, getAttributeResource, getBackground, getImageData } from '../communication/api';
-import { convertPropsToPredictions } from '../utils';
+import { getBackground, getImageData } from '../communication/api';
 
 function replaceUri(html: string, webview: vscode.Webview, srcPattern: string, dst: string): string {
 	// replace all 'matched pattern' URI using webview.asWebviewUri,
@@ -141,8 +140,8 @@ export class PlotViewManager {
 				'showLabel',
 				'showBackground',
 				'showTrail',
-				'revealNeighborSameType',
-				'revealNeighborCrossType',
+				'revealOriginalNeighbors',
+				'revealProjectionNeighbors',
 			];
 		
 			// Collect all changed settings

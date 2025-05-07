@@ -11,8 +11,8 @@ export type EpochData = {
     prediction: number[];
     confidence: number[];
     predProbability: number[][];
-    inClassNeighbors: number[][];
-    outClassNeighbors: number[][];
+    originalNeighbors: number[][];
+    projectionNeighbors: number[][];
     background: string;
 };
 
@@ -33,8 +33,8 @@ export type BaseMutableGlobalStore = {
     showIndex: boolean;
     showLabel: boolean;
     showTrail: boolean;
-    revealNeighborSameType: boolean;
-    revealNeighborCrossType: boolean;
+    revealOriginalNeighbors: boolean;
+    revealProjectionNeighbors: boolean;
     showBackground: boolean;
 
     // filter
@@ -66,8 +66,8 @@ export let initMutableGlobalStore: BaseMutableGlobalStore = {
     showIndex: true,
     showLabel: true,
     showTrail: false,
-    revealNeighborSameType: true,
-    revealNeighborCrossType: true,
+    revealOriginalNeighbors: true,
+    revealProjectionNeighbors: true,
     showBackground: false,
 
     // filter

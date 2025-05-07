@@ -6,8 +6,8 @@ import { BUILD_CONSTANTS } from "../constants";
 import { subscribeWithSelector } from "zustand/middleware";
 
 export type Neighborhood = {
-    inClassNeighbors: number[][];
-    outClassNeighbors: number[][];
+    originalNeighbors: number[][];
+    projectionNeighbors: number[][];
 };
 
 type BaseMutableGlobalStore = {

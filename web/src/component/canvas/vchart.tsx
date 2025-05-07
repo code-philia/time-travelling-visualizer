@@ -18,7 +18,7 @@ export const ChartComponent = memo(() => {
     // const { filterState } = useDefaultStore(["filterState"]);
     const { showIndex, showLabel,showBackground, textData } = useDefaultStore(["showIndex", "showLabel", "showBackground","textData"])
     const { availableEpochs } = useDefaultStore(["availableEpochs"]);
-    const { revealNeighborCrossType, revealNeighborSameType } = useDefaultStore(["revealNeighborCrossType", "revealNeighborSameType"]);
+    const { revealProjectionNeighbors, revealOriginalNeighbors } = useDefaultStore(["revealProjectionNeighbors", "revealOriginalNeighbors"]);
     const { hoveredIndex, setHoveredIndex, selectedIndices, setSelectedIndices, selectedListener } = useDefaultStore(["hoveredIndex", "setHoveredIndex", "selectedIndices", "setSelectedIndices", "selectedListener"]);
     const { shownData, highlightData, index } = useDefaultStore(["shownData", "highlightData", "index"]);
 
@@ -104,7 +104,7 @@ export const ChartComponent = memo(() => {
             if (x > x_max) x_max = x;
             if (y > y_max) y_max = y;
         });
-        edgesRef.current = createEdges(epochData.inClassNeighbors, epochData.outClassNeighbors, [], []);
+        edgesRef.current = createEdges(epochData.originalNeighbors, epochData.projectionNeighbors, [], []);
 
         x_min = x_min - PADDING;
         y_min = y_min - PADDING;
@@ -499,7 +499,7 @@ export const ChartComponent = memo(() => {
         const endpoints: { edgeId: number, from: number, to: number, x: number, y: number, type: string, status: string }[] = [];
         edgesRef.current.forEach((edge, index) => {
             if (edge.from === hoveredIndex || selectedIndices.includes(edge.from)) {
-                if ((revealNeighborCrossType && edge.type === 'crossType') || (revealNeighborSameType && edge.type === 'sameType')) {
+                if ((revealProjectionNeighbors && edge.type === 'lowDim') || (revealOriginalNeighbors && edge.type === 'highDim')) {
                     endpoints.push({ edgeId: index, from: edge.from, to: edge.to, x: samplesRef.current[edge.from].x, y: samplesRef.current[edge.from].y, type: edge.type, status: edge.status });
                     endpoints.push({ edgeId: index, from: edge.from, to: edge.to, x: samplesRef.current[edge.to].x, y: samplesRef.current[edge.to].y, type: edge.type, status: edge.status });
                 }
@@ -507,7 +507,7 @@ export const ChartComponent = memo(() => {
         });
         vchartRef.current?.updateDataSync('edges', endpoints);
 
-    }, [revealNeighborCrossType, revealNeighborSameType, hoveredIndex,selectedIndices]);
+    }, [revealProjectionNeighbors, revealOriginalNeighbors, hoveredIndex,selectedIndices]);
 
 
      /*

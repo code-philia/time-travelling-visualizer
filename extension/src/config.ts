@@ -71,8 +71,8 @@ export class ConfigurationID {
 	static readonly showLabel = 'plotSettings.showLabel';
 	static readonly showBackground = 'plotSettings.showBackground';
 	static readonly showTrail = 'plotSettings.showTrail';
-	static readonly revealNeighborSameType = 'plotSettings.revealNeighborSameType';
-	static readonly revealNeighborCrossType = 'plotSettings.revealNeighborCrossType';
+	static readonly revealOriginalNeighbors = 'plotSettings.revealOriginalNeighbors';
+	static readonly revealProjectionNeighbors = 'plotSettings.revealProjectionNeighbors';
 
 	// visualize settings
 	static readonly DVIGpuId = 'DVISettings.gpu_id';
