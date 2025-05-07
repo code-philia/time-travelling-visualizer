@@ -1,19 +1,19 @@
 import { StrictMode, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
-import DetailPanel from '../component/detail-panel';
+import SamplePanel from '../component/sample-panel';
 import '../index.css';
 import { PredictionData, useDefaultStore } from '../state/state.detailView';
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
-        <AppDetailPanelViewOnly />
+        <AppSamplePanelViewOnly />
     </StrictMode>
 );
 
-function AppDetailPanelViewOnly() {
+function AppSamplePanelViewOnly() {
     return (
         <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <DetailPanel></DetailPanel>
+            <SamplePanel></SamplePanel>
             <MessageHandler></MessageHandler>
         </div>
     );

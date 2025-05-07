@@ -56,7 +56,7 @@ export class DetailViewProvider extends BaseViewProvider {
         } else {
             webviewView.webview.html = loadHomePage(
                 webviewView.webview,
-                path.join(CONFIG.GlobalStorageContext.webRoot, 'configs', 'extension-detail-view', 'index.html'),
+                path.join(CONFIG.GlobalStorageContext.webRoot, 'configs', 'extension-sample-view', 'index.html'),
                 '(?!http:\\/\\/|https:\\/\\/)([^"]*\\.[^"]+)', // remember to double-back-slash here
                 path.join(CONFIG.GlobalStorageContext.webRoot)
             );
@@ -124,7 +124,7 @@ export class TokenViewProvider extends BaseViewProvider {
         } else {
             webviewView.webview.html = loadHomePage(
                 webviewView.webview,
-                path.join(CONFIG.GlobalStorageContext.webRoot, 'configs', 'extension-panel-view', 'index.html'),
+                path.join(CONFIG.GlobalStorageContext.webRoot, 'configs', 'extension-token-view', 'index.html'),
                 '(?!http:\\/\\/|https:\\/\\/)([^"]*\\.[^"]+)', // remember to double-back-slash here
                 path.join(CONFIG.GlobalStorageContext.webRoot)
             );
@@ -201,7 +201,7 @@ export class RightViewProvider extends BaseViewProvider {
         } else {
             webviewView.webview.html = loadHomePage(
                 webviewView.webview,
-                path.join(CONFIG.GlobalStorageContext.webRoot, 'configs', 'extension-right-view', 'index.html'),
+                path.join(CONFIG.GlobalStorageContext.webRoot, 'configs', 'extension-function-view', 'index.html'),
                 '(?!http:\\/\\/|https:\\/\\/)([^"]*\\.[^"]+)', // remember to double-back-slash here
                 path.join(CONFIG.GlobalStorageContext.webRoot)
             );

@@ -3,7 +3,7 @@ import { MainBlock } from './component/main-block'
 import { RightSidebar } from './component/right-sidebar'
 import { Button, Checkbox, Input, Modal } from "antd";
 import { SettingOutlined } from "@ant-design/icons";
-import BottomPanel from "./component/bottom-panel";
+import BottomPanel from "./component/token-panel";
 import { useState } from "react";
 import { useDefaultStore } from "./state/state-store";
 
