@@ -47,7 +47,7 @@ class Projector(ProjectorAbstractClass):
         
     def init_model(self):
         gpu_id = self.config['vis_config']['gpu_id']
-        self.device = torch.device("cuda:{}".format(gpu_id) if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cuda:{}".format(gpu_id) if torch.cuda.is_available() and gpu_id != -1 else "cpu")
         self.vis_model = VisModel(self.config['vis_config']['encoder_dims'], self.config['vis_config']['decoder_dims']).to(self.device)
 
     def load(self, iteration):
@@ -247,7 +247,7 @@ class DynaVisProjector(Projector):
     
     def init_model(self):
         gpu_id = self.config['vis_config']['gpu_id']
-        self.device = torch.device("cuda:{}".format(gpu_id) if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cuda:{}".format(gpu_id) if torch.cuda.is_available() and gpu_id != -1 else "cpu")
         self.vis_model = SingleVisualizationModel(
             input_dims = self.config['vis_config']['dimension'],
             output_dims = 2,
