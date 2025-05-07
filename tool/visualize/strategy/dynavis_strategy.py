@@ -20,7 +20,8 @@ class DynaVis(StrategyAbstractClass):
         self.selected_idxs = selected_idxs
         
     def initialize_model(self):
-        self.device = torch.device("cuda:{}".format(self.config['vis_config']['gpu_id']) if torch.cuda.is_available() else "cpu")
+        gpu_id = self.config['vis_config']['gpu_id']
+        self.device = torch.device("cuda:{}".format(self.config['vis_config']['gpu_id']) if torch.cuda.is_available() and gpu_id != -1 else "cpu")
         self.visualize_model = SingleVisualizationModel(
             input_dims = self.config['vis_config']['dimension'],
             output_dims = 2,
