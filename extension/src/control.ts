@@ -492,6 +492,8 @@ async function loadEpochData(config: api.BasicVisualizationConfig, epoch: number
 			prediction: predAndConf.pred,
 			confidence: predAndConf.confidence,
 			probability: predProbability,
+			originalNeighbors: originalNeighbors,
+			projectionNeighbors: projectionNeighbors,
 		}
 	}
 	MessageManager.sendToDetailView(msgToDetailView);

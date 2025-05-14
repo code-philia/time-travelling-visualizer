@@ -2,7 +2,7 @@ import { StrictMode, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import SamplePanel from '../component/sample-panel';
 import '../index.css';
-import { PredictionData, useDefaultStore } from '../state/state.detailView';
+import { EpochData, useDefaultStore } from '../state/state.detailView';
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
@@ -20,10 +20,11 @@ function AppSamplePanelViewOnly() {
 }
 
 function MessageHandler() {
-    const { setHoveredIndex, setLabels, setAllPredictionData, setEpoch, setLabelDict, setAvailableEpochs, setImageData } =
-        useDefaultStore(['setHoveredIndex', 'setLabels', 'setEpoch', 'setAllPredictionData', 'setLabelDict', 'setAvailableEpochs', 'setImageData']);
+    const { setHoveredIndex, setLabels, setAllEpochData, setEpoch, setLabelDict, setAvailableEpochs, setImageData} =
+        useDefaultStore(['setHoveredIndex', 'setLabels', 'setEpoch', 'setAllEpochData', 'setLabelDict', 'setAvailableEpochs', 'setImageData'
+        ]);
 
-    const allPredictionDataCopy: Record<number, PredictionData> = {};
+    const allEpochDataCopy: Record<number, EpochData> = {};
     
     const handleMessage = (event: MessageEvent) => {
         const message = event.data;
@@ -43,12 +44,14 @@ function MessageHandler() {
             setAvailableEpochs(message.data.availableEpochs);
         }
         else if (message.command === "updatePrediction") {
-            allPredictionDataCopy[message.data.epoch] = {
+            allEpochDataCopy[message.data.epoch] = {
                 prediction: message.data.prediction,
                 confidence: message.data.confidence,
                 probability: message.data.probability,
+                originalNeighbors: message.data.originalNeighbors,
+                projectionNeighbors: message.data.projectionNeighbors,
             };
-            setAllPredictionData(allPredictionDataCopy);
+            setAllEpochData(allEpochDataCopy);
         }
         else if (message.command === 'updateEpoch') {
             const messageData = message.data;
