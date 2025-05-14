@@ -4,10 +4,12 @@ import { shallow } from "zustand/shallow";
 import { useStoreWithEqualityFn } from "zustand/traditional";
 import { subscribeWithSelector } from "zustand/middleware";
 
-export type PredictionData = {
+export type EpochData = {
     prediction: number[];
     confidence: number[];
     probability: number[][];
+    originalNeighbors: number[][];
+    projectionNeighbors: number[][];
 };
 
 type BaseMutableGlobalStore = {
@@ -16,7 +18,7 @@ type BaseMutableGlobalStore = {
     hoveredIndex: number | undefined;
     labels: number[];
     epoch: number;
-    allPredictionData: Record<number, PredictionData>;
+    allEpochData: Record<number, EpochData>;
     imageData: string;
 };
 
@@ -26,7 +28,7 @@ let initMutableGlobalStore: BaseMutableGlobalStore = {
     hoveredIndex: undefined,
     labels: [],
     epoch: 1,
-    allPredictionData: {},
+    allEpochData: {},
     imageData: "",
 };
 

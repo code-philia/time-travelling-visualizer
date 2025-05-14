@@ -6,8 +6,8 @@ import { useDefaultStore } from '../state/state.detailView';
 import { Divider } from 'antd';
 
 export function SamplePanel() {
-    const { availableEpochs, hoveredIndex, labels, epoch, allPredictionData, labelDict , imageData} =
-        useDefaultStore(['availableEpochs', 'hoveredIndex', 'labels', 'epoch', 'allPredictionData', 'labelDict', 'imageData']);
+    const { availableEpochs, hoveredIndex, labels, epoch, allEpochData, labelDict , imageData} =
+        useDefaultStore(['availableEpochs', 'hoveredIndex', 'labels', 'epoch', 'allEpochData', 'labelDict', 'imageData']);
 
     const [image, setImage] = useState<string>('');
     const [predictions, setPredictions] = useState<{ value: number, confidence: number, correct: boolean }[]>([]);
@@ -15,7 +15,7 @@ export function SamplePanel() {
 
     useEffect(() => {
         console.log("hoveredIndex in detail panel: ", hoveredIndex);
-        if (!hoveredIndex || !labels || !allPredictionData[epoch]) {
+        if (!hoveredIndex || !labels || !allEpochData[epoch]) {
             setImage('');
             setPredictions([]);
             setHistoryPrediction([]);
@@ -25,11 +25,11 @@ export function SamplePanel() {
         setImage(imageData);
 
         // current epoch prediction
-        if (!allPredictionData[epoch].probability[hoveredIndex]) { 
+        if (!allEpochData[epoch].probability[hoveredIndex]) { 
             setPredictions([]);
         }
         else {
-            const softmaxProps = softmax(allPredictionData[epoch].probability[hoveredIndex]);
+            const softmaxProps = softmax(allEpochData[epoch].probability[hoveredIndex]);
             const sortedProps = [...softmaxProps];
             sortedProps.sort((a, b) => b - a);
             const topThreeConfidences = sortedProps.slice(0, 3);
@@ -47,17 +47,17 @@ export function SamplePanel() {
         const epochId = availableEpochs.indexOf(epoch);
         for (let i = epochId - 1; i >= Math.max(0, epochId - 5); i--) {
             const e = availableEpochs[i];
-            const pred = allPredictionData[e].prediction[hoveredIndex];
+            const pred = allEpochData[e].prediction[hoveredIndex];
             historyPredictionNew.push({
                 epoch: e,
                 prediction: pred,
-                confidence: allPredictionData[e].confidence[hoveredIndex],
+                confidence: allEpochData[e].confidence[hoveredIndex],
                 correct: labels[hoveredIndex] === pred
             });
         }
         setHistoryPrediction(historyPredictionNew);
 
-    }, [hoveredIndex, imageData, epoch, allPredictionData, availableEpochs]);
+    }, [hoveredIndex, imageData, epoch, allEpochData, availableEpochs]);
 
 
     return (
@@ -126,6 +126,68 @@ export function SamplePanel() {
                         </PredictionHistoryItem>
                     ))}
                 </PredictionHistoryContainer>
+            </DataItemMultiLine>
+
+            <DataItemMultiLine>
+                <DataLabel>
+                    <IconWrapper><BarChartOutlined /></IconWrapper>
+                    Neighbors
+                </DataLabel>
+                <NeighborsContainer>
+                    <NeighborGroup>
+                        <NeighborGroupLabel>Neighbors in high-dimensional space:</NeighborGroupLabel>
+                        <NeighborList>
+                            {hoveredIndex !== undefined && allEpochData[epoch]?.originalNeighbors[hoveredIndex]?.map((neighbor, index) => {
+                                const isCorrect = allEpochData[epoch].projectionNeighbors[hoveredIndex]?.includes(neighbor);
+                                return (
+                                    <NeighborItem
+                                        key={index}
+                                        $highlight={isCorrect ? 'correct' : 'incorrect'}
+                                    >
+                                        {neighbor}.{labelDict.get(labels[neighbor]) || neighbor}
+                                    </NeighborItem>
+                                );
+                            })}
+                        </NeighborList>
+                    </NeighborGroup>
+                    <NeighborGroup>
+                        <NeighborGroupLabel>Neighbors in 2D space:</NeighborGroupLabel>
+                        <NeighborList>
+                            {hoveredIndex !== undefined && allEpochData[epoch]?.projectionNeighbors[hoveredIndex]?.map((neighbor, index) => {
+                                const isCorrect = allEpochData[epoch].originalNeighbors[hoveredIndex]?.includes(neighbor);
+                                return (
+                                    <NeighborItem
+                                        key={index}
+                                        $highlight={isCorrect ? 'correct' : 'incorrect'}
+                                    >
+                                        {neighbor}.{labelDict.get(labels[neighbor]) || neighbor}
+                                    </NeighborItem>
+                                );
+                            })}
+                        </NeighborList>
+                    </NeighborGroup>
+                    <MetricsContainer>
+                        {hoveredIndex !== undefined && (() => {
+                            const original = allEpochData[epoch]?.originalNeighbors[hoveredIndex] || [];
+                            const projection = allEpochData[epoch]?.projectionNeighbors[hoveredIndex] || [];
+                            const truePositives = projection.filter(neighbor => original.includes(neighbor)).length;
+                            const precision = projection.length > 0 ? (truePositives / projection.length) : 0;
+                            const recall = original.length > 0 ? (truePositives / original.length) : 0;
+                            return (
+                                <>
+                                    <MetricItem>
+                                        <MetricLabel>Precision:</MetricLabel>
+                                        <MetricValue>{(precision * 100).toFixed(1)}%</MetricValue>
+                                    </MetricItem>
+                                    <MetricItem>
+                                        <MetricLabel>Recall:</MetricLabel>
+                                        <MetricValue>{(recall * 100).toFixed(1)}%</MetricValue>
+                                    </MetricItem>
+                                </>
+                            );
+                        })()}
+                    </MetricsContainer>
+                </NeighborsContainer>
             </DataItemMultiLine>
         </SampleInspectorContainer>
     );
@@ -294,4 +356,67 @@ const HistoryConfidence = styled.span`
     color: #8c8c8c;
     min-width: 40px;
     text-align: right;
+`;
+
+const NeighborsContainer = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+`;
+
+const NeighborGroup = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+`;
+
+const NeighborGroupLabel = styled.span`
+    font-size: 14px;
+    font-weight: 500;
+    color: #8c8c8c;
+`;
+
+const NeighborList = styled.div`
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+`;
+
+const NeighborItem = styled.span<{ $highlight: 'correct' | 'incorrect' | 'none' }>`
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: 'Consolas', monospace;
+    background-color: ${props => 
+        props.$highlight === 'correct' ? '#d9f7be' : 
+        props.$highlight === 'incorrect' ? '#ffd6d6' : 
+        '#f0f0f0'};
+    color: #262626;
+`;
+
+const MetricsContainer = styled.div`
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    margin-top: 10px;
+`;
+
+const MetricItem = styled.div`
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+`;
+
+const MetricLabel = styled.span`
+    font-size: 14px;
+    color: #8c8c8c;
+    font-weight: 500;
+`;
+
+const MetricValue = styled.span`
+    font-family: 'Consolas', monospace;
+    font-size: 14px;
+    color: #262626;
+    font-weight: 600;
 `;
