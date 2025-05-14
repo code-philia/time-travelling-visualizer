@@ -513,25 +513,25 @@ export const ChartComponent = memo(() => {
      /*
      Update motion trail
      */
-    //  useEffect(() => {
-    //      if (!vchartRef.current) {
-    //          return;
-    //      }
-    //      const trailpoints: { trailId: number, x: number, y: number, opacity: number }[] = [];
-    //      const epochId = availableEpochs.indexOf(epoch);
-    //      selectedIndices.forEach(idx => {
-    //          let i;
-    //          for (i = 0; i <= epochId; i += 2) {
-    //              let epochData = allEpochsProjectionData[availableEpochs[i]];
-    //              trailpoints.push({ trailId: idx, x: epochData.proj[idx][0], y: epochData.proj[idx][1], opacity: (i + 1) / (epochId + 1) });
-    //          }
-    //          if (i !== epochId + 2) {
-    //              let epochData = allEpochsProjectionData[epoch];
-    //              trailpoints.push({ trailId: idx, x: epochData.proj[idx][0], y: epochData.proj[idx][1], opacity: 1 });
-    //          }
-    //      });
-    //      vchartRef.current.updateDataSync('trails', trailpoints);
-    //  }, [selectedIndices, epoch, availableEpochs, allEpochsProjectionData]);
+     useEffect(() => {
+         if (!vchartRef.current) {
+             return;
+         }
+         const trailpoints: { trailId: number, x: number, y: number, opacity: number }[] = [];
+         const epochId = availableEpochs.indexOf(epoch);
+         selectedIndices.forEach(idx => {
+             let i;
+             for (i = 0; i <= epochId; i += 1) {
+                 let epochData = allEpochData[availableEpochs[i]];
+                 trailpoints.push({ trailId: idx, x: epochData.projection[idx][0], y: epochData.projection[idx][1], opacity: (i + 1) / (epochId + 1) });
+             }
+             if (i !== epochId + 1) {
+                 let epochData = allEpochData[epoch];
+                 trailpoints.push({ trailId: idx, x: epochData.projection[idx][0], y: epochData.projection[idx][1], opacity: 1 });
+             }
+         });
+         vchartRef.current.updateDataSync('trails', trailpoints);
+     }, [selectedIndices, epoch, availableEpochs, allEpochData]);
 
     return <div
         ref={chartRef}
