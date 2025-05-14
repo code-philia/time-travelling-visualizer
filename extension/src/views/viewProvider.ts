@@ -243,3 +243,52 @@ export class RightViewProvider extends BaseViewProvider {
         });
     }
 }
+
+export class VisAnalysisViewProvider extends BaseViewProvider {
+    private readonly port?: number;
+    private readonly path?: string;
+    public webview?: vscode.Webview;
+
+    constructor(port?: number, path?: string) {
+        super();
+        this.port = port;
+        this.path = path;
+    }
+
+    public resolveWebviewView(
+        webviewView: vscode.WebviewView,
+        context: vscode.WebviewViewResolveContext,
+        token: vscode.CancellationToken
+    ) {
+        this.webview = webviewView.webview;
+
+        webviewView.webview.options = CONFIG.getDefaultWebviewOptions();
+
+        if (CONFIG.isDev) {
+            webviewView.webview.html = getLiveWebviewHtml(webviewView.webview, this.port, false, this.path);
+        } else {
+            webviewView.webview.html = loadHomePage(
+                webviewView.webview,
+                path.join(CONFIG.GlobalStorageContext.webRoot, 'configs', 'extension-vis-analysis-view', 'index.html'),
+                '(?!http:\\/\\/|https:\\/\\/)([^"]*\\.[^"]+)', // remember to double-back-slash here
+                path.join(CONFIG.GlobalStorageContext.webRoot)
+            );
+        }
+
+        webviewView.webview.onDidReceiveMessage(msg => {
+            console.log("Visualize Analysis View received message: ", msg);
+            if(msg.command === 'selectedIndicesSwitch') {
+                const selectedIndices = msg.data.selectedIndices;
+                const msgToPlotView = {
+                    command: 'updateSelectedIndices',
+                    data: {
+                        selectedIndices: selectedIndices
+                    }
+                }
+                MessageManager.sendToPlotView(msgToPlotView);
+                MessageManager.sendToRightView(msgToPlotView);
+                MessageManager.sendToTokenView(msgToPlotView);
+            }
+        });
+    }
+}

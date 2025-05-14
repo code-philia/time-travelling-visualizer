@@ -351,6 +351,11 @@
           "id": "right-panel",
           "title": "Functional Panel",
           "icon": "resources/settings_24dp_5F6368_FILL0_wght300_GRAD0_opsz24.svg"
+        },
+        {
+          "id": "vis-analysis-panel",
+          "title": "Visualize Analysis",
+          "icon": "resources/analytics_24dp_5F6368_FILL0_wght300_GRAD0_opsz24.svg"
         }
       ]
     },
@@ -374,6 +379,13 @@
           "type": "webview",
           "id": "visualizer-right-view",
           "name": "Functional Panel"
+        }
+      ],
+      "vis-analysis-panel": [
+        {
+          "type": "webview",
+          "id": "visualizer-analysis-view",
+          "name": "Visualize Analysis"
         }
       ],
       "explorer": [
