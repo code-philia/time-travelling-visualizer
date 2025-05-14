@@ -24,6 +24,11 @@ export function doViewsRegistration(): vscode.Disposable {
         MessageManager.getRightViewMessageManager().getWebViewProvider(),
         { webviewOptions: { retainContextWhenHidden: true } }
     );
+    const visAnalysisViewRegistration = vscode.window.registerWebviewViewProvider(
+        config.ViewsID.visAnalysisView,
+        MessageManager.getVisAnalysisViewMessageManager().getWebViewProvider(),
+        { webviewOptions: { retainContextWhenHidden: true } }
+    );
 
     // Prepare for registration of tree view
     // const browseTreeViewRegistration = new BrowseTreeView();
@@ -33,6 +38,7 @@ export function doViewsRegistration(): vscode.Disposable {
         inspectViewRegistration,
         detailViewRegistration,
         rightViewRegistration,
+        visAnalysisViewRegistration,
         // browseTreeViewRegistration,
         trainginProcessTreeViewRegistration
     );
