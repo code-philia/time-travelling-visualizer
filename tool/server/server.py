@@ -291,7 +291,7 @@ Response:
 """
 @app.route('/getOriginalNeighbors', methods = ["POST"])
 @cross_origin()
-def getOriginalNeighbors():
+def get_original_neighbors():
     req = request.get_json()
     content_path = req['content_path']
     epoch = int(req['epoch'])
@@ -318,7 +318,7 @@ Response:
 """
 @app.route('/getProjectionNeighbors', methods = ["POST"])
 @cross_origin()
-def getProjectionNeighbors():
+def get_projection_neighbors():
     req = request.get_json()
     content_path = req['content_path']
     vis_id = req['vis_id']
