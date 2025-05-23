@@ -458,3 +458,46 @@ def generate_dimension_array(dimension):
     
     decoder_dims = encoder_dims[::-1]
     return encoder_dims, decoder_dims
+
+def calculate_visualize_metrics(content_path, vis_id, epoch):
+    high_dimensional_neighbors = calculate_high_dimensional_neighbors(content_path, epoch)
+    projection_neighbors = calculate_projection_neighbors(content_path, vis_id, epoch)
+
+    # Neighbor trustworthiness and continuity
+    K = min(len(high_dimensional_neighbors[0]), len(projection_neighbors[0]))
+    N = len(high_dimensional_neighbors)
+
+    trust_sum = 0.0
+    cont_sum = 0.0
+
+    for i in range(N):
+        high = high_dimensional_neighbors[i][:K]
+        low = projection_neighbors[i][:K]
+
+        # 1. Trustworthiness
+        u_set = set(low) - set(high)
+        for j in u_set:
+            try:
+                rank = high_dimensional_neighbors[i].index(j) + 1  # 1-based
+                trust_sum += (rank - K)
+            except ValueError:
+                trust_sum += (len(high_dimensional_neighbors[i]) + 1 - K)
+
+        # 2. Continuity
+        v_set = set(high) - set(low)
+        for j in v_set:
+            try:
+                rank = projection_neighbors[i].index(j) + 1  # 1-based
+                cont_sum += (rank - K)
+            except ValueError:
+                cont_sum += (len(projection_neighbors[i]) + 1 - K)
+
+    normalizer = N * K * (2 * N - 3 * K - 1)
+
+    trustworthiness = 1.0 - (2.0 / normalizer) * trust_sum
+    continuity = 1.0 - (2.0 / normalizer) * cont_sum
+
+    return {
+        "neighbor_trustworthiness": trustworthiness,
+        "neighbor_continuity": continuity
+    }

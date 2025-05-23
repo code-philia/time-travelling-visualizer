@@ -57,3 +57,12 @@ export function notifyHighlightDataSwitch(e: string[]) {
     };
     window.vscode?.postMessage(message, '*');
 }
+
+export function notifyComputeMetrics(epoch: number) {
+    const data = { epoch: epoch };
+    const message = {
+        command: 'computeMetrics',
+        data: data
+    };
+    window.vscode?.postMessage(message, '*');
+}
