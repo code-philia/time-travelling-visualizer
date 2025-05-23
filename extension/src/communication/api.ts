@@ -102,3 +102,11 @@ export function getImageData(contentPath: string, index: number, options?: { hos
     });
 }
 
+export function getVisualizeMetrics(contentPath: string, visID: string, epoch: number, options?: { host?: string }) {
+    const data = {
+        "content_path": contentPath,
+        "vis_id": visID,
+        "epoch": `${epoch}`
+    };
+    return basicUnsafePostWithJsonResponse('/getVisualizeMetrics', data, options);
+}

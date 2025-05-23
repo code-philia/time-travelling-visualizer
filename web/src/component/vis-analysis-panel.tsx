@@ -2,11 +2,12 @@ import styled from 'styled-components';
 import { Button, List } from 'antd';
 import { memo, useRef, useState } from 'react';
 import { useDefaultStore } from '../state/state.analysisView';
-import { notifySelectedIndicesSwitch } from '../communication/viewMessage';
+import { notifySelectedIndicesSwitch, notifyComputeMetrics } from '../communication/viewMessage';
 import VChart from '@visactor/vchart';
 import { useEffect } from 'react';
 
 export function VisAnalysisPanel() {
+    const { epoch, allEpochMetrics } = useDefaultStore(['epoch', 'allEpochMetrics']);
     const { selectedIndices, setSelectedIndices} = useDefaultStore(["selectedIndices", "setSelectedIndices"]);
     const [abnormalSamples, setAbnormalSamples] = useState<{ index: number; isHighDimensional: boolean }[]>([]);
 
@@ -28,19 +29,15 @@ export function VisAnalysisPanel() {
         notifySelectedIndicesSwitch(newSelectedIndices);
     };
 
+    const toggleComputeMetrics = () => {
+        notifyComputeMetrics(epoch);
+    };
+
     return (
         <VisAnalysisContainer>
             <Section>
                 <SectionTitle>Metrics Overview</SectionTitle>
-                {/* <Radar {...radarConfig} /> */}
-                <RadarComponent />
-                <MetricsDescription>
-                    <MetricExplanation><strong>Neighbor Trustworthiness:</strong> Measures how well the neighbors in the high-dimensional space are preserved in the 2D space.</MetricExplanation>
-                    <MetricExplanation><strong>Neighbor Continuity:</strong> Measures how well the neighbors in the 2D space match the high-dimensional space.</MetricExplanation>
-                    <MetricExplanation><strong>Re-construction Precision:</strong> Measures the accuracy of reconstructing the original data from the 2D projection.</MetricExplanation>
-                    <MetricExplanation><strong>Abnormal Movements Ratio (2D):</strong> Proportion of samples with unexpected movements in the 2D space.</MetricExplanation>
-                    <MetricExplanation><strong>Movement Consistency:</strong> Measures the consistency of movements between high-dimensional and 2D spaces.</MetricExplanation>
-                </MetricsDescription>
+                <RadarComponent/>
             </Section>
             <Section>
                 <SectionTitle>Suspicious Samples</SectionTitle>
@@ -73,10 +70,11 @@ export function VisAnalysisPanel() {
 export default VisAnalysisPanel;
 
 
-const RadarComponent = memo(() => {
+const RadarComponent = (() => {
+    const { epoch, allEpochMetrics } = useDefaultStore(['epoch', 'allEpochMetrics', 'setAllEpochMetrics']);
     const chartRef = useRef<HTMLDivElement>(null);
     const radarRef = useRef<VChart | null>(null);
-
+                    
     useEffect(() => {
         if (!chartRef.current) {
             return;
@@ -169,12 +167,37 @@ const RadarComponent = memo(() => {
         radarRef.current.renderSync();
     }, []);
 
+    useEffect(() => {
+        if (!radarRef.current) {
+            return;
+        }
+        if (allEpochMetrics[epoch]) {
+            const metricsData = [
+                { metric: 'Neighbor Trustworthiness', value: allEpochMetrics[epoch].neighborTrustworthiness },
+                { metric: 'Neighbor Continuity', value: allEpochMetrics[epoch].neighborContinuity },
+                { metric: 'Re-construction Precision', value: allEpochMetrics[epoch].reconstructionPrecision },
+                { metric: 'Abnormal Movements Ratio', value: allEpochMetrics[epoch].abnormalMovementsRatio2D },
+                { metric: 'Movement Consistency', value: allEpochMetrics[epoch].movementConsistency }
+            ];
+            radarRef.current.updateDataSync('radarData', metricsData);
+        }
+        else {
+            radarRef.current?.updateDataSync('radarData', [
+                { metric: 'Neighbor Trustworthiness', value: 0.1 },
+                { metric: 'Neighbor Continuity', value: 0.2 },
+                { metric: 'Re-construction Precision', value: 0.4 },
+                { metric: 'Abnormal Movements Ratio', value: 0.3 },
+                { metric: 'Movement Consistency', value: 0.4 }
+            ]);
+        }
+    }, [epoch, allEpochMetrics]);
+
     return <div
         ref={chartRef}
         id='radar'
         style={{
-            width: '60%',
-            height: '60%'
+            width: '100%',
+            height: '100%'
         }}>
     </div>;
 });
@@ -200,19 +223,6 @@ const SectionTitle = styled.h3`
     font-size: 16px;
     color: #595959;
     margin: 0;
-`;
-
-
-const MetricsDescription = styled.div`
-    gap: 5px;
-    margin-top: 10px;
-    font-size: 12px;
-    color: #595959;
-    line-height: 1.5;
-`;
-
-const MetricExplanation = styled.div`
-    margin-bottom: 5px;
 `;
 
 const SubSection = styled.div`

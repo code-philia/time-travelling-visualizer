@@ -5,12 +5,24 @@ import { useStoreWithEqualityFn } from "zustand/traditional";
 import { BUILD_CONSTANTS } from "../constants";
 import { subscribeWithSelector } from "zustand/middleware";
 
+export type Metrics = {
+    neighborTrustworthiness: number;
+    neighborContinuity: number;
+    reconstructionPrecision: number;
+    abnormalMovementsRatio2D: number;
+    movementConsistency: number;
+};
+
 type BaseMutableGlobalStore = {
+    epoch: number;
     selectedIndices: number[];
+    allEpochMetrics: Record<number, Metrics>;
 };
 
 let initMutableGlobalStore: BaseMutableGlobalStore = {
+    epoch: 1,
     selectedIndices: [],
+    allEpochMetrics: {},
 };
 type SetFunction<T> = (setState: (state: T) => T | Partial<T>) => void;
 

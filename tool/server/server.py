@@ -335,6 +335,22 @@ def get_projection_neighbors():
         return make_response(jsonify({'error_message': 'Error in calculating neighbors'}), 400)
 
     
+@app.route('/getVisualizeMetrics', methods = ["POST"])
+@cross_origin()
+def get_visualize_metrics():
+    req = request.get_json()
+    content_path = req['content_path']
+    vis_id = req['vis_id']
+    epoch = int(req['epoch'])
+    
+    try:
+        metrics = calculate_visualize_metrics(content_path, vis_id, epoch)
+        result = jsonify(metrics)
+        return make_response(result, 200)
+    except Exception as e:
+        print(e)
+        return make_response(jsonify({'error_message': 'Error in calculating metrics'}), 400)
+
 
 @app.route('/getLLMResponse', methods = ["POST"])
 @cross_origin()

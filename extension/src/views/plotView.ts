@@ -90,6 +90,7 @@ export class PlotViewManager {
 				}
 				MessageManager.sendToDetailView(msgBack);
 				MessageManager.sendToTokenView(msgBack);
+				MessageManager.sendToVisAnalysisView(msgBack);
 			}
 			else if (msg.command === 'hoveredIndexSwitch') {
 				const hoveredIndex: number = msg.data.hoveredIndex;

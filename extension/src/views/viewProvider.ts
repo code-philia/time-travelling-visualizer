@@ -5,7 +5,7 @@ import { loadHomePage } from './plotView';
 import path from 'path';
 import { MessageManager } from './messageManager';
 import { getBasicConfig } from '../control';
-import { fetchTrainingProcessInfo, getAttributeResource, getText } from '../communication/api';
+import { fetchTrainingProcessInfo, getAttributeResource, getText, getVisualizeMetrics } from '../communication/api';
 
 export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
     public abstract webview?: vscode.Webview;
@@ -275,7 +275,7 @@ export class VisAnalysisViewProvider extends BaseViewProvider {
             );
         }
 
-        webviewView.webview.onDidReceiveMessage(msg => {
+        webviewView.webview.onDidReceiveMessage(async msg => {
             console.log("Visualize Analysis View received message: ", msg);
             if(msg.command === 'selectedIndicesSwitch') {
                 const selectedIndices = msg.data.selectedIndices;
@@ -288,6 +288,22 @@ export class VisAnalysisViewProvider extends BaseViewProvider {
                 MessageManager.sendToPlotView(msgToPlotView);
                 MessageManager.sendToRightView(msgToPlotView);
                 MessageManager.sendToTokenView(msgToPlotView);
+            }
+            else if (msg.command === 'computeMetrics') {
+                const config = getBasicConfig();
+                if (!config) {
+                    return;
+                }
+                const metricsRes: any = await getVisualizeMetrics(config.contentPath, config.visualizationID, msg.data.epoch);
+                const msgBack = {
+                    command: 'updateMetrics',
+                    data: {
+                        epoch: msg.data.epoch,
+                        neighborTrustworthiness: metricsRes['neighbor_trustworthiness'],
+                        neighborContinuity: metricsRes['neighbor_continuity'],
+                    }
+                };
+
             }
         });
     }
