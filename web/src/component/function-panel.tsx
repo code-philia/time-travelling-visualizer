@@ -310,6 +310,10 @@ export function FunctionPanel() {
             <FunctionalBlock label="Highlight">
                 <HighlightOptionBlock />
             </FunctionalBlock>
+            <Divider />
+            <FunctionalBlock label="Distance">
+                <DistanceBlock />
+            </FunctionalBlock>
         </div>
     )
 }
@@ -402,6 +406,131 @@ function HighlightOptionBlock() {
                 renderItem={renderHighlightTypeItem}
                 locale={{ emptyText: 'No highlight types configured' }}
             />
+        </div>
+    );
+}
+
+
+function DistanceBlock() {
+    const { allEpochData, selectedIndices, availableEpochs, epoch } = useDefaultStore(['allEpochData', 'selectedIndices', 'availableEpochs', 'epoch']);
+    const [distanceData, setDistanceData] = useState<{ pair: [number, number], current: { projection: number, embedding: number }, prevDiff: { projection: number, embedding: number }, firstDiff: { projection: number, embedding: number } }[]>([]);
+
+    useEffect(() => {
+        if (selectedIndices.length < 2 || availableEpochs.length === 0) {
+            setDistanceData([]);
+            return;
+        }
+
+        const calculateDistance = (point1: number[], point2: number[]) => {
+            return Math.sqrt(point1.reduce((sum, val, idx) => sum + Math.pow(val - point2[idx], 2), 0));
+        };
+
+        const firstEpoch = availableEpochs[0];
+        const epochId = availableEpochs.indexOf(epoch);
+        const prevEpochId = epochId > 0 ? epochId - 1 : null;
+        const prevEpoch = prevEpochId !== null ? availableEpochs[prevEpochId] : null;
+
+        const newDistanceData = [];
+        for (let i = 0; i < selectedIndices.length; i++) {
+            for (let j = i + 1; j < selectedIndices.length; j++) {
+                const index1 = selectedIndices[i];
+                const index2 = selectedIndices[j];
+
+                const currentProjectionDist = calculateDistance(
+                    allEpochData[epoch].projection[index1],
+                    allEpochData[epoch].projection[index2]
+                );
+                const currentEmbeddingDist = calculateDistance(
+                    allEpochData[epoch].embedding[index1],
+                    allEpochData[epoch].embedding[index2]
+                );
+
+                const prevProjectionDist = prevEpoch !== null
+                    ? calculateDistance(
+                        allEpochData[prevEpoch].projection[index1],
+                        allEpochData[prevEpoch].projection[index2]
+                    )
+                    : currentProjectionDist;
+
+                const prevEmbeddingDist = prevEpoch !== null
+                    ? calculateDistance(
+                        allEpochData[prevEpoch].embedding[index1],
+                        allEpochData[prevEpoch].embedding[index2]
+                    )
+                    : currentEmbeddingDist;
+
+                const firstProjectionDist = calculateDistance(
+                    allEpochData[firstEpoch].projection[index1],
+                    allEpochData[firstEpoch].projection[index2]
+                );
+                const firstEmbeddingDist = calculateDistance(
+                    allEpochData[firstEpoch].embedding[index1],
+                    allEpochData[firstEpoch].embedding[index2]
+                );
+
+                newDistanceData.push({
+                    pair: [index1, index2],
+                    current: { projection: currentProjectionDist, embedding: currentEmbeddingDist },
+                    prevDiff: {
+                        projection: currentProjectionDist - prevProjectionDist,
+                        embedding: currentEmbeddingDist - prevEmbeddingDist
+                    },
+                    firstDiff: {
+                        projection: currentProjectionDist - firstProjectionDist,
+                        embedding: currentEmbeddingDist - firstEmbeddingDist
+                    }
+                });
+            }
+        }
+
+        setDistanceData(newDistanceData);
+    }, [allEpochData, selectedIndices, availableEpochs, epoch]);
+
+    return (
+        <div className="distance-block" style={{ maxHeight: '400px', overflowY: 'auto', paddingRight: '8px' }}>
+            {distanceData.length > 0 ? (
+                <List
+                    size="large"
+                    bordered
+                    dataSource={distanceData}
+                    renderItem={({ pair, current, prevDiff, firstDiff }) => (
+                        <List.Item style={{ padding: '16px', borderRadius: '8px', backgroundColor: '#f9f9f9', marginBottom: '8px' }}>
+                            <div style={{ width: '100%' }}>
+                                <h4 style={{ marginBottom: '12px', fontWeight: 'bold', color: '#1890ff' }}>
+                                    Pair: {pair[0]} & {pair[1]}
+                                </h4>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                    <div style={{ flex: 1, marginRight: '16px' }}>
+                                        <strong style={{ color: '#595959' }}>Current Epoch:</strong>
+                                        <ul style={{ paddingLeft: '16px', margin: '8px 0', listStyleType: 'circle' }}>
+                                            <li>Projection: {current.projection.toFixed(4)}</li>
+                                            <li>Embedding: {current.embedding.toFixed(4)}</li>
+                                        </ul>
+                                    </div>
+                                    <div style={{ flex: 1, marginRight: '16px' }}>
+                                        <strong style={{ color: '#595959' }}>Change from Previous:</strong>
+                                        <ul style={{ paddingLeft: '16px', margin: '8px 0', listStyleType: 'circle' }}>
+                                            <li>Projection: {prevDiff.projection.toFixed(4)}</li>
+                                            <li>Embedding: {prevDiff.embedding.toFixed(4)}</li>
+                                        </ul>
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <strong style={{ color: '#595959' }}>Change from First:</strong>
+                                        <ul style={{ paddingLeft: '16px', margin: '8px 0', listStyleType: 'circle' }}>
+                                            <li>Projection: {firstDiff.projection.toFixed(4)}</li>
+                                            <li>Embedding: {firstDiff.embedding.toFixed(4)}</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </List.Item>
+                    )}
+                />
+            ) : (
+                <div className="alt-text placeholder-block" style={{ textAlign: 'center', color: '#888' }}>
+                    No sufficient data to calculate distances
+                </div>
+            )}
         </div>
     );
 }

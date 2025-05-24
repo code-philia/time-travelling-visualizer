@@ -2,7 +2,7 @@ import { StrictMode, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import '../index.css';
 import { FunctionPanel } from '../component/function-panel';
-import { useDefaultStore } from '../state/state.rightView';
+import { EpochData, useDefaultStore } from '../state/state.rightView';
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
@@ -21,6 +21,7 @@ function AppFunctionPanelViewOnly() {
 
 function MessageHandler() {
     const { setValue } = useDefaultStore(['setValue']);
+    const allEpochDataCopy: Record<number, EpochData> = {};
 
     useEffect(() => {
         const handleMessage = (event: MessageEvent) => {
@@ -32,18 +33,19 @@ function MessageHandler() {
             console.log('token web received message:', message);
             if (message.command === 'init') {
                 const messageData = message.data;
-                    const colorDict = new Map<number, [number, number, number]>();
-                    messageData.colorList.forEach((c: [number,number,number], i: number) => {
-                        colorDict.set(i, c);                    
-                    });
-                    setValue('colorDict', colorDict);
+                const colorDict = new Map<number, [number, number, number]>();
+                messageData.colorList.forEach((c: [number,number,number], i: number) => {
+                    colorDict.set(i, c);                    
+                });
+                setValue('colorDict', colorDict);
 
-                    const labelDict = new Map<number, string>();
-                    messageData.labelTextList.forEach((l: string, i: number) => {
-                        labelDict.set(i, l);
-                    });
-                    setValue('labelDict', labelDict);
-                    setValue('tokenList', messageData.tokenList);
+                const labelDict = new Map<number, string>();
+                messageData.labelTextList.forEach((l: string, i: number) => {
+                    labelDict.set(i, l);
+                });
+                setValue('labelDict', labelDict);
+                setValue('tokenList', messageData.tokenList);
+                setValue('availableEpochs', messageData.availableEpochs);
             }
             else if(message.command === 'updateSelectedIndices') {
                 const messageData = message.data;
@@ -53,6 +55,16 @@ function MessageHandler() {
                 else {
                     setValue('selectedIndices', []);
                 }
+            }
+            else if(message.command === 'updateEpochData'){
+                const messageData = message.data;
+                const newEpochData: EpochData = {
+                    projection: messageData.projection,
+                    embedding: messageData.embedding,
+                };
+                allEpochDataCopy[messageData.epoch] = newEpochData;
+                setValue('allEpochData', allEpochDataCopy);
+                setValue('epoch', messageData.epoch);
             }
         };
         
