@@ -414,6 +414,7 @@ export async function loadVisualization(forceReconfig: boolean = false): Promise
 			labelTextList: data['labelTextList'],
 			colorList: data['colorList'],
 			tokenList: data['tokenList'],
+			availableEpochs: data['availableEpochs'],
 		}
 	};
 	MessageManager.sendToRightView(msgToRightView);
@@ -440,6 +441,9 @@ async function loadAllEpochData(config: api.BasicVisualizationConfig, availableE
 async function loadEpochData(config: api.BasicVisualizationConfig, epoch: number): Promise<void> {
 	// projection
 	const projectionRes: any = await fetchEpochProjection(config.contentPath, config.visualizationID, epoch);
+
+	// embedding
+	const embeddingRes: any = await getAttributeResource(config.contentPath, epoch, 'representation');
 	
 	// neighborhood
 	let originalNeighbors: number[][] = [];
@@ -495,7 +499,7 @@ async function loadEpochData(config: api.BasicVisualizationConfig, epoch: number
 			originalNeighbors: originalNeighbors,
 			projectionNeighbors: projectionNeighbors,
 		}
-	}
+	};
 	MessageManager.sendToDetailView(msgToDetailView);
 
 	const msgToTokenView = {
@@ -505,8 +509,18 @@ async function loadEpochData(config: api.BasicVisualizationConfig, epoch: number
 			originalNeighbors: originalNeighbors,
 			projectionNeighbors: projectionNeighbors,
 		}
-	}
+	};
 	MessageManager.sendToTokenView(msgToTokenView);
+
+	const msgToRightView = {
+		command: 'updateEpochData',
+		data: {
+			epoch: epoch,
+			projection: projectionRes['projection'],
+			embedding: embeddingRes['representation']
+		}
+	};
+	MessageManager.sendToRightView(msgToRightView);
 }
 
 export async function loadVisualizationThroughTreeItem(trainingProcess: string, visualizationID: string): Promise<boolean> {

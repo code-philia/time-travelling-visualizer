@@ -5,22 +5,31 @@ import { useStoreWithEqualityFn } from "zustand/traditional";
 import { BUILD_CONSTANTS } from "../constants";
 import { subscribeWithSelector } from "zustand/middleware";
 
+export type EpochData = {
+    projection: number[][];
+    embedding: number[][];
+};
+
 type BaseMutableGlobalStore = {
+    epoch: number;
+    availableEpochs: number[];
     selectedIndices: number[];
     tokenList: string[];
     colorDict: Map<number, [number, number, number]>;
     labelDict: Map<number, string>;
-    
     shownData: string[];
+    allEpochData: Record<number, EpochData>;
 };
 
 let initMutableGlobalStore: BaseMutableGlobalStore = {
+    epoch: 1,
+    availableEpochs: [],
     selectedIndices: [],
     tokenList: [],
     colorDict: new Map(),
     labelDict: new Map(),
-
     shownData: ["train", "test"],
+    allEpochData: {},
 };
 type SetFunction<T> = (setState: (state: T) => T | Partial<T>) => void;
 
