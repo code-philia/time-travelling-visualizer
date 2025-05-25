@@ -5,6 +5,7 @@ import { useDefaultStore } from '../state/state.rightView';
 import { notifySelectedIndicesSwitch, notifyComputeMetrics } from '../communication/viewMessage';
 import VChart from '@visactor/vchart';
 import { useEffect } from 'react';
+import { ComponentBlock, FunctionalBlock } from './custom/basic-components';
 
 export function VisAnalysisPanel() {
     const { epoch, allEpochMetrics } = useDefaultStore(['epoch', 'allEpochMetrics']);
@@ -35,14 +36,12 @@ export function VisAnalysisPanel() {
 
     return (
         <VisAnalysisContainer>
-            <Section>
-                <SectionTitle>Metrics Overview</SectionTitle>
-                <RadarComponent/>
-            </Section>
-            <Section>
-                <SectionTitle>Suspicious Samples</SectionTitle>
-                <SubSection>
-                    <SubSectionTitle>Abnormal Movements in 2D Space</SubSectionTitle>
+            <FunctionalBlock label="Metrics Overview">
+                <RadarComponent />
+            </FunctionalBlock>
+                        
+            <FunctionalBlock label="Suspicious Samples">
+                <ComponentBlock label="Abnormal Movements in 2D Space">
                     <Button onClick={computeAbnormalSamples} style={{ marginBottom: '10px' }}>
                         Compute
                     </Button>
@@ -61,8 +60,8 @@ export function VisAnalysisPanel() {
                             </List.Item>
                         )}
                     />
-                </SubSection>
-            </Section>
+                </ComponentBlock>
+            </FunctionalBlock>
         </VisAnalysisContainer>
     );
 }
@@ -81,6 +80,8 @@ const RadarComponent = (() => {
         }
         const spec = {
             type: 'radar',
+            width: 300,
+            height: 300,
             data: [
                 {
                     id: 'radarData',
@@ -100,11 +101,6 @@ const RadarComponent = (() => {
             },
             area: {
                 visible: true, // display area
-                state: {
-                    hover: {
-                        fillOpacity: 0.5
-                    }
-                }
             },
             line: {
                 style: {
@@ -140,13 +136,17 @@ const RadarComponent = (() => {
                     orient: 'angle', // angle axis
                     zIndex: 50,
                     tick: {
-                        visible: false
+                        visible: true
                     },
                     domainLine: {
-                        visible: false
+                        visible: true
                     },
                     label: {
-                        space: 20
+                        space: 10,
+                        autoWrap: true,
+                        style: {
+                            fontSize: 10
+                        }
                     },
                     grid: {
                         style: {
@@ -211,31 +211,6 @@ const VisAnalysisContainer = styled.div`
     background-color: white;
     height: 100%;
     width: 100%;
-`;
-
-const Section = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-`;
-
-const SectionTitle = styled.h3`
-    font-size: 16px;
-    color: #595959;
-    margin: 0;
-`;
-
-const SubSection = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    width: 100%; /* Make width adapt to the parent component */
-`;
-
-const SubSectionTitle = styled.h4`
-    font-size: 14px;
-    color: #595959;
-    margin: 0;
 `;
 
 const AbnormalList = styled(List)`

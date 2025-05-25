@@ -460,9 +460,11 @@ body {
 
 .functional-block {
     margin-bottom: 1em;
+    padding-top: 0.5em;
 }
 
 .functional-block-title {
+    font-size: 1.2em;
     font-weight: bolder;
 }
 
