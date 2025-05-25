@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 import { Button, List } from 'antd';
 import { memo, useRef, useState } from 'react';
-import { useDefaultStore } from '../state/state.analysisView';
+import { useDefaultStore } from '../state/state.rightView';
 import { notifySelectedIndicesSwitch, notifyComputeMetrics } from '../communication/viewMessage';
 import VChart from '@visactor/vchart';
 import { useEffect } from 'react';

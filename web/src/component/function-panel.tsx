@@ -430,7 +430,7 @@ function DistanceBlock() {
         const prevEpochId = epochId > 0 ? epochId - 1 : null;
         const prevEpoch = prevEpochId !== null ? availableEpochs[prevEpochId] : null;
 
-        const newDistanceData = [];
+        const newDistanceData : any = [];
         for (let i = 0; i < selectedIndices.length; i++) {
             for (let j = i + 1; j < selectedIndices.length; j++) {
                 const index1 = selectedIndices[i];

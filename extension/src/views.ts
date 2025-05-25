@@ -14,19 +14,9 @@ export function doViewsRegistration(): vscode.Disposable {
         MessageManager.getTokenViewMessageManager().getWebViewProvider(),
         { webviewOptions: { retainContextWhenHidden: true } }
     );
-    const detailViewRegistration = vscode.window.registerWebviewViewProvider(
-        config.ViewsID.detailView,
-        MessageManager.getDetailViewMessageManager().getWebViewProvider(),
-        { webviewOptions: { retainContextWhenHidden: true } }
-    );
     const rightViewRegistration = vscode.window.registerWebviewViewProvider(
         config.ViewsID.rightView,
         MessageManager.getRightViewMessageManager().getWebViewProvider(),
-        { webviewOptions: { retainContextWhenHidden: true } }
-    );
-    const visAnalysisViewRegistration = vscode.window.registerWebviewViewProvider(
-        config.ViewsID.visAnalysisView,
-        MessageManager.getVisAnalysisViewMessageManager().getWebViewProvider(),
         { webviewOptions: { retainContextWhenHidden: true } }
     );
 
@@ -36,10 +26,7 @@ export function doViewsRegistration(): vscode.Disposable {
 
     return vscode.Disposable.from(
         inspectViewRegistration,
-        detailViewRegistration,
         rightViewRegistration,
-        visAnalysisViewRegistration,
-        // browseTreeViewRegistration,
         trainginProcessTreeViewRegistration
     );
 

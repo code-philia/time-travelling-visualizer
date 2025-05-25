@@ -6,30 +6,57 @@ import { BUILD_CONSTANTS } from "../constants";
 import { subscribeWithSelector } from "zustand/middleware";
 
 export type EpochData = {
+    prediction: number[];
+    confidence: number[];
+    probability: number[][];
+    originalNeighbors: number[][];
+    projectionNeighbors: number[][];
     projection: number[][];
     embedding: number[][];
 };
 
+export type Metrics = {
+    neighborTrustworthiness: number;
+    neighborContinuity: number;
+    reconstructionPrecision: number;
+    abnormalMovementsRatio2D: number;
+    movementConsistency: number;
+};  
+
 type BaseMutableGlobalStore = {
     epoch: number;
     availableEpochs: number[];
+
+    hoveredIndex: number | undefined;
     selectedIndices: number[];
+
+    labels: number[];
     tokenList: string[];
     colorDict: Map<number, [number, number, number]>;
     labelDict: Map<number, string>;
     shownData: string[];
     allEpochData: Record<number, EpochData>;
+
+    imageData?: string; // Optional, used in detail view
+
+    allEpochMetrics: Record<number, Metrics>; // Optional, used in analysis view
 };
 
 let initMutableGlobalStore: BaseMutableGlobalStore = {
     epoch: 1,
     availableEpochs: [],
+    hoveredIndex: undefined,
     selectedIndices: [],
+    labels: [],
     tokenList: [],
     colorDict: new Map(),
     labelDict: new Map(),
     shownData: ["train", "test"],
     allEpochData: {},
+
+    imageData: "",
+
+    allEpochMetrics: {},
 };
 type SetFunction<T> = (setState: (state: T) => T | Partial<T>) => void;
 

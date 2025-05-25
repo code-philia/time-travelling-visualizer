@@ -2,7 +2,7 @@ import {useEffect, useState } from 'react';
 import { TagOutlined, NumberOutlined, BarChartOutlined, PictureOutlined, HistoryOutlined } from '@ant-design/icons';
 import styled from 'styled-components';
 import { softmax } from './utils';
-import { useDefaultStore } from '../state/state.detailView';
+import { useDefaultStore } from '../state/state.rightView';
 import { Divider } from 'antd';
 
 export function SamplePanel() {
@@ -22,7 +22,7 @@ export function SamplePanel() {
             return;
         }
 
-        setImage(imageData);
+        setImage(imageData? imageData : '');
 
         // current epoch prediction
         if (!allEpochData[epoch].probability[hoveredIndex]) { 
