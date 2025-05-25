@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import { softmax } from './utils';
 import { useDefaultStore } from '../state/state.rightView';
 import { Divider } from 'antd';
+import { ComponentBlock, FunctionalBlock } from './custom/basic-components';
 
 export function SamplePanel() {
     const { availableEpochs, hoveredIndex, labels, epoch, allEpochData, labelDict , imageData} =
@@ -62,133 +63,119 @@ export function SamplePanel() {
 
     return (
         <SampleInspectorContainer>
-            <DataItemMultiLine>
-                <DataLabel>
-                    <IconWrapper><PictureOutlined /></IconWrapper>
-                    Original Data
-                </DataLabel>
-                <ImageDisplayArea $isEmpty={hoveredIndex === undefined}>
-                    {hoveredIndex === undefined ? (
-                        <PlaceholderText>Image Display Area</PlaceholderText>
-                    ) : (
-                        <StyledImage src={image} alt="Image Overview" />
-                    )}
-                </ImageDisplayArea>
-            </DataItemMultiLine>
-                        
-            <DataItemInLine>
-                <DataLabel>
-                    <IconWrapper><NumberOutlined /></IconWrapper>
-                    Index
-                </DataLabel>
-                <DataValue>{hoveredIndex === undefined ? '' : hoveredIndex}</DataValue>
-            </DataItemInLine>
-            
-            <DataItemInLine>
-                <DataLabel>
-                    <IconWrapper><TagOutlined /></IconWrapper>
-                    Label
-                </DataLabel>
-                <DataValue>{hoveredIndex === undefined ? '' :labelDict.get(labels[hoveredIndex])}</DataValue>
-            </DataItemInLine>
-            
-            <DataItemMultiLine>
-                <DataLabel>
-                    <IconWrapper><BarChartOutlined /></IconWrapper>
-                    Prediction
-                </DataLabel>
-                <PredictionContainer>
-                    {predictions.map((prediction, index) => (
-                        <PredictionItem key={index}>
-                            <PredictionValue>
-                                {labelDict.get(prediction.value)}
-                            </PredictionValue>
-                            <ConfidenceBar $confidence={prediction.confidence} $correct={prediction.correct} />
-                            <ConfidenceValue>
-                                {(prediction.confidence * 100).toFixed(1)}%
-                            </ConfidenceValue>
-                        </PredictionItem>
-                    ))}
-                </PredictionContainer>
-            </DataItemMultiLine>
+            <FunctionalBlock label="Basic Information">
+                <ComponentBlock label="Source">
+                    {
+                        hoveredIndex === undefined
+                            ? (
+                                <div className="alt-text placeholder-block" style={{ textAlign: 'center', color: '#888' }}>
+                                    No image data available
+                                </div>
+                            )
+                            : (
+                                <ImageDisplayArea $isEmpty={!image}>
+                                    {image ? <StyledImage src={image} alt="Hovered Data" /> : <PlaceholderText>No Image</PlaceholderText>}
+                                </ImageDisplayArea>
+                            )
+                    }
+                </ComponentBlock>
+                
+                <ComponentBlock label="Index">
+                    <DataValue>{hoveredIndex === undefined ? '' : hoveredIndex}</DataValue>
+                </ComponentBlock>
 
-            <DataItemMultiLine>
-                <DataLabel>
-                    <IconWrapper>< HistoryOutlined /></IconWrapper>
-                    Prediction History
-                </DataLabel>
-                <PredictionHistoryContainer>
-                    {historyPrediction.slice(-5).map((record, index) => (
-                        <PredictionHistoryItem key={index}>
-                            <HistoryEpoch>Epoch {record.epoch}:</HistoryEpoch>
-                            <HistoryPrediction $correct={record.correct}>{labelDict.get(record.prediction)}</HistoryPrediction>
-                            <HistoryConfidence>{(record.confidence * 100).toFixed(1)}%</HistoryConfidence>
-                        </PredictionHistoryItem>
-                    ))}
-                </PredictionHistoryContainer>
-            </DataItemMultiLine>
+                <ComponentBlock label="Label">
+                    <DataValue>{hoveredIndex === undefined ? '' :labelDict.get(labels[hoveredIndex])}</DataValue>
+                </ComponentBlock>
+            </FunctionalBlock>
+            
+            <FunctionalBlock label="Prediction">
+                <ComponentBlock label="Current">
+                    <PredictionContainer>
+                        {predictions.map((prediction, index) => (
+                            <PredictionItem key={index}>
+                                <PredictionValue>
+                                    {labelDict.get(prediction.value)}
+                                </PredictionValue>
+                                <ConfidenceBar $confidence={prediction.confidence} $correct={prediction.correct} />
+                                <ConfidenceValue>
+                                    {(prediction.confidence * 100).toFixed(1)}%
+                                </ConfidenceValue>
+                            </PredictionItem>
+                        ))}
+                    </PredictionContainer>
+                </ComponentBlock>
 
-            <DataItemMultiLine>
-                <DataLabel>
-                    <IconWrapper><BarChartOutlined /></IconWrapper>
-                    Neighbors
-                </DataLabel>
-                <NeighborsContainer>
-                    <NeighborGroup>
-                        <NeighborGroupLabel>Neighbors in high-dimensional space:</NeighborGroupLabel>
-                        <NeighborList>
-                            {hoveredIndex !== undefined && allEpochData[epoch]?.originalNeighbors[hoveredIndex]?.map((neighbor, index) => {
-                                const isCorrect = allEpochData[epoch].projectionNeighbors[hoveredIndex]?.includes(neighbor);
-                                return (
-                                    <NeighborItem
-                                        key={index}
-                                        $highlight={isCorrect ? 'correct' : 'incorrect'}
-                                    >
-                                        {neighbor}.{labelDict.get(labels[neighbor]) || neighbor}
-                                    </NeighborItem>
-                                );
-                            })}
-                        </NeighborList>
-                    </NeighborGroup>
-                    <NeighborGroup>
-                        <NeighborGroupLabel>Neighbors in 2D space:</NeighborGroupLabel>
-                        <NeighborList>
-                            {hoveredIndex !== undefined && allEpochData[epoch]?.projectionNeighbors[hoveredIndex]?.map((neighbor, index) => {
-                                const isCorrect = allEpochData[epoch].originalNeighbors[hoveredIndex]?.includes(neighbor);
-                                return (
-                                    <NeighborItem
-                                        key={index}
-                                        $highlight={isCorrect ? 'correct' : 'incorrect'}
-                                    >
-                                        {neighbor}.{labelDict.get(labels[neighbor]) || neighbor}
-                                    </NeighborItem>
-                                );
-                            })}
-                        </NeighborList>
-                    </NeighborGroup>
-                    <MetricsContainer>
-                        {hoveredIndex !== undefined && (() => {
-                            const original = allEpochData[epoch]?.originalNeighbors[hoveredIndex] || [];
-                            const projection = allEpochData[epoch]?.projectionNeighbors[hoveredIndex] || [];
-                            const truePositives = projection.filter(neighbor => original.includes(neighbor)).length;
-                            const precision = projection.length > 0 ? (truePositives / projection.length) : 0;
-                            const recall = original.length > 0 ? (truePositives / original.length) : 0;
+                <ComponentBlock label="History">
+                    <PredictionHistoryContainer>
+                        {historyPrediction.slice(-5).map((record, index) => (
+                            <PredictionHistoryItem key={index}>
+                                <HistoryEpoch>Epoch {record.epoch}:</HistoryEpoch>
+                                <HistoryPrediction $correct={record.correct}>{labelDict.get(record.prediction)}</HistoryPrediction>
+                                <HistoryConfidence>{(record.confidence * 100).toFixed(1)}%</HistoryConfidence>
+                            </PredictionHistoryItem>
+                        ))}
+                    </PredictionHistoryContainer>
+                </ComponentBlock>
+            </FunctionalBlock>
+
+
+            <FunctionalBlock label="Neighbors">
+                <ComponentBlock label="High-dimensional Space">
+                    <NeighborList>
+                        {hoveredIndex !== undefined && allEpochData[epoch]?.originalNeighbors[hoveredIndex]?.map((neighbor, index) => {
+                            const isCorrect = allEpochData[epoch].projectionNeighbors[hoveredIndex]?.includes(neighbor);
                             return (
-                                <>
-                                    <MetricItem>
-                                        <MetricLabel>Precision:</MetricLabel>
-                                        <MetricValue>{(precision * 100).toFixed(1)}%</MetricValue>
-                                    </MetricItem>
-                                    <MetricItem>
-                                        <MetricLabel>Recall:</MetricLabel>
-                                        <MetricValue>{(recall * 100).toFixed(1)}%</MetricValue>
-                                    </MetricItem>
-                                </>
+                                <NeighborItem
+                                    key={index}
+                                    $highlight={isCorrect ? 'correct' : 'incorrect'}
+                                >
+                                    {neighbor}.{labelDict.get(labels[neighbor]) || neighbor}
+                                </NeighborItem>
                             );
-                        })()}
-                    </MetricsContainer>
-                </NeighborsContainer>
-            </DataItemMultiLine>
+                        })}
+                    </NeighborList>
+                </ComponentBlock>
+                <ComponentBlock label="Projection space">
+                    <NeighborList>
+                        {hoveredIndex !== undefined && allEpochData[epoch]?.projectionNeighbors[hoveredIndex]?.map((neighbor, index) => {
+                            const isCorrect = allEpochData[epoch].originalNeighbors[hoveredIndex]?.includes(neighbor);
+                            return (
+                                <NeighborItem
+                                    key={index}
+                                    $highlight={isCorrect ? 'correct' : 'incorrect'}
+                                >
+                                    {neighbor}.{labelDict.get(labels[neighbor]) || neighbor}
+                                </NeighborItem>
+                            );
+                        })}
+                    </NeighborList>
+                </ComponentBlock>
+                <MetricsContainer>
+                    {hoveredIndex !== undefined && (() => {
+                        const original = allEpochData[epoch]?.originalNeighbors[hoveredIndex] || [];
+                        const projection = allEpochData[epoch]?.projectionNeighbors[hoveredIndex] || [];
+                        const truePositives = projection.filter(neighbor => original.includes(neighbor)).length;
+                        const precision = projection.length > 0 ? (truePositives / projection.length) : 0;
+                        const recall = original.length > 0 ? (truePositives / original.length) : 0;
+                        return (
+                            <>
+                                <MetricItem>
+                                    <MetricLabel>Precision:</MetricLabel>
+                                    <MetricValue>{(precision * 100).toFixed(1)}%</MetricValue>
+                                </MetricItem>
+                                <MetricItem>
+                                    <MetricLabel>Recall:</MetricLabel>
+                                    <MetricValue>{(recall * 100).toFixed(1)}%</MetricValue>
+                                </MetricItem>
+                            </>
+                        );
+                    })()}
+                </MetricsContainer>
+            </FunctionalBlock>
+
+            <FunctionalBlock label="">
+            </FunctionalBlock>
         </SampleInspectorContainer>
     );
 };

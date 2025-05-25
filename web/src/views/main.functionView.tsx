@@ -32,7 +32,7 @@ function FunctionViewPanels() {
     const buttonStyle = (isActive: boolean): React.CSSProperties => ({
         width: '20px',
         height: '20px',
-        margin: '0 5px',
+        margin: '0 2px',
         borderRadius: '25%',
         backgroundColor: isActive ? '#007bff' : '#ffffff',
         color: isActive ? '#ffffff' : '#007bff',
