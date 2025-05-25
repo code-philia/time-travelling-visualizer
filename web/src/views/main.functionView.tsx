@@ -6,6 +6,9 @@ import { SamplePanel } from '../component/sample-panel';
 import { VisAnalysisPanel } from '../component/vis-analysis-panel';
 
 import { EpochData, Metrics, useDefaultStore } from '../state/state.rightView';
+import FunctionIcon from '../../assets/settings_applications_24dp_5F6368_FILL0_wght300_GRAD0_opsz24.svg';
+import SampleIcon from '../../assets/frame_inspect_24dp_5F6368_FILL0_wght300_GRAD0_opsz24.svg';
+import VisAnalysisIcon from '../../assets/analytics_24dp_5F6368_FILL0_wght300_GRAD0_opsz24.svg';
 
 
 createRoot(document.getElementById('root')!).render(
@@ -30,7 +33,7 @@ function FunctionViewPanels() {
         width: '20px',
         height: '20px',
         margin: '0 5px',
-        borderRadius: '20%',
+        borderRadius: '25%',
         backgroundColor: isActive ? '#007bff' : '#ffffff',
         color: isActive ? '#ffffff' : '#007bff',
         border: `2px solid ${isActive ? '#007bff' : '#cccccc'}`,
@@ -47,7 +50,7 @@ function FunctionViewPanels() {
         bottom: '-25px',
         left: '50%',
         transform: 'translateX(-50%)',
-        padding: '5px 10px',
+        padding: '5px 5px',
         borderRadius: '4px',
         backgroundColor: '#333',
         color: '#fff',
@@ -71,9 +74,9 @@ function FunctionViewPanels() {
         <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
             <div style={buttonContainerStyle}>
                 {[
-                    { panel: 'FunctionPanel', icon: '🛠️', tooltip: 'Function Panel' },
-                    { panel: 'SamplePanel', icon: '📊', tooltip: 'Sample Panel' },
-                    { panel: 'VisAnalysisPanel', icon: '📈', tooltip: 'Vis Analysis Panel' },
+                    { panel: 'FunctionPanel', icon: FunctionIcon, tooltip: 'Function Panel' },
+                    { panel: 'SamplePanel', icon: SampleIcon, tooltip: 'Sample Panel' },
+                    { panel: 'VisAnalysisPanel', icon: VisAnalysisIcon, tooltip: 'Vis Analysis Panel' },
                 ].map(({ panel, icon, tooltip }) => (
                     <div
                         key={panel}
@@ -90,7 +93,7 @@ function FunctionViewPanels() {
                             tooltipDiv.style.visibility = 'hidden';
                         }}
                     >
-                        {icon}
+                        <img src={icon} alt={`${panel} icon`} style={{ width: '20px', height: '20px' }} />
                         <div className="tooltip" style={tooltipStyle}>
                             {tooltip}
                         </div>
