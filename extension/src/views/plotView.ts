@@ -88,9 +88,8 @@ export class PlotViewManager {
 						epoch: targetEpoch,
 					}
 				}
-				MessageManager.sendToDetailView(msgBack);
+				MessageManager.sendToRightView(msgBack);
 				MessageManager.sendToTokenView(msgBack);
-				MessageManager.sendToVisAnalysisView(msgBack);
 			}
 			else if (msg.command === 'hoveredIndexSwitch') {
 				const hoveredIndex: number = msg.data.hoveredIndex;
@@ -110,7 +109,7 @@ export class PlotViewManager {
 						image: image
 					}
 				}
-				MessageManager.sendToDetailView(msgBack);
+				MessageManager.sendToRightView(msgBack);
 				
 				const msgToTokenView = {
 					command: 'updateHoveredIndex',

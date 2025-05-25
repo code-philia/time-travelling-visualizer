@@ -1,17 +1,13 @@
-import { DetailViewMessageManager, TokenViewMessageManager, PlotViewMessageManager, RightViewMessageManager, VisAnalysisViewMessageManager } from "./viewMessageManager";
+import { TokenViewMessageManager, PlotViewMessageManager, RightViewMessageManager } from "./viewMessageManager";
 
 export class MessageManager { 
     private static tokenViewMessageManager: TokenViewMessageManager;
-    private static detailViewMessageManager: DetailViewMessageManager;
     private static plotViewMessageManager: PlotViewMessageManager;
     private static rightViewMessageManager: RightViewMessageManager;
-    private static visAnalysisViewMessageManager: VisAnalysisViewMessageManager;
 
     static initializeView() {
         this.tokenViewMessageManager = new TokenViewMessageManager();
-        this.detailViewMessageManager = new DetailViewMessageManager();
         this.rightViewMessageManager = new RightViewMessageManager();
-        this.visAnalysisViewMessageManager = new VisAnalysisViewMessageManager();
     }
 
     static getRightViewMessageManager(): RightViewMessageManager {
@@ -22,16 +18,8 @@ export class MessageManager {
         return this.tokenViewMessageManager;
     }
 
-    static getDetailViewMessageManager(): DetailViewMessageManager {
-        return this.detailViewMessageManager;
-    }
-
     static getPlotViewMessageManager(): PlotViewMessageManager {
         return this.plotViewMessageManager;
-    }
-
-    static getVisAnalysisViewMessageManager(): VisAnalysisViewMessageManager {
-        return this.visAnalysisViewMessageManager;
     }
 
     static setPlotViewMessageManager(_plotViewMessageManager: PlotViewMessageManager) {
@@ -52,24 +40,10 @@ export class MessageManager {
         return this.tokenViewMessageManager.postMessage(msg);
     }
 
-    static sendToDetailView(msg: any): Promise<boolean> {
-        if (!this.detailViewMessageManager) {
-            return Promise.resolve(false);
-        }
-        return this.detailViewMessageManager.postMessage(msg);
-    }
-
     static sendToRightView(msg: any): Promise<boolean> {
         if (!this.rightViewMessageManager) {
             return Promise.resolve(false);
         }
         return this.rightViewMessageManager.postMessage(msg);
-    }
-
-    static sendToVisAnalysisView(msg: any): Promise<boolean> {
-        if (!this.visAnalysisViewMessageManager) {
-            return Promise.resolve(false);
-        }
-        return this.visAnalysisViewMessageManager.postMessage(msg);
     }
 }

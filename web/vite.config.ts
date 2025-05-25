@@ -38,9 +38,7 @@ export default defineConfig({
                 full: resolve(__dirname, './index.html'),
                 extensionPanel: resolve(__dirname, './configs/extension-token-view/index.html'),
                 extensionPlot: resolve(__dirname, './configs/extension-plot-view/index.html'),
-                extensionDetail: resolve(__dirname, './configs/extension-sample-view/index.html'),
                 extensionRight: resolve(__dirname, './configs/extension-function-view/index.html'),
-                extensionVis: resolve(__dirname, './configs/extension-vis-analysis-view/index.html'),
             }
         },
     }

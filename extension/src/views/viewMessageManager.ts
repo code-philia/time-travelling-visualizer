@@ -40,22 +40,6 @@ export class TokenViewMessageManager extends ViewMessageManager {
     }
 }
 
-export class DetailViewMessageManager extends ViewMessageManager {
-    constructor() {
-        super();
-        if (!this.provider) {
-            this.provider = new DetailViewProvider(
-                config.isDev ? config.panelWebviewPort : undefined,
-                config.isDev ? '' : undefined
-            );
-        }
-    }
-
-    public getWebViewProvider(): DetailViewProvider {
-        return this.provider as DetailViewProvider;
-    }
-}
-
 export class PlotViewMessageManager{
     static panel: vscode.WebviewPanel | undefined;
 
@@ -84,21 +68,5 @@ export class RightViewMessageManager extends ViewMessageManager {
 
     public getWebViewProvider(): RightViewProvider {
         return this.provider as RightViewProvider;
-    }
-}
-
-export class VisAnalysisViewMessageManager extends ViewMessageManager {
-    constructor() {
-        super();
-        if (!this.provider) {
-            this.provider = new VisAnalysisViewProvider(
-                config.isDev ? config.panelWebviewPort : undefined,
-                config.isDev ? '' : undefined
-            );
-        }
-    }
-
-    public getWebViewProvider(): VisAnalysisViewProvider {
-        return this.provider as VisAnalysisViewProvider;
     }
 }

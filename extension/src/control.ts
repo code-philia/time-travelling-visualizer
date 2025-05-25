@@ -385,6 +385,7 @@ export async function loadVisualization(forceReconfig: boolean = false): Promise
 	
 
 	// 4. send message to views
+	// to plot view
 	const settings = getPlotSettings();
 	const msgToPlotView = {
 		command: 'initPlotSettings',
@@ -398,27 +399,20 @@ export async function loadVisualization(forceReconfig: boolean = false): Promise
 	};
 	MessageManager.sendToPlotView(msgToPlotView1);
 
-	const msgToDetailView = {
+	// to function view
+	const msgToFunctionView = {
 		command: 'init',
 		data: {
 			labels: data['labelList'],
 			labelTextList: data['labelTextList'],
 			availableEpochs: data['availableEpochs'],
-		}
-	};
-	MessageManager.sendToDetailView(msgToDetailView);
-
-	const msgToRightView = {
-		command: 'init',
-		data: {
-			labelTextList: data['labelTextList'],
 			colorList: data['colorList'],
 			tokenList: data['tokenList'],
-			availableEpochs: data['availableEpochs'],
 		}
 	};
-	MessageManager.sendToRightView(msgToRightView);
+	MessageManager.sendToRightView(msgToFunctionView);
 
+	// to token view
 	const msgToTokenView = {
 		command: 'init',
 		data: {
@@ -473,6 +467,8 @@ async function loadEpochData(config: api.BasicVisualizationConfig, epoch: number
 	}
 	const predAndConf = convertPropsToPredictions(predProbability);
 
+	// send messages to views
+	// to plot view
 	const msgToPlotView = {
 		command: 'updateEpochData',
 		data: {
@@ -489,8 +485,9 @@ async function loadEpochData(config: api.BasicVisualizationConfig, epoch: number
 	};
 	MessageManager.sendToPlotView(msgToPlotView);
 
-	const msgToDetailView = {
-		command: 'updatePrediction',
+	// to function view
+	const msgToFunctionView = {
+		command: 'updateEpochData',
 		data: {
 			epoch: epoch,
 			prediction: predAndConf.pred,
@@ -498,10 +495,13 @@ async function loadEpochData(config: api.BasicVisualizationConfig, epoch: number
 			probability: predProbability,
 			originalNeighbors: originalNeighbors,
 			projectionNeighbors: projectionNeighbors,
+			projection: projectionRes['projection'],
+			embedding: embeddingRes['representation']
 		}
 	};
-	MessageManager.sendToDetailView(msgToDetailView);
+	MessageManager.sendToRightView(msgToFunctionView);
 
+	// to token view
 	const msgToTokenView = {
 		command: 'updateNeighbors',
 		data: {
@@ -511,16 +511,6 @@ async function loadEpochData(config: api.BasicVisualizationConfig, epoch: number
 		}
 	};
 	MessageManager.sendToTokenView(msgToTokenView);
-
-	const msgToRightView = {
-		command: 'updateEpochData',
-		data: {
-			epoch: epoch,
-			projection: projectionRes['projection'],
-			embedding: embeddingRes['representation']
-		}
-	};
-	MessageManager.sendToRightView(msgToRightView);
 }
 
 export async function loadVisualizationThroughTreeItem(trainingProcess: string, visualizationID: string): Promise<boolean> {
