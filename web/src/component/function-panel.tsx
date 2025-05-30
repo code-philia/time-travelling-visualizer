@@ -242,7 +242,6 @@ export function FunctionPanel() {
                     </ComponentBlock>
                 }
             </FunctionalBlock>
-            <Divider></Divider>
             <FunctionalBlock label="Categories">
                 <ComponentBlock>
                     <div className="class-list">
@@ -263,7 +262,6 @@ export function FunctionPanel() {
                     </div>
                 </ComponentBlock>
             </FunctionalBlock>
-            <Divider />
             <FunctionalBlock label="Selected">
                 <ComponentBlock>
                     <div className="tag-list">
@@ -292,7 +290,6 @@ export function FunctionPanel() {
                     </div>
                 </ComponentBlock>
             </FunctionalBlock>
-            <Divider />
             <FunctionalBlock label="Filter">
                 <Checkbox.Group
                     options={[
@@ -310,9 +307,10 @@ export function FunctionPanel() {
             <FunctionalBlock label="Highlight">
                 <HighlightOptionBlock />
             </FunctionalBlock>
-            <Divider />
             <FunctionalBlock label="Distance">
                 <DistanceBlock />
+            </FunctionalBlock>
+            <FunctionalBlock label="">
             </FunctionalBlock>
         </div>
     )
@@ -490,35 +488,55 @@ function DistanceBlock() {
         <div className="distance-block" style={{ maxHeight: '400px', overflowY: 'auto', paddingRight: '8px' }}>
             {distanceData.length > 0 ? (
                 <List
-                    size="large"
+                    size="default"
                     bordered
                     dataSource={distanceData}
                     renderItem={({ pair, current, prevDiff, firstDiff }) => (
                         <List.Item style={{ padding: '16px', borderRadius: '8px', backgroundColor: '#f9f9f9', marginBottom: '8px' }}>
                             <div style={{ width: '100%' }}>
-                                <h4 style={{ marginBottom: '12px', fontWeight: 'bold', color: '#1890ff' }}>
+                                <div style={{ marginBottom: '12px', fontWeight: 'bold', color: '#1890ff' }}>
                                     Pair: {pair[0]} & {pair[1]}
-                                </h4>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                    <div style={{ flex: 1, marginRight: '16px' }}>
-                                        <strong style={{ color: '#595959' }}>Current Epoch:</strong>
+                                </div>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                    <div style={{ flex: '1 1 30%', marginRight: '16px', minWidth: '200px' }}>
+                                        <strong style={{ color: '#595959' }}>Current:</strong>
                                         <ul style={{ paddingLeft: '16px', margin: '8px 0', listStyleType: 'circle' }}>
-                                            <li>Projection: {current.projection.toFixed(4)}</li>
-                                            <li>Embedding: {current.embedding.toFixed(4)}</li>
+                                            <li>L: {current.projection.toFixed(4)}</li>
+                                            <li>H: {current.embedding.toFixed(4)}</li>
                                         </ul>
                                     </div>
-                                    <div style={{ flex: 1, marginRight: '16px' }}>
-                                        <strong style={{ color: '#595959' }}>Change from Previous:</strong>
+                                    <div style={{ flex: '1 1 30%', marginRight: '16px', minWidth: '200px' }}>
+                                        <strong style={{ color: '#595959' }}>From Previous:</strong>
                                         <ul style={{ paddingLeft: '16px', margin: '8px 0', listStyleType: 'circle' }}>
-                                            <li>Projection: {prevDiff.projection.toFixed(4)}</li>
-                                            <li>Embedding: {prevDiff.embedding.toFixed(4)}</li>
+                                            <li>
+                                                L: {prevDiff.projection.toFixed(4)}{' '}
+                                                <span style={{ color: prevDiff.projection > 0 ? '#ff4d4f' : '#52c41a' }}>
+                                                    {prevDiff.projection > 0 ? '↑' : '↓'}
+                                                </span>
+                                            </li>
+                                            <li>
+                                                H: {prevDiff.embedding.toFixed(4)}{' '}
+                                                <span style={{ color: prevDiff.embedding > 0 ? '#ff4d4f' : '#52c41a' }}>
+                                                    {prevDiff.embedding > 0 ? '↑' : '↓'}
+                                                </span>
+                                            </li>
                                         </ul>
                                     </div>
-                                    <div style={{ flex: 1 }}>
-                                        <strong style={{ color: '#595959' }}>Change from First:</strong>
+                                    <div style={{ flex: '1 1 30%', minWidth: '200px' }}>
+                                        <strong style={{ color: '#595959' }}>From First:</strong>
                                         <ul style={{ paddingLeft: '16px', margin: '8px 0', listStyleType: 'circle' }}>
-                                            <li>Projection: {firstDiff.projection.toFixed(4)}</li>
-                                            <li>Embedding: {firstDiff.embedding.toFixed(4)}</li>
+                                            <li>
+                                                L: {firstDiff.projection.toFixed(4)}{' '}
+                                                <span style={{ color: firstDiff.projection > 0 ? '#ff4d4f' : '#52c41a' }}>
+                                                    {firstDiff.projection > 0 ? '↑' : '↓'}
+                                                </span>
+                                            </li>
+                                            <li>
+                                                H: {firstDiff.embedding.toFixed(4)}{' '}
+                                                <span style={{ color: firstDiff.embedding > 0 ? '#ff4d4f' : '#52c41a' }}>
+                                                    {firstDiff.embedding > 0 ? '↑' : '↓'}
+                                                </span>
+                                            </li>
                                         </ul>
                                     </div>
                                 </div>
