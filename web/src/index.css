@@ -350,6 +350,8 @@ body {
 .info-column {
   border-left: 1px solid var(--layout-border-color);
   background-color: var(--theme-background-grey);
+  overflow-y: auto;
+  max-height: 95%;
 }
 
 #control-panel {
