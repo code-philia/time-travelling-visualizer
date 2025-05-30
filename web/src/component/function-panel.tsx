@@ -485,67 +485,116 @@ function DistanceBlock() {
     }, [allEpochData, selectedIndices, availableEpochs, epoch]);
 
     return (
-        <div className="distance-block" style={{ maxHeight: '400px', overflowY: 'auto', paddingRight: '8px' }}>
+        <div
+            className="distance-block"
+            style={{
+                maxHeight: '320px',
+                overflowY: 'auto',
+                width: '100%',
+                fontSize: '12px',
+                fontFamily: 'monospace',
+            }}
+        >
             {distanceData.length > 0 ? (
-                <List
-                    size="default"
-                    bordered
-                    dataSource={distanceData}
-                    renderItem={({ pair, current, prevDiff, firstDiff }) => (
-                        <List.Item style={{ padding: '16px', borderRadius: '8px', backgroundColor: '#f9f9f9', marginBottom: '8px' }}>
-                            <div style={{ width: '100%' }}>
-                                <div style={{ marginBottom: '12px', fontWeight: 'bold', color: '#1890ff' }}>
-                                    Pair: {pair[0]} & {pair[1]}
-                                </div>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                    <div style={{ flex: '1 1 30%', marginRight: '16px', minWidth: '200px' }}>
-                                        <strong style={{ color: '#595959' }}>Current:</strong>
-                                        <ul style={{ paddingLeft: '16px', margin: '8px 0', listStyleType: 'circle' }}>
-                                            <li>L: {current.projection.toFixed(4)}</li>
-                                            <li>H: {current.embedding.toFixed(4)}</li>
-                                        </ul>
-                                    </div>
-                                    <div style={{ flex: '1 1 30%', marginRight: '16px', minWidth: '200px' }}>
-                                        <strong style={{ color: '#595959' }}>From Previous:</strong>
-                                        <ul style={{ paddingLeft: '16px', margin: '8px 0', listStyleType: 'circle' }}>
-                                            <li>
-                                                L: {prevDiff.projection.toFixed(4)}{' '}
-                                                <span style={{ color: prevDiff.projection > 0 ? '#ff4d4f' : '#52c41a' }}>
-                                                    {prevDiff.projection > 0 ? '↑' : '↓'}
-                                                </span>
-                                            </li>
-                                            <li>
-                                                H: {prevDiff.embedding.toFixed(4)}{' '}
-                                                <span style={{ color: prevDiff.embedding > 0 ? '#ff4d4f' : '#52c41a' }}>
-                                                    {prevDiff.embedding > 0 ? '↑' : '↓'}
-                                                </span>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                    <div style={{ flex: '1 1 30%', minWidth: '200px' }}>
-                                        <strong style={{ color: '#595959' }}>From First:</strong>
-                                        <ul style={{ paddingLeft: '16px', margin: '8px 0', listStyleType: 'circle' }}>
-                                            <li>
-                                                L: {firstDiff.projection.toFixed(4)}{' '}
-                                                <span style={{ color: firstDiff.projection > 0 ? '#ff4d4f' : '#52c41a' }}>
-                                                    {firstDiff.projection > 0 ? '↑' : '↓'}
-                                                </span>
-                                            </li>
-                                            <li>
-                                                H: {firstDiff.embedding.toFixed(4)}{' '}
-                                                <span style={{ color: firstDiff.embedding > 0 ? '#ff4d4f' : '#52c41a' }}>
-                                                    {firstDiff.embedding > 0 ? '↑' : '↓'}
-                                                </span>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        </List.Item>
-                    )}
-                />
+                <table style={{ width: '90%', fontSize: '12px' }}>
+                    <thead>
+                        <tr style={{ background: '#f5f5f5' }}>
+                            <th style={{ 
+                                padding: '4px', 
+                                border: '1px solid #eee', 
+                                fontWeight: 600, 
+                                textAlign: 'center',
+                                position: 'sticky',
+                                top: 0,
+                                background: '#f5f5f5',
+                                zIndex: 1
+                            }}>Pair</th>
+                            <th style={{ 
+                                padding: '4px', 
+                                border: '1px solid #eee', 
+                                textAlign: 'center',
+                                position: 'sticky',
+                                top: 0,
+                                background: '#f5f5f5',
+                                zIndex: 1
+                            }}>L</th>
+                            <th style={{ 
+                                padding: '4px', 
+                                border: '1px solid #eee', 
+                                textAlign: 'center',
+                                position: 'sticky',
+                                top: 0,
+                                background: '#f5f5f5',
+                                zIndex: 1
+                            }}>H</th>
+                            <th style={{ 
+                                padding: '4px', 
+                                border: '1px solid #eee', 
+                                textAlign: 'center',
+                                position: 'sticky',
+                                top: 0,
+                                background: '#f5f5f5',
+                                zIndex: 1
+                            }}>ΔL(prev)</th>
+                            <th style={{ 
+                                padding: '4px', 
+                                border: '1px solid #eee', 
+                                textAlign: 'center',
+                                position: 'sticky',
+                                top: 0,
+                                background: '#f5f5f5',
+                                zIndex: 1
+                            }}>ΔH(prev)</th>
+                            <th style={{ 
+                                padding: '4px', 
+                                border: '1px solid #eee', 
+                                textAlign: 'center',
+                                position: 'sticky',
+                                top: 0,
+                                background: '#f5f5f5',
+                                zIndex: 1
+                            }}>ΔL(first)</th>
+                            <th style={{ 
+                                padding: '4px', 
+                                border: '1px solid #eee', 
+                                textAlign: 'center',
+                                position: 'sticky',
+                                top: 0,
+                                background: '#f5f5f5',
+                                zIndex: 1
+                            }}>ΔH(first)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {distanceData.map(({ pair, current, prevDiff, firstDiff }) => (
+                            <tr key={`${pair[0]}-${pair[1]}`}>
+                                <td style={{ padding: '4px', border: '1px solid #eee', textAlign: 'center', color: '#1890ff', fontWeight: 500 }}>
+                                    {pair[0]}&ndash;{pair[1]}
+                                </td>
+                                <td style={{ padding: '4px', border: '1px solid #eee', textAlign: 'center' }}>
+                                    {current.projection.toFixed(3)}
+                                </td>
+                                <td style={{ padding: '4px', border: '1px solid #eee', textAlign: 'center' }}>
+                                    {current.embedding.toFixed(3)}
+                                </td>
+                                <td style={{ padding: '4px', border: '1px solid #eee', textAlign: 'center', color: prevDiff.projection > 0 ? '#ff4d4f' : '#52c41a' }}>
+                                    {prevDiff.projection > 0 ? '+' : ''}{prevDiff.projection.toFixed(3)}
+                                </td>
+                                <td style={{ padding: '4px', border: '1px solid #eee', textAlign: 'center', color: prevDiff.embedding > 0 ? '#ff4d4f' : '#52c41a' }}>
+                                    {prevDiff.embedding > 0 ? '+' : ''}{prevDiff.embedding.toFixed(3)}
+                                </td>
+                                <td style={{ padding: '4px', border: '1px solid #eee', textAlign: 'center', color: firstDiff.projection > 0 ? '#ff4d4f' : '#52c41a' }}>
+                                    {firstDiff.projection > 0 ? '+' : ''}{firstDiff.projection.toFixed(3)}
+                                </td>
+                                <td style={{ padding: '4px', border: '1px solid #eee', textAlign: 'center', color: firstDiff.embedding > 0 ? '#ff4d4f' : '#52c41a' }}>
+                                    {firstDiff.embedding > 0 ? '+' : ''}{firstDiff.embedding.toFixed(3)}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
             ) : (
-                <div className="alt-text placeholder-block" style={{ textAlign: 'center', color: '#888' }}>
+                <div className="alt-text placeholder-block" style={{ textAlign: 'center', color: '#888', fontSize: '12px' }}>
                     No sufficient data to calculate distances
                 </div>
             )}
