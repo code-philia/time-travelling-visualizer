@@ -369,7 +369,7 @@ def load_single_attribute(content_path, epoch, attribute):
         file_path = os.path.join(content_path, 'epochs', f'epoch_{epoch}', 'inter_similarity.npy')
         attr_data = read_from_file(file_path)
     elif attribute == 'representation':
-        file_path = os.path.join(content_path, 'epochs', f'epoch_{epoch}', 'embedding.npy')
+        file_path = os.path.join(content_path, 'epochs', f'epoch_{epoch}', 'embeddings.npy')
         attr_data = read_from_file(file_path)
     elif attribute == 'prediction':
         file_path = os.path.join(content_path, 'epochs', f'epoch_{epoch}', 'predictions.npy')
