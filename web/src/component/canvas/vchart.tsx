@@ -16,7 +16,7 @@ export const ChartComponent = memo(() => {
     const { inherentLabelData, labelDict, colorDict } = useDefaultStore(["inherentLabelData", "labelDict", "colorDict"]);
     // const { filterValue, filterType } = useDefaultStore(["filterValue", "filterType"]);
     // const { filterState } = useDefaultStore(["filterState"]);
-    const { showIndex, showLabel,showBackground, textData } = useDefaultStore(["showIndex", "showLabel", "showBackground","textData"])
+    const { showIndex, showLabel,showBackground, showTrail, textData } = useDefaultStore(["showIndex", "showLabel", "showBackground","showTrail","textData"])
     const { availableEpochs } = useDefaultStore(["availableEpochs"]);
     const { revealProjectionNeighbors, revealOriginalNeighbors } = useDefaultStore(["revealProjectionNeighbors", "revealOriginalNeighbors"]);
     const { hoveredIndex, setHoveredIndex, selectedIndices, setSelectedIndices, selectedListener } = useDefaultStore(["hoveredIndex", "setHoveredIndex", "selectedIndices", "setSelectedIndices", "selectedListener"]);
@@ -517,6 +517,10 @@ export const ChartComponent = memo(() => {
          if (!vchartRef.current) {
              return;
          }
+         if (!showTrail || selectedIndices.length === 0) {
+             vchartRef.current.updateDataSync('trails', []);
+             return;
+         }
          const trailpoints: { trailId: number, x: number, y: number, opacity: number }[] = [];
          const epochId = availableEpochs.indexOf(epoch);
          selectedIndices.forEach(idx => {
@@ -531,7 +535,7 @@ export const ChartComponent = memo(() => {
              }
          });
          vchartRef.current.updateDataSync('trails', trailpoints);
-     }, [selectedIndices, epoch, availableEpochs, allEpochData]);
+     }, [showTrail, selectedIndices, epoch, availableEpochs, allEpochData]);
 
     return <div
         ref={chartRef}

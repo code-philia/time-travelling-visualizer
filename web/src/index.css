@@ -378,7 +378,6 @@ body {
 
 #canvas-wrapper {
   flex: 1;
-  border-radius: 3px;
   overflow: hidden;
   background-color: white;
 }

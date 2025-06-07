@@ -277,7 +277,10 @@ def get_image_data():
         })
         return make_response(result, 200)
     except Exception as e:
-        return make_response(jsonify({'error_message': 'Error in loading image'}), 400)
+        result = jsonify({
+            'image_base64': ''
+        })
+        return make_response(result, 200)
 
 
 """

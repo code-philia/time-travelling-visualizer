@@ -98,7 +98,7 @@ export class PlotViewManager {
 					return;
 				}
 
-				let image = '';
+				let image: string|null = '';
 				if (config.taskType === 'Classification') { 
 					image = await getImageData(config.contentPath, hoveredIndex);
 				}
@@ -106,7 +106,7 @@ export class PlotViewManager {
 					command: 'updateHoveredIndex',
 					data: {
 						hoveredIndex: hoveredIndex,
-						image: image
+						image: image? image : '',
 					}
 				}
 				MessageManager.sendToRightView(msgBack);

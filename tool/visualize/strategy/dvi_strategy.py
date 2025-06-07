@@ -46,7 +46,7 @@ class DeepVisualInsight(StrategyAbstractClass):
         INIT_NUM = 100
         
         # visualize model of last epoch
-        prev_model = VisModel(self.config['vis_config']['endocer_dims'], self.config['vis_config']['decoder_dims']).to(self.device)
+        prev_model = VisModel(self.config['vis_config']['encoder_dims'], self.config['vis_config']['decoder_dims']).to(self.device)
         prev_model.load_state_dict(self.visualize_model.state_dict())
         for param in prev_model.parameters():
             param.requires_grad = False
