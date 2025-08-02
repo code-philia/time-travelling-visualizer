@@ -5,7 +5,7 @@ import { loadHomePage } from './plotView';
 import path from 'path';
 import { MessageManager } from './messageManager';
 import { getBasicConfig } from '../control';
-import { fetchTrainingProcessInfo, getAttributeResource, getText, getVisualizeMetrics } from '../communication/api';
+import { fetchTrainingProcessInfo, getAttributeResource, getInfluenceSamples, getText, getVisualizeMetrics } from '../communication/api';
 
 export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
     public abstract webview?: vscode.Webview;
@@ -240,6 +240,63 @@ export class RightViewProvider extends BaseViewProvider {
                 }
                 MessageManager.sendToPlotView(msgToPlotView);
             }
+            else if (msg.command === 'trainingEventClicked') {
+                const config = getBasicConfig();
+                if (!config) {
+                    vscode.window.showErrorMessage("Configuration is not available.");
+                    return;
+                }
+                const epoch = msg.epoch;
+                const type = msg.data.type; // type can be 'PredictionFlip' ...
+                if (type === 'PredictionFlip') {
+                    const IFSamplesRes:any = await getInfluenceSamples(config.contentPath, epoch, msg.data);
+                    const msgToInfluenceView = {
+                        command: 'updateInfluenceSamples',
+                        data: {
+                            ...msg.data,
+                            maxInfluence: IFSamplesRes['max_influence'],
+                            minInfluence: IFSamplesRes['min_influence'],
+                        }
+                    };
+                    MessageManager.sendToInfluenceView(msgToInfluenceView);
+                }
+            }
+        });
+    }
+}
+
+export class InfluenceViewProvider extends BaseViewProvider {
+    private readonly port?: number;
+    private readonly path?: string;
+    public webview?: vscode.Webview;
+
+    constructor(port?: number, path?: string) {
+        super();
+        this.port = port;
+        this.path = path;
+    }
+
+    public resolveWebviewView(
+        webviewView: vscode.WebviewView,
+        context: vscode.WebviewViewResolveContext,
+        token: vscode.CancellationToken
+    ) {
+        this.webview = webviewView.webview;
+
+        webviewView.webview.options = CONFIG.getDefaultWebviewOptions();
+
+        if (CONFIG.isDev) {
+            webviewView.webview.html = getLiveWebviewHtml(webviewView.webview, this.port, false, this.path);
+        } else {
+            webviewView.webview.html = loadHomePage(
+                webviewView.webview,
+                path.join(CONFIG.GlobalStorageContext.webRoot, 'configs', 'extension-influence-view', 'index.html'),
+                '(?!http:\\/\\/|https:\\/\\/)([^"]*\\.[^"]+)', // remember to double-back-slash here
+                path.join(CONFIG.GlobalStorageContext.webRoot)
+            );
+        }
+
+        webviewView.webview.onDidReceiveMessage(async msg => {
         });
     }
 }

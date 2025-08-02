@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as config from '../config';
-import { BaseViewProvider,TokenViewProvider, DetailViewProvider, RightViewProvider, VisAnalysisViewProvider } from './viewProvider';
+import { BaseViewProvider,TokenViewProvider, RightViewProvider, InfluenceViewProvider } from './viewProvider';
 
 /**
  * This is a middle layer between the view provider/panel and message.
@@ -68,5 +68,21 @@ export class RightViewMessageManager extends ViewMessageManager {
 
     public getWebViewProvider(): RightViewProvider {
         return this.provider as RightViewProvider;
+    }
+}
+
+export class InfluenceViewMessageManager extends ViewMessageManager {
+    constructor() {
+        super();
+        if (!this.provider) {
+            this.provider = new InfluenceViewProvider(
+                config.isDev ? config.panelWebviewPort : undefined,
+                config.isDev ? '' : undefined
+            );
+        }
+    }
+
+    public getWebViewProvider(): InfluenceViewProvider {
+        return this.provider as InfluenceViewProvider;
     }
 }

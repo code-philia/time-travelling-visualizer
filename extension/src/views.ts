@@ -20,6 +20,12 @@ export function doViewsRegistration(): vscode.Disposable {
         { webviewOptions: { retainContextWhenHidden: true } }
     );
 
+    const influenceViewRegistration = vscode.window.registerWebviewViewProvider(
+        config.ViewsID.influenceView,
+        MessageManager.getInfluenceViewMessageManager().getWebViewProvider(),
+        { webviewOptions: { retainContextWhenHidden: true } }
+    );
+
     // Prepare for registration of tree view
     // const browseTreeViewRegistration = new BrowseTreeView();
     const trainginProcessTreeViewRegistration = new TrainingProcessTreeView();
@@ -27,6 +33,7 @@ export function doViewsRegistration(): vscode.Disposable {
     return vscode.Disposable.from(
         inspectViewRegistration,
         rightViewRegistration,
+        influenceViewRegistration,
         trainginProcessTreeViewRegistration
     );
 

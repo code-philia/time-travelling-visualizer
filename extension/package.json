@@ -346,9 +346,14 @@
       ],
       "panel": [
         {
-            "id": "visualizer-panel",
-            "title": "Tokens Overview",
-            "icon": "resources/text_fields_24dp_5F6368_FILL0_wght300_GRAD0_opsz24.svg"
+          "id": "visualizer-panel",
+          "title": "Tokens Overview",
+          "icon": "resources/text_fields_24dp_5F6368_FILL0_wght300_GRAD0_opsz24.svg"
+        },
+        {
+          "id": "influence-panel",
+          "title": "Influence View",
+          "icon": "resources/eye_tracking_24dp_5F6368_FILL0_wght300_GRAD0_opsz24.svg"
         }
       ]
     },
@@ -358,6 +363,13 @@
           "type": "webview",
           "id": "visualizer-inspect-view",
           "name": "Tokens Overview"
+        }
+      ],
+      "influence-panel": [
+        {
+          "type": "webview",
+          "id": "visualizer-influence-view",
+          "name": "Influence View"
         }
       ],
       "right-panel": [

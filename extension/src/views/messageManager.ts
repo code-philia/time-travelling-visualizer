@@ -1,17 +1,23 @@
-import { TokenViewMessageManager, PlotViewMessageManager, RightViewMessageManager } from "./viewMessageManager";
+import { TokenViewMessageManager, PlotViewMessageManager, RightViewMessageManager, InfluenceViewMessageManager } from "./viewMessageManager";
 
 export class MessageManager { 
     private static tokenViewMessageManager: TokenViewMessageManager;
     private static plotViewMessageManager: PlotViewMessageManager;
     private static rightViewMessageManager: RightViewMessageManager;
+    private static influenceViewMessageManager: InfluenceViewMessageManager;
 
     static initializeView() {
         this.tokenViewMessageManager = new TokenViewMessageManager();
         this.rightViewMessageManager = new RightViewMessageManager();
+        this.influenceViewMessageManager = new InfluenceViewMessageManager();
     }
 
     static getRightViewMessageManager(): RightViewMessageManager {
         return this.rightViewMessageManager;
+    }
+
+    static getInfluenceViewMessageManager(): InfluenceViewMessageManager {
+        return this.influenceViewMessageManager;
     }
 
     static getTokenViewMessageManager(): TokenViewMessageManager {
@@ -45,5 +51,12 @@ export class MessageManager {
             return Promise.resolve(false);
         }
         return this.rightViewMessageManager.postMessage(msg);
+    }
+
+    static sendToInfluenceView(msg: any): Promise<boolean> {
+        if (!this.influenceViewMessageManager) {
+            return Promise.resolve(false);
+        }
+        return this.influenceViewMessageManager.postMessage(msg);
     }
 }
