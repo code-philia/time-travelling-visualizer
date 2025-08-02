@@ -3,9 +3,9 @@ import { createRoot } from 'react-dom/client';
 import '../index.css';
 import { FunctionPanel } from '../component/function-panel';
 import { SamplePanel } from '../component/sample-panel';
-import { VisAnalysisPanel } from '../component/vis-analysis-panel';
+import { TrainingEventPanel } from '../component/training-event-panel';
 
-import { EpochData, Metrics, useDefaultStore } from '../state/state.rightView';
+import { EpochData, useDefaultStore } from '../state/state.rightView';
 import FunctionIcon from '../../assets/settings_applications_24dp_5F6368_FILL0_wght300_GRAD0_opsz24.svg';
 import SampleIcon from '../../assets/frame_inspect_24dp_5F6368_FILL0_wght300_GRAD0_opsz24.svg';
 import VisAnalysisIcon from '../../assets/analytics_24dp_5F6368_FILL0_wght300_GRAD0_opsz24.svg';
@@ -27,7 +27,7 @@ function AppFunctionViewOnly() {
 }
 
 function FunctionViewPanels() {
-    const [activePanel, setActivePanel] = useState<'FunctionPanel' | 'SamplePanel' | 'VisAnalysisPanel'>('FunctionPanel');
+    const [activePanel, setActivePanel] = useState<'FunctionPanel' | 'SamplePanel' | 'TrainingEventPanel'>('FunctionPanel');
 
     const buttonStyle = (isActive: boolean): React.CSSProperties => ({
         width: '20px',
@@ -49,7 +49,7 @@ function FunctionViewPanels() {
         position: 'absolute',
         bottom: '-25px',
         left: '50%',
-        transform: 'translateX(-50%)',
+        transform: 'translateX(-75%)',
         padding: '5px 5px',
         borderRadius: '4px',
         backgroundColor: '#333',
@@ -59,6 +59,7 @@ function FunctionViewPanels() {
         opacity: 0,
         visibility: 'hidden',
         transition: 'opacity 0.3s ease, visibility 0.3s ease',
+        zIndex: 9999,
     };
 
     const buttonContainerStyle: React.CSSProperties = {
@@ -76,7 +77,7 @@ function FunctionViewPanels() {
                 {[
                     { panel: 'FunctionPanel', icon: FunctionIcon, tooltip: 'Function Panel' },
                     { panel: 'SamplePanel', icon: SampleIcon, tooltip: 'Sample Panel' },
-                    { panel: 'VisAnalysisPanel', icon: VisAnalysisIcon, tooltip: 'Vis Analysis Panel' },
+                    { panel: 'TrainingEventPanel', icon: VisAnalysisIcon, tooltip: 'Training Event Panel' },
                 ].map(({ panel, icon, tooltip }) => (
                     <div
                         key={panel}
@@ -103,7 +104,7 @@ function FunctionViewPanels() {
             <div style={{ flex: 1, display: 'flex' }}>
                 {activePanel === 'FunctionPanel' && <FunctionPanel />}
                 {activePanel === 'SamplePanel' && <SamplePanel />}
-                {activePanel === 'VisAnalysisPanel' && <VisAnalysisPanel />}
+                {activePanel === 'TrainingEventPanel' && <TrainingEventPanel />}
             </div>
         </div>
     );
@@ -112,7 +113,6 @@ function FunctionViewPanels() {
 function MessageHandler() {
     const { setValue } = useDefaultStore(['setValue']);
     const allEpochDataCopy: Record<number, EpochData> = {};
-    const allEpochMetricsCopy: Record<number, Metrics> = {};
 
     useEffect(() => {
         const handleMessage = (event: MessageEvent) => {
@@ -167,18 +167,6 @@ function MessageHandler() {
                 };
                 allEpochDataCopy[messageData.epoch] = newEpochData;
                 setValue('allEpochData', allEpochDataCopy);
-            }
-            else if (message.command === 'updateMetrics') {
-                const messageData = message.data;
-                const newMetrics: Metrics = {
-                    neighborTrustworthiness: messageData.neighborTrustworthiness,
-                    neighborContinuity: messageData.neighborContinuity,
-                    reconstructionPrecision: 0,
-                    abnormalMovementsRatio2D: 0,
-                    movementConsistency: 0
-                };
-                allEpochMetricsCopy[messageData.epoch] = newMetrics;
-                setValue('allEpochMetrics', allEpochMetricsCopy);
             }
             else if (message.command === 'updateEpoch') {
                 const messageData = message.data;

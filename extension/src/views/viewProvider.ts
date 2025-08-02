@@ -31,74 +31,6 @@ export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
     }
 }
 
-export class DetailViewProvider extends BaseViewProvider {
-    private readonly port?: number;
-    private readonly path?: string;
-    public webview?: vscode.Webview;
-
-    constructor(port?: number, path?: string) {
-        super();
-        this.port = port;
-        this.path = path;
-    }
-
-    public async resolveWebviewView(
-        webviewView: vscode.WebviewView,
-        context: vscode.WebviewViewResolveContext,
-        token: vscode.CancellationToken
-    ) {
-        this.webview = webviewView.webview;
-
-        webviewView.webview.options = CONFIG.getDefaultWebviewOptions();
-
-        if (CONFIG.isDev) {
-            webviewView.webview.html = getLiveWebviewHtml(webviewView.webview, this.port, false, this.path);
-        } else {
-            webviewView.webview.html = loadHomePage(
-                webviewView.webview,
-                path.join(CONFIG.GlobalStorageContext.webRoot, 'configs', 'extension-sample-view', 'index.html'),
-                '(?!http:\\/\\/|https:\\/\\/)([^"]*\\.[^"]+)', // remember to double-back-slash here
-                path.join(CONFIG.GlobalStorageContext.webRoot)
-            );
-        }
-
-        if (MessageManager.getPlotViewMessageManager() !== undefined) {
-            const config = getBasicConfig();
-            if (config) {
-                const data: {
-                    labelTextList?: string[],
-                    labelList?: number[],
-                } = {};
-                
-                const trainingInfoRes: any = await fetchTrainingProcessInfo(config.contentPath);
-                data['labelTextList'] = trainingInfoRes['label_text_list'];
-                if (data['labelTextList']) {
-                    const labelDict = new Map<number, string>();
-                    for (let i = 0; i < data['labelTextList'].length; i++) {
-                        labelDict.set(i, data['labelTextList'][i]);
-                    }
-                }
-
-                const labelRes: any = await getAttributeResource(config.contentPath, 1, 'label');
-                data['labelList'] = labelRes['label'];
-                
-                const msgToDetailView = {
-                    command: 'init',
-                    data: {
-                        labels: data['labelList'],
-                        labelTextList: data['labelTextList']
-                    }
-                };
-                this.webview?.postMessage(msgToDetailView);
-            }
-        }
-
-        webviewView.webview.onDidReceiveMessage(msg => {
-            console.log("Detail View received message: ", msg);
-        });
-    }
-}
-
 export class TokenViewProvider extends BaseViewProvider {
     private readonly port?: number;
     private readonly path?: string;
@@ -207,9 +139,9 @@ export class RightViewProvider extends BaseViewProvider {
             );
         }
 
-        webviewView.webview.onDidReceiveMessage(msg => {
+        webviewView.webview.onDidReceiveMessage(async msg => {
             console.log("Right View received message: ", msg);
-            if(msg.command === 'selectedIndicesSwitch') {
+            if (msg.command === 'selectedIndicesSwitch') {
                 const selectedIndices = msg.data.selectedIndices;
                 const msgToPlotView = {
                     command: 'updateSelectedIndices',
@@ -220,7 +152,7 @@ export class RightViewProvider extends BaseViewProvider {
                 MessageManager.sendToPlotView(msgToPlotView);
                 MessageManager.sendToTokenView(msgToPlotView);
             }
-            else if(msg.command === 'shownDataSwitch') {
+            else if (msg.command === 'shownDataSwitch') {
                 const shownData = msg.data.shownData;
                 const msgToPlotView = {
                     command: 'updateshownData',
@@ -230,7 +162,7 @@ export class RightViewProvider extends BaseViewProvider {
                 }
                 MessageManager.sendToPlotView(msgToPlotView);
             }
-            else if(msg.command === 'highlightDataSwitch') {
+            else if (msg.command === 'highlightDataSwitch') {
                 const highlightData = msg.data.highlightData;
                 const msgToPlotView = {
                     command: 'updateHighlightData',
