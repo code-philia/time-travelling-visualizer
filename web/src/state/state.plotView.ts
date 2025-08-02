@@ -4,7 +4,7 @@ import { shallow } from "zustand/shallow";
 import { useStoreWithEqualityFn } from "zustand/traditional";
 import { BUILD_CONSTANTS } from "../constants";
 import { subscribeWithSelector } from "zustand/middleware";
-import { SelectedListener } from "../component/canvas/types";
+import { SelectedListener } from "../state/types";
 
 export type EpochData = {
     projection: number[][];
