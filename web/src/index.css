@@ -328,10 +328,8 @@ body {
   flex: 1 0 auto;
   display: flex;
   flex-direction: column;
-
   width: 100%;
-  padding: 1em;
-  
+  padding: 1em;  
   overflow-y: auto;
 }
 
@@ -350,8 +348,6 @@ body {
 .info-column {
   border-left: 1px solid var(--layout-border-color);
   background-color: var(--theme-background-grey);
-  overflow-y: auto;
-  max-height: 95%;
 }
 
 #control-panel {
@@ -461,12 +457,14 @@ body {
 
 .functional-block {
     margin-bottom: 1em;
+    margin-right: 2em;
     padding-top: 0.5em;
 }
 
 .functional-block-title {
     font-size: 1.2em;
     font-weight: bolder;
+    margin-bottom: 1em;
 }
 
 .full-width {

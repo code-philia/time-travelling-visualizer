@@ -50,13 +50,19 @@
           "timeTravellingVisualizer.loadVisualization.dataType": {
             "type": "string",
             "default": "Image",
-            "enum": ["Image", "Text"],
+            "enum": [
+              "Image",
+              "Text"
+            ],
             "description": "The data type to show in visualization data points."
           },
           "timeTravellingVisualizer.loadVisualization.taskType": {
             "type": "string",
             "default": "Classification",
-            "enum": ["Classification", "Code-Retrieval"],
+            "enum": [
+              "Classification",
+              "Code-Retrieval"
+            ],
             "description": "Task type to visualize."
           },
           "timeTravellingVisualizer.loadVisualization.trainingProcess": {
@@ -67,7 +73,12 @@
           "timeTravellingVisualizer.loadVisualization.visualizationMethod": {
             "type": "string",
             "default": "TimeVis",
-            "enum": ["DVI", "TimeVis", "DynaVis", "UMAP"],
+            "enum": [
+              "DVI",
+              "TimeVis",
+              "DynaVis",
+              "UMAP"
+            ],
             "description": "The visualization method for model to use."
           },
           "timeTravellingVisualizer.loadVisualization.visualizationID": {
@@ -381,9 +392,9 @@
       ],
       "explorer": [
         {
-            "id": "training-process-tree-view",
-            "name": "Training Process",
-            "icon": "resources/eye_tracking_24dp_5F6368_FILL0_wght300_GRAD0_opsz24.svg"
+          "id": "training-process-tree-view",
+          "name": "Training Process",
+          "icon": "resources/eye_tracking_24dp_5F6368_FILL0_wght300_GRAD0_opsz24.svg"
         }
       ]
     }

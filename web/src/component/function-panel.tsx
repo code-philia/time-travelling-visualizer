@@ -188,7 +188,7 @@ export function FunctionPanel() {
         <div className="info-column">
             <FunctionalBlock label="Search">
                 <AutoComplete
-                    style={{ marginTop: '3px'}} // Set width to 100% for responsiveness
+                    style={{ width: '100%', paddingRight: '0.4em'}} // Set width to 100% for responsiveness
                     ref={searchElementRef}
                     options={searchHistoryRender(searchHistoryFiltered)}
                     value={searchValue}
