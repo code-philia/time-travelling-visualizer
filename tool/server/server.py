@@ -368,6 +368,27 @@ def getLLMResponse():
         return make_response(jsonify({'error_message': 'Error in calculating LLM'}), 400)
 
 
+@app.route('/getInfluenceSamples', methods=["POST"])
+@cross_origin()
+def get_influence_samples():
+    req = request.get_json()
+    content_path = req['content_path']
+    epoch = int(req['epoch'])
+    training_event = req['training_event']
+    num_samples = int(req['num_samples'])
+
+    try:
+        influence_samples = calculate_influence_samples(content_path, epoch, training_event, num_samples)
+        result = jsonify({
+            "max_influence": influence_samples['max_scores'],
+            "min_influence": influence_samples['min_scores'],
+        })
+        return make_response(result, 200)
+    except Exception as e:
+        print(e)
+        return make_response(jsonify({'error_message': 'Error in calculating influence samples'}), 400)
+
+
 def check_port_inuse(port, host):
     import socket
 

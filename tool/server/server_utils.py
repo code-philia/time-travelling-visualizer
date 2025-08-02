@@ -12,9 +12,12 @@ from PIL import Image
 
 import matplotlib.pyplot as plt
 import torch
+import torchvision
+import torchvision.transforms as transforms
 
 sys.path.append('..')
 from visualize.visualize_model import VisModel
+from influence_function.IF import EmpiricalIF
 
 # Func: infer available epochs files, return a list of available epochs
 def infer_epoch_structure(content_path):
@@ -501,3 +504,66 @@ def calculate_visualize_metrics(content_path, vis_id, epoch):
         "neighbor_trustworthiness": trustworthiness,
         "neighbor_continuity": continuity
     }
+
+
+def calculate_influence_samples(content_path, epoch, training_event, num_samples=5):
+    # define and load subject model
+    sys.path.append(os.path.join(content_path, "scripts"))
+    import model as subject_model
+    
+    info = read_file_as_json(os.path.join(content_path, "dataset", "info.json"))
+    model = eval("subject_model.{}()".format(info['model']))
+    classes = info['classes']
+    subject_model_location = os.path.join(content_path, "epochs", f"epoch_{epoch}", "model.pth")
+    device = torch.device("cuda:3" if torch.cuda.is_available() else "cpu")
+    model.load_state_dict(torch.load(subject_model_location, map_location=torch.device("cpu")))
+    model.to(device)
+    model.eval()
+    
+    # construct dataloader
+    dataset_path = os.path.join(content_path, "dataset")
+    cifar_path = os.path.join(dataset_path, 'cifar-10-batches-py')
+    download = not os.path.exists(cifar_path) or not os.listdir(cifar_path)
+    
+    transform_train = transforms.Compose([
+        transforms.RandomCrop(32, padding=4),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+    ])
+
+    trainset = torchvision.datasets.CIFAR10(
+        root=dataset_path, train=True, download=download, transform=transform_train)
+    
+    subset_indices = list(range(1000))  # 只取前1000个样本的索引
+    subset_dataset = torch.utils.data.Subset(trainset, subset_indices)
+    
+    trainloader = torch.utils.data.DataLoader(
+        subset_dataset, batch_size=128, shuffle=False, num_workers=2)
+    
+    IF = EmpiricalIF(dl_train=trainloader,
+                               model=model,
+                               param_filter_fn=lambda name, param: 'classifier' in name,
+                               criterion=torch.nn.CrossEntropyLoss(reduction="none"))
+
+    test_sample = trainloader.dataset[training_event['index']]
+    test_input, _ = test_sample
+    test_input = test_input.unsqueeze(0)  # Add batch dimension
+    test_target = torch.tensor([classes.index(training_event['currPred'])]).to(device)  # Add batch dimension
+    IF_scores = IF.query_influence(test_input, test_target)
+    
+    # Get the indices of the top num_samples maximum and minimum scores
+    max_indices = np.argsort(IF_scores)[-num_samples:][::-1]
+    min_indices = np.argsort(IF_scores)[:num_samples]
+
+    # Get the corresponding scores
+    max_scores = IF_scores[max_indices]
+    min_scores = IF_scores[min_indices]
+
+    # Combine results into a dictionary
+    result = {
+        "max_scores": list(zip(max_indices.tolist(), max_scores.tolist())),
+        "min_scores": list(zip(min_indices.tolist(), min_scores.tolist()))
+    }
+    
+    return result
