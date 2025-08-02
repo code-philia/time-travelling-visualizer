@@ -127,5 +127,5 @@ export class ViewsID {
 	static readonly inspectView = 'visualizer-inspect-view';
 	static readonly detailView = 'visualizer-detail-view';
 	static readonly rightView = 'visualizer-right-view';
-	static readonly visAnalysisView = 'visualizer-analysis-view';
+	static readonly influenceView = 'visualizer-influence-view';
 }

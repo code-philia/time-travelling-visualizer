@@ -66,3 +66,13 @@ export function notifyComputeMetrics(epoch: number) {
     };
     window.vscode?.postMessage(message, '*');
 }
+
+export function notifyTrainingEventClicked(trainingEvent: any, epoch: number) {
+    const data = trainingEvent;
+    const message = {
+        command: 'trainingEventClicked',
+        epoch: epoch,
+        data: data
+    };
+    window.vscode?.postMessage(message, '*');
+}
