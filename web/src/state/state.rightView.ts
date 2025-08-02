@@ -15,14 +15,6 @@ export type EpochData = {
     embedding: number[][];
 };
 
-export type Metrics = {
-    neighborTrustworthiness: number;
-    neighborContinuity: number;
-    reconstructionPrecision: number;
-    abnormalMovementsRatio2D: number;
-    movementConsistency: number;
-};  
-
 type BaseMutableGlobalStore = {
     epoch: number;
     availableEpochs: number[];
@@ -38,8 +30,6 @@ type BaseMutableGlobalStore = {
     allEpochData: Record<number, EpochData>;
 
     imageData?: string; // Optional, used in detail view
-
-    allEpochMetrics: Record<number, Metrics>; // Optional, used in analysis view
 };
 
 let initMutableGlobalStore: BaseMutableGlobalStore = {
@@ -55,8 +45,6 @@ let initMutableGlobalStore: BaseMutableGlobalStore = {
     allEpochData: {},
 
     imageData: "",
-
-    allEpochMetrics: {},
 };
 type SetFunction<T> = (setState: (state: T) => T | Partial<T>) => void;
 
