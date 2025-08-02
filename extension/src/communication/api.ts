@@ -110,3 +110,13 @@ export function getVisualizeMetrics(contentPath: string, visID: string, epoch: n
     };
     return basicUnsafePostWithJsonResponse('/getVisualizeMetrics', data, options);
 }
+
+export function getInfluenceSamples(contentPath: string,  epoch: number, trainingEvent: any, options?: { host?: string }) {
+    const data = {
+        "content_path": contentPath,
+        "epoch": `${epoch}`,
+        "training_event": trainingEvent,
+        "num_samples": 5 // Default number of samples to fetch
+    };
+    return basicUnsafePostWithJsonResponse('/getInfluenceSamples', data, options);
+}
