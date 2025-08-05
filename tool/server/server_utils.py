@@ -384,7 +384,6 @@ def load_single_attribute(content_path, epoch, attribute):
     
     return attr_data
 
-# FIXME this is not accepting specification from "dataType" field
 def read_from_file(file_path):
     _, file_extension = os.path.splitext(file_path)
 
@@ -549,21 +548,32 @@ def calculate_influence_samples(content_path, epoch, training_event, num_samples
     test_sample = trainloader.dataset[training_event['index']]
     test_input, _ = test_sample
     test_input = test_input.unsqueeze(0)  # Add batch dimension
-    test_target = torch.tensor([classes.index(training_event['currPred'])]).to(device)  # Add batch dimension
+    test_target = torch.tensor([classes.index(training_event['influenceTarget'])]).to(device)  # Add batch dimension
     IF_scores = IF.query_influence(test_input, test_target)
     
     # Get the indices of the top num_samples maximum and minimum scores
     max_indices = np.argsort(IF_scores)[-num_samples:][::-1]
     min_indices = np.argsort(IF_scores)[:num_samples]
 
-    # Get the corresponding scores
-    max_scores = IF_scores[max_indices]
-    min_scores = IF_scores[min_indices]
+    labels = load_single_attribute(content_path, epoch, 'label')
 
-    # Combine results into a dictionary
-    result = {
-        "max_scores": list(zip(max_indices.tolist(), max_scores.tolist())),
-        "min_scores": list(zip(min_indices.tolist(), min_scores.tolist()))
-    }
-    
-    return result
+    influence_samples = []
+    for index in max_indices.tolist():
+        influence_samples.append({
+            "index": index,
+            "label": classes[labels[index]],
+            "score": float(IF_scores[index]),
+            "positive": True,
+            "data": "data:image/png;base64,"+load_one_image(content_path, index)
+        })
+        
+    for index in min_indices.tolist():
+        influence_samples.append({
+            "index": index,
+            "label": classes[labels[index]],
+            "score": float(IF_scores[index]),
+            "positive": False,
+            "data": "data:image/png;base64,"+load_one_image(content_path, index)
+        })
+   
+    return influence_samples

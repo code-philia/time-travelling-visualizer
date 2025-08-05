@@ -380,8 +380,7 @@ def get_influence_samples():
     try:
         influence_samples = calculate_influence_samples(content_path, epoch, training_event, num_samples)
         result = jsonify({
-            "max_influence": influence_samples['max_scores'],
-            "min_influence": influence_samples['min_scores'],
+            "influence_samples": influence_samples,
         })
         return make_response(result, 200)
     except Exception as e:

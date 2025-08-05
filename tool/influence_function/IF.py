@@ -154,7 +154,7 @@ class EmpiricalIF(BaseInfluenceFunction):
             model=self.model,
             test_grad=test_grad,
             param_filter_fn=self.param_filter_fn,
-            lr=1e-3
+            lr=1e-1
         )
 
         # Compute training loss change and testing loss change
@@ -171,7 +171,7 @@ class EmpiricalIF(BaseInfluenceFunction):
             model=self.model,
             test_grad=test_grad,
             param_filter_fn=self.param_filter_fn,
-            lr=-1e-3
+            lr=-1e-1
         )
 
         # Compute training loss change and testing loss change
