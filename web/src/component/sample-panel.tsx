@@ -1,13 +1,11 @@
-import {useEffect, useState } from 'react';
-import { TagOutlined, NumberOutlined, BarChartOutlined, PictureOutlined, HistoryOutlined } from '@ant-design/icons';
+import { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { softmax } from './utils';
 import { useDefaultStore } from '../state/state.rightView';
-import { Divider } from 'antd';
-import { ComponentBlock, FunctionalBlock } from './custom/basic-components';
+import { FunctionalBlock } from './custom/basic-components';
 
 export function SamplePanel() {
-    const { availableEpochs, hoveredIndex, labels, epoch, allEpochData, labelDict , imageData} =
+    const { availableEpochs, hoveredIndex, labels, epoch, allEpochData, labelDict, imageData } =
         useDefaultStore(['availableEpochs', 'hoveredIndex', 'labels', 'epoch', 'allEpochData', 'labelDict', 'imageData']);
 
     const [image, setImage] = useState<string>('');
@@ -60,37 +58,32 @@ export function SamplePanel() {
 
     }, [hoveredIndex, imageData, epoch, allEpochData, availableEpochs]);
 
-
     return (
-        <SampleInspectorContainer>
+        <CompactInfoColumn>
             <FunctionalBlock label="Basic Information">
-                <ComponentBlock label="Source">
-                    {
-                        hoveredIndex === undefined
-                            ? (
-                                <div className="alt-text placeholder-block" style={{ textAlign: 'center', color: '#888' }}>
-                                    No image data available
-                                </div>
+                <CompactInfoContainer>
+                    <ImageContainer>
+                        {hoveredIndex === undefined ? (
+                            <EmptyImage>No image</EmptyImage>
+                        ) : (
+                            image ? (
+                                <CompactImage src={image} alt="Sample" />
+                            ) : (
+                                <EmptyImage>No image</EmptyImage>
                             )
-                            : (
-                                <ImageDisplayArea $isEmpty={!image}>
-                                    {image ? <StyledImage src={image} alt="Hovered Data" /> : <PlaceholderText>No Image</PlaceholderText>}
-                                </ImageDisplayArea>
-                            )
-                    }
-                </ComponentBlock>
-                
-                <ComponentBlock label="Index">
-                    <DataValue>{hoveredIndex === undefined ? '' : hoveredIndex}</DataValue>
-                </ComponentBlock>
-
-                <ComponentBlock label="Label">
-                    <DataValue>{hoveredIndex === undefined ? '' :labelDict.get(labels[hoveredIndex])}</DataValue>
-                </ComponentBlock>
+                        )}
+                    </ImageContainer>
+                    {hoveredIndex !== undefined && (
+                        <SampleInfo>
+                            #{hoveredIndex}: {labelDict.get(labels[hoveredIndex]) || 'Unknown'}
+                        </SampleInfo>
+                    )}
+                </CompactInfoContainer>
             </FunctionalBlock>
-            
+
             <FunctionalBlock label="Prediction">
-                <ComponentBlock label="Current">
+                <CompactSection>
+                    <CompactSectionLabel>CURRENT</CompactSectionLabel>
                     <PredictionContainer>
                         {predictions.map((prediction, index) => (
                             <PredictionItem key={index}>
@@ -104,229 +97,181 @@ export function SamplePanel() {
                             </PredictionItem>
                         ))}
                     </PredictionContainer>
-                </ComponentBlock>
+                </CompactSection>
 
-                <ComponentBlock label="History">
+                <CompactSection>
+                    <CompactSectionLabel>HISTORY</CompactSectionLabel>
                     <PredictionHistoryContainer>
                         {historyPrediction.slice(-5).map((record, index) => (
                             <PredictionHistoryItem key={index}>
-                                <HistoryEpoch>Epoch {record.epoch}:</HistoryEpoch>
+                                <HistoryEpoch>{record.epoch}:</HistoryEpoch>
                                 <HistoryPrediction $correct={record.correct}>{labelDict.get(record.prediction)}</HistoryPrediction>
                                 <HistoryConfidence>{(record.confidence * 100).toFixed(1)}%</HistoryConfidence>
                             </PredictionHistoryItem>
                         ))}
                     </PredictionHistoryContainer>
-                </ComponentBlock>
+                </CompactSection>
             </FunctionalBlock>
 
-
             <FunctionalBlock label="Neighbors">
-                <ComponentBlock label="High-dimensional Space">
-                    <NeighborList>
-                        {hoveredIndex !== undefined && allEpochData[epoch]?.originalNeighbors[hoveredIndex]?.map((neighbor, index) => {
-                            const isCorrect = allEpochData[epoch].projectionNeighbors[hoveredIndex]?.includes(neighbor);
-                            return (
-                                <NeighborItem
-                                    key={index}
-                                    $highlight={isCorrect ? 'correct' : 'incorrect'}
-                                >
-                                    {neighbor}.{labelDict.get(labels[neighbor]) || neighbor}
-                                </NeighborItem>
-                            );
-                        })}
-                    </NeighborList>
-                </ComponentBlock>
-                <ComponentBlock label="Projection space">
-                    <NeighborList>
+                <CompactSection>
+                    <CompactSectionLabel>HIGH-DIM</CompactSectionLabel>
+                    <CompactNeighborList>
+                        {hoveredIndex !== undefined && allEpochData[epoch]?.originalNeighbors[hoveredIndex]?.map((neighbor, index) => (
+                            <HighDimNeighborItem key={index}>
+                                {neighbor}.{labelDict.get(labels[neighbor]) || neighbor}
+                            </HighDimNeighborItem>
+                        ))}
+                    </CompactNeighborList>
+                </CompactSection>
+
+                <CompactSection>
+                    <CompactSectionLabel>PROJECTION</CompactSectionLabel>
+                    <CompactNeighborList>
                         {hoveredIndex !== undefined && allEpochData[epoch]?.projectionNeighbors[hoveredIndex]?.map((neighbor, index) => {
                             const isCorrect = allEpochData[epoch].originalNeighbors[hoveredIndex]?.includes(neighbor);
                             return (
-                                <NeighborItem
-                                    key={index}
-                                    $highlight={isCorrect ? 'correct' : 'incorrect'}
-                                >
+                                <ProjectionNeighborItem key={index} $correct={isCorrect}>
                                     {neighbor}.{labelDict.get(labels[neighbor]) || neighbor}
-                                </NeighborItem>
+                                </ProjectionNeighborItem>
                             );
                         })}
-                    </NeighborList>
-                </ComponentBlock>
-                <MetricsContainer>
-                    {hoveredIndex !== undefined && (() => {
-                        const original = allEpochData[epoch]?.originalNeighbors[hoveredIndex] || [];
-                        const projection = allEpochData[epoch]?.projectionNeighbors[hoveredIndex] || [];
-                        const truePositives = projection.filter(neighbor => original.includes(neighbor)).length;
-                        const precision = projection.length > 0 ? (truePositives / projection.length) : 0;
-                        const recall = original.length > 0 ? (truePositives / original.length) : 0;
-                        return (
-                            <>
-                                <MetricItem>
-                                    <MetricLabel>Precision:</MetricLabel>
-                                    <MetricValue>{(precision * 100).toFixed(1)}%</MetricValue>
-                                </MetricItem>
-                                <MetricItem>
-                                    <MetricLabel>Recall:</MetricLabel>
-                                    <MetricValue>{(recall * 100).toFixed(1)}%</MetricValue>
-                                </MetricItem>
-                            </>
-                        );
-                    })()}
-                </MetricsContainer>
+                    </CompactNeighborList>
+                </CompactSection>
             </FunctionalBlock>
-
-            <FunctionalBlock label="">
-            </FunctionalBlock>
-        </SampleInspectorContainer>
+        </CompactInfoColumn>
     );
 };
 
 export default SamplePanel;
 
-const SampleInspectorContainer = styled.div`
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    align-items: flex-start;
-    height: 100%;
-    width: 100%;
-    background-color: white;
-    padding: 10px;
-
-    flex-direction: row;
-    @media (max-width: 768px) {
-        flex-direction: column;
-    }
-`;
-
-
-const DataItemInLine = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 20px;
-`;
-
-const DataItemMultiLine = styled.div`
+// ================== 统一紧凑样式 ======================
+const CompactInfoColumn = styled.div`
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    align-items: flex-start;
+    gap: 12px;
+    padding: 8px;
 `;
 
-const DataLabel = styled.span`
-    font-size: 14px;
-    color: #8c8c8c;
-    font-weight: 500;
+const CompactInfoContainer = styled.div`
     display: flex;
-    align-items: flex-start;
-    gap: 2px;
+    flex-direction: column;
+    align-items: flex-start;  // 改为左对齐
+    gap: 6px;
+    padding: 0;  // 移除内边距
 `;
 
-const DataValue = styled.span`
+const ImageContainer = styled.div`
+    width: 80px;
+    height: 80px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 1px solid #e8e8e8;
+    border-radius: 4px;
+    background-color: #fafafa;
+    overflow: hidden;
+`;
+
+const CompactImage = styled.img`
+    width: 100%;  // 改为100%填充容器
+    height: 100%;
+    object-fit: cover;  // 改为cover以填充整个区域
+`;
+
+const EmptyImage = styled.div`
+    color: #bfbfbf;
+    font-size: 11px;
+    text-align: center;
+    width: 100%;
+`;
+
+const SampleInfo = styled.div`
     font-family: 'Consolas', monospace;
-    font-size: 14px;
+    font-size: 12px;
+    font-weight: 500;
     color: #262626;
+    padding-left: 2px;  // 微调左间距
+    /* 移除背景色和圆角 */
+    /* background-color: #f5f5f5; */
+    /* border-radius: 3px; */
+`;
+
+const CompactSection = styled.div`
+    margin-bottom: 10px;
+`;
+
+const CompactSectionLabel = styled.div`
+    font-size: 10px;
     font-weight: 600;
+    color: #595959;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
 `;
 
 const PredictionContainer = styled.div`
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
     width: fit-content;
 `;
 
 const PredictionItem = styled.div`
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     width: 100%;
 `;
 
 const PredictionValue = styled.span`
     font-family: 'Consolas', monospace;
-    font-size: 13px;
+    font-size: 12px;
     color: #262626;
-    width: 60px;
+    width: 50px;
     flex-shrink: 0;
     overflow: hidden;
 `;
 
 const ConfidenceBar = styled.div<{ $confidence: number, $correct: boolean }>`
-    height: 6px;
-    width: ${(props) => props.$confidence * 100}px;
+    height: 5px;
+    width: ${(props) => props.$confidence * 80}px;
     background-color: ${props => (props.$correct ? '#52c41a' : '#ff4d4f')};
-    border-radius: 4px;
+    border-radius: 3px;
     flex-shrink: 0;
 `;
 
 const ConfidenceValue = styled.span`
     font-family: 'Consolas', monospace;
-    font-size: 10px;
+    font-size: 9px;
     color: #595959;
     flex-shrink: 0;
 `;
 
-const IconWrapper = styled.span`
-    color: #8c8c8c;
-    font-size: 14px;
-`;
-
-const ImageDisplayArea = styled.div<{ $isEmpty: boolean }>`
-    width: 100px;
-    height: 100px;
-    border: 2px dashed #d9d9d9;
-    border-radius: 8px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: ${props => (props.$isEmpty ? '#fafafa' : 'transparent')};
-    overflow: hidden;
-    margin-right: 20px; 
-    box-sizing: border-box;
-`;
-
-const PlaceholderText = styled.div`
-    font-size: 16px;
-    color: #bfbfbf;
-    text-align: center;
-`;
-
-const StyledImage = styled.img`
-    max-width: 95%;
-    max-height: 95%;
-    width: auto;
-    height: 95%;
-    object-fit: contain;
-    border-radius: 4px;
-`;
-
-
-// ================== Prediction History ======================
 const PredictionHistoryContainer = styled.div`
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 5px;
     width: 100%;
-    max-width: 240px;
 `;
 
 const PredictionHistoryItem = styled.div`
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 4px 6px;
+    gap: 5px;
+    padding: 3px 5px;
     border: 1px solid #f0f0f0;
-    border-radius: 4px;
+    border-radius: 3px;
     background-color: #fafafa;
     font-family: 'Consolas', monospace;
-    font-size: 12px;
+    font-size: 11px;
     color: #262626;
 `;
 
 const HistoryEpoch = styled.span`
     font-weight: 600;
     color: #595959;
-    min-width: 24px;
+    min-width: 20px;
 `;
 
 const HistoryPrediction = styled.span<{ $correct: boolean }>`
@@ -341,69 +286,44 @@ const HistoryPrediction = styled.span<{ $correct: boolean }>`
 const HistoryConfidence = styled.span`
     font-weight: 500;
     color: #8c8c8c;
-    min-width: 40px;
+    min-width: 35px;
     text-align: right;
 `;
 
-const NeighborsContainer = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    width: 100%;
-`;
-
-const NeighborGroup = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-`;
-
-const NeighborGroupLabel = styled.span`
-    font-size: 14px;
-    font-weight: 500;
-    color: #8c8c8c;
-`;
-
-const NeighborList = styled.div`
+const CompactNeighborList = styled.div`
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 4px;  // 减小标签间距
 `;
 
-const NeighborItem = styled.span<{ $highlight: 'correct' | 'incorrect' | 'none' }>`
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 12px;
+const HighDimNeighborItem = styled.span`
+    padding: 3px 6px;
+    border-radius: 3px;
+    font-size: 11px;
     font-family: 'Consolas', monospace;
-    background-color: ${props => 
-        props.$highlight === 'correct' ? '#d9f7be' : 
-        props.$highlight === 'incorrect' ? '#ffd6d6' : 
-        '#f0f0f0'};
-    color: #262626;
+    background-color: #f0f0f0;  // 灰色表示高维邻居
+    color: #595959;
+    display: inline-block;
 `;
 
-const MetricsContainer = styled.div`
-    display: flex;
-    flex-direction: row;
-    gap: 20px;
-    margin-top: 10px;
-`;
-
-const MetricItem = styled.div`
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-`;
-
-const MetricLabel = styled.span`
-    font-size: 14px;
-    color: #8c8c8c;
-    font-weight: 500;
-`;
-
-const MetricValue = styled.span`
+const ProjectionNeighborItem = styled.span<{ $correct: boolean }>`
+    padding: 3px 6px;
+    border-radius: 3px;
+    font-size: 11px;
     font-family: 'Consolas', monospace;
-    font-size: 14px;
+    background-color: ${props => props.$correct ? '#d9f7be' : '#ffd6d6'}; // 正确浅绿，错误浅红
     color: #262626;
+    display: inline-block;
+`;
+
+const AccuracyBadge = styled.div`
+    margin-top: 6px;
+    padding: 3px 6px;
+    background-color: #e6f7ff;
+    border-radius: 3px;
+    font-family: 'Consolas', monospace;
+    font-size: 11px;
+    color: #1890ff;
     font-weight: 600;
+    display: inline-block;
 `;
