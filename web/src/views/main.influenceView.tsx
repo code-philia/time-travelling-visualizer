@@ -34,14 +34,8 @@ function MessageHandler() {
             }
             else if(message.command === 'updateInfluenceSamples') {
                 const messageData = message.data;
-                setValue('index', messageData.index);
-                setValue('prevPred', messageData.prevPred);
-                setValue('currPred', messageData.currPred);
-                setValue('prevCorrect', messageData.prevCorrect);
-                setValue('currCorrect', messageData.currCorrect);
-                setValue('type', messageData.type);
-                setValue('maxInfluence', messageData.maxInfluence);
-                setValue('minInfluence', messageData.minInfluence);
+                setValue('influenceSamples', messageData.influenceSamples);
+                setValue('trainingEvent', messageData.trainingEvent);
             }
         };
         

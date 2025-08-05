@@ -5,26 +5,48 @@ import { useStoreWithEqualityFn } from "zustand/traditional";
 import { BUILD_CONSTANTS } from "../constants";
 import { subscribeWithSelector } from "zustand/middleware";
 
+export type InfluenceSample = {
+    index: number;
+    label: string;
+    positive: boolean; // true for positive influence, false for negative influence
+    score: number; // influence score
+    data: string; // image data or text data
+}
+
+type TrainingEvent = {
+    type: string; // "Prediction Flip", "Confidence Change", "Significant Movement", "Inconsistent Movement"
+    index: number;
+    label: string;
+    dataType: string; // "image" or "text"
+    data: string; // image data or text data
+}
+
 type BaseMutableGlobalStore = {
-    index: number | null;
-    prevPred: number | null;
-    currPred: number | null;
-    prevCorrect: boolean | null;
-    currCorrect: boolean | null;
-    type: string | null;
-    maxInfluence: [number, number][]; // [index, score]
-    minInfluence: [number, number][]; // [index, score]
+    trainingEvent: TrainingEvent | null; // current training event
+    influenceSamples: InfluenceSample[]; // all influence samples
+
+    // index: number | null;
+    // prevPred: number | null;
+    // currPred: number | null;
+    // prevCorrect: boolean | null;
+    // currCorrect: boolean | null;
+    // type: string | null;
+    // maxInfluence: [number, number][]; // [index, score]
+    // minInfluence: [number, number][]; // [index, score]
 };
 
 let initMutableGlobalStore: BaseMutableGlobalStore = {
-    index: null,
-    prevPred: null,
-    currPred: null,
-    prevCorrect: null,
-    currCorrect: null,
-    type: null,
-    maxInfluence: [],
-    minInfluence: [],
+    trainingEvent: null,
+    influenceSamples: [],
+
+    // index: null,
+    // prevPred: null,
+    // currPred: null,
+    // prevCorrect: null,
+    // currCorrect: null,
+    // type: null,
+    // maxInfluence: [],
+    // minInfluence: [],
 };
 
 type SetFunction<T> = (setState: (state: T) => T | Partial<T>) => void;
