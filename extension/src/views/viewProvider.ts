@@ -5,7 +5,7 @@ import { loadHomePage } from './plotView';
 import path from 'path';
 import { MessageManager } from './messageManager';
 import { getBasicConfig } from '../control';
-import { fetchTrainingProcessInfo, getAttributeResource, getInfluenceSamples, getText, getVisualizeMetrics } from '../communication/api';
+import { getAttributeResource, getImageData, getInfluenceSamples, getText } from '../communication/api';
 
 export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
     public abstract webview?: vscode.Webview;
@@ -180,14 +180,21 @@ export class RightViewProvider extends BaseViewProvider {
                 }
                 const epoch = msg.epoch;
                 const type = msg.data.type; // type can be 'PredictionFlip' ...
-                if (type === 'PredictionFlip') {
-                    const IFSamplesRes:any = await getInfluenceSamples(config.contentPath, epoch, msg.data);
+                if (type === 'PredictionFlip' || type === 'ConfidenceChange') {
+                    const IFSamplesRes: any = await getInfluenceSamples(config.contentPath, epoch, msg.data);
+                    const image: any = await getImageData(config.contentPath, msg.data.index);
+                    
                     const msgToInfluenceView = {
                         command: 'updateInfluenceSamples',
                         data: {
-                            ...msg.data,
-                            maxInfluence: IFSamplesRes['max_influence'],
-                            minInfluence: IFSamplesRes['min_influence'],
+                            trainingEvent: {
+                                type: type,
+                                index: msg.data.index,
+                                label: msg.data.label,
+                                dataType: "image", //TODO: expand to text type
+                                data: image,
+                            },
+                            influenceSamples: IFSamplesRes['influence_samples'],
                         }
                     };
                     MessageManager.sendToInfluenceView(msgToInfluenceView);
