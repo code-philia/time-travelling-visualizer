@@ -1,473 +1,604 @@
 import styled from 'styled-components';
-import { List, Tag, Checkbox, Form } from 'antd';
+import { Tag, Checkbox, Form, Button, Collapse } from 'antd';
 import { useEffect, useState } from 'react';
 import { FunctionalBlock } from './custom/basic-components';
 import { useDefaultStore } from '../state/state.rightView';
 import { notifyTrainingEventClicked } from '../communication/viewMessage';
 
+const { Panel } = Collapse;
+
 const predColor = (isCorrect: boolean) => (isCorrect ? '#52c41a' : '#ff4d4f');
 const confArrow = (change: number) =>
-    change > 0 ? <span style={{ color: '#52c41a', fontSize: '16px', fontWeight: '1000',marginLeft: 4 }}>↑</span> : <span style={{ color: '#ff4d4f', fontSize: '16px', fontWeight: '1000',marginLeft: 4 }}>↓</span>;
+  change > 0 ? <span style={{ color: '#52c41a', fontSize: '12px', fontWeight: '800', marginLeft: 2 }}>↑</span> : <span style={{ color: '#ff4d4f', fontSize: '12px', fontWeight: '800', marginLeft: 2 }}>↓</span>;
 
 function softmax(probabilities: number[]): number[] {
-    const maxProb = Math.max(...probabilities);
-    const expProbs = probabilities.map((p) => Math.exp(p - maxProb));
-    const sumExpProbs = expProbs.reduce((sum, p) => sum + p, 0);
-    return expProbs.map((p) => p / sumExpProbs);
+  const maxProb = Math.max(...probabilities);
+  const expProbs = probabilities.map((p) => Math.exp(p - maxProb));
+  const sumExpProbs = expProbs.reduce((sum, p) => sum + p, 0);
+  return expProbs.map((p) => p / sumExpProbs);
 }
 
-const ScrollableListWrapper = styled.div`
-    max-height: 500px;
-    overflow-y: auto;
-    /* 隐藏滚动条，兼容主流浏览器 */
-    scrollbar-width: thin;
-    scrollbar-color: #e0e0e0 transparent;
-    &::-webkit-scrollbar {
-        width: 6px;
-        background: transparent;
-    }
-    &::-webkit-scrollbar-thumb {
-        background: #e0e0e0;
-        border-radius: 3px;
-    }
+const CompactForm = styled(Form)`
+  background-color: #ffffff;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  padding: 10px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 `;
 
-const StyledForm = styled(Form)`
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    margin-bottom: 1em;
-    padding: 1em;
-    border: 1px solid #d9d9d9;
-    border-radius: 8px;
-    background-color: #fafafa;
+const FormHeader = styled.div`
+  font-size: 12px;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 8px;
 `;
 
-const StyledCheckboxGroup = styled(Checkbox.Group)`
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1em;
+const CompactCheckboxGroup = styled(Checkbox.Group)`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
 
-    .ant-checkbox-wrapper {
-        display: flex;
-        align-items: center;
-        padding: 2px 5px;
-        border-radius: 8px;
-        font-size: 14px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        &:hover {
-            box-shadow: 0 0 6px rgba(0, 0, 0, 0.2);
-        }
-    }
-`;
-
-const ResponsiveScrollableListWrapper = styled(ScrollableListWrapper)`
-    border: 1px solid #d9d9d9;
-    border-radius: 8px;
-    padding: 0.5em;
-    background-color: #ffffff;
-    height: 90%
-`;
-
-const StyledListItem = styled.div`
+  .ant-checkbox-wrapper {
     display: flex;
     align-items: center;
-    padding: 0.5em;
-    border-radius: 8px;
-    transition: background-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 500;
     cursor: pointer;
-
+    transition: background-color 0.2s ease;
+    background-color: #ffffff;
+    border: 1px solid #d9d9d9;
+    
     &:hover {
-        background-color: rgba(0, 0, 0, 0.05);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-        transform: translateY(-2px);
+      background-color: #f5f5f5;
+      border-color: #1890ff;
     }
+  }
 
-    &:active {
-        background-color: rgba(0, 0, 0, 0.1);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        transform: translateY(0);
-    }
+  .ant-checkbox-checked .ant-checkbox-inner {
+    background-color: #1890ff;
+    border-color: #1890ff;
+    width: 12px;
+    height: 12px;
+  }
+  
+  .ant-checkbox-inner {
+    width: 12px;
+    height: 12px;
+  }
+`;
+
+const CompactButton = styled(Button)`
+  background-color: #1890ff;
+  color: #ffffff;
+  border: none;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  height: 24px;
+  
+  &:hover {
+    background-color: #40a9ff;
+    color: #ffffff;
+  }
+`;
+
+const ResultContainer = styled.div`
+  background-color: #ffffff;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  padding: 10px;
+  height: 400px; /* 固定高度 */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+`;
+
+const ResultHeader = styled.div`
+  font-size: 12px;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+`;
+
+const EventsCount = styled.span`
+  font-size: 11px;
+  font-weight: normal;
+  color: #888;
+`;
+
+const EventsContainer = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+  padding: 6px;
+  background-color: #fafafa;
+`;
+
+const CompactEventItem = styled.div`
+  display: flex;
+  align-items: center;
+  padding: 6px 8px;
+  border-radius: 3px;
+  transition: background-color 0.3s ease;
+  cursor: pointer;
+  font-size: 11px;
+  margin-bottom: 2px;
+  background-color: #ffffff;
+  border: 1px solid #f0f0f0;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+
+  &:hover {
+    background-color: #f5f5f5;
+    border-color: #d9d9d9;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+
+  &:active {
+    background-color: #e6f7ff;
+  }
+`;
+
+const CompactEventIndex = styled(Tag)`
+  font-size: 10px;
+  font-weight: 600;
+  min-width: 30px;
+  text-align: center;
+  margin-right: 6px;
+  padding: 0 4px;
+  line-height: 18px;
+`;
+
+const EventContent = styled.div`
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+`;
+
+const CompactEventLabel = styled.span`
+  color: #888;
+  font-size: 10px;
+`;
+
+const CompactEventValue = styled.span<{ $color?: string }>`
+  font-weight: 600;
+  font-size: 11px;
+  color: ${props => props.$color || '#333'};
+`;
+
+const EmptyState = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #bfbfbf;
+  font-size: 11px;
+`;
+
+const CompactEventTypePanel = styled(Panel)`
+  .ant-collapse-header {
+    padding: 6px 10px !important;
+    background-color: #f0f0f0;
+    border-radius: 3px;
+    font-weight: 600;
+    font-size: 11px;
+  }
+  
+  .ant-collapse-content-box {
+    padding: 4px 0 !important;
+  }
+  
+  .ant-collapse-expand-icon {
+    font-size: 12px;
+  }
 `;
 
 export function TrainingEventPanel() {
-    const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
-    const [predictionFlips, setPredictionFlips] = useState<any[]>([]);
-    const [confidenceChanges, setConfidenceChanges] = useState<any[]>([]);
-    const { epoch, availableEpochs, allEpochData, labels, labelDict } = useDefaultStore([
-        "epoch",
-        "availableEpochs",
-        "allEpochData",
-        "labels",
-        "labelDict",
-    ]);
+  const [tempSelectedTypes, setTempSelectedTypes] = useState<string[]>([]);
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+  const [predictionFlips, setPredictionFlips] = useState<any[]>([]);
+  const [confidenceChanges, setConfidenceChanges] = useState<any[]>([]);
+  const [significantMovements, setSignificantMovements] = useState<any[]>([]);
+  const [inconsistentMovements, setInconsistentMovements] = useState<any[]>([]);
+  const { epoch, availableEpochs, allEpochData, labels, labelDict } = useDefaultStore([
+    "epoch",
+    "availableEpochs",
+    "allEpochData",
+    "labels",
+    "labelDict",
+  ]);
 
-    const handleCheckboxChange = (checkedValues: unknown[]) => {
-        const newSelectedTypes = checkedValues as string[];
-        setSelectedTypes(newSelectedTypes);
+  const handleFormSubmit = () => {
+    setSelectedTypes(tempSelectedTypes);
+    calculateEvents(tempSelectedTypes);
+  };
 
-        // Calculate predictionFlips only when PredictionFlip is selected
-        if (newSelectedTypes.includes('PredictionFlip') && !selectedTypes.includes('PredictionFlip')) {
-            const currentEpochIndex = availableEpochs.indexOf(epoch);
-            if (currentEpochIndex > 0) {
-                const prevEpoch = availableEpochs[currentEpochIndex - 1];
-                const flips = labels
-                    .map((label, index) => {
-                        const prevPred = allEpochData[prevEpoch]?.prediction[index];
-                        const currPred = allEpochData[epoch]?.prediction[index];
-                        if (prevPred !== undefined && currPred !== undefined && prevPred !== currPred) {
-                            const prevCorrect = prevPred === label;
-                            const currCorrect = currPred === label;
-                            return {
-                                index,
-                                prevPred: labelDict.get(prevPred) || prevPred.toString(),
-                                currPred: labelDict.get(currPred) || currPred.toString(),
-                                prevCorrect,
-                                currCorrect,
-                                type: 'PredictionFlip',
-                            };
-                        }
-                        return null;
-                    })
-                    .filter(Boolean);
-                setPredictionFlips(flips);
+  const calculateEvents = (types: string[]) => {
+    if (types.includes('PredictionFlip')) {
+      const currentEpochIndex = availableEpochs.indexOf(epoch);
+      if (currentEpochIndex > 0) {
+        const prevEpoch = availableEpochs[currentEpochIndex - 1];
+        const flips = labels
+          .map((label, index) => {
+            const prevPred = allEpochData[prevEpoch]?.prediction[index];
+            const currPred = allEpochData[epoch]?.prediction[index];
+            if (prevPred !== undefined && currPred !== undefined && prevPred !== currPred) {
+              const prevCorrect = prevPred === label;
+              const currCorrect = currPred === label;
+              return {
+                index,
+                label: labelDict.get(label) || label.toString(),
+                prevPred: labelDict.get(prevPred) || prevPred.toString(),
+                currPred: labelDict.get(currPred) || currPred.toString(),
+                prevCorrect,
+                currCorrect,
+                influenceTarget: labelDict.get(currPred) || currPred.toString(),
+                type: 'PredictionFlip',
+              };
             }
-        }
+            return null;
+          })
+          .filter(Boolean);
+        setPredictionFlips(flips);
+      }
+      else {
+        setPredictionFlips([]);
+      }
+    }
 
-        // Calculate confidenceChanges only when ConfidenceChange is selected
-        if (newSelectedTypes.includes('ConfidenceChange') && !selectedTypes.includes('ConfidenceChange')) {
-            const currentEpochIndex = availableEpochs.indexOf(epoch);
-            if (currentEpochIndex > 0) {
-                const prevEpoch = availableEpochs[currentEpochIndex - 1];
-                const changes = labels
-                    .map((label, index) => {
-                        const prevProbs = allEpochData[prevEpoch]?.probability[index];
-                        const currProbs = allEpochData[epoch]?.probability[index];
-                        if (prevProbs && currProbs) {
-                            const prevSoftmax = softmax(prevProbs);
-                            const currSoftmax = softmax(currProbs);
-                            const prevProb = prevSoftmax[label];
-                            const currProb = currSoftmax[label];
-                            if (Math.abs(currProb - prevProb) > 0.3) {
-                                return {
-                                    index,
-                                    label: labelDict.get(label) || label.toString(),
-                                    prevConf: prevProb,
-                                    currConf: currProb,
-                                    change: currProb - prevProb,
-                                    type: 'ConfidenceChange',
-                                };
-                            }
-                        }
-                        return null;
-                    })
-                    .filter(Boolean);
-                setConfidenceChanges(changes);
+    if (types.includes('ConfidenceChange')) {
+      const currentEpochIndex = availableEpochs.indexOf(epoch);
+      if (currentEpochIndex > 0) {
+        const prevEpoch = availableEpochs[currentEpochIndex - 1];
+        const changes = labels
+          .map((label, index) => {
+            const prevProbs = allEpochData[prevEpoch]?.probability[index];
+            const currProbs = allEpochData[epoch]?.probability[index];
+            if (prevProbs && currProbs) {
+              const prevSoftmax = softmax(prevProbs);
+              const currSoftmax = softmax(currProbs);
+              const prevProb = prevSoftmax[label];
+              const currProb = currSoftmax[label];
+              if (Math.abs(currProb - prevProb) > 0.5) {
+                // Find the category with the largest score increase
+                let maxIncrease = -Infinity;
+                let influenceTarget = '';
+                currSoftmax.forEach((score, category) => {
+                  const increase = score - prevSoftmax[category];
+                  if (increase > maxIncrease) {
+                    maxIncrease = increase;
+                    influenceTarget = labelDict.get(category) || category.toString();
+                  }
+                });
+                return {
+                  index,
+                  label: labelDict.get(label) || label.toString(),
+                  prevConf: prevProb,
+                  currConf: currProb,
+                  change: currProb - prevProb,
+                  influenceTarget: influenceTarget,
+                  type: 'ConfidenceChange',
+                };
+              }
             }
+            return null;
+          })
+          .filter(Boolean)
+          .sort((a, b) => Math.abs(b.change) - Math.abs(a.change)); // Sort by absolute change
+        setConfidenceChanges(changes);
+      } else {
+        setConfidenceChanges([]);
+      }
+    }
+
+    if (types.includes('SignificantMovement')) {
+        const currentEpochIndex = availableEpochs.indexOf(epoch);
+        const lastEpoch = availableEpochs[availableEpochs.length - 1];
+        
+        if (currentEpochIndex > 0 && lastEpoch !== undefined) {
+            const prevEpoch = availableEpochs[currentEpochIndex - 1];
+            
+            // compute distance changes
+            const closerDistChanges: number[] = [];
+            const fartherDistChanges: number[] = [];
+            const movementData = labels.map((_, index) => {
+                const prevEmbedding = allEpochData[prevEpoch]?.embedding[index];
+                const currEmbedding = allEpochData[epoch]?.embedding[index];
+                const lastEmbedding = allEpochData[lastEpoch]?.embedding[index];
+                
+                if (prevEmbedding && currEmbedding && lastEmbedding) {
+                    const prevDist = Math.hypot(...prevEmbedding.map((v, i) => v - lastEmbedding[i]));
+                    const currDist = Math.hypot(...currEmbedding.map((v, i) => v - lastEmbedding[i]));
+                    
+                    const distChange = currDist - prevDist;
+                    
+                    if (distChange < 0) {
+                        closerDistChanges.push(Math.abs(distChange));
+                    } else if (distChange > 0) {
+                        fartherDistChanges.push(distChange);
+                    }
+                    
+                    return {
+                        index,
+                        prevDist,
+                        currDist,
+                        distChange,
+                    };
+                }
+                return null;
+            }).filter(Boolean);
+            
+            // determine dynamic thresholds based on standard deviation
+            let CLOSER_THRESHOLD = 0.5;
+            let FARTHER_THRESHOLD = 0.5;
+            
+            if (closerDistChanges.length > 0) {
+                const mean = closerDistChanges.reduce((sum, val) => sum + val, 0) / closerDistChanges.length;
+                const variance = closerDistChanges.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / closerDistChanges.length;
+                const stdDev = Math.sqrt(variance);
+                CLOSER_THRESHOLD = mean + 2 * stdDev;
+                console.log(`Closer Movement Threshold: ${CLOSER_THRESHOLD.toFixed(4)}`);
+            }
+            
+            if (fartherDistChanges.length > 0) {
+                const mean = fartherDistChanges.reduce((sum, val) => sum + val, 0) / fartherDistChanges.length;
+                const variance = fartherDistChanges.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / fartherDistChanges.length;
+                const stdDev = Math.sqrt(variance);
+                FARTHER_THRESHOLD = mean + 2 * stdDev;
+                console.log(`Farther Movement Threshold: ${FARTHER_THRESHOLD.toFixed(4)}`);
+            }
+            
+            // select significant movements based on thresholds
+            const movements = movementData
+                .filter(data => 
+                    (data.distChange < 0 && Math.abs(data.distChange) > CLOSER_THRESHOLD) || // 显著靠近
+                    (data.distChange > 0 && data.distChange > FARTHER_THRESHOLD) // 显著远离
+                )
+                .map(data => ({
+                    index: data.index,
+                    prevDist: data.prevDist.toFixed(2),
+                    currDist: data.currDist.toFixed(2),
+                    distanceChange: data.distChange.toFixed(2),
+                    type: data.distChange < 0 ? 'SignificantMovementCloser' : 'SignificantMovementFarther',
+                }))
+                .sort((a, b) => Math.abs(parseFloat(b.distanceChange)) - Math.abs(parseFloat(a.distanceChange))); // Sort by absolute distanceChange
+            
+            setSignificantMovements(movements);
+        } else {
+            setSignificantMovements([]);
         }
-    };
+    }
+    
+    if (types.includes('InconsistentMovement')) {
+      const currentEpochIndex = availableEpochs.indexOf(epoch);
+      const lastEpoch = availableEpochs[availableEpochs.length - 1];
+      if (currentEpochIndex > 0 && lastEpoch !== undefined) {
+        const prevEpoch = availableEpochs[currentEpochIndex - 1];
+        const inconsistencies = labels
+          .map((_, index) => {
+            const prevEmbedding = allEpochData[prevEpoch]?.embedding[index];
+            const currEmbedding = allEpochData[epoch]?.embedding[index];
+            const prevProjection = allEpochData[prevEpoch]?.projection[index];
+            const currProjection = allEpochData[epoch]?.projection[index];
+            const lastEmbedding = allEpochData[lastEpoch]?.embedding[index];
+            const lastProjection = allEpochData[lastEpoch]?.projection[index];
 
-    useEffect(() => {
-        // Call handleCheckboxChange manually when epoch changes
-        handleCheckboxChange(selectedTypes);
-    }, [epoch]);
+            if (prevEmbedding && currEmbedding && prevProjection && currProjection && lastEmbedding && lastProjection) {
+              const prevEmbeddingDist = Math.hypot(...prevEmbedding.map((v, i) => v - lastEmbedding[i]));
+              const currEmbeddingDist = Math.hypot(...currEmbedding.map((v, i) => v - lastEmbedding[i]));
+              const prevProjectionDist = Math.hypot(...prevProjection.map((v, i) => v - lastProjection[i]));
+              const currProjectionDist = Math.hypot(...currProjection.map((v, i) => v - lastProjection[i]));
 
-    const combinedData = [
-        ...(selectedTypes.includes('ConfidenceChange') ? confidenceChanges : []),
-        ...(selectedTypes.includes('SignificantMovement') ? mockSignificantMovements.map(item => ({ ...item, type: 'SignificantMovement' })) : []),
-        ...(selectedTypes.includes('AbnormalDistanceChange') ? mockAbnormalDistanceChanges.map(item => ({ ...item, type: 'AbnormalDistanceChange' })) : []),
-        ...(selectedTypes.includes('PredictionFlip') ? predictionFlips : []),
-    ];
+              const embeddingDistChange = currEmbeddingDist - prevEmbeddingDist;
+              const projectionDistChange = currProjectionDist - prevProjectionDist;
 
-    const handleItemClick = (item: any) => {
-        console.log('Item clicked:', item);
-        notifyTrainingEventClicked(item, epoch);
-    };
+              if (
+                (embeddingDistChange < 0 && projectionDistChange > 0) ||
+                (embeddingDistChange > 0 && projectionDistChange < 0)
+              ) {
+                return {
+                  index,
+                  highDimChange: embeddingDistChange.toFixed(2),
+                  projectionChange: projectionDistChange.toFixed(2),
+                  type: 'InconsistentMovement',
+                };
+              }
+            }
+            return null;
+          })
+          .filter(Boolean)
+          .sort((a, b) => Math.abs(parseFloat(b.highDimChange)) - Math.abs(parseFloat(a.highDimChange))); // Sort by absolute highDimChange
+        setInconsistentMovements(inconsistencies);
+        console.log('Inconsistent Movements:', inconsistencies);
+      }
+      else {
+        setInconsistentMovements([]);
+      }
+    }
+  };
 
+  useEffect(() => {
+    if (selectedTypes.length > 0) {
+      calculateEvents(selectedTypes);
+    }
+  }, [epoch]);
+
+  const combinedData = [
+    ...(selectedTypes.includes('PredictionFlip') ? predictionFlips.map(item => ({ ...item, type: 'PredictionFlip' })) : []),
+    ...(selectedTypes.includes('ConfidenceChange') ? confidenceChanges.map(item => ({ ...item, type: 'ConfidenceChange' })) : []),
+    ...(selectedTypes.includes('SignificantMovement') ? significantMovements.map(item => ({ ...item, type: 'SignificantMovement' })) : []),
+    ...(selectedTypes.includes('InconsistentMovement') ? inconsistentMovements.map(item => ({ ...item, type: 'InconsistentMovement' })) : []),
+  ];
+
+  // Group events by type
+  const groupedEvents = {
+    PredictionFlip: combinedData.filter(item => item.type === 'PredictionFlip'),
+    ConfidenceChange: combinedData.filter(item => item.type === 'ConfidenceChange'),
+    SignificantMovement: combinedData.filter(item => item.type === 'SignificantMovement'),
+    InconsistentMovement: combinedData.filter(item => item.type === 'InconsistentMovement'),
+  };
+
+  const handleItemClick = (item: any) => {
+    notifyTrainingEventClicked(item, epoch);
+  };
+
+  // Function to render events by type
+  const renderEventItem = (item: any) => {
     return (
-        <div className="info-column">
-            <FunctionalBlock label="Training Events">
-                <StyledForm>
-                    <Form.Item style={{ marginBottom: 0 }}>
-                        <StyledCheckboxGroup
-                            options={[
-                                { label: 'Prediction Flip', value: 'PredictionFlip' },
-                                { label: 'Confidence Change', value: 'ConfidenceChange' },
-                                { label: 'Significant Movement', value: 'SignificantMovement' },
-                                { label: 'Abnormal Distance Change', value: 'AbnormalDistanceChange' },
-                            ]}
-                            onChange={handleCheckboxChange}
-                            className="custom-checkbox-group"
-                        />
-                    </Form.Item>
-                </StyledForm>
-                <ResponsiveScrollableListWrapper>
-                    <List
-                        size="small"
-                        dataSource={combinedData}
-                        renderItem={(item) => (
-                            <StyledListItem
-                                onClick={() => handleItemClick(item)}
-                                style={{
-                                    backgroundColor:
-                                        item.type === 'PredictionFlip'
-                                            ? '#e6f7ff'
-                                            : item.type === 'ConfidenceChange'
-                                            ? '#fffbe6'
-                                            : item.type === 'SignificantMovement'
-                                            ? '#fff1f0'
-                                            : '#f6ffed',
-                                }}
-                            >
-                                <Tag
-                                    color={
-                                        item.type === 'PredictionFlip'
-                                            ? 'blue'
-                                            : item.type === 'ConfidenceChange'
-                                            ? 'purple'
-                                            : item.type === 'SignificantMovement'
-                                            ? 'orange'
-                                            : 'red'
-                                    }
-                                    style={{ minWidth: 36, textAlign: 'center' }}
-                                >
-                                    #{item.index}
-                                </Tag>
-                                <span style={{ marginLeft: 8 }}>
-                                    {item.type === 'PredictionFlip' && (
-                                        <>
-                                            <span style={{ color: '#888' }}>Prediction:</span>
-                                            <span
-                                                style={{
-                                                    color: predColor(item.prevCorrect),
-                                                    fontWeight: 600,
-                                                    marginLeft: 6,
-                                                }}
-                                            >
-                                                {item.prevPred}
-                                            </span>
-                                            <span style={{ margin: '0 6px', color: '#888' }}>→</span>
-                                            <span
-                                                style={{
-                                                    color: predColor(item.currCorrect),
-                                                    fontWeight: 600,
-                                                }}
-                                            >
-                                                {item.currPred}
-                                            </span>
-                                        </>
-                                    )}
-                                    {item.type === 'ConfidenceChange' && (
-                                        <>
-                                            <span style={{ color: '#888' }}>Label:</span>
-                                            <span style={{ marginLeft: 6, fontWeight: 600 }}>
-                                                {item.label}
-                                            </span>
-                                            <span style={{ color: '#000', marginLeft: 6 }}>
-                                                {item.prevConf.toFixed(2)}
-                                            </span>
-                                            <span style={{ margin: '0 6px', color: '#888' }}>→</span>
-                                            <span style={{ color: '#000' }}>
-                                                {item.currConf.toFixed(2)}
-                                            </span>
-                                            {confArrow(item.change)}
-                                        </>
-                                    )}
-                                    {item.type === 'SignificantMovement' && (
-                                        <>
-                                            <span style={{ color: '#888' }}>Movement:</span>
-                                            <span style={{ color: '#fa541c', fontWeight: 600, marginLeft: 6 }}>
-                                                {item.movement}
-                                            </span>
-                                        </>
-                                    )}
-                                    {item.type === 'AbnormalDistanceChange' && (
-                                        <>
-                                            <span style={{ color: '#888' }}>Distance:</span>
-                                            <span style={{ color: '#d4380d', fontWeight: 600, marginLeft: 6 }}>
-                                                {item.prevDist}
-                                            </span>
-                                            <span style={{ margin: '0 6px', color: '#888' }}>→</span>
-                                            <span style={{ color: '#52c41a', fontWeight: 600 }}>
-                                                {item.currDist}
-                                            </span>
-                                        </>
-                                    )}
-                                </span>
-                            </StyledListItem>
-                        )}
-                        locale={{
-                            emptyText: <span style={{ color: '#888' }}>No item detected</span>,
-                        }}
-                    />
-                </ResponsiveScrollableListWrapper>
-            </FunctionalBlock>
-        </div>
+      <CompactEventItem key={`${item.type}-${item.index}`} onClick={() => handleItemClick(item)}>
+        <CompactEventIndex color={getTypeColor(item.type)}>#{item.index}</CompactEventIndex>
+        <EventContent>
+          {item.type === 'PredictionFlip' && (
+            <>
+              <CompactEventLabel>Pred:</CompactEventLabel>
+              <CompactEventValue $color={predColor(item.prevCorrect)}>{item.prevPred}</CompactEventValue>
+              <CompactEventLabel>→</CompactEventLabel>
+              <CompactEventValue $color={predColor(item.currCorrect)}>{item.currPred}</CompactEventValue>
+            </>
+          )}
+          {item.type === 'ConfidenceChange' && (
+            <>
+              <CompactEventLabel>Label:</CompactEventLabel>
+              <CompactEventValue>{item.label}</CompactEventValue>
+              <CompactEventLabel>Conf:</CompactEventLabel>
+              <CompactEventValue>{item.prevConf.toFixed(2)}</CompactEventValue>
+              <CompactEventLabel>→</CompactEventLabel>
+              <CompactEventValue>{item.currConf.toFixed(2)}</CompactEventValue>
+              {confArrow(item.change)}
+            </>
+          )}
+          {item.type === 'SignificantMovement' && (
+            <>
+              <CompactEventLabel>Distance Δ:</CompactEventLabel>
+              <CompactEventValue>
+                {item.distanceChange}
+                <span style={{ color: parseFloat(item.distanceChange) > 0 ? '#ff4d4f' : '#52c41a', fontSize: '14px', marginLeft: 4 }}>
+                  {parseFloat(item.distanceChange) > 0 ? '↑' : '↓'}
+                </span>
+              </CompactEventValue>
+            </>
+          )}
+          {item.type === 'InconsistentMovement' && (
+            <>
+              <CompactEventLabel>High Dim Δ:</CompactEventLabel>
+              <CompactEventValue>
+                {item.highDimChange}
+                <span style={{ color: parseFloat(item.highDimChange) > 0 ? '#ff4d4f' : '#52c41a', fontSize: '14px', marginLeft: 4 }}>
+                  {parseFloat(item.highDimChange) > 0 ? '↑' : '↓'}
+                </span>
+              </CompactEventValue>
+              <CompactEventLabel>Projection Δ:</CompactEventLabel>
+              <CompactEventValue>
+                {item.projectionChange}
+                <span style={{ color: parseFloat(item.projectionChange) > 0 ? '#ff4d4f' : '#52c41a', fontSize: '14px', marginLeft: 4 }}>
+                  {parseFloat(item.projectionChange) > 0 ? '↑' : '↓'}
+                </span>
+              </CompactEventValue>
+            </>
+          )}
+        </EventContent>
+      </CompactEventItem>
     );
+  };
+
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'PredictionFlip': return 'blue';
+      case 'ConfidenceChange': return 'purple';
+      case 'SignificantMovement': return 'orange';
+      case 'InconsistentMovement': return 'red';
+      default: return 'gray';
+    }
+  };
+
+  const getTypeLabel = (type: string) => {
+    switch (type) {
+      case 'PredictionFlip': return 'Prediction Flips';
+      case 'ConfidenceChange': return 'Confidence Changes';
+      case 'SignificantMovement': return 'Significant Movements';
+      case 'InconsistentMovement': return 'Inconsistent Movements';
+      default: return 'Events';
+    }
+  };
+
+  return (
+    <div className="info-column" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <FunctionalBlock label="Training Events">
+        <CompactForm>
+          <FormHeader>Please select training events to show</FormHeader>
+          <Form.Item style={{ marginBottom: 10 }}>
+            <CompactCheckboxGroup
+              options={[
+                { label: 'Prediction Flip', value: 'PredictionFlip' },
+                { label: 'Confidence Change', value: 'ConfidenceChange' },
+                { label: 'Significant Movement', value: 'SignificantMovement' },
+                { label: 'Inconsistent Movement', value: 'InconsistentMovement' },
+              ]}
+              onChange={(checkedValues) => setTempSelectedTypes(checkedValues as string[])}
+              value={tempSelectedTypes}
+            />
+          </Form.Item>
+          <CompactButton onClick={handleFormSubmit}>Apply</CompactButton>
+        </CompactForm>
+        
+        <ResultContainer>
+          <ResultHeader>
+            Detected Training Events
+            <EventsCount>{combinedData.length} events</EventsCount>
+          </ResultHeader>
+          <EventsContainer>
+            {selectedTypes.length === 0 ? (
+              <EmptyState>Click "Apply" to see results</EmptyState>
+            ) : combinedData.length === 0 ? (
+              <EmptyState>No events detected with current filters</EmptyState>
+            ) : (
+              <Collapse
+                defaultActiveKey={selectedTypes}
+                bordered={false}
+                style={{ background: 'transparent' }}
+              >
+                {selectedTypes.map(type => (
+                  groupedEvents[type]?.length > 0 && (
+                    <CompactEventTypePanel
+                      key={type}
+                      header={
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                          <Tag 
+                            color={getTypeColor(type)} 
+                            style={{ 
+                              marginRight: 6, 
+                              fontSize: '10px', 
+                              lineHeight: '16px',
+                              padding: '0 4px',
+                              minWidth: '24px'
+                            }}
+                          >
+                            {groupedEvents[type].length}
+                          </Tag>
+                          <span style={{ fontSize: '11px' }}>{getTypeLabel(type)}</span>
+                        </div>
+                      }
+                    >
+                      {groupedEvents[type].map(item => renderEventItem(item))}
+                    </CompactEventTypePanel>
+                  )
+                ))}
+              </Collapse>
+            )}
+          </EventsContainer>
+        </ResultContainer>
+      </FunctionalBlock>
+    </div>
+  );
 }
 
 export default TrainingEventPanel;
-
-
-
-const mockPredictionFlips = [
-    {
-        index: 3,
-        prevPred: 1,
-        currPred: 0,
-        prevCorrect: false,
-        currCorrect: true,
-    },
-    {
-        index: 7,
-        prevPred: 0,
-        currPred: 2,
-        prevCorrect: true,
-        currCorrect: false,
-    },
-    {
-        index: 12,
-        prevPred: 2,
-        currPred: 1,
-        prevCorrect: false,
-        currCorrect: false,
-    },
-    {
-        index: 15,
-        prevPred: 1,
-        currPred: 1,
-        prevCorrect: false,
-        currCorrect: true,
-    },
-    {
-        index: 21,
-        prevPred: 0,
-        currPred: 1,
-        prevCorrect: true,
-        currCorrect: true,
-    },
-    {
-        index: 3,
-        prevPred: 1,
-        currPred: 0,
-        prevCorrect: false,
-        currCorrect: true,
-    },
-    {
-        index: 7,
-        prevPred: 0,
-        currPred: 2,
-        prevCorrect: true,
-        currCorrect: false,
-    },
-    {
-        index: 12,
-        prevPred: 2,
-        currPred: 1,
-        prevCorrect: false,
-        currCorrect: false,
-    },
-    {
-        index: 15,
-        prevPred: 1,
-        currPred: 1,
-        prevCorrect: false,
-        currCorrect: true,
-    },
-    {
-        index: 21,
-        prevPred: 0,
-        currPred: 1,
-        prevCorrect: true,
-        currCorrect: true,
-    },
-    {
-        index: 3,
-        prevPred: 1,
-        currPred: 0,
-        prevCorrect: false,
-        currCorrect: true,
-    },
-    {
-        index: 7,
-        prevPred: 0,
-        currPred: 2,
-        prevCorrect: true,
-        currCorrect: false,
-    },
-    {
-        index: 12,
-        prevPred: 2,
-        currPred: 1,
-        prevCorrect: false,
-        currCorrect: false,
-    },
-    {
-        index: 15,
-        prevPred: 1,
-        currPred: 1,
-        prevCorrect: false,
-        currCorrect: true,
-    },
-    {
-        index: 21,
-        prevPred: 0,
-        currPred: 1,
-        prevCorrect: true,
-        currCorrect: true,
-    },
-    {
-        index: 3,
-        prevPred: 1,
-        currPred: 0,
-        prevCorrect: false,
-        currCorrect: true,
-    },
-    {
-        index: 7,
-        prevPred: 0,
-        currPred: 2,
-        prevCorrect: true,
-        currCorrect: false,
-    },
-    {
-        index: 12,
-        prevPred: 2,
-        currPred: 1,
-        prevCorrect: false,
-        currCorrect: false,
-    },
-    {
-        index: 15,
-        prevPred: 1,
-        currPred: 1,
-        prevCorrect: false,
-        currCorrect: true,
-    },
-    {
-        index: 21,
-        prevPred: 0,
-        currPred: 1,
-        prevCorrect: true,
-        currCorrect: true,
-    }
-];
-
-const mockConfidenceChanges = [
-    { index: 2, prevConf: 0.45, currConf: 0.91 },
-    { index: 8, prevConf: 0.88, currConf: 0.51 },
-    { index: 13, prevConf: 0.32, currConf: 0.77 }
-];
-
-const mockSignificantMovements = [
-    { index: 5, movement: 12.3 },
-    { index: 9, movement: 15.8 }
-];
-
-const mockAbnormalDistanceChanges = [
-    { index: 4, prevDist: 2.1, currDist: 8.7 },
-    { index: 11, prevDist: 7.2, currDist: 1.3 }
-];
-

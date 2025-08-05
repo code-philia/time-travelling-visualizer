@@ -3,6 +3,7 @@ import { useDefaultStore } from '../state/state.rightView';
 import { useEffect, useRef, useState } from 'react';
 import { ComponentBlock, FunctionalBlock } from './custom/basic-components';
 import { notifyHighlightDataSwitch, notifySelectedIndicesSwitch, notifyshownDataSwitch } from '../communication/viewMessage';
+import { styled } from 'styled-components';
 
 type SampleTag = {
     num: number;
@@ -14,6 +15,43 @@ interface LabelProps {
     colorArray: number[];
     onColorChange: (newColor: [number, number, number]) => void;
 }
+
+const CompactCheckboxGroup = styled(Checkbox.Group)`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+
+  .ant-checkbox-wrapper {
+    display: flex;
+    align-items: center;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    background-color: #ffffff;
+    border: 1px solid #d9d9d9;
+    
+    &:hover {
+      background-color: #f5f5f5;
+      border-color: #1890ff;
+    }
+  }
+
+  .ant-checkbox-checked .ant-checkbox-inner {
+    background-color: #1890ff;
+    border-color: #1890ff;
+    width: 12px;
+    height: 12px;
+  }
+  
+  .ant-checkbox-inner {
+    width: 12px;
+    height: 12px;
+  }
+`;
 
 const ColoredClassLabel: React.FC<LabelProps> = ({ label, colorArray, onColorChange }) => {
     const inputRef = useRef<HTMLInputElement>(null);
@@ -291,7 +329,7 @@ export function FunctionPanel() {
                 </ComponentBlock>
             </FunctionalBlock>
             <FunctionalBlock label="Filter">
-                <Checkbox.Group
+                <CompactCheckboxGroup
                     options={[
                         { label: 'Train Data', value: 'train' },
                         { label: 'Test Data', value: 'test' },
@@ -368,14 +406,14 @@ function HighlightOptionBlock() {
                     style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}
                 >
                     <div style={{ display: 'flex', alignItems: 'center' }}>
-                        <div className="highlight-icon" style={{ marginRight: '8px', fontSize: '14px' }}>
+                        <div className="highlight-icon" style={{ marginRight: '8px', fontSize: '12px' }}>
                             {highlight.icon}
                         </div>
-                        <div className="highlight-label" >
+                        <div className="highlight-label" style={{ fontSize: '12px' }} >
                             {highlight.label}
                         </div>
                     </div>
-                    <div className="highlight-toggle" style={{ marginRight: '12px' }}>
+                    <div className="highlight-toggle" style={{ marginRight: '10px' }}>
                         <Switch
                             size="small"
                             checked={highlight.enabled}
@@ -492,7 +530,6 @@ function DistanceBlock() {
                 overflowY: 'auto',
                 width: '100%',
                 fontSize: '12px',
-                fontFamily: 'monospace',
             }}
         >
             {distanceData.length > 0 ? (
@@ -594,7 +631,7 @@ function DistanceBlock() {
                     </tbody>
                 </table>
             ) : (
-                <div className="alt-text placeholder-block" style={{ textAlign: 'center', color: '#888', fontSize: '12px' }}>
+                <div className="alt-text placeholder-block">
                     No sufficient data to calculate distances
                 </div>
             )}
