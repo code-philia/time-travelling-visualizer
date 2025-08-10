@@ -47,6 +47,10 @@ export type BaseMutableGlobalStore = {
     hoveredIndex: number | undefined;
     selectedIndices: number[];
     selectedListener: SelectedListener;
+
+    // focus events
+    isFocusMode: boolean;
+    focusIndices: number[];
 }
 
 export let initMutableGlobalStore: BaseMutableGlobalStore = {
@@ -81,6 +85,10 @@ export let initMutableGlobalStore: BaseMutableGlobalStore = {
     hoveredIndex: undefined,
     selectedIndices: [],
     selectedListener: new SelectedListener(),
+
+    // focus events
+    isFocusMode: false,
+    focusIndices: [],
 };
 
 type SetFunction<T> = (setState: (state: T) => T | Partial<T>) => void;

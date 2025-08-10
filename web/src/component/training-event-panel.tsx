@@ -1,9 +1,9 @@
 import styled from 'styled-components';
 import { Tag, Checkbox, Form, Button, Collapse } from 'antd';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { FunctionalBlock } from './custom/basic-components';
 import { useDefaultStore } from '../state/state.rightView';
-import { notifyTrainingEventClicked } from '../communication/viewMessage';
+import { notifyFocusModeSwitch, notifyTrainingEventClicked } from '../communication/viewMessage';
 import { PredictionFlipEvent, ConfidenceChangeEvent, SignificantMovementEvent, InconsistentMovementEvent, TrainingEvent } from './types';
 
 const { Panel } = Collapse;
@@ -228,20 +228,6 @@ export function TrainingEventPanel() {
     }
   };
 
-  const toggleFocusMode = () => {
-    if (isFocusMode) {
-      const allEventIndices = [
-        ...predictionFlips.map(event => event.index),
-        ...confidenceChanges.map(event => event.index),
-        ...significantMovements.map(event => event.index),
-        ...inconsistentMovements.map(event => event.index),
-      ];
-      notifyTrainingEventClicked({ type: 'ShowAll', indices: allEventIndices }, epoch);
-    } else {
-    }
-    setIsFocusMode(!isFocusMode);
-  };
-
   const calculateEvents = (types: string[]) => {
     if (types.includes('PredictionFlip')) {
       const currentEpochIndex = availableEpochs.indexOf(epoch);
@@ -448,12 +434,6 @@ export function TrainingEventPanel() {
     }
   };
 
-  useEffect(() => {
-    if (selectedTypes.length > 0) {
-      calculateEvents(selectedTypes);
-    }
-  }, [epoch]);
-
   const combinedData: TrainingEvent[] = [
     ...(selectedTypes.includes('PredictionFlip') ? predictionFlips : []),
     ...(selectedTypes.includes('ConfidenceChange') ? confidenceChanges : []),
@@ -468,6 +448,32 @@ export function TrainingEventPanel() {
     SignificantMovement: combinedData.filter(item => item.type === 'SignificantMovement'),
     InconsistentMovement: combinedData.filter(item => item.type === 'InconsistentMovement'),
   };
+
+  const toggleFocusMode = useCallback(() => {
+    if (isFocusMode) {
+      notifyFocusModeSwitch(false);
+    } else {
+      const focusIndices = combinedData.map(event => event.index);
+      notifyFocusModeSwitch(true, focusIndices);
+    }
+    setIsFocusMode(!isFocusMode);
+  }, [isFocusMode, combinedData]);
+
+  useEffect(() => {
+    if (isFocusMode) {
+      const focusIndices = combinedData.map(event => event.index);
+      notifyFocusModeSwitch(true, focusIndices);
+    }
+    else {
+      notifyFocusModeSwitch(false);
+    }
+  }, [isFocusMode, combinedData]);
+
+  useEffect(() => {
+    if (selectedTypes.length > 0) {
+      calculateEvents(selectedTypes);
+    }
+  }, [epoch]);
 
   const handleItemClick = (item: TrainingEvent) => {
     notifyTrainingEventClicked(item, epoch);
