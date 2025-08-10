@@ -1,3 +1,4 @@
+import { getDefaultAutoSelectFamilyAttemptTimeout } from "net";
 import { basicUnsafeGetWithJsonResponse, basicUnsafePostWithJsonResponse } from "./connection";
 
 /**
@@ -13,11 +14,12 @@ export interface BriefProjectionResult {
 /**
  * Interaction with backend
  */
-export function triggerStartVisualizing(contentPath: string, visMethod: string, visID: string,taskType: string,visConfig: any, options?: { host?: string }) {
+export function triggerStartVisualizing(contentPath: string, visMethod: string, visID: string, dataType: string, taskType: string,visConfig: any, options?: { host?: string }) {
     const data = {
         "content_path": contentPath,
         "vis_method": visMethod,
         "vis_id": visID,
+        "data_type": dataType,
         "task_type": taskType,
         "vis_config": visConfig
     };

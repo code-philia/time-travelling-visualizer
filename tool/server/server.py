@@ -127,13 +127,14 @@ def start_visualizing():
     content_path = req['content_path']
     vis_method = req['vis_method']
     vis_id = req['vis_id']
+    data_type = req['data_type']
     task_type = req['task_type']
     vis_config = req['vis_config']
 
     print('start visualizing')
     print("vis config:", vis_config)
     
-    visualize_run(content_path, vis_method, vis_id, task_type, vis_config)
+    visualize_run(content_path, vis_method, vis_id, data_type, task_type, vis_config)
     
     return make_response({}, 200)
 
