@@ -74,14 +74,11 @@ export function getProjectionNeighbors(contentPath: string, vis_id: string, epoc
     return basicUnsafePostWithJsonResponse('/getProjectionNeighbors', data, options);
 }
 
-export function getBackground(contentPath: string, visID: string, epoch: number | undefined, width: number, height: number, scale: number[] | undefined, options?: { host?: string }) {
+export function getBackground(contentPath: string, visID: string, epoch: number | undefined, options?: { host?: string }) {
     const data = {
         "content_path": contentPath,
         "vis_id": visID,
-        "epoch": `${epoch}`,
-        "width": width,
-        "height": height,
-        "scale": scale
+        "epoch": `${epoch}`
     };
     return basicUnsafePostWithJsonResponse('/getBackground', data, options).then((response) => {
         const { background_image_base64 } = response as { background_image_base64: string };

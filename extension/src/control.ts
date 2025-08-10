@@ -476,7 +476,7 @@ async function loadEpochData(config: api.BasicVisualizationConfig, epoch: number
 		const predRes: any = await getAttributeResource(config.contentPath, epoch, 'prediction');
 		predProbability = predRes['prediction'];
 
-		const bgimgRes = await getBackground(config.contentPath, config.visualizationID, epoch, 1200, 1000, projectionRes['scope']);
+		const bgimgRes = await getBackground(config.contentPath, config.visualizationID, epoch);
 		bgimg = bgimgRes;
 	}
 	const predAndConf = convertPropsToPredictions(predProbability);
