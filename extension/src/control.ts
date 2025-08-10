@@ -513,22 +513,7 @@ async function loadEpochData(config: api.BasicVisualizationConfig, epoch: number
 	MessageManager.sendToTokenView(msgToTokenView);
 }
 
-export async function loadVisualizationThroughTreeItem(trainingProcess: string, visualizationID: string): Promise<boolean> {
-    const dataType = await repickConfig(
-        "Select the type of your data",
-        [
-            { iconId: "image-type", label: "Image" },
-            { iconId: "text-type", label: "Text" },
-        ]
-    );
-    const taskType = await repickConfig(
-        "Select the type of your model task",
-        [
-            { iconId: "classification-task", label: "Classification" },
-            { iconId: "non-classification-task", label: "Code-Retrieval" },
-        ]
-    );
-
+export async function loadVisualizationThroughTreeItem(dataType: string, taskType: string, trainingProcess: string, visualizationID: string): Promise<boolean> {
     // Wait for settings to update before proceeding
     await updateBasicConfig(dataType, taskType, trainingProcess, visualizationID);
 
@@ -547,7 +532,7 @@ export async function startVisualizing(): Promise<boolean> {
 	}
 	vscode.window.showInformationMessage("Start visualizing...");
 	const visConfig = getVisConfig(config.visualizationMethod);
-	await triggerStartVisualizing(config.contentPath, config.visualizationMethod, config.visualizationID, config.taskType, visConfig );
+	await triggerStartVisualizing(config.contentPath, config.visualizationMethod, config.visualizationID, config.dataType, config.taskType, visConfig );
 	return true;
 }
 
@@ -586,7 +571,7 @@ export async function startVisualizingThroughTreeItem(trainingProcess: string): 
 	const visConfig = getVisConfig(visualizationMethod);
 
 	const workspacePath = getOpenedFolderPath();
-	await triggerStartVisualizing(path.join(workspacePath, trainingProcess), visualizationMethod, visualizationID, taskType, visConfig );
+	await triggerStartVisualizing(path.join(workspacePath, trainingProcess), visualizationMethod, visualizationID, dataType, taskType, visConfig );
 	return true;
 }
 

@@ -169,6 +169,28 @@ export class TrainingProcessTreeView implements vscode.Disposable {
     }
 
     private loadResult(item: TreeItem): void {
+        if (!item.resourceUri) {
+            vscode.window.showErrorMessage('No resource URI found for this item.');
+            return;
+        }
+        const infoFilePath = path.join(item.resourceUri.fsPath, 'info.json');
+        if (!fs.existsSync(infoFilePath)) {
+            vscode.window.showErrorMessage('No visualization info found for this item.');
+            return;
+        }
+
+        // Get data type and task type from info.json
+        const infoContent = fs.readFileSync(infoFilePath, 'utf-8');
+        let info;
+        try {
+            info = JSON.parse(infoContent);
+        } catch (error) {
+            vscode.window.showErrorMessage('Error parsing info.json.');
+            return;
+        }
+        const dataType = info.data_type;
+        const taskType = info.task_type;
+
         // Get the parent node (training process)
         const parentProcess = item.parent?.parent?.label;
         // Get the item's name (e.g., DVI_1)
@@ -177,7 +199,7 @@ export class TrainingProcessTreeView implements vscode.Disposable {
             vscode.window.showErrorMessage('Unable to retrieve parent process or item name.');
             return;
         }
-        loadVisualizationThroughTreeItem(parentProcess, itemName);
+        loadVisualizationThroughTreeItem(dataType, taskType, parentProcess, itemName);
     }
 
     private startVisualizing(item: TreeItem): void{
