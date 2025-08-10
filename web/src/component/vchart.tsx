@@ -5,7 +5,7 @@ import { Edge } from './types';
 import { useDefaultStore } from "../state/state.plotView";
 import { createEdges, softmax, transferArray2Color } from './utils';
 import { notifyHoveredIndexSwitch, notifySelectedIndicesSwitch } from '../communication/viewMessage';
-const PADDING = 0;
+const BACKGROUND_PADDING = 0.5;
 
 export const ChartComponent = memo(() => {
     const chartRef = useRef<HTMLDivElement>(null);
@@ -18,6 +18,7 @@ export const ChartComponent = memo(() => {
     // const { filterState } = useDefaultStore(["filterState"]);
     const { showIndex, showLabel,showBackground, showTrail, textData } = useDefaultStore(["showIndex", "showLabel", "showBackground","showTrail","textData"])
     const { availableEpochs } = useDefaultStore(["availableEpochs"]);
+    const { scope } = useDefaultStore(["scope"]);
     const { revealProjectionNeighbors, revealOriginalNeighbors } = useDefaultStore(["revealProjectionNeighbors", "revealOriginalNeighbors"]);
     const { hoveredIndex, setHoveredIndex, selectedIndices, setSelectedIndices, selectedListener } = useDefaultStore(["hoveredIndex", "setHoveredIndex", "selectedIndices", "setSelectedIndices", "selectedListener"]);
     const { shownData, highlightData, index } = useDefaultStore(["shownData", "highlightData", "index"]);
@@ -62,7 +63,7 @@ export const ChartComponent = memo(() => {
         samplesRef.current = [];
         wrongRef.current = [];
         flipRef.current = [];
-        let x_min = Infinity, y_min = Infinity, x_max = -Infinity, y_max = -Infinity;
+        let x_min = scope[0], y_min = scope[1], x_max = scope[2], y_max = scope[3];
 
         epochData.projection.map((p, i) => {
             const x = parseFloat(p[0].toFixed(3));
@@ -98,18 +99,8 @@ export const ChartComponent = memo(() => {
                     flipRef.current.push(i);
                 }
             }
-
-            if (x < x_min) x_min = x;
-            if (y < y_min) y_min = y;
-            if (x > x_max) x_max = x;
-            if (y > y_max) y_max = y;
         });
         edgesRef.current = createEdges(epochData.originalNeighbors, epochData.projectionNeighbors, [], []);
-
-        x_min = x_min - PADDING;
-        y_min = y_min - PADDING;
-        x_max = x_max + PADDING;
-        y_max = y_max + PADDING;
 
         // create spec
         const spec: any = {
@@ -159,24 +150,20 @@ export const ChartComponent = memo(() => {
                     persent: true,
                     type: 'area',
                     data: {
-                        // values: [
-                        //     { xx: x_min - 1, yy: y_min - 1 },
-                        //     { xx: x_max + 1, yy: y_min - 1 },
-                        //     { xx: x_max + 1, yy: y_max + 1 },
-                        //     { xx: x_min - 1, yy: y_max + 1 },
-                        //     { xx: x_min - 1, yy: y_min - 1 },
-                        // ]
                         values: [
-                            { xx: x_min, yy: y_min },
-                            { xx: x_max, yy: y_min },
-                            { xx: x_max, yy: y_max },
-                            { xx: x_min, yy: y_max },
-                            { xx: x_min, yy: y_min },
+                            { xx: x_min - BACKGROUND_PADDING, yy: y_min - BACKGROUND_PADDING },
+                            { xx: x_max + BACKGROUND_PADDING, yy: y_min - BACKGROUND_PADDING },
+                            { xx: x_max + BACKGROUND_PADDING, yy: y_max + BACKGROUND_PADDING },
+                            { xx: x_min - BACKGROUND_PADDING, yy: y_max + BACKGROUND_PADDING },
+                            { xx: x_min - BACKGROUND_PADDING, yy: y_min - BACKGROUND_PADDING },
                         ]
                     },
                     xField: 'xx',
                     yField: 'yy',
                     point: {
+                        visible: false,
+                    },
+                    line: {
                         visible: false,
                     },
                     area: {
@@ -186,7 +173,7 @@ export const ChartComponent = memo(() => {
                                 return showBackground ? epochData.background : '';
                             },
                             fill: 'transparent',
-                            fillOpacity: 0.6
+                            fillOpacity: 0.5
                         }
                     },
                     hover: {
@@ -371,16 +358,16 @@ export const ChartComponent = memo(() => {
                 {
                     visible: false,
                     orient: 'left',
-                    min: y_min,
-                    max: y_max,
+                    min: y_min-BACKGROUND_PADDING,
+                    max: y_max+BACKGROUND_PADDING,
                     type: 'linear',
                     grid: { visible: false }
                 },
                 {
                     visible: false,
                     orient: 'bottom',
-                    min: x_min,
-                    max: x_max,
+                    min: x_min-BACKGROUND_PADDING,
+                    max: x_max+BACKGROUND_PADDING,
                     type: 'linear',
                     grid: { visible: false }
                 }

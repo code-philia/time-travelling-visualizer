@@ -19,6 +19,7 @@ export type EpochData = {
 export type BaseMutableGlobalStore = {
     epoch: number;
     availableEpochs: number[];
+    scope: number[];
     colorDict: Map<number, [number, number, number]>;
     labelDict: Map<number, string>;
 
@@ -51,6 +52,7 @@ export type BaseMutableGlobalStore = {
 export let initMutableGlobalStore: BaseMutableGlobalStore = {
     epoch: 1,
     availableEpochs: [],
+    scope: [],
     colorDict: new Map(),
     labelDict: new Map(),
 

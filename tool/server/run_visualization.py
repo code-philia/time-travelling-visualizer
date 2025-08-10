@@ -97,12 +97,11 @@ def init_visualize_component(config):
 def visualize_run(content_path, vis_method, vis_id, data_type, task_type, vis_config):    
     # step 1: initialize config
     config = initialize_config(content_path, vis_method, vis_id, data_type, task_type, vis_config)
-    os.makedirs(os.path.join(content_path, 'visualize', vis_id), exist_ok=True)
-    json.dump(config, open(os.path.join(content_path, 'visualize', vis_id, 'info.json'), 'w'), indent=2)
     
     # step 2: initialize data provider, visualizer, and strategy
     visualizer, strategy = init_visualize_component(config)
     
+    # step 3: generate visualization results
     if vis_method == "DVI" or vis_method == "TimeVis" or vis_method == "DynaVis":
         # now we assume that all the metries are already saved to train visualization model
         # 3.1 trian visualization model
@@ -112,5 +111,10 @@ def visualize_run(content_path, vis_method, vis_id, data_type, task_type, vis_co
         
     # 3.2 generate visualization results
     print("Start generating visualization results...")
-    visualizer.visualize_all_epochs()
+    xy_limit = visualizer.visualize_all_epochs()
     print("Generate visualization results finished, visualization process completed successfully!")
+    
+    # step 4: save config
+    config['scope'] = [float(x) for x in xy_limit]
+    os.makedirs(os.path.join(content_path, 'visualize', vis_id), exist_ok=True)
+    json.dump(config, open(os.path.join(content_path, 'visualize', vis_id, 'info.json'), 'w'), indent=2)
