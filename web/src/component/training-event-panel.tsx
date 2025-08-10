@@ -80,10 +80,17 @@ const CompactButton = styled(Button)`
   font-weight: 500;
   padding: 2px 8px;
   height: 24px;
+  width: 80px;
+  transition: background-color 0.2s ease;
   
   &:hover {
     background-color: #40a9ff;
-    color: #ffffff;
+    color: #40a9ff;
+  }
+
+  &:active {
+    background-color: #096dd9;
+    transform: scale(0.98); /* 轻微的点击效果 */
   }
 `;
 
@@ -579,11 +586,6 @@ export function TrainingEventPanel() {
             <CompactButton onClick={handleFormSubmit}>Compute</CompactButton>
             <CompactButton 
               onClick={toggleFocusMode}
-              disabled={tempSelectedTypes.length === 0}
-              style={{
-                backgroundColor: isFocusMode ? '#ff4d4f' : '#1890ff',
-                ...(isFocusMode ? { border: '1px solid #ff4d4f' } : {})
-              }}
             >
               {isFocusMode ? 'Show All' : 'Show Selected'}
             </CompactButton>
