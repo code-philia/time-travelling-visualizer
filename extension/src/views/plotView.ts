@@ -171,7 +171,7 @@ export class PlotViewManager {
 						const scope = extensionContext.workspaceState.get('scope') as number[];
 		
 						if (targetEpoch && scope) {
-							const background = await getBackground(config.contentPath,config.visualizationMethod,targetEpoch,1200,1000,scope);
+							const background = await getBackground(config.contentPath,config.visualizationMethod,targetEpoch);
 							extensionContext.workspaceState.update('background', background);
 							if (panel) {
 								panel.webview.postMessage({
