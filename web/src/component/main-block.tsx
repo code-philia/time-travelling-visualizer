@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useDefaultStore } from '../state/state.plotView';
-import ChartComponent from './canvas/vchart';
+import ChartComponent from './vchart';
 import { notifyEpochSwitch } from '../communication/viewMessage';
 
 // https://stackoverflow.com/questions/54095994/react-useeffect-comparing-objects
