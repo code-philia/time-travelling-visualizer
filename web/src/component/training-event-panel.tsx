@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { FunctionalBlock } from './custom/basic-components';
 import { useDefaultStore } from '../state/state.rightView';
 import { notifyTrainingEventClicked } from '../communication/viewMessage';
+import { PredictionFlipEvent, ConfidenceChangeEvent, SignificantMovementEvent, InconsistentMovementEvent, TrainingEvent } from './types';
 
 const { Panel } = Collapse;
 
@@ -205,10 +206,12 @@ const CompactEventTypePanel = styled(Panel)`
 export function TrainingEventPanel() {
   const [tempSelectedTypes, setTempSelectedTypes] = useState<string[]>([]);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
-  const [predictionFlips, setPredictionFlips] = useState<any[]>([]);
-  const [confidenceChanges, setConfidenceChanges] = useState<any[]>([]);
-  const [significantMovements, setSignificantMovements] = useState<any[]>([]);
-  const [inconsistentMovements, setInconsistentMovements] = useState<any[]>([]);
+  const [predictionFlips, setPredictionFlips] = useState<PredictionFlipEvent[]>([]);
+  const [confidenceChanges, setConfidenceChanges] = useState<ConfidenceChangeEvent[]>([]);
+  const [significantMovements, setSignificantMovements] = useState<SignificantMovementEvent[]>([]);
+  const [inconsistentMovements, setInconsistentMovements] = useState<InconsistentMovementEvent[]>([]);
+  const [isFocusMode, setIsFocusMode] = useState(false);
+
   const { epoch, availableEpochs, allEpochData, labels, labelDict } = useDefaultStore([
     "epoch",
     "availableEpochs",
@@ -218,8 +221,25 @@ export function TrainingEventPanel() {
   ]);
 
   const handleFormSubmit = () => {
+    const newTypes = tempSelectedTypes.filter(type => !selectedTypes.includes(type));
     setSelectedTypes(tempSelectedTypes);
-    calculateEvents(tempSelectedTypes);
+    if (newTypes.length > 0) {
+      calculateEvents(newTypes);
+    }
+  };
+
+  const toggleFocusMode = () => {
+    if (isFocusMode) {
+      const allEventIndices = [
+        ...predictionFlips.map(event => event.index),
+        ...confidenceChanges.map(event => event.index),
+        ...significantMovements.map(event => event.index),
+        ...inconsistentMovements.map(event => event.index),
+      ];
+      notifyTrainingEventClicked({ type: 'ShowAll', indices: allEventIndices }, epoch);
+    } else {
+    }
+    setIsFocusMode(!isFocusMode);
   };
 
   const calculateEvents = (types: string[]) => {
@@ -243,11 +263,11 @@ export function TrainingEventPanel() {
                 currCorrect,
                 influenceTarget: labelDict.get(currPred) || currPred.toString(),
                 type: 'PredictionFlip',
-              };
+              } as PredictionFlipEvent;
             }
             return null;
           })
-          .filter(Boolean);
+          .filter(Boolean) as PredictionFlipEvent[];
         setPredictionFlips(flips);
       }
       else {
@@ -287,13 +307,14 @@ export function TrainingEventPanel() {
                   change: currProb - prevProb,
                   influenceTarget: influenceTarget,
                   type: 'ConfidenceChange',
-                };
+                } as ConfidenceChangeEvent;
               }
             }
             return null;
           })
-          .filter(Boolean)
-          .sort((a, b) => Math.abs(b.change) - Math.abs(a.change)); // Sort by absolute change
+          .filter(Boolean) as ConfidenceChangeEvent[];
+        
+        changes.sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
         setConfidenceChanges(changes);
       } else {
         setConfidenceChanges([]);
@@ -335,7 +356,7 @@ export function TrainingEventPanel() {
                     };
                 }
                 return null;
-            }).filter(Boolean);
+            }).filter(Boolean) as { index: number; prevDist: number; currDist: number; distChange: number }[];
             
             // determine dynamic thresholds based on standard deviation
             let CLOSER_THRESHOLD = 0.5;
@@ -365,12 +386,13 @@ export function TrainingEventPanel() {
                 )
                 .map(data => ({
                     index: data.index,
-                    prevDist: data.prevDist.toFixed(2),
-                    currDist: data.currDist.toFixed(2),
-                    distanceChange: data.distChange.toFixed(2),
-                    type: data.distChange < 0 ? 'SignificantMovementCloser' : 'SignificantMovementFarther',
+                    prevDist: data.prevDist,
+                    currDist: data.currDist,
+                    distanceChange: data.distChange,
+                    movementType: data.distChange < 0 ? 'closer' : 'farther' as const,
+                    type: 'SignificantMovement' as const,
                 }))
-                .sort((a, b) => Math.abs(parseFloat(b.distanceChange)) - Math.abs(parseFloat(a.distanceChange))); // Sort by absolute distanceChange
+                .sort((a, b) => Math.abs(b.distanceChange) - Math.abs(a.distanceChange)) as SignificantMovementEvent[];
             
             setSignificantMovements(movements);
         } else {
@@ -407,18 +429,18 @@ export function TrainingEventPanel() {
               ) {
                 return {
                   index,
-                  highDimChange: embeddingDistChange.toFixed(2),
-                  projectionChange: projectionDistChange.toFixed(2),
-                  type: 'InconsistentMovement',
-                };
+                  highDimChange: embeddingDistChange,
+                  projectionChange: projectionDistChange,
+                  type: 'InconsistentMovement' as const,
+                } as InconsistentMovementEvent;
               }
             }
             return null;
           })
-          .filter(Boolean)
-          .sort((a, b) => Math.abs(parseFloat(b.highDimChange)) - Math.abs(parseFloat(a.highDimChange))); // Sort by absolute highDimChange
+          .filter(Boolean) as InconsistentMovementEvent[];
+          
+        inconsistencies.sort((a, b) => Math.abs(b.highDimChange) - Math.abs(a.highDimChange));
         setInconsistentMovements(inconsistencies);
-        console.log('Inconsistent Movements:', inconsistencies);
       }
       else {
         setInconsistentMovements([]);
@@ -432,27 +454,27 @@ export function TrainingEventPanel() {
     }
   }, [epoch]);
 
-  const combinedData = [
-    ...(selectedTypes.includes('PredictionFlip') ? predictionFlips.map(item => ({ ...item, type: 'PredictionFlip' })) : []),
-    ...(selectedTypes.includes('ConfidenceChange') ? confidenceChanges.map(item => ({ ...item, type: 'ConfidenceChange' })) : []),
-    ...(selectedTypes.includes('SignificantMovement') ? significantMovements.map(item => ({ ...item, type: 'SignificantMovement' })) : []),
-    ...(selectedTypes.includes('InconsistentMovement') ? inconsistentMovements.map(item => ({ ...item, type: 'InconsistentMovement' })) : []),
+  const combinedData: TrainingEvent[] = [
+    ...(selectedTypes.includes('PredictionFlip') ? predictionFlips : []),
+    ...(selectedTypes.includes('ConfidenceChange') ? confidenceChanges : []),
+    ...(selectedTypes.includes('SignificantMovement') ? significantMovements : []),
+    ...(selectedTypes.includes('InconsistentMovement') ? inconsistentMovements : []),
   ];
 
   // Group events by type
-  const groupedEvents = {
+  const groupedEvents: Record<string, TrainingEvent[]> = {
     PredictionFlip: combinedData.filter(item => item.type === 'PredictionFlip'),
     ConfidenceChange: combinedData.filter(item => item.type === 'ConfidenceChange'),
     SignificantMovement: combinedData.filter(item => item.type === 'SignificantMovement'),
     InconsistentMovement: combinedData.filter(item => item.type === 'InconsistentMovement'),
   };
 
-  const handleItemClick = (item: any) => {
+  const handleItemClick = (item: TrainingEvent) => {
     notifyTrainingEventClicked(item, epoch);
   };
 
   // Function to render events by type
-  const renderEventItem = (item: any) => {
+  const renderEventItem = (item: TrainingEvent) => {
     return (
       <CompactEventItem key={`${item.type}-${item.index}`} onClick={() => handleItemClick(item)}>
         <CompactEventIndex color={getTypeColor(item.type)}>#{item.index}</CompactEventIndex>
@@ -480,9 +502,9 @@ export function TrainingEventPanel() {
             <>
               <CompactEventLabel>Distance Δ:</CompactEventLabel>
               <CompactEventValue>
-                {item.distanceChange}
-                <span style={{ color: parseFloat(item.distanceChange) > 0 ? '#ff4d4f' : '#52c41a', fontSize: '14px', marginLeft: 4 }}>
-                  {parseFloat(item.distanceChange) > 0 ? '↑' : '↓'}
+                {item.distanceChange.toFixed(2)}
+                <span style={{ color: item.distanceChange > 0 ? '#ff4d4f' : '#52c41a', fontSize: '14px', marginLeft: 4 }}>
+                  {item.distanceChange > 0 ? '↑' : '↓'}
                 </span>
               </CompactEventValue>
             </>
@@ -491,16 +513,16 @@ export function TrainingEventPanel() {
             <>
               <CompactEventLabel>High Dim Δ:</CompactEventLabel>
               <CompactEventValue>
-                {item.highDimChange}
-                <span style={{ color: parseFloat(item.highDimChange) > 0 ? '#ff4d4f' : '#52c41a', fontSize: '14px', marginLeft: 4 }}>
-                  {parseFloat(item.highDimChange) > 0 ? '↑' : '↓'}
+                {item.highDimChange.toFixed(2)}
+                <span style={{ color: item.highDimChange > 0 ? '#ff4d4f' : '#52c41a', fontSize: '14px', marginLeft: 4 }}>
+                  {item.highDimChange > 0 ? '↑' : '↓'}
                 </span>
               </CompactEventValue>
               <CompactEventLabel>Projection Δ:</CompactEventLabel>
               <CompactEventValue>
-                {item.projectionChange}
-                <span style={{ color: parseFloat(item.projectionChange) > 0 ? '#ff4d4f' : '#52c41a', fontSize: '14px', marginLeft: 4 }}>
-                  {parseFloat(item.projectionChange) > 0 ? '↑' : '↓'}
+                {item.projectionChange.toFixed(2)}
+                <span style={{ color: item.projectionChange > 0 ? '#ff4d4f' : '#52c41a', fontSize: '14px', marginLeft: 4 }}>
+                  {item.projectionChange > 0 ? '↑' : '↓'}
                 </span>
               </CompactEventValue>
             </>
@@ -547,7 +569,19 @@ export function TrainingEventPanel() {
               value={tempSelectedTypes}
             />
           </Form.Item>
-          <CompactButton onClick={handleFormSubmit}>Apply</CompactButton>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <CompactButton onClick={handleFormSubmit}>Compute</CompactButton>
+            <CompactButton 
+              onClick={toggleFocusMode}
+              disabled={tempSelectedTypes.length === 0}
+              style={{
+                backgroundColor: isFocusMode ? '#ff4d4f' : '#1890ff',
+                ...(isFocusMode ? { border: '1px solid #ff4d4f' } : {})
+              }}
+            >
+              {isFocusMode ? 'Show All' : 'Show Selected'}
+            </CompactButton>
+          </div>
         </CompactForm>
         
         <ResultContainer>
@@ -557,7 +591,7 @@ export function TrainingEventPanel() {
           </ResultHeader>
           <EventsContainer>
             {selectedTypes.length === 0 ? (
-              <EmptyState>Click "Apply" to see results</EmptyState>
+              <EmptyState>Click "Compute" to see results</EmptyState>
             ) : combinedData.length === 0 ? (
               <EmptyState>No events detected with current filters</EmptyState>
             ) : (
