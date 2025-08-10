@@ -25,27 +25,6 @@ is_dev_mode = "--dev" in sys.argv
 def GUI():
     return send_from_directory('../frontend', 'index.html')
 
-"""
-Api: get epoch structure of one training process
-
-Request:
-    content_path (str)
-Response:
-    available_epochs (list): list of available epochs
-"""
-@app.route('/getIterationStructure', methods=["GET"])
-@cross_origin()
-def get_epoch_structure():
-    content_path = request.args.get('content_path')
-    available_epochs = infer_epoch_structure(content_path)
-
-    if available_epochs is None:
-        return make_response(jsonify({'error_message': 'getting epoch structure failed'}), 400)
-
-    result = jsonify({
-        'available_epochs': available_epochs
-    })
-    return make_response(result, 200)
 
 """
 Api: get training process info
@@ -238,13 +217,10 @@ def get_background():
     req = request.get_json()
     content_path = req['content_path']
     vis_id = req['vis_id']
-    width = int(req['width'])
-    height = int(req['height'])
     epoch = int(req['epoch'])
-    scale = req['scale']
     
     try:
-        base64_image = paint_background(content_path, vis_id, epoch, width, height, scale)
+        base64_image = load_background(content_path, vis_id, epoch)
         result = jsonify({
             'background_image_base64': base64_image
         })

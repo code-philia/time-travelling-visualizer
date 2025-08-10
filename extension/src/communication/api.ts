@@ -26,10 +26,6 @@ export function triggerStartVisualizing(contentPath: string, visMethod: string, 
     return basicUnsafePostWithJsonResponse('/startVisualizing', data, options);
 }
 
-export function fetchTrainingProcessStructure(contentPath: string, options?: { host?: string }){
-    return basicUnsafeGetWithJsonResponse(`/getIterationStructure?content_path=${contentPath}`, options);
-}
-
 export function fetchTrainingProcessInfo(contentPath: string, options?: { host?: string }) {
     return basicUnsafeGetWithJsonResponse(`/getTrainingProcessInfo?content_path=${contentPath}`, options);
 }

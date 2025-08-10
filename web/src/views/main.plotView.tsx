@@ -64,6 +64,7 @@ function MessageHandler() {
         else if (message.command === 'initTrainingInfo') {
             const messageData = message.data;
             setValue('availableEpochs', messageData.availableEpochs);
+            setValue('scope', messageData.scope);
 
             const colorDict = new Map<number, [number, number, number]>();
             messageData.colorList.forEach((c: [number,number,number], i: number) => {

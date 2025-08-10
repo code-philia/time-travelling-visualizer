@@ -6,7 +6,7 @@ import { PlotViewManager } from "./views/plotView";
 import { isDirectory } from './ioUtils';
 import { getIconUri } from './resources';
 import { MessageManager } from './views/messageManager';
-import { fetchEpochProjection, fetchTrainingProcessInfo, fetchTrainingProcessStructure, getAttributeResource, getBackground, getOriginalNeighbors, getProjectionNeighbors, getText, triggerStartVisualizing } from './communication/api';
+import { fetchEpochProjection, fetchTrainingProcessInfo, getAttributeResource, getBackground, getOriginalNeighbors, getProjectionNeighbors, getText, triggerStartVisualizing } from './communication/api';
 import path from 'path';
 import { convertPropsToPredictions } from './utils';
 
@@ -349,11 +349,25 @@ export async function loadVisualization(forceReconfig: boolean = false): Promise
 		tokenList?: string[],
 		labelList?: number[],
 		index?: Record<string, number[]>,
+		scope?: number[],
 	} = {};
 	data['taskType'] = config.taskType;
 
-	const availableEpochsRes: any = await fetchTrainingProcessStructure(config.contentPath);
-	data['availableEpochs'] = availableEpochsRes['available_epochs'];
+	const infoFilePath = path.join(config.contentPath, 'visualize', config.visualizationID, 'info.json');
+	if (!fs.existsSync(infoFilePath)) {
+		vscode.window.showErrorMessage('No visualization info found!');
+		return false;
+	}
+	const infoContent = fs.readFileSync(infoFilePath, 'utf-8');
+	let info;
+	try {
+		info = JSON.parse(infoContent);
+	} catch (error) {
+		vscode.window.showErrorMessage('Error parsing info.json.');
+		return false;
+	}
+	data['availableEpochs'] = info.available_epochs;
+	data['scope'] = info.scope;
 
 	const trainingInfoRes: any = await fetchTrainingProcessInfo(config.contentPath);
 	data['colorList'] = trainingInfoRes['color_list'];
