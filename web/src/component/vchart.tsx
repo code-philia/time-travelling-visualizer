@@ -1,5 +1,5 @@
 // ChartComponent.tsx
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef } from 'react';
 import VChart from '@visactor/vchart';
 import { Edge } from './types';
 import { useDefaultStore } from "../state/state.plotView";
@@ -106,6 +106,7 @@ export const ChartComponent = memo(() => {
         const spec: any = {
             // ================= meta data =================
             type: 'common', // chart type
+            padding: 0,
             animation: false,
             data: [
                 {
@@ -135,11 +136,11 @@ export const ChartComponent = memo(() => {
                 },
                 {
                     id: 'edges',
-                    values: [] // dynamically set
+                    values: [] // dynamically constructed
                 },
                 {
                      id: 'trails',
-                     values: []
+                     values: [] // dynamically constructed
                 }
             ],
 
@@ -228,36 +229,23 @@ export const ChartComponent = memo(() => {
                     xField: 'x',
                     yField: 'y',
                     line: {
-                        style: { // TODO: different styles for highDim and lowDim edges
+                        style: {
                             stroke: (datum: { from: number, to: number, type: string; }) => {
-                                if (datum.type === 'sameType') {
-                                    return transferArray2Color(colorDict.get(samplesRef.current[datum.from].label), 0.6);
-                                }
-                                else {
-                                    return transferArray2Color(colorDict.get(samplesRef.current[datum.to].label), 0.6);
-                                }
+                                return transferArray2Color(colorDict.get(samplesRef.current[datum.to].label), 0.6);
                             },
-                            lineDash: (datum: { status: string; }) => {
-                                if (datum.status == 'maintain') {
+                            lineDash: (datum: { type: string; }) => {
+                                if (datum.type === 'highDim') {
+                                    return [3, 3];
+                                } else if (datum.type === 'lowDim') {
                                     return [0, 0];
                                 }
-                                else if (datum.status == 'connect') {
-                                    return [0, 0];
-                                }
-                                else if (datum.status == 'disconnect') {
-                                    return [2, 4];
-                                }
-                                return [0, 0];
+                                return [1, 1];
                             },
-                            lineWidth: (datum: { status: string; }) => {
-                                if (datum.status == 'maintain') {
-                                    return 0.8;
-                                }
-                                else if (datum.status == 'connect') {
-                                    return 0.8;
-                                }
-                                else if (datum.status == 'disconnect') {
-                                    return 0.8;
+                            lineWidth: (datum: { type: string; }) => {
+                                if (datum.type === 'highDim') {
+                                    return 1.5;
+                                } else if (datum.type === 'lowDim') {
+                                    return 1;
                                 }
                                 return 0.8;
                             },
