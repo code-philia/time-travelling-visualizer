@@ -23,6 +23,8 @@ export const ChartComponent = memo(() => {
     const { hoveredIndex, setHoveredIndex, selectedIndices, setSelectedIndices, selectedListener } = useDefaultStore(["hoveredIndex", "setHoveredIndex", "selectedIndices", "setSelectedIndices", "selectedListener"]);
     const { shownData, highlightData, index } = useDefaultStore(["shownData", "highlightData", "index"]);
 
+    const {isFocusMode, focusIndices} = useDefaultStore(["isFocusMode", "focusIndices"]);
+
     const samplesRef = useRef<{ pointId: number, x: number; y: number; label: number; pred: number; label_desc: string; pred_desc: string; confidence: number; textSample: string }[]>([]);
     const edgesRef = useRef<Edge[]>([]);
     const wrongRef = useRef<number[]>([]);
@@ -128,7 +130,9 @@ export const ChartComponent = memo(() => {
                                 //     return true;
                                 // }
                                 callback: (datum: { pointId: number; }) => {
-                                    return shownData.some((key) => index[key]?.includes(datum.pointId));
+                                    let includeByIndexFile= shownData.some((key) => index[key]?.includes(datum.pointId));
+                                    let includeByFocus = isFocusMode ? focusIndices.includes(datum.pointId) : true;
+                                    return includeByIndexFile && includeByFocus;
                                 }
                             }
                         }
@@ -420,7 +424,7 @@ export const ChartComponent = memo(() => {
             vchartRef.current.updateSpec(spec);
         }
         vchartRef.current.renderSync();
-    }, [epoch, allEpochData, showIndex, showLabel, showBackground, shownData, highlightData, index, availableEpochs]);
+    }, [epoch, allEpochData, showIndex, showLabel, showBackground, shownData, highlightData, index, availableEpochs, isFocusMode, focusIndices]);
 
 
     /*

@@ -118,6 +118,11 @@ function MessageHandler() {
             const messageData = message.data;
             setValue('highlightData', messageData.highlightData);
         }
+        else if (message.command === 'updateFocusEvents') {
+            const messageData = message.data;
+            setValue('isFocusMode', messageData.isFocusMode);
+            setValue('focusIndices', messageData.focusIndices);
+        }
     };
 
     useEffect(() => {

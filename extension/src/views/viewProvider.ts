@@ -172,6 +172,13 @@ export class RightViewProvider extends BaseViewProvider {
                 }
                 MessageManager.sendToPlotView(msgToPlotView);
             }
+            else if (msg.command === 'focusModeSwitch') {
+                const msgToPlotView = {
+                    command: 'updateFocusEvents',
+                    data: msg.data
+                };
+                MessageManager.sendToPlotView(msgToPlotView);
+            }
             else if (msg.command === 'trainingEventClicked') {
                 const config = getBasicConfig();
                 if (!config) {

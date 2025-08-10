@@ -58,10 +58,13 @@ export function notifyHighlightDataSwitch(e: string[]) {
     window.vscode?.postMessage(message, '*');
 }
 
-export function notifyComputeMetrics(epoch: number) {
-    const data = { epoch: epoch };
+export function notifyFocusModeSwitch(isFocusMode: boolean, focusIndices: number[] = []) {
+    const data = {
+        isFocusMode: isFocusMode,
+        focusIndices: focusIndices
+    };
     const message = {
-        command: 'computeMetrics',
+        command: 'focusModeSwitch',
         data: data
     };
     window.vscode?.postMessage(message, '*');
