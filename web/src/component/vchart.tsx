@@ -2,10 +2,10 @@
 import { memo, useEffect, useRef, useState } from 'react';
 import VChart from '@visactor/vchart';
 import { Edge } from './types';
-import { useDefaultStore } from "../../state/state.plotView";
+import { useDefaultStore } from "../state/state.plotView";
 import { createEdges, softmax, transferArray2Color } from './utils';
-import { notifyHoveredIndexSwitch, notifySelectedIndicesSwitch } from '../../communication/viewMessage';
-const PADDING = 1;
+import { notifyHoveredIndexSwitch, notifySelectedIndicesSwitch } from '../communication/viewMessage';
+const PADDING = 0;
 
 export const ChartComponent = memo(() => {
     const chartRef = useRef<HTMLDivElement>(null);
@@ -159,12 +159,19 @@ export const ChartComponent = memo(() => {
                     persent: true,
                     type: 'area',
                     data: {
+                        // values: [
+                        //     { xx: x_min - 1, yy: y_min - 1 },
+                        //     { xx: x_max + 1, yy: y_min - 1 },
+                        //     { xx: x_max + 1, yy: y_max + 1 },
+                        //     { xx: x_min - 1, yy: y_max + 1 },
+                        //     { xx: x_min - 1, yy: y_min - 1 },
+                        // ]
                         values: [
-                            { xx: x_min - 1, yy: y_min - 1 },
-                            { xx: x_max + 1, yy: y_min - 1 },
-                            { xx: x_max + 1, yy: y_max + 1 },
-                            { xx: x_min - 1, yy: y_max + 1 },
-                            { xx: x_min - 1, yy: y_min - 1 },
+                            { xx: x_min, yy: y_min },
+                            { xx: x_max, yy: y_min },
+                            { xx: x_max, yy: y_max },
+                            { xx: x_min, yy: y_max },
+                            { xx: x_min, yy: y_min },
                         ]
                     },
                     xField: 'xx',
@@ -234,7 +241,7 @@ export const ChartComponent = memo(() => {
                     xField: 'x',
                     yField: 'y',
                     line: {
-                        style: {
+                        style: { // TODO: different styles for highDim and lowDim edges
                             stroke: (datum: { from: number, to: number, type: string; }) => {
                                 if (datum.type === 'sameType') {
                                     return transferArray2Color(colorDict.get(samplesRef.current[datum.from].label), 0.6);
@@ -542,7 +549,9 @@ export const ChartComponent = memo(() => {
         id="chart"
         style={{
             width: '100%',
-            height: '100%'
+            height: '100%',
+            margin: 0,
+            padding: 0
         }}>
     </div>;
 });
