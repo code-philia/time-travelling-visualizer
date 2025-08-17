@@ -111,7 +111,7 @@ export function getInfluenceSamples(contentPath: string,  epoch: number, trainin
         "content_path": contentPath,
         "epoch": `${epoch}`,
         "training_event": trainingEvent,
-        "num_samples": 5 // Default number of samples to fetch
+        "num_samples": 10 // Default number of samples to fetch
     };
     return basicUnsafePostWithJsonResponse('/getInfluenceSamples', data, options);
 }

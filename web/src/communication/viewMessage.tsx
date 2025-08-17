@@ -1,3 +1,5 @@
+import { TrainingEvent } from "../component/types";
+
 declare global {
     interface Window {
         acquireVsCodeApi(): any;
@@ -70,11 +72,19 @@ export function notifyFocusModeSwitch(isFocusMode: boolean, focusIndices: number
     window.vscode?.postMessage(message, '*');
 }
 
-export function notifyTrainingEventClicked(trainingEvent: any, epoch: number) {
-    const data = trainingEvent;
+export function notifyTracingInfluence(trainingEvent: TrainingEvent, epoch: number) {
+    const message = {
+        command: 'tracingInfluence',
+        epoch: epoch,
+        data: trainingEvent
+    };
+    window.vscode?.postMessage(message, '*');
+}
+
+export function notifyTrainingEventClicked(trainingEvents: TrainingEvent[]) {
+    const data = trainingEvents;
     const message = {
         command: 'trainingEventClicked',
-        epoch: epoch,
         data: data
     };
     window.vscode?.postMessage(message, '*');

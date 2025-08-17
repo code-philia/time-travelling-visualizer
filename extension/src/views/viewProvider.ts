@@ -179,7 +179,7 @@ export class RightViewProvider extends BaseViewProvider {
                 };
                 MessageManager.sendToPlotView(msgToPlotView);
             }
-            else if (msg.command === 'trainingEventClicked') {
+            else if (msg.command === 'tracingInfluence') { 
                 const config = getBasicConfig();
                 if (!config) {
                     vscode.window.showErrorMessage("Configuration is not available.");
