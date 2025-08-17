@@ -23,7 +23,8 @@ export const ChartComponent = memo(() => {
     const { hoveredIndex, setHoveredIndex, selectedIndices, setSelectedIndices, selectedListener } = useDefaultStore(["hoveredIndex", "setHoveredIndex", "selectedIndices", "setSelectedIndices", "selectedListener"]);
     const { shownData, highlightData, index } = useDefaultStore(["shownData", "highlightData", "index"]);
 
-    const {isFocusMode, focusIndices} = useDefaultStore(["isFocusMode", "focusIndices"]);
+    const { isFocusMode, focusIndices } = useDefaultStore(["isFocusMode", "focusIndices"]);
+    const { trainingEvents } = useDefaultStore(["trainingEvents"]);
 
     const samplesRef = useRef<{ pointId: number, x: number; y: number; label: number; pred: number; label_desc: string; pred_desc: string; confidence: number; textSample: string }[]>([]);
     const edgesRef = useRef<Edge[]>([]);
@@ -65,6 +66,7 @@ export const ChartComponent = memo(() => {
         samplesRef.current = [];
         wrongRef.current = [];
         flipRef.current = [];
+        // eventsRef.current = [];
         let x_min = scope[0], y_min = scope[1], x_max = scope[2], y_max = scope[3];
 
         epochData.projection.map((p, i) => {
@@ -145,6 +147,10 @@ export const ChartComponent = memo(() => {
                 {
                      id: 'trails',
                      values: [] // dynamically constructed
+                },
+                {
+                    id: 'events',
+                    values: [] // dynamically constructed
                 }
             ],
 
@@ -223,6 +229,132 @@ export const ChartComponent = memo(() => {
                     },
                     select: {
                         enable: false,
+                    }
+                },
+                {
+                    id: 'events-series',
+                    type: 'line',
+                    dataId: 'events',
+                    seriesField: 'eventId',
+                    xField: 'x',
+                    yField: 'y',
+                    line: {
+                        style: {
+                            stroke: (datum: any) => {
+                                let x0 = datum.xStart, y0 = datum.yStart;
+                                let x1 = 1-x0, y1 = 1-y0;
+                                switch (datum.eventType) {
+                                    case 'PredictionFlip':
+                                        return {
+                                            gradient: 'linear',
+                                            x0: x0,
+                                            y0: y0,
+                                            x1: x1,
+                                            y1: y1,
+                                            stops: [
+                                                {
+                                                    offset: 0,
+                                                    color: '#ffffff00'
+                                                },
+                                                {
+                                                    offset: 0.6,
+                                                    color: '#0077dd60'
+                                                },
+                                                {
+                                                    offset: 1,
+                                                    color: '#0077dd'
+                                                }
+                                            ],
+                                        };
+                                    case 'ConfidenceChange':
+                                        return {
+                                            gradient: 'linear',
+                                            x0: x0,
+                                            y0: y0,
+                                            x1: x1,
+                                            y1: y1,
+                                            stops: [
+                                                {
+                                                    offset: 0,
+                                                    color: '#ffffff00'
+                                                },
+                                                {
+                                                    offset: 0.6,
+                                                    color: '#ff772260'
+                                                },
+                                                {
+                                                    offset: 1,
+                                                    color: '#ff7722'
+                                                }
+                                            ],
+                                        };
+                                    case 'SignificantMovement':
+                                        return {
+                                            gradient: 'linear',
+                                            x0: x0,
+                                            y0: y0,
+                                            x1: x1,
+                                            y1: y1,
+                                            stops: [
+                                                {
+                                                    offset: 0,
+                                                    color: '#ffffff00'
+                                                },
+                                                {
+                                                    offset: 0.6,
+                                                    color: '#00bbdd60'
+                                                },
+                                                {
+                                                    offset: 1,
+                                                    color: '#00bbdd'
+                                                }
+                                            ],
+                                        };
+                                    case 'InconsistentMovement':
+                                        return {
+                                            gradient: 'linear',
+                                            x0: x0,
+                                            y0: y0,
+                                            x1: x1,
+                                            y1: y1,
+                                            stops: [
+                                                {
+                                                    offset: 0,
+                                                    color: '#ffffff00'
+                                                },
+                                                {
+                                                    offset: 0.6,
+                                                    color: '#ff669960'
+                                                },
+                                                {
+                                                    offset: 1,
+                                                    color: '#ff6699'
+                                                }
+                                            ],
+                                        };
+                                    default:
+                                        return '#000000';
+                                }
+                            },
+                            lineWidth: 2.5,
+                            lineDash: [4, 4],
+                            boundsPadding: 10,
+                        }
+                    },
+                    point: {
+                        visible: true,
+                        style: {
+                            fill: (datum: any) => {
+                                return datum.color;
+                            },
+                            size: 8
+                        }
+                    },
+                    hover: {
+                        enable: false
+                    },
+                    select: {
+                        enable: false
                     }
                 },
                 {
@@ -497,7 +629,7 @@ export const ChartComponent = memo(() => {
 
 
      /*
-     Update motion trail
+        Update motion trail
      */
      useEffect(() => {
          if (!vchartRef.current) {
@@ -522,6 +654,77 @@ export const ChartComponent = memo(() => {
          });
          vchartRef.current.updateDataSync('trails', trailpoints);
      }, [showTrail, selectedIndices, epoch, availableEpochs, allEpochData]);
+    
+    /*  
+        Update training events 
+    */
+    useEffect(() => {
+        if (!vchartRef.current || !trainingEvents || trainingEvents.length === 0) {
+            return;
+        }
+        
+        // 构建事件数据
+        const eventsData: any[] = [];
+        const currentEpochIndex = availableEpochs.indexOf(epoch);
+        
+        if (currentEpochIndex <= 0) {
+            // 第一个epoch没有前一个epoch，不显示事件
+            vchartRef.current.updateDataSync('events', []);
+            return;
+        }
+        
+        // 获取前一个epoch的数据
+        const prevEpoch = availableEpochs[currentEpochIndex - 1];
+        const prevEpochData = allEpochData[prevEpoch];
+        const currentEpochData = allEpochData[epoch];
+        
+        trainingEvents.forEach((event, index) => {
+            const eventId = index;
+            const sampleIndex = event.index;
+            
+            // 获取样本在前一个epoch的位置
+            if (!prevEpochData || !prevEpochData.projection || sampleIndex >= prevEpochData.projection.length) {
+                return;
+            }
+            const prevPos = prevEpochData.projection[sampleIndex];
+            const prevPred = prevEpochData.prediction[sampleIndex];
+            const prevColor = colorDict.get(prevPred) ?? [0, 0, 0];
+            
+            // 获取样本在当前epoch的位置
+            if (!currentEpochData || !currentEpochData.projection || sampleIndex >= currentEpochData.projection.length) {
+                return;
+            }
+            const currentPos = currentEpochData.projection[sampleIndex];
+            const currentPred = currentEpochData.prediction[sampleIndex];
+            const currentColor = colorDict.get(currentPred) ?? [0, 0, 0];
+            
+            let xStart = prevPos[0] > currentPos[0] ? 1 : 0;
+            let yStart = prevPos[1] < currentPos[1] ? 1 : 0;
+
+            // 添加起点和终点
+            eventsData.push({
+                eventId: eventId,
+                x: prevPos[0],
+                y: prevPos[1],
+                color: `rgb(${prevColor[0]}, ${prevColor[1]}, ${prevColor[2]})`,
+                eventType: event.type,
+                xStart: xStart,
+                yStart: yStart,
+            });
+            eventsData.push({
+                eventId: eventId,
+                x: currentPos[0],
+                y: currentPos[1],
+                color: `rgb(${currentColor[0]}, ${currentColor[1]}, ${currentColor[2]})`,
+                eventType: event.type,
+                xStart: xStart,
+                yStart: yStart,
+            });
+        });
+        
+        // 更新图表数据
+        vchartRef.current.updateDataSync('events', eventsData);
+    }, [trainingEvents, epoch, allEpochData, availableEpochs]);
 
     return <div
         ref={chartRef}

@@ -1,9 +1,9 @@
 import styled from 'styled-components';
 import { Tag, Checkbox, Form, Button, Collapse } from 'antd';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { FunctionalBlock } from './custom/basic-components';
 import { useDefaultStore } from '../state/state.rightView';
-import { notifyFocusModeSwitch, notifyTrainingEventClicked } from '../communication/viewMessage';
+import { notifyFocusModeSwitch, notifyTracingInfluence, notifyTrainingEventClicked } from '../communication/viewMessage';
 import { PredictionFlipEvent, ConfidenceChangeEvent, SignificantMovementEvent, InconsistentMovementEvent, TrainingEvent } from './types';
 
 const { Panel } = Collapse;
@@ -130,22 +130,36 @@ const EventsContainer = styled.div`
   background-color: #fafafa;
 `;
 
-const CompactEventItem = styled.div`
+const CompactEventItem = styled.div<{ $selected?: boolean }>`
   display: flex;
   align-items: center;
   padding: 6px 8px;
   border-radius: 3px;
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
   cursor: pointer;
   font-size: 11px;
   margin-bottom: 2px;
-  background-color: #ffffff;
-  border: 1px solid #f0f0f0;
+  background-color: ${props => props.$selected ? '#e6f7ff' : '#ffffff'};
+  border: 1px solid ${props => props.$selected ? '#1890ff' : '#f0f0f0'};
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: ${props => props.$selected ? '#1890ff' : 'transparent'};
+    transition: background-color 0.3s ease;
+  }
 
   &:hover {
-    background-color: #f5f5f5;
-    border-color: #d9d9d9;
+    background-color: ${props => props.$selected ? '#e6f7ff' : '#f5f5f5'};
+    border-color: ${props => props.$selected ? '#1890ff' : '#d9d9d9'};
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   }
 
@@ -217,6 +231,7 @@ export function TrainingEventPanel() {
   const [confidenceChanges, setConfidenceChanges] = useState<ConfidenceChangeEvent[]>([]);
   const [significantMovements, setSignificantMovements] = useState<SignificantMovementEvent[]>([]);
   const [inconsistentMovements, setInconsistentMovements] = useState<InconsistentMovementEvent[]>([]);
+  const [selectedTrainingEvents, setSelectedTrainingEvents] = useState<TrainingEvent[]>([]);
   const [isFocusMode, setIsFocusMode] = useState(false);
 
   const { epoch, availableEpochs, allEpochData, labels, labelDict } = useDefaultStore([
@@ -441,12 +456,14 @@ export function TrainingEventPanel() {
     }
   };
 
-  const combinedData: TrainingEvent[] = [
-    ...(selectedTypes.includes('PredictionFlip') ? predictionFlips : []),
-    ...(selectedTypes.includes('ConfidenceChange') ? confidenceChanges : []),
-    ...(selectedTypes.includes('SignificantMovement') ? significantMovements : []),
-    ...(selectedTypes.includes('InconsistentMovement') ? inconsistentMovements : []),
-  ];
+  const combinedData: TrainingEvent[] = useMemo(() => {
+    return [
+      ...(selectedTypes.includes('PredictionFlip') ? predictionFlips : []),
+      ...(selectedTypes.includes('ConfidenceChange') ? confidenceChanges : []),
+      ...(selectedTypes.includes('SignificantMovement') ? significantMovements : []),
+      ...(selectedTypes.includes('InconsistentMovement') ? inconsistentMovements : []),
+    ];
+  }, [selectedTypes, predictionFlips, confidenceChanges, significantMovements, inconsistentMovements]);
 
   // Group events by type
   const groupedEvents: Record<string, TrainingEvent[]> = {
@@ -456,15 +473,9 @@ export function TrainingEventPanel() {
     InconsistentMovement: combinedData.filter(item => item.type === 'InconsistentMovement'),
   };
 
-  const toggleFocusMode = useCallback(() => {
-    if (isFocusMode) {
-      notifyFocusModeSwitch(false);
-    } else {
-      const focusIndices = combinedData.map(event => event.index);
-      notifyFocusModeSwitch(true, focusIndices);
-    }
+  const toggleFocusMode = () => {
     setIsFocusMode(!isFocusMode);
-  }, [isFocusMode, combinedData]);
+  };
 
   useEffect(() => {
     if (isFocusMode) {
@@ -477,19 +488,36 @@ export function TrainingEventPanel() {
   }, [isFocusMode, combinedData]);
 
   useEffect(() => {
+    // Re-compute events when epoch changes
     if (selectedTypes.length > 0) {
       calculateEvents(selectedTypes);
     }
+    // Reset selected training events when epoch changes
+    setSelectedTrainingEvents([]);
+    notifyTrainingEventClicked([]);
   }, [epoch]);
 
   const handleItemClick = (item: TrainingEvent) => {
-    notifyTrainingEventClicked(item, epoch);
+    if (!selectedTrainingEvents.includes(item)) { 
+      notifyTracingInfluence(item, epoch);
+    }
+    const newSelectedEvents = selectedTrainingEvents.includes(item)
+      ? selectedTrainingEvents.filter(event => event !== item)
+      : [...selectedTrainingEvents, item];
+    
+    setSelectedTrainingEvents(newSelectedEvents);
+    notifyTrainingEventClicked(newSelectedEvents);
   };
 
   // Function to render events by type
   const renderEventItem = (item: TrainingEvent) => {
+    const isSelected = selectedTrainingEvents.some(
+      selectedEvent => 
+        selectedEvent.type === item.type && 
+        selectedEvent.index === item.index
+    );
     return (
-      <CompactEventItem key={`${item.type}-${item.index}`} onClick={() => handleItemClick(item)}>
+      <CompactEventItem key={`${item.type}-${item.index}`} onClick={() => handleItemClick(item)} $selected={isSelected}>
         <CompactEventIndex color={getTypeColor(item.type)}>#{item.index}</CompactEventIndex>
         <EventContent>
           {item.type === 'PredictionFlip' && (
@@ -547,10 +575,10 @@ export function TrainingEventPanel() {
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'PredictionFlip': return 'blue';
-      case 'ConfidenceChange': return 'purple';
-      case 'SignificantMovement': return 'orange';
-      case 'InconsistentMovement': return 'red';
+      case 'PredictionFlip': return '#0077dd';
+      case 'ConfidenceChange': return '#ff7722';
+      case 'SignificantMovement': return '#00bbdd';
+      case 'InconsistentMovement': return '#ff6699';
       default: return 'gray';
     }
   };
