@@ -5,6 +5,7 @@ import { useStoreWithEqualityFn } from "zustand/traditional";
 import { BUILD_CONSTANTS } from "../constants";
 import { subscribeWithSelector } from "zustand/middleware";
 import { SelectedListener } from "../state/types";
+import { TrainingEvent } from "../component/types";
 
 export type EpochData = {
     projection: number[][];
@@ -51,6 +52,9 @@ export type BaseMutableGlobalStore = {
     // focus events
     isFocusMode: boolean;
     focusIndices: number[];
+
+    // training events
+    trainingEvents: TrainingEvent[];
 }
 
 export let initMutableGlobalStore: BaseMutableGlobalStore = {
@@ -89,6 +93,9 @@ export let initMutableGlobalStore: BaseMutableGlobalStore = {
     // focus events
     isFocusMode: false,
     focusIndices: [],
+
+    // training events
+    trainingEvents: []
 };
 
 type SetFunction<T> = (setState: (state: T) => T | Partial<T>) => void;

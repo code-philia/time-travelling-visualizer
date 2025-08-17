@@ -207,6 +207,15 @@ export class RightViewProvider extends BaseViewProvider {
                     MessageManager.sendToInfluenceView(msgToInfluenceView);
                 }
             }
+            else if (msg.command === 'trainingEventClicked') {
+                const msgToPlotView = {
+                    command: 'updateTrainingEvents',
+                    data: {
+                        trainingEvents: msg.data,
+                    }
+                };
+                MessageManager.sendToPlotView(msgToPlotView);
+            }
         });
     }
 }
