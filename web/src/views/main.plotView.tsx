@@ -40,7 +40,7 @@ function MessageHandler() {
             setValue('revealOriginalNeighbors', messageData.revealOriginalNeighbors);
             setValue('revealProjectionNeighbors', messageData.revealProjectionNeighbors);
         }
-        else if (message.command === 'updatePlotSettings') {
+        else if (message.command === 'updatePlotSettings') { 
             const messageData = message.data;
             if (messageData.showIndex !== undefined) {
                 setValue('showIndex', messageData.showIndex);
@@ -67,8 +67,8 @@ function MessageHandler() {
             setValue('scope', messageData.scope);
 
             const colorDict = new Map<number, [number, number, number]>();
-            messageData.colorList.forEach((c: [number, number, number], i: number) => {
-                colorDict.set(i, c);
+            messageData.colorList.forEach((c: [number,number,number], i: number) => {
+                colorDict.set(i, c);                    
             });
             setValue('colorDict', colorDict);
 
@@ -85,7 +85,7 @@ function MessageHandler() {
 
             notifyEpochSwitch(messageData.availableEpochs[0]);
         }
-        else if (message.command === 'updateEpochData') {
+        else if(message.command === 'updateEpochData'){
             const messageData = message.data;
             const newEpochData: EpochData = {
                 projection: messageData.projection,
@@ -102,15 +102,15 @@ function MessageHandler() {
             const progress = Object.keys(allEpochDataCopy).length;
             setValue('progress', progress);
         }
-        else if (message.command === 'updateSelectedIndices') {
+        else if(message.command === 'updateSelectedIndices'){
             const messageData = message.data;
             setValue('selectedIndices', messageData.selectedIndices);
         }
-        else if (message.command === 'updateHoveredIndex') {
+        else if(message.command === 'updateHoveredIndex'){
             const messageData = message.data;
             setValue('hoveredIndex', messageData.hoveredIndex);
         }
-        else if (message.command === 'updateshownData') {
+        else if(message.command === 'updateshownData'){
             const messageData = message.data;
             setValue('shownData', messageData.shownData);
         }
