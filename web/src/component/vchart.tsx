@@ -66,7 +66,6 @@ export const ChartComponent = memo(() => {
         samplesRef.current = [];
         wrongRef.current = [];
         flipRef.current = [];
-        // eventsRef.current = [];
         let x_min = scope[0], y_min = scope[1], x_max = scope[2], y_max = scope[3];
 
         epochData.projection.map((p, i) => {
@@ -629,7 +628,7 @@ export const ChartComponent = memo(() => {
 
 
      /*
-        Update motion trail
+     Update motion trail
      */
      useEffect(() => {
          if (!vchartRef.current) {
