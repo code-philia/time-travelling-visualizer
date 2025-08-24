@@ -558,7 +558,7 @@ export const ChartComponent = memo(() => {
         Update training events 
     */
     useEffect(() => {
-        if (!vchartRef.current || !trainingEvents || trainingEvents.length === 0) {
+        if (!vchartRef.current || !trainingEvents) {
             return;
         }
         
