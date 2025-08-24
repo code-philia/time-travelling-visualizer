@@ -54,6 +54,10 @@ export const ChartComponent = memo(() => {
         Main update logic
     */
     useEffect(() => {
+        if (!chartRef.current) {
+            return;
+        }
+
         const epochData = allEpochData[epoch];
         if (!epochData) {
             return;
@@ -435,7 +439,7 @@ export const ChartComponent = memo(() => {
 
         // create or update vchart
         if (!vchartRef.current) {
-            const vchart = new VChart(spec, { dom: "chart" });
+            const vchart = new VChart(spec, { dom: chartRef.current });
             vchartRef.current = vchart;
 
             vchartRef.current.on('pointerover', { id: 'point-series' }, (e) => {
