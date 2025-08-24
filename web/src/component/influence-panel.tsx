@@ -19,6 +19,7 @@ const PanelContainer = styled.div`
   height: 100%;
   background: #fff;
   overflow: hidden;
+  color: #333;
 `;
 
 const ContentContainer = styled.div`
@@ -26,46 +27,46 @@ const ContentContainer = styled.div`
   flex: 1;
   overflow: hidden;
   padding: 8px;
-  gap: 8px;
-  background: #f3f3f3;
+  gap: 10px;
+  background: #f5f5f5;
 `;
 
 const EventPanel = styled.div`
   flex: 0 0 240px;
-  background: white;
-  border-radius: 4px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-  padding: 12px;
+  background: #fff;
+  border-radius: 3px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  border: 1px solid #e1e4e8;
+  gap: 10px;
+  border: 1px solid #ddd;
   overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  overflow-y: auto; /* 添加滚动 */
 `;
 
 const EventHeader = styled.div`
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #eaeef5;
+  gap: 6px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #eaeaea;
   
   h2 {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
-    color: #24292e;
+    color: #333;
   }
 `;
 
 const EventTypeBadge = styled.span<{ $type: string }>`
   background: ${({ $type }) => 
-    $type === "Prediction Flip" ? "#ff6b6b" : 
-    $type === "Confidence Change" ? "#4ecdc4" : 
-    $type === "Significant Movement" ? "#ffd166" : "#a29bfe"};
+    $type === "PredictionFlip" ? "#4a6cf7" : 
+    $type === "ConfidenceChange" ? "#4caf50" : "#888"};
   color: white;
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 2px;
+  font-size: 9px;
   font-weight: 600;
 `;
 
@@ -76,35 +77,80 @@ const EventContent = styled.div`
 `;
 
 const EventImage = styled.img`
-  width: 100%;
-  aspect-ratio: 1; // 保持正方形
-  border-radius: 4px;
+  width: 70px;
+  height: 70px;
+  border-radius: 3px;
   object-fit: cover;
-  border: 1px solid #eaeef5;
-  background: #f8f9fa;
+  border: 1px solid #eaeaea;
+  background: #f8f8f8;
+  align-self: center;
 `;
 
 const EventInfo = styled.div`
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 6px;
+  padding: 6px;
+  background: #f8f8f8;
+  border-radius: 3px;
+  font-size: 11px;
+  
+  .label {
+    font-weight: 600;
+    color: #555;
+    text-align: right;
+  }
+  
+  .value {
+    font-weight: 500;
+    color: #222;
+  }
+  
+  .highlight {
+    color: #e53935;
+    font-weight: 600;
+  }
+  
+  .positive {
+    color: #4caf50;
+    font-weight: 600;
+  }
+`;
+
+const EventDetails = styled.div`
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 8px;
-  background: #f8f9fa;
-  border-radius: 4px;
-  font-size: 12px;
+  padding: 6px;
+  background: #f8f8f8;
+  border-radius: 3px;
+  font-size: 11px;
+  border: 1px solid #eaeaea;
   
-  div {
-    display: flex;
-    justify-content: space-between;
+  .section-title {
+    font-weight: 600;
+    color: #555;
+    padding-bottom: 3px;
+    border-bottom: 1px solid #eaeaea;
+    font-size: 10px;
+  }
+  
+  .detail-row {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 6px;
+    padding: 1px 0;
     
-    span:first-child {
-      font-weight: 600;
-      color: #555;
+    .detail-label {
+      font-weight: 500;
+      color: #666;
+      font-size: 10px;
     }
     
-    span:last-child {
+    .detail-value {
       font-weight: 500;
-      color: #2c3e50;
+      color: #222;
+      font-size: 10px;
     }
   }
 `;
@@ -113,157 +159,159 @@ const InfluencePanel = styled.div`
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: white;
-  border-radius: 4px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-  border: 1px solid #e1e4e8;
+  background: #fff;
+  border-radius: 3px;
+  border: 1px solid #ddd;
   overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 `;
 
 const InfluenceHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 12px;
-  background: #f6f8fa;
-  border-bottom: 1px solid #e1e4e8;
+  padding: 6px 10px;
+  background: #f0f0f0;
+  border-bottom: 1px solid #ddd;
   
   h2 {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
-    color: #24292e;
+    color: #333;
   }
 `;
 
 const FilterBar = styled.div`
   display: flex;
-  gap: 6px;
+  gap: 4px;
   
   button {
-    padding: 4px 8px;
-    border-radius: 4px;
-    border: 1px solid #d1d5da;
-    background: #f6f8fa;
-    color: #24292e;
-    font-size: 11px;
+    padding: 3px 6px;
+    border-radius: 2px;
+    border: 1px solid #ccc;
+    background: #f0f0f0;
+    color: #333;
+    font-size: 10px;
     cursor: pointer;
     transition: all 0.1s;
     
     &:hover {
-      background: #e9ecef;
+      background: #e0e0e0;
     }
     
     &.active {
-      background: #0366d6;
+      background: #3f51b5;
       color: white;
-      border-color: #0366d6;
+      border-color: #3f51b5;
     }
   }
 `;
 
 const InfluenceContent = styled.div`
   flex: 1;
-  padding: 8px;
+  padding: 6px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 8px;
   overflow-y: auto;
 `;
 
 const InfluenceSection = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   
   h3 {
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-size: 11px;
+    gap: 4px;
+    font-size: 10px;
     font-weight: 600;
-    color: #24292e;
-    padding-bottom: 4px;
-    border-bottom: 1px dashed #e1e4e8;
+    color: #333;
+    padding-bottom: 3px;
+    border-bottom: 1px solid #eaeaea;
     
     span {
-      padding: 1px 6px;
-      background: ${({ $positive }) => $positive ? '#e6fffa' : '#ffebeb'};
-      color: ${({ $positive }) => $positive ? '#22863a' : '#cb2431'};
-      border-radius: 10px;
-      font-size: 10px;
+      padding: 1px 4px;
+      background: ${({ $positive }) => $positive ? '#e8f5e9' : '#ffebee'};
+      color: ${({ $positive }) => $positive ? '#388e3c' : '#d32f2f'};
+      border-radius: 2px;
+      font-size: 9px;
     }
   }
 `;
 
 const InfluenceList = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+  gap: 6px;
 `;
 
 const InfluenceCard = styled.div<{ $positive: boolean }>`
-  border-radius: 4px;
+  border-radius: 2px;
   overflow: hidden;
-  background: ${({ $positive }) => $positive ? 'rgba(46,160,67,0.05)' : 'rgba(203,36,49,0.05)'};
-  border: 1px solid ${({ $positive }) => $positive ? 'rgba(46,160,67,0.15)' : 'rgba(203,36,49,0.15)'};
+  background: ${({ $positive }) => $positive ? '#e8f5e9' : '#ffebee'};
+  border: 1px solid ${({ $positive }) => $positive ? '#c8e6c9' : '#ffcdd2'};
   transition: all 0.1s;
   cursor: pointer;
   
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   }
 `;
 
 const InfluenceImage = styled.img`
   width: 100%;
-  aspect-ratio: 1; // 保持正方形
+  height: 50px;
   object-fit: cover;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 `;
 
 const InfluenceInfo = styled.div<{ $positive: boolean }>`
-  padding: 8px;
+  padding: 3px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 1px;
+  font-size: 7px;
   
   .influence-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
     
     .index {
       font-weight: 600;
-      font-size: 11px;
-      color: #24292e;
+      color: #333;
     }
     
     .label {
-      background: ${({ $positive }) => $positive ? '#2ea043' : '#cb2431'};
+      background: ${({ $positive }) => $positive ? '#388e3c' : '#d32f2f'};
       color: white;
-      padding: 1px 6px;
-      border-radius: 10px;
-      font-size: 10px;
+      padding: 1px 3px;
+      border-radius: 2px;
+      max-width: 35px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
   }
   
   .influence-value {
     display: flex;
     align-items: center;
-    gap: 4px;
-    font-size: 11px;
+    justify-content: center;
+    gap: 1px;
     font-weight: 500;
     
     .score {
-      color: ${({ $positive }) => $positive ? '#2ea043' : '#cb2431'};
+      color: ${({ $positive }) => $positive ? '#388e3c' : '#d32f2f'};
       font-weight: 600;
     }
     
     .icon {
-      color: ${({ $positive }) => $positive ? '#2ea043' : '#cb2431'};
+      color: ${({ $positive }) => $positive ? '#388e3c' : '#d32f2f'};
       font-weight: bold;
-      font-size: 10px;
+      font-size: 9px;
     }
   }
 `;
@@ -283,9 +331,9 @@ const ExpandedView = styled.div<{ $show: boolean }>`
 
 const ExpandedCard = styled.div`
   background: white;
-  border-radius: 6px;
+  border-radius: 4px;
   width: 90%;
-  max-width: 600px;
+  max-width: 650px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   overflow: hidden;
   display: flex;
@@ -293,15 +341,15 @@ const ExpandedCard = styled.div`
 `;
 
 const ExpandedHeader = styled.div`
-  padding: 8px 12px;
-  background: #0078d4;
+  padding: 6px 10px;
+  background: #3f51b5;
   color: white;
   display: flex;
   justify-content: space-between;
   align-items: center;
   
   h3 {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 500;
   }
   
@@ -309,72 +357,74 @@ const ExpandedHeader = styled.div`
     background: none;
     border: none;
     color: white;
-    font-size: 18px;
+    font-size: 16px;
     cursor: pointer;
     padding: 2px;
   }
 `;
 
 const ExpandedContent = styled.div`
-  padding: 16px;
+  padding: 12px;
   display: flex;
-  gap: 16px;
+  gap: 15px;
 `;
 
 const ExpandedImage = styled.img`
-  width: 120px;
-  aspect-ratio: 1; // 保持正方形
+  width: 140px;
+  height: 140px;
   object-fit: cover;
   border-radius: 4px;
-  border: 1px solid #eaeef5;
+  border: 1px solid #eaeaea;
 `;
 
-const ExpandedDetails = styled.div`
+const ExpandedDetails = styled.div<{ $positive?: boolean }>`
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  font-size: 12px;
+  gap: 8px;
+  font-size: 11px;
   
   .detail-row {
-    display: flex;
-    padding-bottom: 6px;
-    border-bottom: 1px solid #f0f4f8;
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 6px;
+    padding: 3px 0;
     
     .label {
-      width: 100px;
       font-weight: 600;
       color: #555;
+      font-size: 10px;
     }
     
     .value {
-      flex: 1;
-      color: #24292e;
       font-weight: 500;
+      color: #222;
+      font-size: 10px;
     }
   }
   
   .influence-score {
-    margin-top: 6px;
+    margin-top: 8px;
     padding: 10px;
-    border-radius: 4px;
-    background: #f0f7ff;
+    border-radius: 3px;
+    background: #f5f5f5;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 3px;
+    border: 1px solid #eaeaea;
     
     .score-value {
       font-size: 18px;
       font-weight: 700;
-      color: #0366d6;
       text-align: center;
+      color: ${({ $positive }) => $positive ? '#4caf50' : '#e53935'};
     }
     
     .score-label {
       text-align: center;
       font-weight: 600;
       color: #555;
-      font-size: 11px;
+      font-size: 10px;
     }
   }
 `;
@@ -386,13 +436,89 @@ const InfluencePanelComponent = () => {
   
   const positiveSamples = influenceSamples.filter(sample => sample.positive);
   const negativeSamples = influenceSamples.filter(sample => !sample.positive);
-  
-  const filteredSamples = filter === 'all' 
-    ? influenceSamples 
-    : filter === 'positive' 
-      ? positiveSamples 
-      : negativeSamples;
-  
+
+  const hasSamples = 
+    (filter === 'all' && (positiveSamples.length > 0 || negativeSamples.length > 0)) ||
+    (filter === 'positive' && positiveSamples.length > 0) ||
+    (filter === 'negative' && negativeSamples.length > 0);
+
+  const renderEventDetails = () => {
+    if (!trainingEvent) return null;
+    
+    return (
+      <>
+        <EventInfo>
+          <div className="label">Index:</div>
+          <div className="value">#{trainingEvent.index}</div>
+          
+          <div className="label">Label:</div>
+          <div className="value">{trainingEvent.label}</div>
+          
+          <div className="label">Type:</div>
+          <div className="value">
+            <EventTypeBadge $type={trainingEvent.type}>{trainingEvent.type}</EventTypeBadge>
+          </div>
+        </EventInfo>
+        
+        <EventDetails>
+          <div className="section-title">Event Details</div>
+          
+          {trainingEvent.type === 'PredictionFlip' && (
+            <>
+              <div className="detail-row">
+                <div className="detail-label">Previous:</div>
+                <div className="detail-value">
+                  {trainingEvent.prevPred}
+                  <span className={trainingEvent.prevCorrect ? "positive" : "highlight"}>
+                    {trainingEvent.prevCorrect ? " ✓" : " ✗"}
+                  </span>
+                </div>
+              </div>
+              <div className="detail-row">
+                <div className="detail-label">Current:</div>
+                <div className="detail-value">
+                  {trainingEvent.currPred}
+                  <span className={trainingEvent.currCorrect ? "positive" : "highlight"}>
+                    {trainingEvent.currCorrect ? " ✓" : " ✗"}
+                  </span>
+                </div>
+              </div>
+              <div className="detail-row">
+                <div className="detail-label">Target:</div>
+                <div className="detail-value">{trainingEvent.influenceTarget}</div>
+              </div>
+            </>
+          )}
+          
+          {trainingEvent.type === 'ConfidenceChange' && (
+            <>
+              <div className="detail-row">
+                <div className="detail-label">Prev Conf:</div>
+                <div className="detail-value">{trainingEvent.prevConf.toFixed(4)}</div>
+              </div>
+              <div className="detail-row">
+                <div className="detail-label">Curr Conf:</div>
+                <div className="detail-value">{trainingEvent.currConf.toFixed(4)}</div>
+              </div>
+              <div className="detail-row">
+                <div className="detail-label">Change:</div>
+                <div className="detail-value">
+                  <span className={trainingEvent.change > 0 ? "positive" : "highlight"}>
+                    {trainingEvent.change > 0 ? '+' : ''}{trainingEvent.change.toFixed(4)}
+                  </span>
+                </div>
+              </div>
+              <div className="detail-row">
+                <div className="detail-label">Target:</div>
+                <div className="detail-value">{trainingEvent.influenceTarget}</div>
+              </div>
+            </>
+          )}
+        </EventDetails>
+      </>
+    );
+  };
+
   if (!trainingEvent) {
     return (
       <PanelContainer>
@@ -402,10 +528,10 @@ const InfluencePanelComponent = () => {
           justifyContent: 'center', 
           alignItems: 'center', 
           height: '100%',
-          color: '#6a737d',
-          fontSize: '13px'
+          color: '#666',
+          fontSize: '12px'
         }}>
-          No training event selected
+          Select a training event to view influence analysis
         </div>
       </PanelContainer>
     );
@@ -427,37 +553,27 @@ const InfluencePanelComponent = () => {
             ) : (
               <div style={{ 
                 padding: '10px',
-                aspectRatio: '1',
-                background: '#f8f9fa', 
-                borderRadius: '4px',
-                fontSize: '12px',
-                maxHeight: '120px',
-                overflow: 'auto'
+                height: '70px',
+                background: '#f8f8f8', 
+                borderRadius: '3px',
+                fontSize: '11px',
+                overflow: 'auto',
+                border: '1px solid #eaeaea',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
               }}>
                 {trainingEvent.data}
               </div>
             )}
             
-            <EventInfo>
-              <div>
-                <span>Sample Index:</span>
-                <span>#{trainingEvent.index}</span>
-              </div>
-              <div>
-                <span>Label:</span>
-                <span>{trainingEvent.label}</span>
-              </div>
-              <div>
-                <span>Event Type:</span>
-                <span>{trainingEvent.type}</span>
-              </div>
-            </EventInfo>
+            {renderEventDetails()}
           </EventContent>
         </EventPanel>
         
         <InfluencePanel>
           <InfluenceHeader>
-            <h2>Influence Samples</h2>
+            <h2>Influence Analysis</h2>
             <FilterBar>
               <button 
                 className={filter === 'all' ? 'active' : ''} 
@@ -498,17 +614,17 @@ const InfluencePanelComponent = () => {
                         <InfluenceImage src={sample.data} alt={`Sample ${sample.index}`} />
                       ) : (
                         <div style={{ 
-                          height: '80px',
-                          aspectRatio: '1',
-                          background: '#e6fffa', 
+                          height: '50px',
+                          background: '#e8f5e9', 
                           display: 'flex', 
                           alignItems: 'center', 
                           justifyContent: 'center',
-                          color: '#22863a',
+                          color: '#388e3c',
                           fontWeight: 500,
-                          fontSize: '12px',
-                          padding: '8px',
-                          textAlign: 'center'
+                          fontSize: '9px',
+                          padding: '6px',
+                          textAlign: 'center',
+                          borderBottom: '1px solid #c8e6c9'
                         }}>
                           {sample.data}
                         </div>
@@ -546,17 +662,17 @@ const InfluencePanelComponent = () => {
                         <InfluenceImage src={sample.data} alt={`Sample ${sample.index}`} />
                       ) : (
                         <div style={{ 
-                          height: '80px', 
-                          aspectRatio: '1',
-                          background: '#ffebeb', 
+                          height: '50px', 
+                          background: '#ffebee', 
                           display: 'flex', 
                           alignItems: 'center', 
                           justifyContent: 'center',
-                          color: '#cb2431',
+                          color: '#d32f2f',
                           fontWeight: 500,
-                          fontSize: '12px',
-                          padding: '8px',
-                          textAlign: 'center'
+                          fontSize: '9px',
+                          padding: '6px',
+                          textAlign: 'center',
+                          borderBottom: '1px solid #ffcdd2'
                         }}>
                           {sample.data}
                         </div>
@@ -577,16 +693,16 @@ const InfluencePanelComponent = () => {
               </InfluenceSection>
             )}
             
-            {filteredSamples.length === 0 && (
+            {!hasSamples && (
               <div style={{
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center',
                 height: '100%',
-                color: '#6a737d',
-                fontSize: '12px'
+                color: '#666',
+                fontSize: '11px'
               }}>
-                No influence samples found
+                No influence samples found for current filter
               </div>
             )}
           </InfluenceContent>
@@ -605,25 +721,24 @@ const InfluencePanelComponent = () => {
                 <ExpandedImage src={selectedInfluence.data} alt={`Sample ${selectedInfluence.index}`} />
               ) : (
                 <div style={{ 
-                  width: '120px', 
-                  height: '120px',
-                  aspectRatio: '1',
-                  background: selectedInfluence.positive ? '#e6fffa' : '#ffebeb', 
+                  width: '140px', 
+                  height: '140px',
+                  background: selectedInfluence.positive ? '#e8f5e9' : '#ffebee', 
                   display: 'flex', 
                   alignItems: 'center', 
                   justifyContent: 'center',
-                  color: selectedInfluence.positive ? '#22863a' : '#cb2431',
+                  color: selectedInfluence.positive ? '#388e3c' : '#d32f2f',
                   fontWeight: 500,
                   borderRadius: '4px',
-                  border: '1px solid #eaeef5',
-                  padding: '10px',
-                  fontSize: '12px',
+                  border: '1px solid #eaeaea',
+                  padding: '8px',
+                  fontSize: '11px',
                   textAlign: 'center'
                 }}>
                   {selectedInfluence.data}
                 </div>
               )}
-              <ExpandedDetails>
+              <ExpandedDetails $positive={selectedInfluence.positive}>
                 <div className="detail-row">
                   <div className="label">Index</div>
                   <div className="value">#{selectedInfluence.index}</div>
@@ -636,9 +751,9 @@ const InfluencePanelComponent = () => {
                   <div className="label">Influence Type</div>
                   <div className="value">
                     {selectedInfluence.positive ? (
-                      <span style={{ color: '#2ea043', fontWeight: 600 }}>Positive Influence</span>
+                      <span style={{ color: '#388e3c', fontWeight: 600 }}>Positive</span>
                     ) : (
-                      <span style={{ color: '#cb2431', fontWeight: 600 }}>Negative Influence</span>
+                      <span style={{ color: '#d32f2f', fontWeight: 600 }}>Negative</span>
                     )}
                   </div>
                 </div>
@@ -646,21 +761,26 @@ const InfluencePanelComponent = () => {
                   <div className="label">Impact</div>
                   <div className="value">
                     {selectedInfluence.positive ? (
-                      <span style={{ color: '#2ea043', fontWeight: 600 }}>
-                        Contributed to the training event
+                      <span style={{ color: '#388e3c', fontWeight: 500 }}>
+                        Contributed to the event
                       </span>
                     ) : (
-                      <span style={{ color: '#cb2431', fontWeight: 600 }}>
-                        Hindered the training event
+                      <span style={{ color: '#d32f2f', fontWeight: 500 }}>
+                        Hindered the event
                       </span>
                     )}
                   </div>
                 </div>
-                <div className="influence-score">
-                  <div className="score-value">
-                    {selectedInfluence.positive ? '+' : ''}{selectedInfluence.score.toFixed(4)}
+                <div className="detail-row">
+                  <div className="label">Influence Score</div>
+                  <div className="value">
+                    <span style={{ 
+                      color: selectedInfluence.positive ? '#388e3c' : '#d32f2f', 
+                      fontWeight: 600 
+                    }}>
+                      {selectedInfluence.positive ? '+' : ''}{selectedInfluence.score.toFixed(6)}
+                    </span>
                   </div>
-                  <div className="score-label">Influence Score</div>
                 </div>
               </ExpandedDetails>
             </ExpandedContent>

@@ -144,19 +144,6 @@ const CompactEventItem = styled.div<{ $selected?: boolean }>`
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
   position: relative;
 
-  &::after {
-    content: '';
-    position: absolute;
-    right: 6px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background-color: ${props => props.$selected ? '#1890ff' : 'transparent'};
-    transition: background-color 0.3s ease;
-  }
-
   &:hover {
     background-color: ${props => props.$selected ? '#e6f7ff' : '#f5f5f5'};
     border-color: ${props => props.$selected ? '#1890ff' : '#d9d9d9'};
@@ -221,6 +208,28 @@ const CompactEventTypePanel = styled(Panel)`
   
   .ant-collapse-expand-icon {
     font-size: 12px;
+  }
+`;
+
+const TracingButton = styled(Button)`
+  background-color: #1890ff;
+  color: #ffffff;
+  border: none;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 8px;
+  height: 20px;
+  width: 35px;
+  transition: background-color 0.2s ease;
+  
+  &:hover {
+    background-color: #40a9ff;
+    color: #40a9ff;
+  }
+
+  &:active {
+    background-color: #096dd9;
+    transform: scale(0.98); /* 轻微的点击效果 */
   }
 `;
 
@@ -497,10 +506,12 @@ export function TrainingEventPanel() {
     notifyTrainingEventClicked([]);
   }, [epoch]);
 
+  const handleTracingClick = (event: React.MouseEvent, item: TrainingEvent) => {
+    event.stopPropagation(); // 阻止事件冒泡，避免触发 item 的点击事件
+    notifyTracingInfluence(item, epoch);
+  };
+
   const handleItemClick = (item: TrainingEvent) => {
-    if (!selectedTrainingEvents.includes(item)) { 
-      notifyTracingInfluence(item, epoch);
-    }
     const newSelectedEvents = selectedTrainingEvents.includes(item)
       ? selectedTrainingEvents.filter(event => event !== item)
       : [...selectedTrainingEvents, item];
@@ -569,6 +580,11 @@ export function TrainingEventPanel() {
             </>
           )}
         </EventContent>
+        <TracingButton 
+          onClick={(e) => handleTracingClick(e, item)}
+        >
+          Trace
+        </TracingButton>
       </CompactEventItem>
     );
   };
