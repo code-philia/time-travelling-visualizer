@@ -131,19 +131,6 @@ def read_label_file(file_path):
     return label_list
 
 
-# Func: load representation of one epoch
-def load_representation(config, content_path, epoch):
-    attributes = config['dataset']['attributes']
-    if 'representation' not in attributes:
-        raise NotImplementedError("representation is not in attributes")
-
-    file_path_pattern = attributes['representation']['source']['pattern']
-    file_path = file_path_pattern.replace('${epoch}', str(epoch))
-    file_path = os.path.join(content_path, file_path)
-
-    repr = np.load(file_path)
-    return repr.tolist()
-
 # Func: get simple filtered indices
 def get_filter_result(config, content_path, epoch, filters):
     index_file_path = os.path.join(content_path, 'index.json')
@@ -202,123 +189,10 @@ def load_background(content_path, vis_id, epoch):
         return convert_to_base64(file_path)
     return ""
 
-# Func: compute pixel color, return webp image
-# FIXME: this function is not used in the current code
-def paint_background_backup(content_path, vis_method, epoch, width, height, scale):
-    file_path = os.path.join(content_path, 'visualize',vis_method,'epochs', f'epoch_{epoch}', 'background.png')
-    if os.path.exists(file_path):
-        return convert_to_base64(file_path)
-
-    pixel_position = compute_pixel_position(width, height, scale)
-    pixel_color = compute_pixel_color(content_path, vis_method, epoch, pixel_position)
-    
-    pixel_color = pixel_color.reshape((height, width, 3))
-    
-    image = Image.fromarray(pixel_color.astype('uint8'), 'RGB')
-    
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    image.save(file_path, 'PNG')
-    return convert_to_base64(file_path)
-
 def convert_to_base64(image_path):
     with open(image_path, "rb") as image_file:
         base64_image = base64.b64encode(image_file.read()).decode('utf-8')
     return base64_image
-
-def compute_pixel_position(width, height, scale, pixel_size=1):
-    [x_min, y_min, x_max, y_max] = scale
-    pixels = []
-
-    x_scale = (x_max - x_min) / (width / pixel_size)
-    y_scale = (y_max - y_min) / (height / pixel_size)
-
-    for j in range(int(height / pixel_size)):
-        for i in range(int(width / pixel_size)):
-            x = x_min + (i + pixel_size / 2) * x_scale
-            y = y_min + (j + pixel_size / 2) * y_scale
-            pixels.append([x, y])
-
-    return pixels
-    
-
-def compute_pixel_color(content_path, vis_method, epoch, pixel_position):
-    # define and load visualize model
-    device = torch.device("cpu")
-    
-    # params = get_training_parameters()
-    params_path = os.path.join(content_path,"params.json")
-    params = read_file_as_json(params_path)
-    ENCODER_DIMS = params[vis_method]['ENCODER_DIMS']
-    DECODER_DIMS = params[vis_method]['DECODER_DIMS']
-    
-    vis_model = VisModel(ENCODER_DIMS, DECODER_DIMS).to(device)
-    vis_model_location = os.path.join(content_path, "visualize", vis_method, "model", f"{vis_method}.pth")
-    save_model = torch.load(vis_model_location, map_location="cpu")
-    vis_model.load_state_dict(save_model["state_dict"])
-    vis_model.to(device)
-    vis_model.eval()
-    
-    # get high dimensional representation
-    pixel_position = np.array(pixel_position)
-    embedding = vis_model.decoder(torch.from_numpy(pixel_position).to(dtype=torch.float32, device=device)).cpu().detach().numpy()
-    
-    # define and load subject model
-    sys.path.append(content_path)
-    import model as subject_model
-    
-    config = read_file_as_json(os.path.join(content_path, "config.json"))
-    model = eval("subject_model.{}()".format(config['dataset']['net']))
-    
-    # state dict of subject model
-    subject_model_location = os.path.join(content_path, "model", f"{epoch}.pth")
-    model.load_state_dict(torch.load(subject_model_location, map_location=torch.device("cpu")))
-    model.to(device)
-    model.eval()
-    
-    # get prediction and color
-    pred_func = model.prediction
-    mesh_preds = batch_run(pred_func, torch.from_numpy(embedding).to(device), desc="getting prediction")
-    color = get_decision_view(mesh_preds)
-
-    return color
-
-def get_decision_view(mesh_preds):
-    mesh_preds = mesh_preds + 1e-8
-    sort_preds = np.sort(mesh_preds, axis=1)
-    diff = (sort_preds[:, -1] - sort_preds[:, -2]) / (sort_preds[:, -1] - sort_preds[:, 0])
-    border = np.zeros(len(diff), dtype=np.uint8) + 0.05
-    border[diff < 0.15] = 1
-    diff[border == 1] = 0.
-
-    diff = diff/(diff.max()+1e-8)
-    diff = diff*0.9
-
-    mesh_classes = mesh_preds.argmax(axis=1)
-    cmap = plt.get_cmap('tab10')
-    color = cmap(mesh_classes)
-
-    diff = diff.reshape(-1, 1)
-
-    color = color[:, 0:3]
-    color = diff * 0.5 * color + (1 - diff) * np.ones(color.shape, dtype=np.uint8)
-    color_rgb = (color * 255).astype(np.uint8)
-    return color_rgb
-
-def batch_run(model, data, desc = "batch run", batch_size=512):
-    """batch run, in case memory error"""
-    data = data.to(dtype=torch.float)
-    output = None
-    n_batches = max(math.ceil(len(data) / batch_size), 1)
-    for b in tqdm.tqdm(range(n_batches), desc=desc):
-        r1, r2 = b * batch_size, (b + 1) * batch_size
-        inputs = data[r1:r2]
-        with torch.no_grad():
-            pred = model(inputs).cpu().numpy()
-            if output is None:
-                output = pred
-            else:
-                output = np.concatenate((output, pred), axis=0)
-    return output
 
 def load_one_image(content_path, index):
     file_path = os.path.join(content_path, 'dataset', 'image', f'{index}.png')
