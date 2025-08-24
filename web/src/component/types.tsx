@@ -14,6 +14,8 @@ export type PredictionFlipEvent = {
   currCorrect: boolean;
   influenceTarget: string;
   type: 'PredictionFlip';
+  data?: string; // image data or text data
+  dataType?: 'image' | 'text';
 };
 
 export type ConfidenceChangeEvent = {
@@ -24,6 +26,8 @@ export type ConfidenceChangeEvent = {
   change: number;
   influenceTarget: string;
   type: 'ConfidenceChange';
+  data?: string; // image data or text data
+  dataType?: 'image' | 'text';
 };
 
 export type SignificantMovementEvent = {
@@ -33,6 +37,8 @@ export type SignificantMovementEvent = {
   distanceChange: number;
   movementType: 'closer' | 'farther';
   type: 'SignificantMovement';
+  data?: string; // image data or text data
+  dataType?: 'image' | 'text';
 };
 
 export type InconsistentMovementEvent = {
@@ -40,6 +46,8 @@ export type InconsistentMovementEvent = {
   highDimChange: number;
   projectionChange: number;
   type: 'InconsistentMovement';
+  data?: string; // image data or text data
+  dataType?: 'image' | 'text';
 };
 
 export type TrainingEvent = 

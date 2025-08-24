@@ -195,9 +195,7 @@ export class RightViewProvider extends BaseViewProvider {
                         command: 'updateInfluenceSamples',
                         data: {
                             trainingEvent: {
-                                type: type,
-                                index: msg.data.index,
-                                label: msg.data.label,
+                                ...msg.data,
                                 dataType: "image", //TODO: expand to text type
                                 data: image,
                             },
