@@ -55,6 +55,10 @@ def load_projection(content_path, vis_id, epoch):
     y_max = float(np.max(projection[:, 1]))
     scope = [x_min-1, y_min-1, x_max+1, y_max+1]
 
+    index_dict = load_or_create_index(content_path)
+    all_indices = index_dict['train'] + index_dict['test']
+    projection_list = [projection_list[i] for i in all_indices]
+
     return projection_list, scope
 
 # Func: load one sample from content_path
@@ -381,6 +385,11 @@ def load_single_attribute(content_path, epoch, attribute):
         attr_data = load_or_create_index(content_path)
     else:
         raise NotImplementedError(f"Unknown attribute: {attribute}")
+    
+    index_dict = load_or_create_index(content_path)
+    all_indices = index_dict['train'] + index_dict['test']
+    if attribute != 'index':
+        attr_data = [attr_data[i] for i in all_indices]
     
     return attr_data
 
