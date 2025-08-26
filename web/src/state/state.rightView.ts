@@ -23,13 +23,16 @@ type BaseMutableGlobalStore = {
     selectedIndices: number[];
 
     labels: number[];
-    tokenList: string[];
+    tokenList: string[] | undefined;
     colorDict: Map<number, [number, number, number]>;
     labelDict: Map<number, string>;
     shownData: string[];
     allEpochData: Record<number, EpochData>;
 
-    imageData?: string; // Optional, used in detail view
+    trainingEvents: TrainingEvent[];
+
+    dataType: string; // image, text
+    rawData: string; // Optional, used in detail view
 };
 
 let initMutableGlobalStore: BaseMutableGlobalStore = {
@@ -38,13 +41,14 @@ let initMutableGlobalStore: BaseMutableGlobalStore = {
     hoveredIndex: undefined,
     selectedIndices: [],
     labels: [],
-    tokenList: [],
+    tokenList: undefined,
     colorDict: new Map(),
     labelDict: new Map(),
     shownData: ["train", "test"],
     allEpochData: {},
-
-    imageData: "",
+    trainingEvents: [],
+    dataType: "Image",
+    rawData: "",
 };
 type SetFunction<T> = (setState: (state: T) => T | Partial<T>) => void;
 

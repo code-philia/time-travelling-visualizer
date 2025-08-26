@@ -97,6 +97,17 @@ export function getImageData(contentPath: string, index: number, options?: { hos
     });
 }
 
+export function getTextData(contentPath: string, index: number, options?: { host?: string }) {
+    const data = {
+        "content_path": contentPath,
+        "index": index
+    }
+    return basicUnsafePostWithJsonResponse('/getTextData', data, options).then((response) => {
+        const { text } = response as { text: string };
+        return text;
+    });
+}
+
 export function getVisualizeMetrics(contentPath: string, visID: string, epoch: number, options?: { host?: string }) {
     const data = {
         "content_path": contentPath,

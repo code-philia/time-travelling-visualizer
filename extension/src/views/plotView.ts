@@ -6,7 +6,7 @@ import { getBasicConfig } from '../control';
 import { getLiveWebviewHtml } from '../devLiveServer';
 import { MessageManager } from './messageManager';
 import { PlotViewMessageManager } from './viewMessageManager';
-import { getBackground, getImageData } from '../communication/api';
+import { getBackground, getImageData, getTextData } from '../communication/api';
 
 function replaceUri(html: string, webview: vscode.Webview, srcPattern: string, dst: string): string {
 	// replace all 'matched pattern' URI using webview.asWebviewUri,
@@ -98,15 +98,18 @@ export class PlotViewManager {
 					return;
 				}
 
-				let image: string|null = '';
-				if (config.taskType === 'Classification') { 
-					image = await getImageData(config.contentPath, hoveredIndex);
+				let rawData: string|null = '';
+				if (config.dataType === 'Image') { 
+					rawData = await getImageData(config.contentPath, hoveredIndex);
+				}
+				else {
+					rawData = await getTextData(config.contentPath, hoveredIndex);
 				}
 				const msgBack = {
 					command: 'updateHoveredIndex',
 					data: {
 						hoveredIndex: hoveredIndex,
-						image: image? image : '',
+						rawData: rawData? rawData : '',
 					}
 				}
 				MessageManager.sendToRightView(msgBack);
