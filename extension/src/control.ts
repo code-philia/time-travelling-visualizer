@@ -6,7 +6,7 @@ import { PlotViewManager } from "./views/plotView";
 import { isDirectory } from './ioUtils';
 import { getIconUri } from './resources';
 import { MessageManager } from './views/messageManager';
-import { fetchEpochProjection, fetchTrainingProcessInfo, getAttributeResource, getBackground, getOriginalNeighbors, getProjectionNeighbors, getText, triggerStartVisualizing } from './communication/api';
+import { fetchEpochProjection, fetchTrainingProcessInfo, getAlignment, getAttributeResource, getBackground, getOriginalNeighbors, getProjectionNeighbors, getText, triggerStartVisualizing } from './communication/api';
 import path from 'path';
 import { convertPropsToPredictions } from './utils';
 
@@ -342,6 +342,7 @@ export async function loadVisualization(forceReconfig: boolean = false): Promise
 	
 	// 3. connect with backend
 	const data: {
+		dataType?: string,
 		taskType?: string,
 		availableEpochs?: number[],
 		colorList?: number[][],
@@ -350,7 +351,9 @@ export async function loadVisualization(forceReconfig: boolean = false): Promise
 		labelList?: number[],
 		index?: Record<string, number[]>,
 		scope?: number[],
+		alignment?: number[][],
 	} = {};
+	data['dataType'] = config.dataType;
 	data['taskType'] = config.taskType;
 
 	const infoFilePath = path.join(config.contentPath, 'visualize', config.visualizationID, 'info.json');
@@ -392,6 +395,10 @@ export async function loadVisualization(forceReconfig: boolean = false): Promise
 	if (config.taskType === "Code-Retrieval") {
 		const textRes: any = await getText(config.contentPath);
 		data['tokenList'] = textRes['text_list'];
+
+		const alignmentRes: any = await getAlignment(config.contentPath);
+		const alignment = alignmentRes['alignment'];
+		data['alignment'] = alignment;
 	}
 
 	const indexRes: any = await getAttributeResource(config.contentPath, 1, 'index');
@@ -417,6 +424,7 @@ export async function loadVisualization(forceReconfig: boolean = false): Promise
 	const msgToFunctionView = {
 		command: 'init',
 		data: {
+			dataType: data['dataType'],
 			labels: data['labelList'],
 			labelTextList: data['labelTextList'],
 			availableEpochs: data['availableEpochs'],
@@ -431,7 +439,8 @@ export async function loadVisualization(forceReconfig: boolean = false): Promise
 		command: 'init',
 		data: {
 			labels: data['labelList'],
-			tokenList: data['tokenList']
+			tokenList: data['tokenList'],
+			allignment: data['alignment'],
 		}
 	};
 	MessageManager.sendToTokenView(msgToTokenView);

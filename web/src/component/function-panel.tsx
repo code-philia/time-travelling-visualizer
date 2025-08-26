@@ -354,8 +354,8 @@ export default FunctionPanel;
 
 function HighlightOptionBlock() {
     const [highlightTypes, setHighlightTypes] = useState([
-        { type: 'prediction_error', label: 'Prediction Error', enabled: false, icon: '❌', description: 'Samples with wrong prediction at current epoch.', count: 0 },
-        { type: 'prediction_flip', label: 'Prediction Flip', enabled: false, icon: '🔄', description: 'Samples with different predictions between current epoch and last epoch.', count: 0 }
+        { type: 'prediction_error', label: 'Prediction Error', enabled: false, icon: '❌', description: 'Samples with wrong prediction at current epoch.' },
+        { type: 'prediction_flip', label: 'Show Alignment', enabled: false, icon: '🔄', description: 'Label samples in alignment view.' }
     ]);
 
     const handleToggleHighlightType = (type: string) => {
@@ -420,7 +420,6 @@ function HighlightOptionBlock() {
                     className="highlight-count"
                     style={{ marginTop: '4px', color: countColor, fontSize: '10px' }}
                 >
-                    Found: <span>{highlight.count}</span>
                 </div>
             </List.Item>
         );

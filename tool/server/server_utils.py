@@ -119,6 +119,48 @@ def get_all_texts(content_path, from_file=True):
             
     return text_list
 
+def get_alignment_data(content_path):
+    alignment_path = os.path.join(content_path, "dataset", "align.json")
+    if not os.path.exists(alignment_path):
+        return []
+
+    with open(alignment_path, "r", encoding="utf-8") as f:
+        json_data = json.load(f)
+    pairs = json_data.get("ground_truth_pairs", [])   # [[i,j], [k,l], ...]
+
+    all_ids = set()
+    for a, b in pairs:
+        all_ids.add(a)
+        all_ids.add(b)
+    ids = sorted(all_ids)
+    if not ids:
+        return []
+
+    parent = {i: i for i in ids}
+
+    def find(u):
+        while parent[u] != u:
+            parent[u] = parent[parent[u]]
+            u = parent[u]
+        return u
+
+    def union(u, v):
+        pu, pv = find(u), find(v)
+        if pu != pv:
+            parent[pv] = pu
+
+    for a, b in pairs:
+        union(a, b)
+
+    root2cluster = {}
+    for i in ids:
+        rt = find(i)
+        root2cluster.setdefault(rt, []).append(i)
+
+    clusters = [sorted(cluster) for cluster in root2cluster.values()]
+    clusters.sort(key=lambda c: c[0])
+    return clusters
+
 # Func: given label file path, return python list of labels
 def read_label_file(file_path):
     _, file_extension = os.path.splitext(file_path)

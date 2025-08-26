@@ -46,6 +46,13 @@ export function getText(contentPath: string, options?: { host?: string }) {
     return basicUnsafePostWithJsonResponse('/getAllText', data, options);
 }
 
+export function getAlignment(contentPath: string, options?: { host?: string }) {
+    const data = {
+        "content_path": contentPath
+    };
+    return basicUnsafePostWithJsonResponse('/getAlignment', data, options);
+}
+
 export function getAttributeResource(contentPath: string, epoch: number, attributeName: string, options?: { host?: string }) {
     const data = {
         "content_path": contentPath,

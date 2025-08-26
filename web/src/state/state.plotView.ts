@@ -55,6 +55,7 @@ export type BaseMutableGlobalStore = {
 
     // training events
     trainingEvents: TrainingEvent[];
+    alignment?: number[][];
 }
 
 export let initMutableGlobalStore: BaseMutableGlobalStore = {
@@ -95,7 +96,8 @@ export let initMutableGlobalStore: BaseMutableGlobalStore = {
     focusIndices: [],
 
     // training events
-    trainingEvents: []
+    trainingEvents: [],
+    alignment: []
 };
 
 type SetFunction<T> = (setState: (state: T) => T | Partial<T>) => void;
