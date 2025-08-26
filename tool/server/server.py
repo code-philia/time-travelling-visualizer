@@ -140,6 +140,21 @@ def get_all_text():
     })
     return make_response(result, 200)
 
+@app.route('/getAlignment', methods = ["POST"])
+def get_alignment():
+    req = request.get_json()
+    content_path = req['content_path']
+
+    alignment = get_alignment_data(content_path)
+
+    if alignment is None:
+        return make_response(jsonify({'error_message': "getting alignment failed"}), 400)
+
+    result = jsonify({
+        'alignment': alignment
+    })
+    return make_response(result, 200)
+
 """
 Api: get selected attributes of the dataset
 

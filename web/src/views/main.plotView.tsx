@@ -82,6 +82,7 @@ function MessageHandler() {
             setValue('inherentLabelData', messageData.labelList);
             setValue('index', messageData.index);
             setValue('epoch', messageData.availableEpochs[0]);
+            setValue('alignment', messageData.alignment);
 
             notifyEpochSwitch(messageData.availableEpochs[0]);
         }

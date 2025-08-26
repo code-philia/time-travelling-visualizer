@@ -12,7 +12,7 @@ export const ChartComponent = memo(() => {
     const vchartRef = useRef<VChart | null>(null);
 
     // Here are data from useStore
-    const { epoch, allEpochData} = useDefaultStore(["epoch", "allEpochData"]);
+    const { epoch, allEpochData, alignment} = useDefaultStore(["epoch", "allEpochData", "alignment"]);
     const { inherentLabelData, labelDict, colorDict } = useDefaultStore(["inherentLabelData", "labelDict", "colorDict"]);
     // const { filterValue, filterType } = useDefaultStore(["filterValue", "filterType"]);
     // const { filterState } = useDefaultStore(["filterState"]);
@@ -26,7 +26,7 @@ export const ChartComponent = memo(() => {
     const { isFocusMode, focusIndices } = useDefaultStore(["isFocusMode", "focusIndices"]);
     const { trainingEvents } = useDefaultStore(["trainingEvents"]);
 
-    const samplesRef = useRef<{ pointId: number, x: number; y: number; label: number; pred: number; label_desc: string; pred_desc: string; confidence: number; textSample: string }[]>([]);
+    const samplesRef = useRef<{ pointId: number, x: number; y: number; label: number; pred: number; label_desc: string; pred_desc: string; confidence: number; textSample: string; groupColor?: string}[]>([]);
     const edgesRef = useRef<Edge[]>([]);
     const wrongRef = useRef<number[]>([]);
     const flipRef = useRef<number[]>([]);
@@ -68,17 +68,26 @@ export const ChartComponent = memo(() => {
         flipRef.current = [];
         let x_min = scope[0], y_min = scope[1], x_max = scope[2], y_max = scope[3];
 
-        epochData.projection.map((p, i) => {
+        const groupColors = ["#de324c","#f8e16f","#369acc","#f4895f","#95cf92","#9656a2"];
+
+        const tokenToGroup = new Map<number, number>();
+        (alignment || []).forEach((group, gIdx) => {
+            group.forEach(tokenIdx => tokenToGroup.set(tokenIdx, gIdx));
+        });
+
+        epochData.projection.forEach((p, i) => {
             const x = parseFloat(p[0].toFixed(3));
             const y = parseFloat(p[1].toFixed(3));
             let confidence = 1.0;
             let pred = inherentLabelData[i];
             if (epochData.predProbability && epochData.predProbability.length > 0) {
-                let props = epochData.predProbability[i];
-                let softmaxValues = softmax(props);
+                const softmaxValues = softmax(epochData.predProbability[i]);
                 confidence = Math.max(...softmaxValues);
                 pred = softmaxValues.indexOf(confidence);
             }
+
+            const groupIdx = tokenToGroup.get(i);
+            const groupColor = groupIdx !== undefined ? groupColors[groupIdx] : undefined;
 
             samplesRef.current.push({
                 pointId: i,
@@ -88,8 +97,9 @@ export const ChartComponent = memo(() => {
                 label_desc: labelDict.get(inherentLabelData[i]) ?? '',
                 pred: pred,
                 pred_desc: labelDict.get(pred) ?? labelDict.get(inherentLabelData[i]) ?? '',
-                confidence: confidence,
-                textSample: textData? textData[i] ?? '': ''
+                confidence,
+                textSample: textData ? textData[i] ?? '' : '',
+                groupColor,
             });
 
             if (pred !== inherentLabelData[i]) {
@@ -324,9 +334,14 @@ export const ChartComponent = memo(() => {
                         },
                         style: {
                             size: 3,
-                            fill: (datum: { label: number; }) => {
-                                const color = colorDict.get(datum.label) ?? [0, 0, 0];
-                                return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
+                            fill: (datum: { label: number; groupColor: string }) => {
+                                if (highlightData.includes("prediction_flip")) {
+                                   return datum.groupColor ?? "black";
+                                }
+                                else {
+                                    const color = colorDict.get(datum.label) ?? [0, 0, 0];
+                                    return `rgb(${color[0]}, ${color[1]}, ${color[2]})`
+                                }
                             },
                             fillOpacity: (datum: { confidence: number; }) => {
                                 return datum.confidence;
@@ -337,13 +352,6 @@ export const ChartComponent = memo(() => {
                                         distance: 1.5,
                                         lineWidth: 1.5,
                                         stroke: 'rgba(255, 0, 0, 0.75)'
-                                    }
-                                }
-                                else if (highlightData.includes('prediction_flip') && flipRef.current.includes(datum.pointId)) {
-                                    return {
-                                        distance: 1.3,
-                                        lineWidth: 1.5,
-                                        stroke: 'rgba(254, 121, 61,0.75)'
                                     }
                                 }
                             },
@@ -459,7 +467,7 @@ export const ChartComponent = memo(() => {
             vchartRef.current.updateSpec(spec);
         }
         vchartRef.current.renderSync();
-    }, [epoch, allEpochData, showIndex, showLabel, showBackground, shownData, highlightData, index, availableEpochs, isFocusMode, focusIndices]);
+    }, [epoch, allEpochData, showIndex, showLabel, showBackground, shownData, highlightData, index, availableEpochs, isFocusMode, focusIndices, alignment]);
 
 
     /*
