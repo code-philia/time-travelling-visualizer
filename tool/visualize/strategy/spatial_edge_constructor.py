@@ -197,7 +197,7 @@ class SingleEpochSpatialEdgeConstructor(SpatialEdgeConstructor):
 
 # Used in TimeVis
 class kcSpatialEdgeConstructor(SpatialEdgeConstructor):
-    def __init__(self, data_provider, init_num, s_n_epochs, b_n_epochs, n_neighbors, MAX_HAUSDORFF, ALPHA, BETA, init_idxs=None, adding_num=100) -> None:
+    def __init__(self, data_provider, init_num, s_n_epochs, b_n_epochs, n_neighbors, MAX_HAUSDORFF, ALPHA, BETA, init_idxs=None, adding_num=10) -> None:
         super().__init__(data_provider, init_num, s_n_epochs, b_n_epochs, n_neighbors)
         self.MAX_HAUSDORFF = MAX_HAUSDORFF
         self.ALPHA = ALPHA
