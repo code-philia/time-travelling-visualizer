@@ -359,19 +359,6 @@ function HighlightOptionBlock() {
     ]);
 
     const handleToggleHighlightType = (type: string) => {
-        highlightTypes.forEach(highlight => {
-            if (highlight.type === type) {
-                if (highlight.type === 'prediction_error') {
-                    console.log('Prediction error filter changed:', !highlight.enabled);
-                    // setShowSuspiciousLabel(!highlight.enabled);
-                }
-                else if (highlight.type === 'prediction_flip') {
-                    console.log('Prediction flip filter changed:', !highlight.enabled);
-                    // setShowOutliers(!highlight.enabled);
-                }
-                return;
-            }
-        });
         const updatedhighlightTypes = highlightTypes.map(highlight => highlight.type === type ? { ...highlight, enabled: !highlight.enabled } : highlight);
         setHighlightTypes(updatedhighlightTypes);
 
