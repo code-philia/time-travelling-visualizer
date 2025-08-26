@@ -87,8 +87,10 @@ def init_visualize_component(config):
         visualizer = ResultGenerator(config, data_provider, projector)
         strategy = DynaVis(config, data_provider, selected_idxs)
     elif config['vis_method'] == "UMAP":
+        data_provider = DataProvider(config, device)  
         projector = UmapProjector(config)
         visualizer = UmapResultGenerator(config, data_provider, projector)
+        strategy = None
     else:
         raise NotImplementedError
     

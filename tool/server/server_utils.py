@@ -16,7 +16,9 @@ import torchvision
 import torchvision.transforms as transforms
 
 sys.path.append('..')
-from visualize.visualize_model import VisModel
+sys.path.append('../visualize')
+from visualize.data_provider import DataProvider
+from visualize.training_event import TrainingEventDetector
 from influence_function.IF import EmpiricalIF
 
 # Func: infer available epochs files, return a list of available epochs
@@ -53,7 +55,7 @@ def load_projection(content_path, vis_id, epoch):
     y_min = float(np.min(projection[:, 1]))
     x_max = float(np.max(projection[:, 0]))
     y_max = float(np.max(projection[:, 1]))
-    scope = [x_min-1, y_min-1, x_max+1, y_max+1]
+    scope = [x_min, y_min, x_max, y_max]
 
     index_dict = load_or_create_index(content_path)
     all_indices = index_dict['train'] + index_dict['test']
@@ -359,9 +361,10 @@ def load_or_create_index(content_path):
         return index_data
 
     # If index.json does not exist, create it
-    label = load_single_attribute(content_path, 0, 'label')
-    num_samples = len(label)
-    
+    file_path = os.path.join(content_path, 'dataset', 'labels.npy')
+    labels = read_label_file(file_path)
+    num_samples = len(labels)
+
     index_data = {
         'train': list(range(num_samples)),
         'test': []
