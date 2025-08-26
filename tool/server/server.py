@@ -365,6 +365,25 @@ def get_influence_samples():
         return make_response(jsonify({'error_message': 'Error in calculating influence samples'}), 400)
 
 
+@app.route('/calculateTrainingEvents', methods=["POST"])
+@cross_origin()
+def calculate_training_events():
+    req = request.get_json()
+    content_path = req['content_path']
+    epoch = int(req['epoch'])
+    event_types = req['event_types']
+
+    try:
+        training_events = compute_training_events(content_path, epoch, event_types)
+        result = jsonify({
+            "training_events": training_events,
+        })
+        return make_response(result, 200)
+    except Exception as e:
+        print(e)
+        return make_response(jsonify({'error_message': 'Error in calculating training events'}), 400)
+
+
 def check_port_inuse(port, host):
     import socket
 

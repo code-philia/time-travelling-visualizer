@@ -115,3 +115,12 @@ export function getInfluenceSamples(contentPath: string,  epoch: number, trainin
     };
     return basicUnsafePostWithJsonResponse('/getInfluenceSamples', data, options);
 }
+
+export function calculateTrainingEvents(contentPath: string, epoch: number, eventTypes: string[], options?: { host?: string }) {
+    const data = {
+        "content_path": contentPath,
+        "epoch": `${epoch}`,
+        "event_types": eventTypes
+    };
+    return basicUnsafePostWithJsonResponse('/calculateTrainingEvents', data, options);
+}

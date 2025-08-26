@@ -460,3 +460,11 @@ def calculate_influence_samples(content_path, epoch, training_event, num_samples
         })
    
     return influence_samples
+
+
+def compute_training_events(content_path, epoch, event_types):
+    config = {"content_path": content_path}
+    data_provider = DataProvider(config)
+    detector = TrainingEventDetector(content_path, epoch, data_provider)
+    events = detector.detect_events(event_types)
+    return events

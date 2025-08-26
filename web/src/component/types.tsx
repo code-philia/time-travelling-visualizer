@@ -43,11 +43,14 @@ export type SignificantMovementEvent = {
 
 export type InconsistentMovementEvent = {
   index: number;
-  highDimChange: number;
-  projectionChange: number;
+  index1: number;
+  expectation: "Aligned" | "NotAligned";
+  behavior: "Aligned" | "NotAligned";
   type: 'InconsistentMovement';
   data?: string; // image data or text data
   dataType?: 'image' | 'text';
+  data1?: string; // image data or text data for index1
+  dataType1?: 'image' | 'text';
 };
 
 export type TrainingEvent = 

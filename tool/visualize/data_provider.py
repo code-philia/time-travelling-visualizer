@@ -4,6 +4,11 @@ import sys
 import numpy as np
 import torch
 from utils import *
+
+def _softmax(x: np.ndarray) -> np.ndarray:
+    e = np.exp(x - x.max(axis=-1, keepdims=True))
+    return e / e.sum(axis=-1, keepdims=True)
+
 class DataProvider():
     def __init__(self, config, device = None, selected_idxs=None):
         self.config = config
@@ -115,6 +120,39 @@ class DataProvider():
         data = data.to(self.device)
         pred = batch_run(pred_func, data, desc="getting prediction")
         return pred
+
+    def _get_prediction_scores(self, epoch, type="all"):
+        pred_loc = os.path.join(self.config["content_path"],"epochs",f"epoch_{epoch}","predictions.npy")
+        try:
+            all_pred = np.load(pred_loc)
+            
+            if self.index_dict is None:
+                return all_pred
+                
+            index = []
+            if type == "all":
+                for key in self.index_dict.keys():
+                    index.extend(self.index_dict[key])
+            else:
+                if type in self.index_dict.keys():
+                    index = self.index_dict[type]
+            return all_pred[index]
+        except Exception as e:
+            print(e)
+            return None
+            
+        
+    def get_probability(self, epoch, type="all"):
+        prediction_scores = self._get_prediction_scores(epoch, type)
+        if prediction_scores is None:
+            return None
+        return _softmax(prediction_scores)
+    
+    def get_prediction(self, epoch, type="all"):
+        prediction_scores = self._get_prediction_scores(epoch, type)
+        if prediction_scores is None:
+            return None
+        return np.argmax(prediction_scores, axis=1)
 
     def get_available_epochs(self):
         return self.config["available_epochs"]

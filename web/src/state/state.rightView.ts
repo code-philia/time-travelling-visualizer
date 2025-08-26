@@ -4,6 +4,7 @@ import { shallow } from "zustand/shallow";
 import { useStoreWithEqualityFn } from "zustand/traditional";
 import { BUILD_CONSTANTS } from "../constants";
 import { subscribeWithSelector } from "zustand/middleware";
+import { TrainingEvent } from "../component/types";
 
 export type EpochData = {
     prediction: number[];
@@ -12,7 +13,6 @@ export type EpochData = {
     originalNeighbors: number[][];
     projectionNeighbors: number[][];
     projection: number[][];
-    embedding: number[][];
 };
 
 type BaseMutableGlobalStore = {

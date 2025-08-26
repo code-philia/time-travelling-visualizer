@@ -510,7 +510,6 @@ async function loadEpochData(config: api.BasicVisualizationConfig, epoch: number
 			originalNeighbors: originalNeighbors,
 			projectionNeighbors: projectionNeighbors,
 			projection: projectionRes['projection'],
-			embedding: embeddingRes['representation']
 		}
 	};
 	MessageManager.sendToRightView(msgToFunctionView);
