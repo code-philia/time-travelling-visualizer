@@ -527,7 +527,7 @@ export const ChartComponent = memo(() => {
 
         const endpoints: { edgeId: number, from: number, to: number, x: number, y: number, type: string, status: string }[] = [];
         edgesRef.current.forEach((edge, index) => {
-            if (edge.from === hoveredIndex || selectedIndices.includes(edge.from)) {
+            if (edge.from === hoveredIndex) {
                 if ((revealProjectionNeighbors && edge.type === 'lowDim') || (revealOriginalNeighbors && edge.type === 'highDim')) {
                     endpoints.push({ edgeId: index, from: edge.from, to: edge.to, x: samplesRef.current[edge.from].x, y: samplesRef.current[edge.from].y, type: edge.type, status: edge.status });
                     endpoints.push({ edgeId: index, from: edge.from, to: edge.to, x: samplesRef.current[edge.to].x, y: samplesRef.current[edge.to].y, type: edge.type, status: edge.status });
@@ -536,7 +536,7 @@ export const ChartComponent = memo(() => {
         });
         vchartRef.current?.updateDataSync('edges', endpoints);
 
-    }, [revealProjectionNeighbors, revealOriginalNeighbors, hoveredIndex,selectedIndices]);
+    }, [revealProjectionNeighbors, revealOriginalNeighbors, hoveredIndex]);
 
 
      /*
@@ -574,61 +574,25 @@ export const ChartComponent = memo(() => {
             return;
         }
         
-        // 构建事件数据
-        const eventsData: any[] = [];
         const currentEpochIndex = availableEpochs.indexOf(epoch);
-        
         if (currentEpochIndex <= 0) {
-            // 第一个epoch没有前一个epoch，不显示事件
             vchartRef.current.updateDataSync('events', []);
             return;
         }
         
-        // 获取前一个epoch的数据
-        const prevEpoch = availableEpochs[currentEpochIndex - 1];
-        const prevEpochData = allEpochData[prevEpoch];
-        const currentEpochData = allEpochData[epoch];
-        
-        trainingEvents.forEach((event, index) => {
-            const eventId = index;
-            const sampleIndex = event.index;
-            
-            // 获取样本在前一个epoch的位置
-            if (!prevEpochData || !prevEpochData.projection || sampleIndex >= prevEpochData.projection.length) {
-                return;
-            }
-            const prevPos = prevEpochData.projection[sampleIndex];
-            const prevPred = prevEpochData.prediction[sampleIndex];
-            // const prevColor = colorDict.get(prevPred) ?? [0, 0, 0];
-            
-            // 获取样本在当前epoch的位置
-            if (!currentEpochData || !currentEpochData.projection || sampleIndex >= currentEpochData.projection.length) {
-                return;
-            }
-            const currentPos = currentEpochData.projection[sampleIndex];
-            const currentPred = currentEpochData.prediction[sampleIndex];
-            const currentColor = colorDict.get(currentPred) ?? [0, 0, 0];
-            
+        selectedListener.clearSelected();
 
-            // 添加起点和终点
-            eventsData.push({
-                eventId: eventId,
-                x: prevPos[0],
-                y: prevPos[1],
-                color: `rgb(168, 168, 168)`,
-                eventType: event.type,
-            });
-            eventsData.push({
-                eventId: eventId,
-                x: currentPos[0],
-                y: currentPos[1],
-                color: `rgb(${currentColor[0]}, ${currentColor[1]}, ${currentColor[2]})`,
-                eventType: event.type,
-            });
+        trainingEvents.forEach((event, index) => {
+            const sampleIndex = event.index;
+            if (!selectedListener.checkSelected(sampleIndex)) {
+                selectedListener.switchSelected(sampleIndex);
+            }
+            if (event.type === 'InconsistentMovement') {
+                if (!selectedListener.checkSelected(event.index1)) {
+                    selectedListener.switchSelected(event.index1);
+                }
+            }
         });
-        
-        // 更新图表数据
-        vchartRef.current.updateDataSync('events', eventsData);
     }, [trainingEvents, epoch, allEpochData, availableEpochs]);
 
     return <div

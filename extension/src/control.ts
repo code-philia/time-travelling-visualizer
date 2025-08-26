@@ -459,24 +459,13 @@ async function loadEpochData(config: api.BasicVisualizationConfig, epoch: number
 	// projection
 	const projectionRes: any = await fetchEpochProjection(config.contentPath, config.visualizationID, epoch);
 
-	// embedding
-	const embeddingRes: any = await getAttributeResource(config.contentPath, epoch, 'representation');
-	
 	// neighborhood
 	let originalNeighbors: number[][] = [];
 	let projectionNeighbors: number[][] = [];
-	if (config.taskType === 'Code-Retrieval') { // FIXME: temp solution
-		const projectionNeighborsRes: any = await getProjectionNeighbors(config.contentPath, config.visualizationID, epoch);
-		projectionNeighbors = projectionNeighborsRes['neighbors'];
-		originalNeighbors = projectionNeighborsRes['neighbors'];
-	}
-	else if (config.taskType === 'Classification') {
-		const originalNeighborsRes: any = await getOriginalNeighbors(config.contentPath, epoch);
-		originalNeighbors = originalNeighborsRes['neighbors'];
-
-		const projectionNeighborsRes: any = await getProjectionNeighbors(config.contentPath, config.visualizationID, epoch);
-		projectionNeighbors = projectionNeighborsRes['neighbors'];
-	}
+	const originalNeighborsRes: any = await getOriginalNeighbors(config.contentPath, epoch);
+	originalNeighbors = originalNeighborsRes['neighbors'];
+	const projectionNeighborsRes: any = await getProjectionNeighbors(config.contentPath, config.visualizationID, epoch);
+	projectionNeighbors = projectionNeighborsRes['neighbors'];
 
 	// classification info
 	let predProbability: number[][] = [];
