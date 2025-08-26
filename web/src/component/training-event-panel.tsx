@@ -1,23 +1,16 @@
 import styled from 'styled-components';
 import { Tag, Checkbox, Form, Button, Collapse } from 'antd';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FunctionalBlock } from './custom/basic-components';
 import { useDefaultStore } from '../state/state.rightView';
-import { notifyFocusModeSwitch, notifyTracingInfluence, notifyTrainingEventClicked } from '../communication/viewMessage';
-import { PredictionFlipEvent, ConfidenceChangeEvent, SignificantMovementEvent, InconsistentMovementEvent, TrainingEvent } from './types';
+import { notifyCalculateEvents, notifyFocusModeSwitch, notifyTracingInfluence, notifyTrainingEventClicked } from '../communication/viewMessage';
+import { TrainingEvent } from './types';
 
 const { Panel } = Collapse;
 
 const predColor = (isCorrect: boolean) => (isCorrect ? '#52c41a' : '#ff4d4f');
 const confArrow = (change: number) =>
   change > 0 ? <span style={{ color: '#52c41a', fontSize: '12px', fontWeight: '800', marginLeft: 2 }}>↑</span> : <span style={{ color: '#ff4d4f', fontSize: '12px', fontWeight: '800', marginLeft: 2 }}>↓</span>;
-
-function softmax(probabilities: number[]): number[] {
-  const maxProb = Math.max(...probabilities);
-  const expProbs = probabilities.map((p) => Math.exp(p - maxProb));
-  const sumExpProbs = expProbs.reduce((sum, p) => sum + p, 0);
-  return expProbs.map((p) => p / sumExpProbs);
-}
 
 const CompactForm = styled(Form)`
   background-color: #ffffff;
@@ -236,251 +229,31 @@ const TracingButton = styled(Button)`
 export function TrainingEventPanel() {
   const [tempSelectedTypes, setTempSelectedTypes] = useState<string[]>([]);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
-  const [predictionFlips, setPredictionFlips] = useState<PredictionFlipEvent[]>([]);
-  const [confidenceChanges, setConfidenceChanges] = useState<ConfidenceChangeEvent[]>([]);
-  const [significantMovements, setSignificantMovements] = useState<SignificantMovementEvent[]>([]);
-  const [inconsistentMovements, setInconsistentMovements] = useState<InconsistentMovementEvent[]>([]);
   const [selectedTrainingEvents, setSelectedTrainingEvents] = useState<TrainingEvent[]>([]);
   const [isFocusMode, setIsFocusMode] = useState(false);
+  const [groupedEvents, setGroupedEvents] = useState<Record<string, TrainingEvent[]>>({});
 
-  const { epoch, availableEpochs, allEpochData, labels, labelDict } = useDefaultStore([
-    "epoch",
-    "availableEpochs",
-    "allEpochData",
-    "labels",
-    "labelDict",
-  ]);
+  const { epoch, trainingEvents } = useDefaultStore(["epoch", "trainingEvents"]);
 
   const handleFormSubmit = () => {
     const newTypes = tempSelectedTypes.filter(type => !selectedTypes.includes(type));
     setSelectedTypes(tempSelectedTypes);
     if (newTypes.length > 0) {
-      calculateEvents(newTypes);
+      notifyCalculateEvents(epoch, newTypes);
     }
   };
 
-  const calculateEvents = (types: string[]) => {
-    if (types.includes('PredictionFlip')) {
-      const currentEpochIndex = availableEpochs.indexOf(epoch);
-      if (currentEpochIndex > 0) {
-        const prevEpoch = availableEpochs[currentEpochIndex - 1];
-        const flips = labels
-          .map((label, index) => {
-            const prevPred = allEpochData[prevEpoch]?.prediction[index];
-            const currPred = allEpochData[epoch]?.prediction[index];
-            if (prevPred !== undefined && currPred !== undefined && prevPred !== currPred) {
-              const prevCorrect = prevPred === label;
-              const currCorrect = currPred === label;
-              return {
-                index,
-                label: labelDict.get(label) || label.toString(),
-                prevPred: labelDict.get(prevPred) || prevPred.toString(),
-                currPred: labelDict.get(currPred) || currPred.toString(),
-                prevCorrect,
-                currCorrect,
-                influenceTarget: labelDict.get(currPred) || currPred.toString(),
-                type: 'PredictionFlip',
-              } as PredictionFlipEvent;
-            }
-            return null;
-          })
-          .filter(Boolean) as PredictionFlipEvent[];
-        setPredictionFlips(flips);
+  useEffect(() => {
+    // Group events by type whenever trainingEvents change
+    const grouped: Record<string, TrainingEvent[]> = {};
+    trainingEvents.forEach(event => {
+      if (!grouped[event.type]) {
+        grouped[event.type] = [];
       }
-      else {
-        setPredictionFlips([]);
-      }
-    }
-
-    if (types.includes('ConfidenceChange')) {
-      const currentEpochIndex = availableEpochs.indexOf(epoch);
-      if (currentEpochIndex > 0) {
-        const prevEpoch = availableEpochs[currentEpochIndex - 1];
-        const changes = labels
-          .map((label, index) => {
-            const prevProbs = allEpochData[prevEpoch]?.probability[index];
-            const currProbs = allEpochData[epoch]?.probability[index];
-            if (prevProbs && currProbs) {
-              const prevSoftmax = softmax(prevProbs);
-              const currSoftmax = softmax(currProbs);
-              const prevProb = prevSoftmax[label];
-              const currProb = currSoftmax[label];
-              if (Math.abs(currProb - prevProb) > 0.5) {
-                // Find the category with the largest score increase
-                let maxIncrease = -Infinity;
-                let influenceTarget = '';
-                currSoftmax.forEach((score, category) => {
-                  const increase = score - prevSoftmax[category];
-                  if (increase > maxIncrease) {
-                    maxIncrease = increase;
-                    influenceTarget = labelDict.get(category) || category.toString();
-                  }
-                });
-                return {
-                  index,
-                  label: labelDict.get(label) || label.toString(),
-                  prevConf: prevProb,
-                  currConf: currProb,
-                  change: currProb - prevProb,
-                  influenceTarget: influenceTarget,
-                  type: 'ConfidenceChange',
-                } as ConfidenceChangeEvent;
-              }
-            }
-            return null;
-          })
-          .filter(Boolean) as ConfidenceChangeEvent[];
-        
-        changes.sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
-        setConfidenceChanges(changes);
-      } else {
-        setConfidenceChanges([]);
-      }
-    }
-
-    if (types.includes('SignificantMovement')) {
-        const currentEpochIndex = availableEpochs.indexOf(epoch);
-        const lastEpoch = availableEpochs[availableEpochs.length - 1];
-        
-        if (currentEpochIndex > 0 && lastEpoch !== undefined) {
-            const prevEpoch = availableEpochs[currentEpochIndex - 1];
-            
-            // compute distance changes
-            const closerDistChanges: number[] = [];
-            const fartherDistChanges: number[] = [];
-            const movementData = labels.map((_, index) => {
-                const prevEmbedding = allEpochData[prevEpoch]?.embedding[index];
-                const currEmbedding = allEpochData[epoch]?.embedding[index];
-                const lastEmbedding = allEpochData[lastEpoch]?.embedding[index];
-                
-                if (prevEmbedding && currEmbedding && lastEmbedding) {
-                    const prevDist = Math.hypot(...prevEmbedding.map((v, i) => v - lastEmbedding[i]));
-                    const currDist = Math.hypot(...currEmbedding.map((v, i) => v - lastEmbedding[i]));
-                    
-                    const distChange = currDist - prevDist;
-                    
-                    if (distChange < 0) {
-                        closerDistChanges.push(Math.abs(distChange));
-                    } else if (distChange > 0) {
-                        fartherDistChanges.push(distChange);
-                    }
-                    
-                    return {
-                        index,
-                        prevDist,
-                        currDist,
-                        distChange,
-                    };
-                }
-                return null;
-            }).filter(Boolean) as { index: number; prevDist: number; currDist: number; distChange: number }[];
-            
-            // determine dynamic thresholds based on standard deviation
-            let CLOSER_THRESHOLD = 0.5;
-            let FARTHER_THRESHOLD = 0.5;
-            
-            if (closerDistChanges.length > 0) {
-                const mean = closerDistChanges.reduce((sum, val) => sum + val, 0) / closerDistChanges.length;
-                const variance = closerDistChanges.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / closerDistChanges.length;
-                const stdDev = Math.sqrt(variance);
-                CLOSER_THRESHOLD = mean + 2 * stdDev;
-                console.log(`Closer Movement Threshold: ${CLOSER_THRESHOLD.toFixed(4)}`);
-            }
-            
-            if (fartherDistChanges.length > 0) {
-                const mean = fartherDistChanges.reduce((sum, val) => sum + val, 0) / fartherDistChanges.length;
-                const variance = fartherDistChanges.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / fartherDistChanges.length;
-                const stdDev = Math.sqrt(variance);
-                FARTHER_THRESHOLD = mean + 2 * stdDev;
-                console.log(`Farther Movement Threshold: ${FARTHER_THRESHOLD.toFixed(4)}`);
-            }
-            
-            // select significant movements based on thresholds
-            const movements = movementData
-                .filter(data => 
-                    (data.distChange < 0 && Math.abs(data.distChange) > CLOSER_THRESHOLD) || // 显著靠近
-                    (data.distChange > 0 && data.distChange > FARTHER_THRESHOLD) // 显著远离
-                )
-                .map(data => ({
-                    index: data.index,
-                    prevDist: data.prevDist,
-                    currDist: data.currDist,
-                    distanceChange: data.distChange,
-                    movementType: data.distChange < 0 ? 'closer' : 'farther' as const,
-                    type: 'SignificantMovement' as const,
-                }))
-                .sort((a, b) => Math.abs(b.distanceChange) - Math.abs(a.distanceChange)) as SignificantMovementEvent[];
-            
-            setSignificantMovements(movements);
-        } else {
-            setSignificantMovements([]);
-        }
-    }
-    
-    if (types.includes('InconsistentMovement')) {
-      const currentEpochIndex = availableEpochs.indexOf(epoch);
-      const lastEpoch = availableEpochs[availableEpochs.length - 1];
-      if (currentEpochIndex > 0 && lastEpoch !== undefined) {
-        const prevEpoch = availableEpochs[currentEpochIndex - 1];
-        const inconsistencies = labels
-          .map((_, index) => {
-            const prevEmbedding = allEpochData[prevEpoch]?.embedding[index];
-            const currEmbedding = allEpochData[epoch]?.embedding[index];
-            const prevProjection = allEpochData[prevEpoch]?.projection[index];
-            const currProjection = allEpochData[epoch]?.projection[index];
-            const lastEmbedding = allEpochData[lastEpoch]?.embedding[index];
-            const lastProjection = allEpochData[lastEpoch]?.projection[index];
-
-            if (prevEmbedding && currEmbedding && prevProjection && currProjection && lastEmbedding && lastProjection) {
-              const prevEmbeddingDist = Math.hypot(...prevEmbedding.map((v, i) => v - lastEmbedding[i]));
-              const currEmbeddingDist = Math.hypot(...currEmbedding.map((v, i) => v - lastEmbedding[i]));
-              const prevProjectionDist = Math.hypot(...prevProjection.map((v, i) => v - lastProjection[i]));
-              const currProjectionDist = Math.hypot(...currProjection.map((v, i) => v - lastProjection[i]));
-
-              const embeddingDistChange = currEmbeddingDist - prevEmbeddingDist;
-              const projectionDistChange = currProjectionDist - prevProjectionDist;
-
-              if (
-                (embeddingDistChange < 0 && projectionDistChange > 0) ||
-                (embeddingDistChange > 0 && projectionDistChange < 0)
-              ) {
-                return {
-                  index,
-                  highDimChange: embeddingDistChange,
-                  projectionChange: projectionDistChange,
-                  type: 'InconsistentMovement' as const,
-                } as InconsistentMovementEvent;
-              }
-            }
-            return null;
-          })
-          .filter(Boolean) as InconsistentMovementEvent[];
-          
-        inconsistencies.sort((a, b) => Math.abs(b.highDimChange) - Math.abs(a.highDimChange));
-        setInconsistentMovements(inconsistencies);
-      }
-      else {
-        setInconsistentMovements([]);
-      }
-    }
-  };
-
-  const combinedData: TrainingEvent[] = useMemo(() => {
-    return [
-      ...(selectedTypes.includes('PredictionFlip') ? predictionFlips : []),
-      ...(selectedTypes.includes('ConfidenceChange') ? confidenceChanges : []),
-      ...(selectedTypes.includes('SignificantMovement') ? significantMovements : []),
-      ...(selectedTypes.includes('InconsistentMovement') ? inconsistentMovements : []),
-    ];
-  }, [selectedTypes, predictionFlips, confidenceChanges, significantMovements, inconsistentMovements]);
-
-  // Group events by type
-  const groupedEvents: Record<string, TrainingEvent[]> = {
-    PredictionFlip: combinedData.filter(item => item.type === 'PredictionFlip'),
-    ConfidenceChange: combinedData.filter(item => item.type === 'ConfidenceChange'),
-    SignificantMovement: combinedData.filter(item => item.type === 'SignificantMovement'),
-    InconsistentMovement: combinedData.filter(item => item.type === 'InconsistentMovement'),
-  };
+      grouped[event.type].push(event);
+    });
+    setGroupedEvents(grouped);
+  }, [trainingEvents]);
 
   const toggleFocusMode = () => {
     setIsFocusMode(!isFocusMode);
@@ -488,18 +261,18 @@ export function TrainingEventPanel() {
 
   useEffect(() => {
     if (isFocusMode) {
-      const focusIndices = combinedData.map(event => event.index);
+      const focusIndices = trainingEvents.map(event => event.index);
       notifyFocusModeSwitch(true, focusIndices);
     }
     else {
       notifyFocusModeSwitch(false);
     }
-  }, [isFocusMode, combinedData]);
+  }, [isFocusMode, trainingEvents]);
 
   useEffect(() => {
     // Re-compute events when epoch changes
     if (selectedTypes.length > 0) {
-      calculateEvents(selectedTypes);
+      notifyCalculateEvents(epoch, selectedTypes);
     }
     // Reset selected training events when epoch changes
     setSelectedTrainingEvents([]);
@@ -523,9 +296,15 @@ export function TrainingEventPanel() {
   // Function to render events by type
   const renderEventItem = (item: TrainingEvent) => {
     const isSelected = selectedTrainingEvents.some(
-      selectedEvent => 
-        selectedEvent.type === item.type && 
-        selectedEvent.index === item.index
+      selectedEvent => {
+        if (selectedEvent.type === item.type && selectedEvent.index === item.index) {
+          if (item.type === "InconsistentMovement" && selectedEvent.type === "InconsistentMovement") {
+            return selectedEvent.index1 === item.index1;
+          }
+          return true;
+        }
+        return false;
+      }
     );
     return (
       <CompactEventItem key={`${item.type}-${item.index}`} onClick={() => handleItemClick(item)} $selected={isSelected}>
@@ -563,19 +342,17 @@ export function TrainingEventPanel() {
           )}
           {item.type === 'InconsistentMovement' && (
             <>
-              <CompactEventLabel>High Dim Δ:</CompactEventLabel>
+              <CompactEventLabel>Pair:</CompactEventLabel>
               <CompactEventValue>
-                {item.highDimChange.toFixed(2)}
-                <span style={{ color: item.highDimChange > 0 ? '#ff4d4f' : '#52c41a', fontSize: '14px', marginLeft: 4 }}>
-                  {item.highDimChange > 0 ? '↑' : '↓'}
-                </span>
+                #{item.index} vs #{item.index1}
               </CompactEventValue>
-              <CompactEventLabel>Projection Δ:</CompactEventLabel>
-              <CompactEventValue>
-                {item.projectionChange.toFixed(2)}
-                <span style={{ color: item.projectionChange > 0 ? '#ff4d4f' : '#52c41a', fontSize: '14px', marginLeft: 4 }}>
-                  {item.projectionChange > 0 ? '↑' : '↓'}
-                </span>
+              <CompactEventLabel>Exp:</CompactEventLabel>
+              <CompactEventValue $color={item.expectation === 'Aligned' ? '#52c41a' : '#ff4d4f'}>
+                {item.expectation}
+              </CompactEventValue>
+              <CompactEventLabel>Beh:</CompactEventLabel>
+              <CompactEventValue $color={item.behavior === 'Aligned' ? '#52c41a' : '#ff4d4f'}>
+                {item.behavior}
               </CompactEventValue>
             </>
           )}
@@ -639,12 +416,12 @@ export function TrainingEventPanel() {
         <ResultContainer>
           <ResultHeader>
             Detected Training Events
-            <EventsCount>{combinedData.length} events</EventsCount>
+            <EventsCount>{trainingEvents.length} events</EventsCount>
           </ResultHeader>
           <EventsContainer>
             {selectedTypes.length === 0 ? (
               <EmptyState>Click "Compute" to see results</EmptyState>
-            ) : combinedData.length === 0 ? (
+            ) : trainingEvents.length === 0 ? (
               <EmptyState>No events detected with current filters</EmptyState>
             ) : (
               <Collapse

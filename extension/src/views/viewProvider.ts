@@ -5,7 +5,7 @@ import { loadHomePage } from './plotView';
 import path from 'path';
 import { MessageManager } from './messageManager';
 import { getBasicConfig } from '../control';
-import { getAttributeResource, getImageData, getInfluenceSamples, getText } from '../communication/api';
+import { calculateTrainingEvents, getAttributeResource, getImageData, getInfluenceSamples, getText } from '../communication/api';
 
 export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
     public abstract webview?: vscode.Webview;
@@ -213,6 +213,25 @@ export class RightViewProvider extends BaseViewProvider {
                     }
                 };
                 MessageManager.sendToPlotView(msgToPlotView);
+            }
+            else if (msg.command === 'calculateEvents') {
+                const epoch = msg.data.epoch;
+                const eventTypes = msg.data.eventTypes;
+
+                const config = getBasicConfig();
+                if (!config) {
+                    vscode.window.showErrorMessage("Configuration is not available.");
+                    return;
+                }
+
+                const trainingEventsRes: any = await calculateTrainingEvents(config.contentPath, epoch, eventTypes);
+                const msgToFunctionView = {
+                    command: 'updateCalculatedEvents',
+                    data: {
+                        trainingEvents: trainingEventsRes['training_events'],
+                    }
+                };
+                MessageManager.sendToRightView(msgToFunctionView);
             }
         });
     }
