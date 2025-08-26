@@ -95,20 +95,27 @@ def load_one_sample(config, content_path, index):
 
 
 # Func: load all text samples
-def get_all_texts(content_path):
+def get_all_texts(content_path, from_file=True):
     text_list = []
     
-    parent_directory = os.path.join(content_path, 'dataset', 'text')
+    if from_file:
+        file_path = os.path.join(content_path, 'dataset', 'text.txt')
+        with open(file_path, 'r') as f:
+            content = f.read()
+        lines = content.splitlines()
+        text_list = lines    
+    else:
+        parent_directory = os.path.join(content_path, 'dataset', 'text')
 
-    files_and_folders = os.listdir(parent_directory)
-    numbered_files = [f for f in files_and_folders if f.endswith('.txt') and f[-5].isdigit()]
-    numbered_files.sort(key=lambda f: int(re.search(r'[0-9]+', f)[0]))
+        files_and_folders = os.listdir(parent_directory)
+        numbered_files = [f for f in files_and_folders if f.endswith('.txt') and f[-5].isdigit()]
+        numbered_files.sort(key=lambda f: int(re.search(r'[0-9]+', f)[0]))
 
-    for file_name in numbered_files:
-        file_path = os.path.join(parent_directory, file_name)
-        with open(file_path, 'r') as file:
-            content = file.read()
-            text_list.append(content)
+        for file_name in numbered_files:
+            file_path = os.path.join(parent_directory, file_name)
+            with open(file_path, 'r') as file:
+                content = file.read()
+                text_list.append(content)
             
     return text_list
 
@@ -199,11 +206,14 @@ def load_one_image(content_path, index):
     return convert_to_base64(file_path)
 
 def load_one_text(content_path, index):
-    file_path = os.path.join(content_path, 'dataset', 'text', f'{index}.txt')
+    file_path = os.path.join(content_path, 'dataset', 'text.txt')
     with open(file_path, 'r') as f:
         content = f.read()
-    return content
-
+    lines = content.splitlines()
+    if index < len(lines):
+        return lines[index]
+    else:
+        return ""
 
 def calculate_high_dimensional_neighbors(content_path, epoch, max_neighbors=10):
     featrue_list = load_single_attribute(content_path, epoch, 'representation')

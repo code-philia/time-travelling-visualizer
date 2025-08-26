@@ -261,6 +261,38 @@ def get_image_data():
 
 
 """
+Api: get text data of one sample
+
+Request:
+    content_path (str)
+    index (str): sample index
+Response:
+    text (str): text data
+"""
+@app.route('/getTextData', methods = ["POST"])
+@cross_origin()
+def get_text_data():
+    req = request.get_json()
+    content_path = req['content_path']
+    if('index' not in req):
+        return make_response(jsonify({'text': ''}), 200)
+    
+    index = req['index']
+
+    try:
+        text = load_one_text(content_path, index)
+        result = jsonify({
+            'text': text
+        })
+        return make_response(result, 200)
+    except Exception as e:
+        result = jsonify({
+            'text': ''
+        })
+        return make_response(result, 200)
+
+
+"""
 Api: get high dimensional neighbors of one sample
 
 Request:

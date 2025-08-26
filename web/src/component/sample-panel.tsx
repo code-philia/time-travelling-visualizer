@@ -5,23 +5,26 @@ import { useDefaultStore } from '../state/state.rightView';
 import { FunctionalBlock } from './custom/basic-components';
 
 export function SamplePanel() {
-    const { availableEpochs, hoveredIndex, labels, epoch, allEpochData, labelDict, imageData } =
-        useDefaultStore(['availableEpochs', 'hoveredIndex', 'labels', 'epoch', 'allEpochData', 'labelDict', 'imageData']);
+    const { availableEpochs, hoveredIndex, labels, epoch, allEpochData, labelDict, dataType, rawData, tokenList } =
+        useDefaultStore(['availableEpochs', 'hoveredIndex', 'labels', 'epoch', 'allEpochData', 'labelDict', 'dataType', 'rawData', 'tokenList']);
 
-    const [image, setImage] = useState<string>('');
+    const [data, setData] = useState<string>('');
     const [predictions, setPredictions] = useState<{ value: number, confidence: number, correct: boolean }[]>([]);
     const [historyPrediction, setHistoryPrediction] = useState<{ epoch: number, prediction: number, confidence: number, correct: boolean }[]>([]);
+
+    const getDisplayLabel = (index: number) =>
+    tokenList ? tokenList[index] : labelDict.get(labels[index]) || 'Unknown';
 
     useEffect(() => {
         console.log("hoveredIndex in detail panel: ", hoveredIndex);
         if (!hoveredIndex || !labels || !allEpochData[epoch]) {
-            setImage('');
+            setData('');
             setPredictions([]);
             setHistoryPrediction([]);
             return;
         }
 
-        setImage(imageData? imageData : '');
+        setData(rawData? rawData : '');
 
         // current epoch prediction
         if (!allEpochData[epoch].probability[hoveredIndex]) { 
@@ -56,26 +59,35 @@ export function SamplePanel() {
         }
         setHistoryPrediction(historyPredictionNew);
 
-    }, [hoveredIndex, imageData, epoch, allEpochData, availableEpochs]);
+    }, [hoveredIndex, rawData, epoch, allEpochData, availableEpochs]);
 
     return (
         <CompactInfoColumn>
             <FunctionalBlock label="Basic Information">
                 <CompactInfoContainer>
-                    <ImageContainer>
-                        {hoveredIndex === undefined ? (
-                            <EmptyImage>No image</EmptyImage>
-                        ) : (
-                            image ? (
-                                <CompactImage src={image} alt="Sample" />
+                    {dataType === 'Text' ? (
+                        <TextContainer>
+                            {hoveredIndex === undefined || !data ? (
+                                <EmptyText>No text</EmptyText>
+                            ) : (
+                                <CompactText>{String(data)}</CompactText>
+                            )}
+                        </TextContainer>
+                    ) : (
+                        <ImageContainer>
+                            {hoveredIndex === undefined ? (
+                                <EmptyImage>No image</EmptyImage>
+                            ) : data ? (
+                                <CompactImage src={data} alt="Sample" />
                             ) : (
                                 <EmptyImage>No image</EmptyImage>
-                            )
-                        )}
-                    </ImageContainer>
+                            )}
+                        </ImageContainer>
+                    )}
+
                     {hoveredIndex !== undefined && (
                         <SampleInfo>
-                            #{hoveredIndex}: {labelDict.get(labels[hoveredIndex]) || 'Unknown'}
+                            #{hoveredIndex}: {getDisplayLabel(hoveredIndex)}
                         </SampleInfo>
                     )}
                 </CompactInfoContainer>
@@ -88,7 +100,7 @@ export function SamplePanel() {
                         {predictions.map((prediction, index) => (
                             <PredictionItem key={index}>
                                 <PredictionValue>
-                                    {labelDict.get(prediction.value)}
+                                    {getDisplayLabel(prediction.value)}
                                 </PredictionValue>
                                 <ConfidenceBar $confidence={prediction.confidence} $correct={prediction.correct} />
                                 <ConfidenceValue>
@@ -105,7 +117,7 @@ export function SamplePanel() {
                         {historyPrediction.slice(-5).map((record, index) => (
                             <PredictionHistoryItem key={index}>
                                 <HistoryEpoch>{record.epoch}:</HistoryEpoch>
-                                <HistoryPrediction $correct={record.correct}>{labelDict.get(record.prediction)}</HistoryPrediction>
+                                <HistoryPrediction $correct={record.correct}>{getDisplayLabel(record.prediction)}</HistoryPrediction>
                                 <HistoryConfidence>{(record.confidence * 100).toFixed(1)}%</HistoryConfidence>
                             </PredictionHistoryItem>
                         ))}
@@ -119,7 +131,7 @@ export function SamplePanel() {
                     <CompactNeighborList>
                         {hoveredIndex !== undefined && allEpochData[epoch]?.originalNeighbors[hoveredIndex]?.map((neighbor, index) => (
                             <HighDimNeighborItem key={index}>
-                                {neighbor}.{labelDict.get(labels[neighbor]) || neighbor}
+                                {neighbor}.{getDisplayLabel(neighbor)}
                             </HighDimNeighborItem>
                         ))}
                     </CompactNeighborList>
@@ -132,7 +144,7 @@ export function SamplePanel() {
                             const isCorrect = allEpochData[epoch].originalNeighbors[hoveredIndex]?.includes(neighbor);
                             return (
                                 <ProjectionNeighborItem key={index} $correct={isCorrect}>
-                                    {neighbor}.{labelDict.get(labels[neighbor]) || neighbor}
+                                    {neighbor}.{getDisplayLabel(neighbor)}
                                 </ProjectionNeighborItem>
                             );
                         })}
@@ -186,15 +198,42 @@ const EmptyImage = styled.div`
     width: 100%;
 `;
 
+const TextContainer = styled.div`
+    width: 80px;
+    height: 80px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 1px solid #e8e8e8;
+    border-radius: 4px;
+    background-color: #fafafa;
+    overflow: hidden;
+    padding: 4px;
+`;
+
+const CompactText = styled.div`
+    width: 100%;
+    height: 100%;
+    font-size: 10px;
+    line-height: 1.2;
+    color: #262626;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+`;
+
+const EmptyText = styled.div`
+    color: #bfbfbf;
+    font-size: 11px;
+    text-align: center;
+`;
+
 const SampleInfo = styled.div`
     font-family: 'Consolas', monospace;
     font-size: 12px;
     font-weight: 500;
     color: #262626;
-    padding-left: 2px;  // 微调左间距
-    /* 移除背景色和圆角 */
-    /* background-color: #f5f5f5; */
-    /* border-radius: 3px; */
+    padding-left: 2px;
 `;
 
 const CompactSection = styled.div`
@@ -313,17 +352,5 @@ const ProjectionNeighborItem = styled.span<{ $correct: boolean }>`
     font-family: 'Consolas', monospace;
     background-color: ${props => props.$correct ? '#d9f7be' : '#ffd6d6'}; // 正确浅绿，错误浅红
     color: #262626;
-    display: inline-block;
-`;
-
-const AccuracyBadge = styled.div`
-    margin-top: 6px;
-    padding: 3px 6px;
-    background-color: #e6f7ff;
-    border-radius: 3px;
-    font-family: 'Consolas', monospace;
-    font-size: 11px;
-    color: #1890ff;
-    font-weight: 600;
     display: inline-block;
 `;

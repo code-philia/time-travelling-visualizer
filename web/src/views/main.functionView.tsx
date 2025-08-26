@@ -134,7 +134,7 @@ function MessageHandler() {
                     labelDict.set(i, l);
                 });
                 setValue('labelDict', labelDict);
-
+                setValue('dataType', messageData.dataType);
                 setValue('labels', messageData.labels);
                 setValue('tokenList', messageData.tokenList);
                 setValue('availableEpochs', messageData.availableEpochs);
@@ -151,7 +151,7 @@ function MessageHandler() {
             else if (message.command === "updateHoveredIndex") {
                 const messageData = message.data;
                 setValue('hoveredIndex', messageData.hoveredIndex);
-                setValue('imageData', messageData.image);
+                setValue('rawData', messageData.rawData);
             }
             else if(message.command === 'updateEpochData'){
                 const messageData = message.data;
@@ -162,7 +162,6 @@ function MessageHandler() {
                     originalNeighbors: messageData.originalNeighbors,
                     projectionNeighbors: messageData.projectionNeighbors,
                     projection: messageData.projection,
-                    embedding: messageData.embedding,
                 };
                 allEpochDataCopy[messageData.epoch] = newEpochData;
                 setValue('allEpochData', allEpochDataCopy);
@@ -174,6 +173,13 @@ function MessageHandler() {
             else if (message.command === 'updateShownData') {
                 const messageData = message.data;
                 setValue('shownData', messageData.shownData);
+            }
+            else if (message.command === 'updateCalculatedEvents') {
+                const messageData = message.data;
+                setValue('trainingEvents', messageData.trainingEvents);
+            }
+            else {
+                console.error('Unknown command:', message.command);
             }
         };
         
