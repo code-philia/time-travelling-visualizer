@@ -21,18 +21,27 @@ const TokenBlockContainer = styled.div`
     overflow-y: auto; /* Enable scrolling if content overflows */
 `;
 
-const TokenSpanStyled = styled.span<{ highlighted: boolean; asNeighbor: boolean; selected: boolean; noMargin: boolean; color: string }>`
-    margin: ${({ noMargin }) => (noMargin ? '0' : '0 0.2em')}; /* Two spaces equivalent */
-    padding: 2px 0px;
+const TokenSpanStyled = styled.span<{ highlighted: boolean; asNeighbor: boolean; selected: boolean; noMargin: boolean; alignmentColor: string; }>`
+    margin: ${({ noMargin }) => (noMargin ? '0' : '0 2px')}; /* Two spaces equivalent */
+    padding: 2px 2px; /* Added horizontal padding for border */
     border-radius: 4px;
-    color: inherit; /* Keep text color unchanged */
     font-weight: ${({ selected }) => (selected ? 'bold' : 'normal')}; /* Make selected tokens bold */
-    background-color: ${({ selected, color, highlighted, asNeighbor }) => 
-        selected ? color : highlighted ? 'rgb(200, 200, 200)' :asNeighbor? 'rgba(211, 211, 211, 0.5)': 'transparent'}; /* Change background color for selected tokens */
+    border: ${({ selected }) => (selected ? '1.5px solid black' : '1.5px solid transparent')};
+    
+    /* NEW: Use alignmentColor for font color, default to black */
+    color: ${({ alignmentColor }) => (alignmentColor && alignmentColor !== 'transparent' ? alignmentColor : 'black')};
+
+    /* NEW: Background is only for hover/neighbor, otherwise transparent */
+    background-color: ${({ highlighted, asNeighbor }) => {
+        if (highlighted) return 'rgb(200, 200, 200)';
+        if (asNeighbor) return 'rgba(211, 211, 211, 0.5)';
+        return 'transparent';
+    }};
+
     cursor: pointer;
     white-space: nowrap; /* Prevent breaking within a token */
     &:hover {
-        background-color:rgb(200, 200, 200);
+        background-color: rgb(200, 200, 200);
     }
 `;
 
@@ -54,6 +63,18 @@ const TokenBlockTitle = styled.div`
     padding-bottom: 4px;
 `;
 
+const TokensWrapper = styled.div<{ $tokenType: 'doc' | 'code' }>`
+    display: flex;
+    flex-wrap: wrap;
+    line-height: 1.6;
+    /* NEW: Further enlarged font size */
+    font-size: 1.2em; 
+    font-family: ${({ $tokenType }) =>
+        $tokenType === 'code'
+            ? `'Courier New', Courier, monospace` // Monospace for code
+            : `Georgia, 'Times New Roman', Times, serif`}; // Serif for docs
+`;
+
 interface TokenSpan {
     text: string;
     index: number;
@@ -61,14 +82,14 @@ interface TokenSpan {
     highlighted: boolean;
     asNeighbor: boolean;
     selected: boolean;
-    color?: string;
+    alignmentColor?: string;
 }
 
-function TokenBlock({ label, tokens, hoveredIndex, selectedIndices, onHover, onClick }: any) {
+function TokenBlock({ label, tokens, onHover, onClick, tokenType }: any) {
     return (
         <TokenBlockContainer>
             <TokenBlockTitle>{label}</TokenBlockTitle>
-            <div style={{ display: 'flex', flexWrap: 'wrap', lineHeight: '1.5' }}>
+            <TokensWrapper $tokenType={tokenType}>
                 {tokens.map((token: TokenSpan, i: number) => {
                     const isWordStart = token.text.startsWith('Ġ');
                     const displayText = isWordStart ? token.text.slice(1) : token.text;
@@ -77,10 +98,10 @@ function TokenBlock({ label, tokens, hoveredIndex, selectedIndices, onHover, onC
                         <TokenSpanStyled
                             key={i}
                             highlighted={token.highlighted}
-                            asNeighbor={ token.asNeighbor}
+                            asNeighbor={token.asNeighbor}
                             selected={token.selected}
                             noMargin={!isWordStart}
-                            color={token.color || 'inherit'}
+                            alignmentColor={token.alignmentColor || 'transparent'}
                             onMouseOver={() => onHover(token.index)}
                             onMouseLeave={() => onHover(null)}
                             onClick={() => onClick(token.index)}
@@ -89,32 +110,55 @@ function TokenBlock({ label, tokens, hoveredIndex, selectedIndices, onHover, onC
                         </TokenSpanStyled>
                     );
                 })}
-            </div>
+            </TokensWrapper>
         </TokenBlockContainer>
     );
 }
 
+// NEW: Updated colors to be opaque for better font readability
+const ALIGNMENT_COLORS = [
+    "#ff595e",
+    "#1982c4",
+    "#8ac926",
+    "#ff924c",
+    "#ffca3a",
+    "#52a675",
+    "#36949d",
+    "#4267ac",
+    "#6a4c93",
+    "#b5a6c9"
+];
+
 export function TokenPanel() {
-    const { labels, tokenList, hoveredIndex, setHoveredIndex, selectedIndices, setSelectedIndices } =
-        useDefaultStore(['labels', 'tokenList', 'hoveredIndex', 'setHoveredIndex', 'selectedIndices', 'setSelectedIndices']);
+    const { labels, tokenList, hoveredIndex, setHoveredIndex, selectedIndices, setSelectedIndices, alignment } =
+        useDefaultStore(['labels', 'tokenList', 'hoveredIndex', 'setHoveredIndex', 'selectedIndices', 'setSelectedIndices', 'alignment']);
     
     const { epoch, allNeighbors } = useDefaultStore(['epoch', 'allNeighbors']);
 
-    const generateRandomColor = () => {
-        const r = Math.floor(200 + Math.random() * 55);
-        const g = Math.floor(200 + Math.random() * 55);
-        const b = Math.floor(200 + Math.random() * 55);
-        return `rgb(${r}, ${g}, ${b})`; // Light color for background
-    };
+    const [alignmentColorMap, setAlignmentColorMap] = useState<Map<number, string>>(new Map());
+
+    // Effect to process alignment data and create a color map
+    useEffect(() => {
+        const newMap = new Map<number, string>();
+        if (alignment && alignment.length > 0) {
+            alignment.forEach((group: number[], groupIndex: number) => {
+                const color = ALIGNMENT_COLORS[groupIndex % ALIGNMENT_COLORS.length];
+                group.forEach(tokenIndex => {
+                    newMap.set(tokenIndex, color);
+                });
+            });
+        }
+        setAlignmentColorMap(newMap);
+    }, [alignment]);
 
     const docTokens: TokenSpan[] = [];
     const codeTokens: TokenSpan[] = [];
-
     tokenList.forEach((token, index) => {
         const isDoc = labels[index] === 0;
         const isSelected = selectedIndices.includes(index);
         const isHighlighted = hoveredIndex === index;
         const isNeighbor = (hoveredIndex !== null && hoveredIndex !== undefined && (allNeighbors[epoch].originalNeighbors[hoveredIndex]?.includes(index) || allNeighbors[epoch].projectionNeighbors[hoveredIndex]?.includes(index)));
+        const alignmentColor = alignmentColorMap.get(index);
 
         const tokenSpan: TokenSpan = {
             text: token,
@@ -123,6 +167,7 @@ export function TokenPanel() {
             highlighted: isHighlighted,
             asNeighbor: isNeighbor,
             selected: isSelected,
+            alignmentColor: alignmentColor,
         };
 
         if (isDoc) docTokens.push(tokenSpan);
@@ -135,8 +180,6 @@ export function TokenPanel() {
         notifyHoveredIndexSwitch(index ?? undefined);
     };
 
-    const [selectedColors, setSelectedColors] = useState<Map<number, string>>(new Map());
-
     const handleClick = (index: number) => {
         console.log('Clicked index in token-view:', index);
         const newSelectedIndices = selectedIndices.includes(index)
@@ -144,71 +187,25 @@ export function TokenPanel() {
             : [...selectedIndices, index];
 
         setSelectedIndices(newSelectedIndices);
-
-        // Assign a color only if the token is newly selected
-        if (!selectedIndices.includes(index)) {
-            const newColor = generateRandomColor();
-            setSelectedColors(prev => {
-                const updated = new Map(prev);
-                updated.set(index, newColor);
-                return updated;
-            });
-        } else {
-            // Remove color if the token is deselected
-            setSelectedColors(prev => {
-                const updated = new Map(prev);
-                updated.delete(index);
-                return updated;
-            });
-        }
-
         notifySelectedIndicesSwitch(newSelectedIndices);
     };
-
-    useEffect(() => {
-        const updatedColors = new Map(selectedColors);
-
-        // Assign colors to newly selected tokens
-        selectedIndices.forEach(index => {
-            if (!updatedColors.has(index)) {
-                updatedColors.set(index, generateRandomColor());
-            }
-        });
-
-        // Remove colors for deselected tokens
-        Array.from(updatedColors.keys()).forEach(index => {
-            if (!selectedIndices.includes(index)) {
-                updatedColors.delete(index);
-            }
-        });
-
-        setSelectedColors(updatedColors);
-    }, [selectedIndices]);
 
     return (
         <BottomPanelContainer className="bottom-panel" $expanded={true}>
             <TokenBlockWrapper>
                 <TokenBlock
                     label="Doc Tokens"
-                    tokens={docTokens.map(token => ({
-                        ...token,
-                        color: token.selected ? selectedColors.get(token.index) || 'inherit' : 'inherit',
-                    }))}
-                    hoveredIndex={hoveredIndex}
-                    selectedIndices={selectedIndices}
+                    tokens={docTokens}
                     onHover={handleHover}
                     onClick={handleClick}
+                    tokenType="doc" // Pass type for styling
                 />
                 <TokenBlock
                     label="Code Tokens"
-                    tokens={codeTokens.map(token => ({
-                        ...token,
-                        color: token.selected ? selectedColors.get(token.index) || 'inherit' : 'inherit',
-                    }))}
-                    hoveredIndex={hoveredIndex}
-                    selectedIndices={selectedIndices}
+                    tokens={codeTokens}
                     onHover={handleHover}
                     onClick={handleClick}
+                    tokenType="code" // Pass type for styling
                 />
             </TokenBlockWrapper>
         </BottomPanelContainer>

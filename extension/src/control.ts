@@ -440,7 +440,7 @@ export async function loadVisualization(forceReconfig: boolean = false): Promise
 		data: {
 			labels: data['labelList'],
 			tokenList: data['tokenList'],
-			allignment: data['alignment'],
+			alignment: data['alignment'],
 		}
 	};
 	MessageManager.sendToTokenView(msgToTokenView);
