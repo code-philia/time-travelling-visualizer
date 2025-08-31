@@ -23,7 +23,7 @@ type BaseMutableGlobalStore = {
     selectedIndices: number[];
 
     labels: number[];
-    tokenList: string[] | undefined;
+    tokenList: string[];
     colorDict: Map<number, [number, number, number]>;
     labelDict: Map<number, string>;
     shownData: string[];
@@ -41,7 +41,7 @@ let initMutableGlobalStore: BaseMutableGlobalStore = {
     hoveredIndex: undefined,
     selectedIndices: [],
     labels: [],
-    tokenList: undefined,
+    tokenList: [],
     colorDict: new Map(),
     labelDict: new Map(),
     shownData: ["train", "test"],
