@@ -68,7 +68,7 @@ export const ChartComponent = memo(() => {
         flipRef.current = [];
         let x_min = scope[0], y_min = scope[1], x_max = scope[2], y_max = scope[3];
 
-        const groupColors = ["#de324c","#f8e16f","#369acc","#f4895f","#95cf92","#9656a2"];
+        const groupColors = ["#ff595e","#1982c4","#8ac926","#ff924c","#ffca3a","#52a675","#36949d","#4267ac","#6a4c93","#b5a6c9"];
 
         const tokenToGroup = new Map<number, number>();
         (alignment || []).forEach((group, gIdx) => {

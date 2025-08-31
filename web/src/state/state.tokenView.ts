@@ -15,6 +15,7 @@ type BaseMutableGlobalStore = {
     selectedIndices: number[];
     labels: number[];
     tokenList: string[];
+    alignment: number[][];
     epoch: number;
     allNeighbors: Record<number, Neighborhood>;
 };
@@ -24,6 +25,7 @@ let initMutableGlobalStore: BaseMutableGlobalStore = {
     selectedIndices: [],
     labels: [],
     tokenList: [],
+    alignment: [],
     epoch: 1,
     allNeighbors: {},
 };

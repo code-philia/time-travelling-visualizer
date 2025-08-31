@@ -35,6 +35,7 @@ function MessageHandler() {
                 const messageData = message.data;
                 setValue('labels', messageData.labels);
                 setValue('tokenList', messageData.tokenList);
+                setValue('alignment', messageData.alignment);
             }
             else if(message.command === 'updateSelectedIndices') {
                 const messageData = message.data;
