@@ -369,8 +369,7 @@ function HighlightOptionBlock() {
         notifyHighlightDataSwitch(enabledTypes);
     };
 
-    const renderHighlightTypeItem = (highlight: { type: string, label: string, enabled: boolean, icon: string, description: string, count: number }) => {
-        const countColor = highlight.count === 0 ? '#52c41a' : '#ff4d4f';
+    const renderHighlightTypeItem = (highlight: { type: string, label: string, enabled: boolean, icon: string, description: string}) => {
         return (
             <List.Item
                 className={`highlight-type-item ${highlight.enabled ? 'enabled' : 'disabled'}`}
@@ -402,11 +401,6 @@ function HighlightOptionBlock() {
                             onChange={() => handleToggleHighlightType(highlight.type)}
                         />
                     </div>
-                </div>
-                <div
-                    className="highlight-count"
-                    style={{ marginTop: '4px', color: countColor, fontSize: '10px' }}
-                >
                 </div>
             </List.Item>
         );
