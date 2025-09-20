@@ -78,11 +78,20 @@ function MessageHandler() {
             });
             setValue('labelDict', labelDict);
 
-            setValue('textData', messageData.tokenList);
-            setValue('inherentLabelData', messageData.labelList);
-            setValue('index', messageData.index);
-            setValue('epoch', messageData.availableEpochs[0]);
-            setValue('alignment', messageData.alignment);
+            if (messageData.tokenList) {
+                const textData = messageData.tokenList.map((token: string) => {
+                    const isWordStart = token.startsWith("Ġ");
+                    const displayText = isWordStart ? token.slice(1) : token;
+                    return displayText;
+                });
+                setValue("textData", textData);
+            } else {
+                setValue("textData", []);
+            }
+            setValue("inherentLabelData", messageData.labelList);
+            setValue("index", messageData.index);
+            setValue("epoch", messageData.availableEpochs[0]);
+            setValue("alignment", messageData.alignment);
 
             notifyEpochSwitch(messageData.availableEpochs[0]);
         }
