@@ -434,19 +434,30 @@ export async function loadVisualization(forceReconfig: boolean = false): Promise
 	};
 	MessageManager.sendToRightView(msgToFunctionView);
 
-	// to token view
-	const msgToTokenView = {
-		command: 'init',
-		data: {
-			labels: data['labelList'],
-			tokenList: data['tokenList'],
-			alignment: data['alignment'],
-		}
-	};
-	MessageManager.sendToTokenView(msgToTokenView);
+    // to token view
+    if (config.taskType === "Code-Retrieval") {
+        const msgToTokenView = {
+            command: "init",
+            data: {
+                labels: data["labelList"],
+                tokenList: data["tokenList"],
+                alignment: data["alignment"],
+            },
+        };
+        MessageManager.sendToTokenView(msgToTokenView);
+    }
 
-	loadAllEpochData(config, data['availableEpochs'] || []);
-	return true;
+    // to influence view
+    const msgToInfluenceView = {
+        command: "init",
+        data: {
+            dataType: data["dataType"],
+        },
+    };
+    MessageManager.sendToInfluenceView(msgToInfluenceView);
+
+    loadAllEpochData(config, data["availableEpochs"] || []);
+    return true;
 }
 
 async function loadAllEpochData(config: api.BasicVisualizationConfig, availableEpochs: number[] ): Promise<void> {
