@@ -47,7 +47,8 @@
             ```
         3.  Start the backend server:
             ```bash
-            python tool/server/server.py
+            cd tool/server
+            python server.py
             ```
     *   **Frontend (Run Extension)**:
         1.  Open the project root directory In VS Code, press `Ctrl+Shift+D` or click the "Run and Debug" icon in the sidebar.
