@@ -8,18 +8,23 @@ import { TrainingEvent } from "../component/types";
 
 export type InfluenceSample = {
     index: number;
-    label: string;
+    label?: string;
     positive: boolean; // true for positive influence, false for negative influence
     score: number; // influence score
-    data: string; // image data or text data
+    data?: string; // image data or text data
+    dataType?: 'image' | 'text';
+    docData?: string; // document text data for text pair
+    codeData?: string; // code text data for text pair
 }
 
 type BaseMutableGlobalStore = {
+    dataType: 'Image' | 'Text';
     trainingEvent: TrainingEvent | null; // current training event
     influenceSamples: InfluenceSample[]; // all influence samples
 };
 
 let initMutableGlobalStore: BaseMutableGlobalStore = {
+    dataType: 'Image',
     trainingEvent: null,
     influenceSamples: [],
 };
