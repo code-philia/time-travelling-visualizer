@@ -18,6 +18,9 @@ type BaseMutableGlobalStore = {
     alignment: number[][];
     epoch: number;
     allNeighbors: Record<number, Neighborhood>;
+
+    shownDoc: string;
+    shownCode: string;
 };
 
 let initMutableGlobalStore: BaseMutableGlobalStore = {
@@ -28,6 +31,9 @@ let initMutableGlobalStore: BaseMutableGlobalStore = {
     alignment: [],
     epoch: 1,
     allNeighbors: {},
+
+    shownDoc: '',
+    shownCode: ''
 };
 type SetFunction<T> = (setState: (state: T) => T | Partial<T>) => void;
 

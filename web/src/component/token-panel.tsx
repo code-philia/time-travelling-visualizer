@@ -13,44 +13,20 @@ const BottomPanelContainer = styled.div<{ $expanded: boolean }>`
 `;
 
 const TokenBlockContainer = styled.div`
-    flex: 1; /* Allow the block to grow and fill available space */
+    flex: 1;
     padding: 10px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    overflow-y: auto; /* Enable scrolling if content overflows */
-`;
-
-const TokenSpanStyled = styled.span<{ highlighted: boolean; asNeighbor: boolean; selected: boolean; noMargin: boolean; alignmentColor: string; }>`
-    margin: ${({ noMargin }) => (noMargin ? '0' : '0 2px')}; /* Two spaces equivalent */
-    padding: 2px 2px; /* Added horizontal padding for border */
-    border-radius: 4px;
-    font-weight: ${({ selected }) => (selected ? 'bold' : 'normal')}; /* Make selected tokens bold */
-    border: ${({ selected }) => (selected ? '1.5px solid black' : '1.5px solid transparent')};
-    
-    /* NEW: Use alignmentColor for font color, default to black */
-    color: ${({ alignmentColor }) => (alignmentColor && alignmentColor !== 'transparent' ? alignmentColor : 'black')};
-
-    /* NEW: Background is only for hover/neighbor, otherwise transparent */
-    background-color: ${({ highlighted, asNeighbor }) => {
-        if (highlighted) return 'rgb(200, 200, 200)';
-        if (asNeighbor) return 'rgba(211, 211, 211, 0.5)';
-        return 'transparent';
-    }};
-
-    cursor: pointer;
-    white-space: nowrap; /* Prevent breaking within a token */
-    &:hover {
-        background-color: rgb(200, 200, 200);
-    }
+    overflow-y: auto;
 `;
 
 const TokenBlockWrapper = styled.div`
     display: flex;
-    width: 100%; /* Ensure it spans the full width of the parent */
-    height: 100%; /* Make the wrapper take the full height of the parent */
-    border-left: 1px solid var(--layout-border-color); /* Add a dividing line */
-    border-right: 1px solid var(--layout-border-color); /* Add a dividing line */
+    width: 100%;
+    height: 100%;
+    border-left: 1px solid var(--layout-border-color);
+    border-right: 1px solid var(--layout-border-color);
 `;
 
 const TokenBlockTitle = styled.div`
@@ -63,16 +39,34 @@ const TokenBlockTitle = styled.div`
     padding-bottom: 4px;
 `;
 
+const TokenSpanStyled = styled.span<{ highlighted: boolean; asNeighbor: boolean; selected: boolean; noMargin: boolean; alignmentColor: string; }>`
+    margin: ${({ noMargin }) => (noMargin ? '0' : '0 2px')};
+    padding: 2px 2px;
+    border-radius: 4px;
+    font-weight: ${({ selected }) => (selected ? 'bold' : 'normal')};
+    border: ${({ selected }) => (selected ? '1.5px solid black' : '1.5px solid transparent')};
+    color: ${({ alignmentColor }) => (alignmentColor && alignmentColor !== 'transparent' ? alignmentColor : 'black')};
+    background-color: ${({ highlighted, asNeighbor }) => {
+        if (highlighted) return 'rgb(200, 200, 200)';
+        if (asNeighbor) return 'rgba(211, 211, 211, 0.5)';
+        return 'transparent';
+    }};
+    cursor: pointer;
+    white-space: nowrap;
+    &:hover {
+        background-color: rgb(200, 200, 200);
+    }
+`;
+
 const TokensWrapper = styled.div<{ $tokenType: 'doc' | 'code' }>`
     display: flex;
     flex-wrap: wrap;
     line-height: 1.6;
-    /* NEW: Further enlarged font size */
     font-size: 1.2em; 
     font-family: ${({ $tokenType }) =>
         $tokenType === 'code'
-            ? `'Courier New', Courier, monospace` // Monospace for code
-            : `Georgia, 'Times New Roman', Times, serif`}; // Serif for docs
+            ? `'Courier New', Courier, monospace`
+            : `Georgia, 'Times New Roman', Times, serif`};
 `;
 
 interface TokenSpan {
@@ -115,29 +109,53 @@ function TokenBlock({ label, tokens, onHover, onClick, tokenType }: any) {
     );
 }
 
-// NEW: Updated colors to be opaque for better font readability
+const FullTextBlock = styled.pre<{ $isHovered: boolean; $fontType: 'doc' | 'code' }>`
+    font-family: ${({ $fontType }) =>
+        $fontType === 'code'
+            ? `'Courier New', Courier, monospace`
+            : `Georgia, 'Times New Roman', Times, serif`};
+    font-size: 1.2em;
+    line-height: 1.6;
+    white-space: pre-wrap; /* Respect newlines and wrap long lines */
+    word-wrap: break-word;
+    margin: 0;
+    padding: 8px;
+    border-radius: 4px;
+    background-color: ${({ $isHovered }) => $isHovered ? 'rgba(173, 216, 230, 0.5)' : 'transparent'}; /* Light blue background on hover */
+    transition: background-color 0.2s ease;
+`;
+
+function SimplePairDisplay({ shownDoc, shownCode, hoveredIndex }: { shownDoc: string, shownCode: string, hoveredIndex?: number | null }) {
+    const isDocHovered = hoveredIndex !== null && hoveredIndex !== undefined && hoveredIndex % 2 === 0;
+    const isCodeHovered = hoveredIndex !== null && hoveredIndex !== undefined && hoveredIndex % 2 === 1;
+    const formattedDoc = shownDoc.replace(/\\n/g, '\n');
+    const formattedCode = shownCode.replace(/\\n/g, '\n');
+    return (
+        <>
+            <TokenBlockContainer>
+                <TokenBlockTitle>Document</TokenBlockTitle>
+                <FullTextBlock $isHovered={isDocHovered} $fontType="doc">
+                    {formattedDoc}
+                </FullTextBlock>
+            </TokenBlockContainer>
+            <TokenBlockContainer>
+                <TokenBlockTitle>Code</TokenBlockTitle>
+                <FullTextBlock $isHovered={isCodeHovered} $fontType="code">
+                    {formattedCode}
+                </FullTextBlock>
+            </TokenBlockContainer>
+        </>
+    );
+}
+
 const ALIGNMENT_COLORS = [
-    "#ff595e",
-    "#1982c4",
-    "#8ac926",
-    "#ff924c",
-    "#ffca3a",
-    "#52a675",
-    "#36949d",
-    "#4267ac",
-    "#6a4c93",
-    "#b5a6c9"
+    "#ff595e", "#1982c4", "#8ac926", "#ff924c", "#ffca3a", 
+    "#52a675", "#36949d", "#4267ac", "#6a4c93", "#b5a6c9"
 ];
 
-export function TokenPanel() {
-    const { labels, tokenList, hoveredIndex, setHoveredIndex, selectedIndices, setSelectedIndices, alignment } =
-        useDefaultStore(['labels', 'tokenList', 'hoveredIndex', 'setHoveredIndex', 'selectedIndices', 'setSelectedIndices', 'alignment']);
-    
-    const { epoch, allNeighbors } = useDefaultStore(['epoch', 'allNeighbors']);
-
+function TokenAlignmentDisplay({ labels, tokenList, hoveredIndex, selectedIndices, alignment, epoch, allNeighbors, handleHover, handleClick }: any) {
     const [alignmentColorMap, setAlignmentColorMap] = useState<Map<number, string>>(new Map());
 
-    // Effect to process alignment data and create a color map
     useEffect(() => {
         const newMap = new Map<number, string>();
         if (alignment && alignment.length > 0) {
@@ -153,7 +171,7 @@ export function TokenPanel() {
 
     const docTokens: TokenSpan[] = [];
     const codeTokens: TokenSpan[] = [];
-    tokenList.forEach((token, index) => {
+    tokenList.forEach((token: string, index: number) => {
         const isDoc = labels[index] === 0;
         const isSelected = selectedIndices.includes(index);
         const isHighlighted = hoveredIndex === index;
@@ -174,18 +192,45 @@ export function TokenPanel() {
         else codeTokens.push(tokenSpan);
     });
 
+    return (
+        <>
+            <TokenBlock
+                label="Doc Tokens"
+                tokens={docTokens}
+                onHover={handleHover}
+                onClick={handleClick}
+                tokenType="doc"
+            />
+            <TokenBlock
+                label="Code Tokens"
+                tokens={codeTokens}
+                onHover={handleHover}
+                onClick={handleClick}
+                tokenType="code"
+            />
+        </>
+    );
+}
+
+
+export function TokenPanel() {
+    const { labels, tokenList, hoveredIndex, setHoveredIndex, selectedIndices, setSelectedIndices, alignment } =
+        useDefaultStore(['labels', 'tokenList', 'hoveredIndex', 'setHoveredIndex', 'selectedIndices', 'setSelectedIndices', 'alignment']);
+    const { shownDoc, shownCode } = useDefaultStore(['shownDoc', 'shownCode']);
+    const { epoch, allNeighbors } = useDefaultStore(['epoch', 'allNeighbors']);
+
+    // 根据 tokenList 判断使用哪个视图
+    const useSimpleView = !tokenList || tokenList.length === 0;
+
     const handleHover = (index: number | null) => {
-        console.log('Hovered index in token-view:', index);
         setHoveredIndex(index ?? undefined);
         notifyHoveredIndexSwitch(index ?? undefined);
     };
 
     const handleClick = (index: number) => {
-        console.log('Clicked index in token-view:', index);
         const newSelectedIndices = selectedIndices.includes(index)
             ? selectedIndices.filter(i => i !== index)
             : [...selectedIndices, index];
-
         setSelectedIndices(newSelectedIndices);
         notifySelectedIndicesSwitch(newSelectedIndices);
     };
@@ -193,20 +238,25 @@ export function TokenPanel() {
     return (
         <BottomPanelContainer className="bottom-panel" $expanded={true}>
             <TokenBlockWrapper>
-                <TokenBlock
-                    label="Doc Tokens"
-                    tokens={docTokens}
-                    onHover={handleHover}
-                    onClick={handleClick}
-                    tokenType="doc" // Pass type for styling
-                />
-                <TokenBlock
-                    label="Code Tokens"
-                    tokens={codeTokens}
-                    onHover={handleHover}
-                    onClick={handleClick}
-                    tokenType="code" // Pass type for styling
-                />
+                {useSimpleView ? (
+                    <SimplePairDisplay
+                        shownDoc={shownDoc}
+                        shownCode={shownCode}
+                        hoveredIndex={hoveredIndex}
+                    />
+                ) : (
+                    <TokenAlignmentDisplay
+                        labels={labels}
+                        tokenList={tokenList}
+                        hoveredIndex={hoveredIndex}
+                        selectedIndices={selectedIndices}
+                        alignment={alignment}
+                        epoch={epoch}
+                        allNeighbors={allNeighbors}
+                        handleHover={handleHover}
+                        handleClick={handleClick}
+                    />
+                )}
             </TokenBlockWrapper>
         </BottomPanelContainer>
     );

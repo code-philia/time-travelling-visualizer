@@ -114,10 +114,25 @@ export class PlotViewManager {
 				}
 				MessageManager.sendToRightView(msgBack);
 				
+				let shownDoc = '';
+				let shownCode = '';
+				if (config.taskType === 'Code-Retrieval') {
+					if(hoveredIndex%2 === 0) {	// doc
+						shownDoc = rawData? rawData : '';
+						shownCode = await getTextData(config.contentPath, hoveredIndex+1);
+					}
+					else {
+						shownCode = rawData? rawData : '';
+						shownDoc = await getTextData(config.contentPath, hoveredIndex-1);
+					}
+				}
+
 				const msgToTokenView = {
 					command: 'updateHoveredIndex',
 					data: {
 						hoveredIndex: hoveredIndex,
+						shownDoc: shownDoc,
+						shownCode: shownCode,
 					}
 				}
 				MessageManager.sendToTokenView(msgToTokenView);

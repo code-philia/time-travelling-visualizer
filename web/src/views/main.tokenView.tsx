@@ -49,6 +49,8 @@ function MessageHandler() {
             else if (message.command === 'updateHoveredIndex') {
                 const messageData = message.data;
                 setValue('hoveredIndex', messageData.hoveredIndex);
+                setValue('shownDoc', messageData.shownDoc);
+                setValue('shownCode', messageData.shownCode);
             }
             else if (message.command === 'updateEpoch') {
                 const messageData = message.data;
