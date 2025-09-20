@@ -1,5 +1,6 @@
 import io
 import math
+import random
 from sklearn.neighbors import NearestNeighbors
 import tqdm
 import os
@@ -516,6 +517,51 @@ def calculate_influence_samples(content_path, epoch, training_event, num_samples
    
     return influence_samples
 
+def calculate_influence_samples_temp(content_path, epoch, training_event, num_samples=5):
+    influence_samples = []
+    noise_path = os.path.join(content_path,  'noise.json')
+    with open(noise_path, 'r') as f:
+        noise_data = json.load(f)
+        
+    index = training_event['index']
+    index1 = training_event['index1']
+    
+    sample_index = index / 2
+    sample_index1 = index1 / 2
+        
+    for noise in noise_data:
+        if noise['target_index'] == sample_index or noise['target_index'] == sample_index1:
+            noise_index = noise['noise_index']
+            doc_index = noise_index*2
+            code_index = noise_index*2 + 1
+            doc_data = load_one_text(content_path, doc_index)
+            code_data = load_one_text(content_path, code_index)
+            influence_samples.append({
+                "index": noise['source_index'],
+                "score": random.uniform(-1, 0),
+                "positive": noise['influence_score'] > 0,
+                "dataType": "text",
+                "docData": doc_data,
+                "codeData": code_data
+            })
+        
+    if len(influence_samples) == 0:
+        noise_indices = random.sample(range(200, 299), num_samples*2)
+        for noise_index in noise_indices:
+            doc_index = noise_index*2
+            code_index = noise_index*2 + 1
+            doc_data = load_one_text(content_path, doc_index)
+            code_data = load_one_text(content_path, code_index)
+            influence_samples.append({
+                "index": noise_index,
+                "score": random.uniform(-1, 0),
+                "positive": False,
+                "dataType": "text",
+                "docData": doc_data,
+                "codeData": code_data
+            })
+    
+    return influence_samples
 
 def compute_training_events(content_path, epoch, event_types):
     config = {"content_path": content_path}

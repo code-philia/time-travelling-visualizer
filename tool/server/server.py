@@ -402,7 +402,11 @@ def get_influence_samples():
     num_samples = int(req['num_samples'])
 
     try:
-        influence_samples = calculate_influence_samples(content_path, epoch, training_event, num_samples)
+        if training_event['type'] == 'InconsistentMovement':
+            influence_samples = calculate_influence_samples_temp(content_path, epoch, training_event, num_samples)
+        else:
+            influence_samples = calculate_influence_samples(content_path, epoch, training_event, num_samples)
+        
         result = jsonify({
             "influence_samples": influence_samples,
         })

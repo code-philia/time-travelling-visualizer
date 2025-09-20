@@ -142,44 +142,58 @@ class TrainingEventDetector:
         return events
 
 
-    def _detect_inconsistent_movement_events(self):
+    def _detect_inconsistent_movement_events(self, std_dev_multiplier=2.5):
         events = []
         epoch_index = self.available_epochs.index(self.epoch)
-        prev_epoch = self.available_epochs[epoch_index - 1] if epoch_index > 0 else -1
-        if prev_epoch < 0:
+        if epoch_index == 0:
             return events
+
+        prev_epoch_index = 0 if epoch_index < 3 else epoch_index - 3
+        prev_epoch = self.available_epochs[0]
 
         prev_embeddings = self.data_provider.get_representation(prev_epoch)
         curr_embeddings = self.data_provider.get_representation(self.epoch)
-
         expected_alignment = self.data_provider.get_expected_alignment()
         n = prev_embeddings.shape[0]
 
         parent = list(range(n))
-
         def find(u):
             while parent[u] != u:
                 parent[u] = parent[parent[u]]
                 u = parent[u]
             return u
-
         def union(u, v):
             pu, pv = find(u), find(v)
             if pu != pv:
                 parent[pv] = pu
-
         for i, j in expected_alignment:
             union(i, j)
-
         root = [find(i) for i in range(n)]
 
         prev_dist_matrix = squareform(pdist(prev_embeddings))
         curr_dist_matrix = squareform(pdist(curr_embeddings))
         dist_changes = curr_dist_matrix - prev_dist_matrix
+        
+        aligned_deltas = []
+        not_aligned_deltas = []
+        for i in range(n):
+            for j in range(i + 1, n):
+                if root[i] == root[j]:
+                    aligned_deltas.append(dist_changes[i, j])
+                else:
+                    not_aligned_deltas.append(dist_changes[i, j])
 
-        alpha = 1
-        beta  = -1
+        if not aligned_deltas or not not_aligned_deltas:
+            return events
 
+        aligned_mean = np.mean(aligned_deltas)
+        aligned_std = np.std(aligned_deltas)
+        alpha = aligned_mean + std_dev_multiplier * aligned_std
+        
+        not_aligned_mean = np.mean(not_aligned_deltas)
+        not_aligned_std = np.std(not_aligned_deltas)
+        beta = not_aligned_mean - std_dev_multiplier * not_aligned_std
+        
         for i in range(n):
             for j in range(i + 1, n):
                 delta = dist_changes[i, j]
@@ -192,6 +206,7 @@ class TrainingEventDetector:
                             index1=j,
                             expectation="Aligned",
                             behavior="NotAligned",
+                            distanceChange=float(delta),
                             type="InconsistentMovement"
                         ))
                 else:
@@ -201,6 +216,7 @@ class TrainingEventDetector:
                             index1=j,
                             expectation="NotAligned",
                             behavior="Aligned",
+                            distanceChange=float(delta),
                             type="InconsistentMovement"
                         ))
 
