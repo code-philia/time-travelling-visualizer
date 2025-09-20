@@ -15,15 +15,27 @@
 
 ## 🛠️ Setup & Launch
 
-1.  **Setup Environment** 
+1.  **Setup Environment**
 
-    Run the setup script below (make sure you have installed the anaconda or miniconda):
+    *   **Backend (Python)**:
+        Run the setup script below (make sure you have installed Anaconda or Miniconda):
+        ```bash
+        bash setup.sh
+        ```
+        This will create a Python 3.10 environment named "visualizer" and install the required dependencies.
 
-    ```bash
-    bash setup.sh
-    ```
+    *   **Frontend (Node.js)**:
+        We assume you have Node.js installed. Navigate to the `web` and `extension` directories to install the dependencies:
+        ```bash
+        # Install web dependencies
+        cd web
+        npm install
+        cd ..
 
-    This will create a Python 3.10 environment named "visualizer", and install the required dependencies in it.
+        # Install extension dependencies
+        cd extension
+        npm install
+        ```
 
 2.  **Launch**
 
