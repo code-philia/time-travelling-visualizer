@@ -1,82 +1,74 @@
-# Training Dynamic Visualization Tool
+# Time-Travelling Visualizer 🚀
 
-> 🏗️ The tool is under renovation, and only part of the datasets are validated to be visualized. Introduction to the original tool and research project and could be found in [PROTOTYPE.md](PROTOTYPE.md), while it could contain some obsolete descriptions like that the old `Vis` and `VisTool` folders no longer exists, and the old `Tool` folder was separated into `tool` and `visualize` sub-projects.
+> A VS Code extension for visualizing and debugging the training process of machine learning models.
 
-## How To Start the Tool
 
-### Prepare the Project
+## ✨ Features
 
-```bash
-$ git clone <https://github.com/code-philia/time-travelling-visualizer.git>
-$ cd time-travelling-visualizer
+*   **Training Visualization**: Visualize the training process through dimensionality reduction.
+*   **Time-Travelling Debugging**: Step through training events to understand model behavior over time. 
+*   **Influence Analysis**: Inspect influence functions to see how training data affects predictions. 
+*   **Interactive Tools**: Exploring the Representation Space with Multiple Functions. 
+
+![overview](./overview.png)
+
+
+## 🛠️ Setup & Launch
+
+1.  **Setup Environment** 
+
+    Run the setup script below (make sure you have installed the anaconda or miniconda):
+
+    ```bash
+    bash setup.sh
+    ```
+
+    This will create a Python 3.10 environment named "visualizer", and install the required dependencies in it.
+
+2.  **Launch**
+
+    *   **Backend Server**:
+        1.  Open a terminal and navigate to the project root directory.
+        2.  Activate the Conda environment:
+            ```bash
+            conda activate visualizer
+            ```
+        3.  Start the backend server:
+            ```bash
+            python tool/server/server.py
+            ```
+    *   **Frontend (Run Extension)**:
+        1.  Open the project root directory In VS Code, press `Ctrl+Shift+D` or click the "Run and Debug" icon in the sidebar.
+        2.  Select the "Run Extension" configuration from the dropdown menu.
+        3.  Press `F5` or click the "Start Debugging" button.
+        4.  This will open a new "Extension Development Host" window where the extension is running.
+        ![start up extension](./start.png)
+
+💭 This is only a temporary way to start up the extension; the final version will switch to a regular VSCode extension that can be imported and used directly. For detailed usage instructions, see [Doc for time-travelling-visualizer](https://code-philia.github.io/time-travelling-visualizer/extension/home/).
+
+
+
+## 📁 Project Structure
+
+```
+.
+├── extension/    # 📦 VS Code Extension Source Code
+├── tool/         # 🐍 Python Backend & Visualization Methods
+├── web/          # 🌐 Frontend Web Application (Loaded In Extension)
+├── setup.sh      # 🚀 Setup Script
+└── README.md
 ```
 
-### Switch Git Branch
 
-To try our latest features, switch to the following branch:
+## 🚀 Future Improvements
 
-```bash
-$ git checkout new-version
-```
+1.  **Code Refactoring**:
+    *   Decouple various visualization algorithm modules.
+    *   Elegantly encapsulate the communication between the extension, web page, and backend.
+    *   Refactor and resolve code smells.
+2.  **Broader Task Compatibility**:
+    *   Extend support to more training tasks, such as generative and contrastive learning tasks.
+3.  **Features in Development**:
+    *   The **Token Panel** and **Influence Function** features are currently under development.
 
-### Setup Environment
-
-You can simply run the following commands to install our recommended environment and required dependencies. 
-
-```bash
-$ chmod +x ./setup.sh
-$ export ENV_NAME="venv" 
-$ ./setup.sh
-```
-
-Besides, you can also install them step by step by following the instructions below.
-
-#### Create a virtual environment
-
-We recommend to [create a venv](https://docs.python.org/3/library/venv.html) before installing all the dependencies, especially when your device has enough storage.
-
-#### Install PyTorch
-
-Refer to the [PyTorch official guide](https://pytorch.org/get-started/locally/). Installation methods vary by platform, and PyTorch versions depend on your GPU and the appropriate CUDA or ROCm version.
-
-#### Install All Dependencies
-
-Run the following command to install all required dependencies:
-
-```bash
-$ pip install -r requirements.all.txt
-```
-
-### Download The Sample Dataset
-
-We recommend using this dataset to try the new feature.
-
-- **bash/zsh:**
-
-  ```bash
-  $ wget https://harkxa.sn.files.1drv.com/y4moeyNzEN8YAThWfZ3KqdgMTMOiw8bPpfla5qSeJoEXMydGUCpFU1bcQPDMUtzlbeZnP4len61rozjPqxn30PWHMe5696VvAP0vctH7LyA11Usc8571J30qCTFJ27UOOLEo8PMhxzUPWwYtJVEqyiiYkV0MSg9pGHT33aOFi8F2_L85gltRCL_QnxB1g2D6pPagaqRi9wyC6uxsgARbA1kbQ -O gcb_tokens.zip
-  unzip gcb_tokens.zip
-  ```
-
-- **PowerShell:**
-
-  ```powershell
-  Invoke-WebRequest https://harkxa.sn.files.1drv.com/y4moeyNzEN8YAThWfZ3KqdgMTMOiw8bPpfla5qSeJoEXMydGUCpFU1bcQPDMUtzlbeZnP4len61rozjPqxn30PWHMe5696VvAP0vctH7LyA11Usc8571J30qCTFJ27UOOLEo8PMhxzUPWwYtJVEqyiiYkV0MSg9pGHT33aOFi8F2_L85gltRCL_QnxB1g2D6pPagaqRi9wyC6uxsgARbA1kbQ -OutFile gcb_tokens.zip
-  Expand-Archive gcb_tokens.zip -DestinationPath .
-  ```
-
-### Running the Backend Server
-
-1. If you are using a virtual environment, be sure it is activated. Then run the following command:
-
-```bash
-~/time-travelling-visualizer$ conda activate venv
-(venv) ~/time-travelling-visualizer$ cd tool/server/
-(venv) ~/time-travelling-visualizer/tool/server$ python server.py
-```
-
-2. You should see an URL after the server is started (if you start this tool remotely, you may need to set up port forwarding in your IDE, e.g. VS Code). Visit it in your browser.
-3. Fill in the **Content Path** field the absolute path to the extracted dataset and click **Load Visualization Result**. If you see any warnings, click **OK** to proceed.
-4. For **Task Type** select **Umap-Neighborhood**.
-
-You should now see the visualized charts, and the terminal will display access logs.
+---
