@@ -5,7 +5,7 @@ import { loadHomePage } from './plotView';
 import path from 'path';
 import { MessageManager } from './messageManager';
 import { getBasicConfig } from '../control';
-import { calculateTrainingEvents, getAttributeResource, getImageData, getInfluenceSamples, getText } from '../communication/api';
+import { calculateTrainingEvents, getAttributeResource, getImageData, getInfluenceSamples, getText, getTextData } from '../communication/api';
 
 export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
     public abstract webview?: vscode.Webview;
@@ -198,6 +198,26 @@ export class RightViewProvider extends BaseViewProvider {
                                 ...msg.data,
                                 dataType: "image", //TODO: expand to text type
                                 data: image,
+                            },
+                            influenceSamples: IFSamplesRes['influence_samples'],
+                        }
+                    };
+                    MessageManager.sendToInfluenceView(msgToInfluenceView);
+                }
+                else if (type === 'InconsistentMovement') { 
+                    const IFSamplesRes: any = await getInfluenceSamples(config.contentPath, epoch, msg.data);
+                    let data1:any = await getTextData(config.contentPath, msg.data.index);
+                    let data2:any = await getTextData(config.contentPath, msg.data.index1);
+
+                    const msgToInfluenceView = {
+                        command: 'updateInfluenceSamples',
+                        data: {
+                            trainingEvent: {
+                                ...msg.data,
+                                dataType: "text",
+                                data: data1,
+                                dataType1: "text",
+                                data1: data2
                             },
                             influenceSamples: IFSamplesRes['influence_samples'],
                         }

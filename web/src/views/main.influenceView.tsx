@@ -31,6 +31,8 @@ function MessageHandler() {
             }
             console.log('Influence web view received message: ', message);
             if (message.command === 'init') {
+                const messageData = message.data;
+                setValue('dataType', messageData.dataType);
             }
             else if(message.command === 'updateInfluenceSamples') {
                 const messageData = message.data;

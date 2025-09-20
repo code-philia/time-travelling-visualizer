@@ -262,6 +262,11 @@ export function TrainingEventPanel() {
   useEffect(() => {
     if (isFocusMode) {
       const focusIndices = trainingEvents.map(event => event.index);
+      for(const event of trainingEvents) {
+        if(event.type === "InconsistentMovement" && event.index1 !== undefined) {
+          focusIndices.push(event.index1);
+        }
+      }
       notifyFocusModeSwitch(true, focusIndices);
     }
     else {
@@ -308,7 +313,7 @@ export function TrainingEventPanel() {
     );
     return (
       <CompactEventItem key={`${item.type}-${item.index}`} onClick={() => handleItemClick(item)} $selected={isSelected}>
-        <CompactEventIndex color={getTypeColor(item.type)}>#{item.index}</CompactEventIndex>
+        { item.type !== 'InconsistentMovement' && (<CompactEventIndex color={getTypeColor(item.type)}>#{item.index}</CompactEventIndex>)}
         <EventContent>
           {item.type === 'PredictionFlip' && (
             <>
@@ -342,17 +347,12 @@ export function TrainingEventPanel() {
           )}
           {item.type === 'InconsistentMovement' && (
             <>
-              <CompactEventLabel>Pair:</CompactEventLabel>
               <CompactEventValue>
                 #{item.index} vs #{item.index1}
               </CompactEventValue>
-              <CompactEventLabel>Exp:</CompactEventLabel>
+              <CompactEventLabel>Expected:</CompactEventLabel>
               <CompactEventValue $color={item.expectation === 'Aligned' ? '#52c41a' : '#ff4d4f'}>
                 {item.expectation}
-              </CompactEventValue>
-              <CompactEventLabel>Beh:</CompactEventLabel>
-              <CompactEventValue $color={item.behavior === 'Aligned' ? '#52c41a' : '#ff4d4f'}>
-                {item.behavior}
               </CompactEventValue>
             </>
           )}
