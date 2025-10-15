@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { FunctionalBlock } from './custom/basic-components';
 import { useDefaultStore } from '../state/state.rightView';
 import { notifyCalculateEvents, notifyFocusModeSwitch, notifyTracingInfluence, notifyTrainingEventClicked } from '../communication/viewMessage';
-import { TrainingEvent } from './types';
+import { TrainingEvent, InconsistentMovementEvent, PredictionFlipEvent, ConfidenceChangeEvent, SignificantMovementEvent } from './types';
 
 const { Panel } = Collapse;
 
@@ -116,7 +116,7 @@ const CompactEventItem = styled.div<{ $selected?: boolean }>`
   transition: all 0.3s ease;
   cursor: pointer;
   font-size: 11px;
-  margin-bottom: 2px;
+  margin-bottom: 0;
   background-color: ${props => props.$selected ? '#e6f7ff' : '#ffffff'};
   border: 1px solid ${props => props.$selected ? '#1890ff' : '#f0f0f0'};
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
@@ -160,6 +160,25 @@ const CompactEventValue = styled.span<{ $color?: string }>`
   font-weight: 600;
   font-size: 11px;
   color: ${props => props.$color || '#333'};
+`;
+
+const InconsistentRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+`;
+
+const InconsistentPair = styled.span`
+  font-size: 11px;
+  font-weight: 600;
+  color: #333;
+`;
+
+const InconsistentDescriptor = styled.span`
+  font-size: 10px;
+  font-weight: 500;
+  color: #595959;
 `;
 
 const EmptyState = styled.div`
@@ -210,6 +229,108 @@ const TracingButton = styled(Button)`
     transform: scale(0.98); /* 轻微的点击效果 */
   }
 `;
+
+const getTypeColor = (type: string) => {
+  switch (type) {
+    case 'PredictionFlip': return '#0077dd';
+    case 'ConfidenceChange': return '#ff7722';
+    case 'SignificantMovement': return '#00bbdd';
+    case 'InconsistentMovement': return '#ff6699';
+    default: return 'gray';
+  }
+};
+
+const getInconsistentDescription = (event: InconsistentMovementEvent) => {
+  if (event.expectation === 'Aligned' && event.behavior === 'NotAligned') {
+    return 'Abnormally Far Distance';
+  }
+  if (event.expectation === 'NotAligned' && event.behavior === 'Aligned') {
+    return 'Abnormally Close Proximity';
+  }
+  return 'Unexpected Movement Pattern';
+};
+
+type EventSubGroup = {
+  key: string;
+  title: string;
+  events: TrainingEvent[];
+};
+
+const getSubGroupsForType = (type: TrainingEvent['type'] | undefined, events: TrainingEvent[]): EventSubGroup[] => {
+  if (!type) {
+    return [];
+  }
+
+  switch (type) {
+    case 'PredictionFlip': {
+      const typedEvents = events as PredictionFlipEvent[];
+      return [
+        {
+          key: 'became-correct',
+          title: 'Became Correct Predictions',
+          events: typedEvents.filter(event => event.currCorrect),
+        },
+        {
+          key: 'turned-incorrect',
+          title: 'Turned Incorrect Predictions',
+          events: typedEvents.filter(event => event.prevCorrect && !event.currCorrect),
+        },
+        {
+          key: 'remained-incorrect',
+          title: 'Remained Incorrect Predictions',
+          events: typedEvents.filter(event => !event.prevCorrect && !event.currCorrect),
+        },
+      ].filter(group => group.events.length > 0);
+    }
+    case 'ConfidenceChange': {
+      const typedEvents = events as ConfidenceChangeEvent[];
+      return [
+        {
+          key: 'confidence-increase',
+          title: 'Confidence Increased',
+          events: typedEvents.filter(event => event.change > 0),
+        },
+        {
+          key: 'confidence-decrease',
+          title: 'Confidence Decreased',
+          events: typedEvents.filter(event => event.change < 0),
+        },
+      ].filter(group => group.events.length > 0);
+    }
+    case 'SignificantMovement': {
+      const typedEvents = events as SignificantMovementEvent[];
+      return [
+        {
+          key: 'moved-away',
+          title: 'Moved Away from Target',
+          events: typedEvents.filter(event => event.distanceChange > 0),
+        },
+        {
+          key: 'moved-toward',
+          title: 'Moved Toward Target',
+          events: typedEvents.filter(event => event.distanceChange < 0),
+        },
+      ].filter(group => group.events.length > 0);
+    }
+    case 'InconsistentMovement': {
+      const typedEvents = events as InconsistentMovementEvent[];
+      return [
+        {
+          key: 'abnormally-close',
+          title: 'Abnormally Close Pairs',
+          events: typedEvents.filter(event => event.expectation === 'NotAligned' && event.behavior === 'Aligned'),
+        },
+        {
+          key: 'abnormally-far',
+          title: 'Abnormally Far Pairs',
+          events: typedEvents.filter(event => event.expectation === 'Aligned' && event.behavior === 'NotAligned'),
+        },
+      ].filter(group => group.events.length > 0);
+    }
+    default:
+      return [];
+  }
+};
 
 export function TrainingEventPanel() {
   const [tempSelectedTypes, setTempSelectedTypes] = useState<string[]>([]);
@@ -296,8 +417,11 @@ export function TrainingEventPanel() {
         return false;
       }
     );
+    const itemKey = item.type === 'InconsistentMovement'
+      ? `${item.type}-${item.index}-${item.index1}`
+      : `${item.type}-${item.index}`;
     return (
-      <CompactEventItem key={`${item.type}-${item.index}`} onClick={() => handleItemClick(item)} $selected={isSelected}>
+      <CompactEventItem key={itemKey} onClick={() => handleItemClick(item)} $selected={isSelected}>
         { item.type !== 'InconsistentMovement' && (<CompactEventIndex color={getTypeColor(item.type)}>#{item.index}</CompactEventIndex>)}
         <EventContent>
           {item.type === 'PredictionFlip' && (
@@ -331,15 +455,10 @@ export function TrainingEventPanel() {
             </>
           )}
           {item.type === 'InconsistentMovement' && (
-            <>
-              <CompactEventValue>
-                #{item.index} vs #{item.index1}
-              </CompactEventValue>
-              <CompactEventLabel>Expected:</CompactEventLabel>
-              <CompactEventValue $color={item.expectation === 'Aligned' ? '#52c41a' : '#ff4d4f'}>
-                {item.expectation}
-              </CompactEventValue>
-            </>
+            <InconsistentRow>
+              <InconsistentPair>Pair: ({item.index}, {item.index1})</InconsistentPair>
+              <InconsistentDescriptor>{getInconsistentDescription(item)}</InconsistentDescriptor>
+            </InconsistentRow>
           )}
         </EventContent>
         <TracingButton 
@@ -351,25 +470,11 @@ export function TrainingEventPanel() {
     );
   };
 
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'PredictionFlip': return '#0077dd';
-      case 'ConfidenceChange': return '#ff7722';
-      case 'SignificantMovement': return '#00bbdd';
-      case 'InconsistentMovement': return '#ff6699';
-      default: return 'gray';
-    }
-  };
-
-  const getTypeLabel = (type: string) => {
-    switch (type) {
-      case 'PredictionFlip': return 'Prediction Flips';
-      case 'ConfidenceChange': return 'Confidence Changes';
-      case 'SignificantMovement': return 'Significant Movements';
-      case 'InconsistentMovement': return 'Inconsistent Movements';
-      default: return 'Events';
-    }
-  };
+  const activeType = selectedTypes[0] as 'PredictionFlip' | 'ConfidenceChange' | 'SignificantMovement' | 'InconsistentMovement' | undefined;
+  const activeEvents = activeType ? groupedEvents[activeType] ?? [] : [];
+  const subGroups = getSubGroupsForType(activeType, activeEvents);
+  const collapseDefaultKeys = subGroups.map(group => group.key);
+  const eventsCount = activeType ? activeEvents.length : trainingEvents.length;
 
   return (
     <div className="info-column" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -409,44 +514,44 @@ export function TrainingEventPanel() {
         <ResultContainer>
           <ResultHeader>
             Detected Training Events
-            <EventsCount>{trainingEvents.length} events</EventsCount>
+            <EventsCount>{eventsCount} events</EventsCount>
           </ResultHeader>
           <EventsContainer>
             {selectedTypes.length === 0 ? (
               <EmptyState>Click "Compute" to see results</EmptyState>
-            ) : trainingEvents.length === 0 ? (
+            ) : activeEvents.length === 0 ? (
+              <EmptyState>No events detected with current filters</EmptyState>
+            ) : subGroups.length === 0 ? (
               <EmptyState>No events detected with current filters</EmptyState>
             ) : (
               <Collapse
-                defaultActiveKey={selectedTypes}
+                defaultActiveKey={collapseDefaultKeys}
                 bordered={false}
                 style={{ background: 'transparent' }}
               >
-                {selectedTypes.map(type => (
-                  groupedEvents[type]?.length > 0 && (
-                    <CompactEventTypePanel
-                      key={type}
-                      header={
-                        <div style={{ display: 'flex', alignItems: 'center' }}>
-                          <Tag 
-                            color={getTypeColor(type)} 
-                            style={{ 
-                              marginRight: 6, 
-                              fontSize: '10px', 
-                              lineHeight: '16px',
-                              padding: '0 4px',
-                              minWidth: '24px'
-                            }}
-                          >
-                            {groupedEvents[type].length}
-                          </Tag>
-                          <span style={{ fontSize: '11px' }}>{getTypeLabel(type)}</span>
-                        </div>
-                      }
-                    >
-                      {groupedEvents[type].map(item => renderEventItem(item))}
-                    </CompactEventTypePanel>
-                  )
+                {subGroups.map(group => (
+                  <CompactEventTypePanel
+                    key={group.key}
+                    header={
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <Tag
+                          color={activeType ? getTypeColor(activeType) : undefined}
+                          style={{
+                            marginRight: 6,
+                            fontSize: '10px',
+                            lineHeight: '16px',
+                            padding: '0 4px',
+                            minWidth: '24px'
+                          }}
+                        >
+                          {group.events.length}
+                        </Tag>
+                        <span style={{ fontSize: '11px' }}>{group.title}</span>
+                      </div>
+                    }
+                  >
+                    {group.events.map(item => renderEventItem(item))}
+                  </CompactEventTypePanel>
                 ))}
               </Collapse>
             )}
