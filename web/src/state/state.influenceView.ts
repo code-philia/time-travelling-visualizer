@@ -4,18 +4,7 @@ import { shallow } from "zustand/shallow";
 import { useStoreWithEqualityFn } from "zustand/traditional";
 import { BUILD_CONSTANTS } from "../constants";
 import { subscribeWithSelector } from "zustand/middleware";
-import { TrainingEvent } from "../component/types";
-
-export type InfluenceSample = {
-    index: number;
-    label?: string;
-    positive: boolean; // true for positive influence, false for negative influence
-    score: number; // influence score
-    data?: string; // image data or text data
-    dataType?: 'image' | 'text';
-    docData?: string; // document text data for text pair
-    codeData?: string; // code text data for text pair
-}
+import { TrainingEvent, InfluenceSample } from "../component/types";
 
 type BaseMutableGlobalStore = {
     dataType: 'Image' | 'Text';
@@ -79,11 +68,20 @@ type WithDefaultValueSetter = {
     setValue: DefaultValueSetter<GlobalStore>
 };
 
-type GlobalStore = MutableGlobalStore & WithDefaultValueSetter;
+type WithClear = {
+  clear: () => void;
+};
+
+type GlobalStore = MutableGlobalStore & WithDefaultValueSetter & WithClear;
 
 const useGlobalStore = create<GlobalStore>()(subscribeWithSelector((set) => ({
     setValue: createDefaultValueSetter(set),
-    ...createMutableTypes(configuredMutableGlobalStore, set)
+    ...createMutableTypes(configuredMutableGlobalStore, set),
+    clear: () => {
+      const newInitialState = { ...initMutableGlobalStore };
+      set(newInitialState);
+      console.log('Global store has been cleared.');
+    },
 })));    // don't use "as xxx" here so that we can check
 
 
