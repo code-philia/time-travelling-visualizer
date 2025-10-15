@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { Tag, Checkbox, Form, Button, Collapse } from 'antd';
+import { Tag, Form, Button, Collapse, Select } from 'antd';
 import { useEffect, useState } from 'react';
 import { FunctionalBlock } from './custom/basic-components';
 import { useDefaultStore } from '../state/state.rightView';
@@ -28,40 +28,25 @@ const FormHeader = styled.div`
   margin-bottom: 8px;
 `;
 
-const CompactCheckboxGroup = styled(Checkbox.Group)`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 10px;
+const CompactSelect = styled(Select)`
+  width: 100%;
 
-  .ant-checkbox-wrapper {
+  .ant-select-selector {
+    border-radius: 3px !important;
+    height: 28px !important;
     display: flex;
     align-items: center;
-    padding: 2px 6px;
-    border-radius: 3px;
+    padding: 0 8px !important;
     font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-    background-color: #ffffff;
-    border: 1px solid #d9d9d9;
-    
-    &:hover {
-      background-color: #f5f5f5;
-      border-color: #1890ff;
-    }
   }
 
-  .ant-checkbox-checked .ant-checkbox-inner {
-    background-color: #1890ff;
-    border-color: #1890ff;
-    width: 12px;
-    height: 12px;
+  .ant-select-selection-item,
+  .ant-select-selection-placeholder {
+    font-size: 12px;
   }
-  
-  .ant-checkbox-inner {
-    width: 12px;
-    height: 12px;
+
+  .ant-select-arrow {
+    font-size: 10px;
   }
 `;
 
@@ -392,15 +377,23 @@ export function TrainingEventPanel() {
         <CompactForm>
           <FormHeader>Please select training events to show</FormHeader>
           <Form.Item style={{ marginBottom: 10 }}>
-            <CompactCheckboxGroup
+            <CompactSelect
+              placeholder="Select a training event type"
               options={[
                 { label: 'Prediction Flip', value: 'PredictionFlip' },
                 { label: 'Confidence Change', value: 'ConfidenceChange' },
                 { label: 'Significant Movement', value: 'SignificantMovement' },
                 { label: 'Inconsistent Movement', value: 'InconsistentMovement' },
               ]}
-              onChange={(checkedValues) => setTempSelectedTypes(checkedValues as string[])}
-              value={tempSelectedTypes}
+              allowClear
+              value={tempSelectedTypes[0] ?? undefined}
+              onChange={(value) => {
+                if (!value) {
+                  setTempSelectedTypes([]);
+                  return;
+                }
+                setTempSelectedTypes([value as string]);
+              }}
             />
           </Form.Item>
           <div style={{ display: 'flex', gap: '8px' }}>
