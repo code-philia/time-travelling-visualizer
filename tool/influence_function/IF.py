@@ -1,11 +1,13 @@
-from influence_function.utils import grad_loss, calc_loss
-import torchvision
-import torchvision.transforms as transforms
+import random
+
+from tqdm import tqdm
+from influence_function.utils import grad_loss, grad_pair_loss, calc_loss, calc_pair_loss
+from influence_function.ContrastiveLoss import ContrastiveLossWrapper
+from influence_function.CustomEncoderModel import CustomEncoderModel
 import torch
-import torchvision.models as models
-from typing import Callable, List
+from typing import Callable, List, Tuple
 from torch import nn
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
 
 class BaseInfluenceFunction():
     def __init__(
@@ -284,34 +286,188 @@ class EmpiricalIF(BaseInfluenceFunction):
         least_influential = evaluate_reverse(bottomk_indices)
         
         return most_influential, least_influential
+
+class PairWiseEmpiricalIF:
+    def __init__(
+        self,
+        dl_train: DataLoader,
+        model: nn.Module,
+        param_filter_fn: Callable[[str, nn.Parameter], bool] = None,
+    ):
+        self.dl_train = dl_train
+        self.model = model
+        self.criterion = ContrastiveLossWrapper()
+        self.param_filter_fn = param_filter_fn
+        self.train_samples = list(dl_train.dataset)
+        self.num_train_samples = len(self.train_samples)
+
+    @staticmethod
+    def get_filtered_param_snapshot(
+        model: nn.Module,
+        param_filter_fn: Callable[[str, nn.Parameter], bool] = None
+    ) -> List[torch.Tensor]:
+        return [p.detach().clone() for n, p in model.named_parameters() if (param_filter_fn is None or param_filter_fn(n, p))]
+
+    @staticmethod
+    def restore_params(
+        model: nn.Module,
+        param_snapshot: List[torch.Tensor],
+        param_filter_fn: Callable[[str, nn.Parameter], bool] = None
+    ):
+        idx = 0
+        for n, p in model.named_parameters():
+            if param_filter_fn is None or param_filter_fn(n, p):
+                p.data.copy_(param_snapshot[idx].to(p.device))
+                idx += 1
+
+    @staticmethod
+    def apply_gradient_update(
+        model: nn.Module,
+        grad_tensors: List[torch.Tensor],
+        param_filter_fn: Callable[[str, nn.Parameter], bool],
+        lr: float
+    ):
+        idx = 0
+        for n, p in model.named_parameters():
+            if param_filter_fn is None or param_filter_fn(n, p):
+                grad_tensor = grad_tensors[idx].to(p.device)
+                p.data -= lr * grad_tensor
+                idx += 1
+
+    def query_influence(
+        self,
+        query_doc: torch.Tensor,
+        query_code: torch.Tensor,
+        query_is_positive: bool, # True for anomaly 1, False for anomaly 2
+        lr: float = 1e-2,
+        num_negative_samples: int = 16
+    ) -> List[Tuple[int, int, float, str]]:
+        """
+        计算所有训练样本对查询异常现象的影响。
+        每个训练样本i会采样num_negative_samples个负样本j。
+        返回结果: (doc_index, code_index, influence_value, "positive" or "negative")
+        """
+        # 确保输入是batch形式
+        query_doc = query_doc.unsqueeze(0) if query_doc.dim() == 1 else query_doc
+        query_code = query_code.unsqueeze(0) if query_code.dim() == 1 else query_code
         
+        # 1. 计算查询对的“修复”梯度
+        print("计算查询对的梯度...")
+        query_grad = grad_pair_loss(
+            self.model, self.criterion, query_doc, query_code, query_is_positive, self.param_filter_fn
+        )
+
+        # 2. 备份原始模型权重
+        before_update = self.get_filtered_param_snapshot(self.model, self.param_filter_fn)
+
+        # 3. 计算所有训练样本在扰动前后的“损失”变化
+        all_influences = []
+
+        # --- 正样本对 ---
+        # 扰动前的损失
+        print("计算训练样本（正）的原始损失...")
+        positive_losses_before = calc_pair_loss(self.model, self.criterion, self.train_samples, is_positive=True)
+
+        # --- 负样本对 ---
+        # 为每个doc_i采样32个负样本code_j
+        print(f"为每个训练样本采样 {num_negative_samples} 个负样本...")
+        negative_sample_info = []
+        possible_j_indices = list(range(self.num_train_samples))
+        for i in range(self.num_train_samples):
+            # 从所有j中排除i
+            # 为了效率，我们不为每个i都新建列表
+            # random.sample可以处理集合，但为了保持索引，我们用以下方式
+            sampled_j_indices = random.sample([idx for idx in possible_j_indices if idx != i], num_negative_samples)
+            doc_i = self.train_samples[i][0]
+            for j in sampled_j_indices:
+                code_j = self.train_samples[j][1]
+                negative_sample_info.append({'i': i, 'j': j, 'data': (doc_i, code_j)})
         
-if __name__ == '__main__':
+        negative_samples_data = [info['data'] for info in negative_sample_info]
+        
+        # 扰动前的损失
+        print("计算训练样本（负）的原始损失...")
+        negative_losses_before = calc_pair_loss(self.model, self.criterion, negative_samples_data, is_positive=False)
 
-    # Define a transform to normalize the data
-    transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-    ])
+        # --- 模拟梯度下降 ---
+        print("模拟梯度下降...")
+        self.apply_gradient_update(self.model, query_grad, self.param_filter_fn, lr=lr)
+        positive_losses_after_descent = calc_pair_loss(self.model, self.criterion, self.train_samples, is_positive=True)
+        negative_losses_after_descent = calc_pair_loss(self.model, self.criterion, negative_samples_data, is_positive=False)
+        self.restore_params(self.model, before_update, self.param_filter_fn)
 
-    # Load the training dataset
-    trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform)
-    trainloader = torch.utils.data.DataLoader(trainset, batch_size=128, shuffle=False, num_workers=2)
+        # --- 模拟梯度上升 ---
+        print("模拟梯度上升...")
+        self.apply_gradient_update(self.model, query_grad, self.param_filter_fn, lr=-lr)
+        positive_losses_after_ascent = calc_pair_loss(self.model, self.criterion, self.train_samples, is_positive=True)
+        negative_losses_after_ascent = calc_pair_loss(self.model, self.criterion, negative_samples_data, is_positive=False)
+        self.restore_params(self.model, before_update, self.param_filter_fn)
+        
+        # 4. 计算影响值
+        print("计算影响值...")
+        query_loss_before = calc_pair_loss(self.model, self.criterion, [(query_doc, query_code)], query_is_positive)[0]
+        # 重新应用梯度下降以计算查询损失变化
+        self.apply_gradient_update(self.model, query_grad, self.param_filter_fn, lr=lr)
+        query_loss_after_descent = calc_pair_loss(self.model, self.criterion, [(query_doc, query_code)], query_is_positive)[0]
+        self.restore_params(self.model, before_update, self.param_filter_fn)
+        # 重新应用梯度上升以计算查询损失变化
+        self.apply_gradient_update(self.model, query_grad, self.param_filter_fn, lr=-lr)
+        query_loss_after_ascent = calc_pair_loss(self.model, self.criterion, [(query_doc, query_code)], query_is_positive)[0]
+        self.restore_params(self.model, before_update, self.param_filter_fn)
+        
+        query_loss_change_descent = query_loss_after_descent - query_loss_before
+        query_loss_change_ascent = query_loss_after_ascent - query_loss_before
 
-    # Load the test dataset
-    testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform)
-    testloader = torch.utils.data.DataLoader(testset, batch_size=1, shuffle=False, num_workers=2)
+        # --- 整合正样本影响 ---
+        for i in range(self.num_train_samples):
+            pos_loss_change_descent = positive_losses_after_descent[i] - positive_losses_before[i]
+            pos_loss_change_ascent = positive_losses_after_ascent[i] - positive_losses_before[i]
+            influence_pos = (query_loss_change_descent * pos_loss_change_descent + 
+                             query_loss_change_ascent * pos_loss_change_ascent) / 2
+            # 返回 (doc_idx, code_idx, influence, type)
+            all_influences.append((i, i, influence_pos, "positive"))
 
-    resnet18 = models.resnet18(pretrained=True)
-    num_classes = 10  # CIFAR-10 has 10 classes
-    resnet18.fc = nn.Linear(resnet18.fc.in_features, num_classes)  # Replace the last layer
+        # --- 整合负样本影响 ---
+        for idx, info in enumerate(negative_sample_info):
+            i, j = info['i'], info['j']
+            neg_loss_change_descent = negative_losses_after_descent[idx] - negative_losses_before[idx]
+            neg_loss_change_ascent = negative_losses_after_ascent[idx] - negative_losses_before[idx]
+            influence_neg = (query_loss_change_descent * neg_loss_change_descent +
+                             query_loss_change_ascent * neg_loss_change_ascent) / 2
+            # 返回 (doc_idx, code_idx, influence, type)
+            all_influences.append((i, j, influence_neg, "negative"))
+            
+        # 排序并返回，根据影响力值（下标2）
+        all_influences.sort(key=lambda x: x[2], reverse=True)
+        return all_influences
 
-    IF = EmpiricalIF(dl_train=trainloader,
-                               model=resnet18,
-                               param_filter_fn=lambda name, param: 'fc' in name,
-                               criterion=nn.CrossEntropyLoss(reduction="none"))
+        
+# if __name__ == '__main__':
+
+#     # Define a transform to normalize the data
+#     transform = transforms.Compose([
+#         transforms.ToTensor(),
+#         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+#     ])
+
+#     # Load the training dataset
+#     trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform)
+#     trainloader = torch.utils.data.DataLoader(trainset, batch_size=128, shuffle=False, num_workers=2)
+
+#     # Load the test dataset
+#     testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform)
+#     testloader = torch.utils.data.DataLoader(testset, batch_size=1, shuffle=False, num_workers=2)
+
+#     resnet18 = models.resnet18(pretrained=True)
+#     num_classes = 10  # CIFAR-10 has 10 classes
+#     resnet18.fc = nn.Linear(resnet18.fc.in_features, num_classes)  # Replace the last layer
+
+#     IF = EmpiricalIF(dl_train=trainloader,
+#                                model=resnet18,
+#                                param_filter_fn=lambda name, param: 'fc' in name,
+#                                criterion=nn.CrossEntropyLoss(reduction="none"))
 
 
-    for test_sample in testloader:
-        test_input, test_target = test_sample
-        IF_scores = IF.query_influence(test_input, test_target)
+#     for test_sample in testloader:
+#         test_input, test_target = test_sample
+#         IF_scores = IF.query_influence(test_input, test_target)
