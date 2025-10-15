@@ -46,14 +46,9 @@ export function updateProjection(contentPath: string, visMethod: string,
     return basicUnsafePostWithJsonResponse('/updateProjection', data);
 }
 
-export function isUmapProjectionResult() {
-
-}
-
 export async function fetchTimelineData(contentPath: string) {
     return basicUnsafePostWithJsonResponse(`/get_itertaion_structure?path=${contentPath}&method=Trustvis&setting=normal`, {});
 }
-
 
 export async function fetchUmapProjectionData(contentPath: string, epoch: number, options: { method?: string, host?: string }): Promise<BriefProjectionResult> {
     const defaultOptions = {
@@ -78,24 +73,6 @@ export function visualizeTrainingProcess(contentPath: string, options?: { method
         "vis_method": combinedOptions.method
     };
     return basicUnsafePostWithJsonResponse('/visualizeTrainingProcess', data, options);
-}
-
-function getOriginalData(contentPath: string, dataType: string, index: number, iteration: number) {
-    if (index === null) {
-        return;
-    }
-    const data = {
-        params: {
-            index: index,
-            path: contentPath,
-            cus_path: "",
-            username: 'admin',
-            iteration: iteration
-        },
-        method: 'GET',
-        mode: 'cors'
-    };
-    return Fetch(`sprite${dataType}`, data);
 }
 
 export function getBgimg(contentPath: string, visMethod: string, epoch: number, options?: { host?: string }) {
