@@ -7,6 +7,35 @@ import { MessageManager } from './messageManager';
 import { getBasicConfig } from '../control';
 import { calculateTrainingEvents, getAttributeResource, getImageData, getInfluenceSamples, getText, getTextData } from '../communication/api';
 
+async function runWithTimedNotification<T>(title: string, progressText: string, operation: () => Promise<T>): Promise<T> {
+    return vscode.window.withProgress(
+        {
+            location: vscode.ProgressLocation.Notification,
+            title,
+            cancellable: false,
+        },
+        async progress => {
+            const start = Date.now();
+            const updateMessage = () => {
+                const elapsedSeconds = Math.floor((Date.now() - start) / 1000);
+                progress.report({ message: `${progressText} (${elapsedSeconds} s elapsed)` });
+            };
+
+            updateMessage();
+            const interval = setInterval(updateMessage, 1000);
+
+            try {
+                const result = await operation();
+                const elapsedSeconds = Math.floor((Date.now() - start) / 1000);
+                progress.report({ message: `Completed after ${elapsedSeconds} s` });
+                return result;
+            } finally {
+                clearInterval(interval);
+            }
+        }
+    );
+}
+
 export abstract class BaseViewProvider implements vscode.WebviewViewProvider {
     public abstract webview?: vscode.Webview;
 
@@ -187,39 +216,57 @@ export class RightViewProvider extends BaseViewProvider {
                 }
                 const epoch = msg.epoch;
                 const type = msg.data.type; // type can be 'PredictionFlip' ...
-                if (type === 'PredictionFlip' || type === 'ConfidenceChange') {
-                    const IFSamplesRes: any = await getInfluenceSamples(config.contentPath, epoch, msg.data);
-                    const image: any = await getImageData(config.contentPath, msg.data.index);
-                    
-                    const msgToInfluenceView = {
-                        command: 'updateInfluenceSamples',
-                        data: {
-                            trainingEvent: {
-                                ...msg.data,
-                                data: image,
-                            },
-                            influenceSamples: IFSamplesRes['influence_samples'],
-                        }
-                    };
-                    MessageManager.sendToInfluenceView(msgToInfluenceView);
-                }
-                else if (type === 'InconsistentMovement') { 
-                    const IFSamplesRes: any = await getInfluenceSamples(config.contentPath, epoch, msg.data);
-                    let data1:any = await getTextData(config.contentPath, msg.data.index);
-                    let data2:any = await getTextData(config.contentPath, msg.data.index1);
+                try {
+                    await runWithTimedNotification(
+                        'Tracing influence samples',
+                        'Waiting for backend response',
+                        async () => {
+                            const IFSamplesRes: any = await getInfluenceSamples(config.contentPath, epoch, msg.data);
+                            const influenceSamples = IFSamplesRes['influence_samples'];
 
-                    const msgToInfluenceView = {
-                        command: 'updateInfluenceSamples',
-                        data: {
-                            trainingEvent: {
-                                ...msg.data,
-                                data: data1,
-                                data1: data2
-                            },
-                            influenceSamples: IFSamplesRes['influence_samples'],
+                            if (type === 'PredictionFlip' || type === 'ConfidenceChange') {
+                                const image: any = await getImageData(config.contentPath, msg.data.index);
+
+                                const msgToInfluenceView = {
+                                    command: 'updateInfluenceSamples',
+                                    data: {
+                                        trainingEvent: {
+                                            ...msg.data,
+                                            data: image,
+                                        },
+                                        influenceSamples,
+                                    }
+                                };
+                                MessageManager.sendToInfluenceView(msgToInfluenceView);
+                            }
+                            else if (type === 'InconsistentMovement') { 
+                                const [data1, data2]: any[] = await Promise.all([
+                                    getTextData(config.contentPath, msg.data.index),
+                                    getTextData(config.contentPath, msg.data.index1),
+                                ]);
+
+                                const msgToInfluenceView = {
+                                    command: 'updateInfluenceSamples',
+                                    data: {
+                                        trainingEvent: {
+                                            ...msg.data,
+                                            data: data1,
+                                            data1: data2
+                                        },
+                                        influenceSamples,
+                                    }
+                                };
+                                MessageManager.sendToInfluenceView(msgToInfluenceView);
+                            }
+                            else {
+                                console.warn(`Unknown tracingInfluence type: ${type}`);
+                            }
                         }
-                    };
-                    MessageManager.sendToInfluenceView(msgToInfluenceView);
+                    );
+                } catch (error) {
+                    console.error('Failed to trace influence samples', error);
+                    const message = error instanceof Error ? error.message : String(error);
+                    vscode.window.showErrorMessage(`Failed to trace influence samples: ${message}`);
                 }
             }
             else if (msg.command === 'trainingEventClicked') {
@@ -241,14 +288,26 @@ export class RightViewProvider extends BaseViewProvider {
                     return;
                 }
 
-                const trainingEventsRes: any = await calculateTrainingEvents(config.contentPath, epoch, eventTypes);
-                const msgToFunctionView = {
-                    command: 'updateCalculatedEvents',
-                    data: {
-                        trainingEvents: trainingEventsRes['training_events'],
-                    }
-                };
-                MessageManager.sendToRightView(msgToFunctionView);
+                try {
+                    await runWithTimedNotification(
+                        'Calculating training events',
+                        'Waiting for backend response',
+                        async () => {
+                            const trainingEventsRes: any = await calculateTrainingEvents(config.contentPath, epoch, eventTypes);
+                            const msgToFunctionView = {
+                                command: 'updateCalculatedEvents',
+                                data: {
+                                    trainingEvents: trainingEventsRes['training_events'],
+                                }
+                            };
+                            MessageManager.sendToRightView(msgToFunctionView);
+                        }
+                    );
+                } catch (error) {
+                    console.error('Failed to calculate training events', error);
+                    const message = error instanceof Error ? error.message : String(error);
+                    vscode.window.showErrorMessage(`Failed to calculate training events: ${message}`);
+                }
             }
         });
     }
