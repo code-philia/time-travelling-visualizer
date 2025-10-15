@@ -110,7 +110,7 @@ function FunctionViewPanels() {
 }
 
 function MessageHandler() {
-    const { setValue } = useDefaultStore(['setValue']);
+    const { setValue, clear  } = useDefaultStore(['setValue', 'clear']);
     const allEpochDataCopy: Record<number, EpochData> = {};
 
     useEffect(() => {
@@ -121,7 +121,13 @@ function MessageHandler() {
                 return;
             }
             console.log('Function web view received message: ', message);
-            if (message.command === 'init') {
+            if (message.comment === 'clear') { 
+                clear();
+                for (const key in allEpochDataCopy) {
+                    delete allEpochDataCopy[key];
+                }
+            }
+            else if (message.command === 'init') {
                 const messageData = message.data;
                 const colorDict = new Map<number, [number, number, number]>();
                 messageData.colorList.forEach((c: [number,number,number], i: number) => {

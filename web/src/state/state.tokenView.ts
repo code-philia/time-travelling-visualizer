@@ -85,11 +85,21 @@ type WithDefaultValueSetter = {
     setValue: DefaultValueSetter<GlobalStore>
 };
 
-type GlobalStore = MutableGlobalStore & WithDefaultValueSetter;
+type WithClear = {
+  clear: () => void;
+};
+
+
+type GlobalStore = MutableGlobalStore & WithDefaultValueSetter & WithClear;
 
 const useGlobalStore = create<GlobalStore>()(subscribeWithSelector((set) => ({
     setValue: createDefaultValueSetter(set),
-    ...createMutableTypes(configuredMutableGlobalStore, set)
+    ...createMutableTypes(configuredMutableGlobalStore, set),
+    clear: () => {
+      const newInitialState = { ...initMutableGlobalStore };
+      set(newInitialState);
+      console.log('Global store has been cleared.');
+    },
 })));    // don't use "as xxx" here so that we can check
 
 

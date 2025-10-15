@@ -333,6 +333,14 @@ export async function loadVisualization(forceReconfig: boolean = false): Promise
 		}
 	}
 
+	// claer cache in each view
+	const clearMessage = {command: 'clear'};
+	MessageManager.sendToPlotView(clearMessage);
+	MessageManager.sendToRightView(clearMessage);
+	MessageManager.sendToTokenView(clearMessage);
+	MessageManager.sendToInfluenceView(clearMessage);
+
+
 	// 2. check the configuration
 	const config = await getConfig(forceReconfig);
 	if (!config) {

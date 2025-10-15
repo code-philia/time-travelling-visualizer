@@ -20,7 +20,7 @@ function AppInfluenceViewOnly() {
 }
 
 function MessageHandler() {
-    const { setValue } = useDefaultStore(['setValue']);
+    const { setValue, clear  } = useDefaultStore(['setValue', 'clear']);
 
     useEffect(() => {
         const handleMessage = (event: MessageEvent) => {
@@ -30,7 +30,10 @@ function MessageHandler() {
                 return;
             }
             console.log('Influence web view received message: ', message);
-            if (message.command === 'init') {
+            if (message.comment === 'clear') {
+                clear();
+            }
+            else if (message.command === 'init') {
                 const messageData = message.data;
                 setValue('dataType', messageData.dataType);
             }

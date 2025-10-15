@@ -20,7 +20,7 @@ function AppTokenViewOnly() {
 }
 
 function MessageHandler() {
-    const { setValue } = useDefaultStore(['setValue']);
+    const { setValue, clear } = useDefaultStore(['setValue', 'clear']);
     const allNeighborsCopy: Record<number, Neighborhood> = {};
 
     useEffect(() => {
@@ -31,7 +31,10 @@ function MessageHandler() {
                 return;
             }
             console.log('token web received message:', message);
-            if (message.command === 'init') {
+            if (message.comment === 'clear') {
+                clear();
+            }
+            else if (message.command === 'init') {
                 const messageData = message.data;
                 setValue('labels', messageData.labels);
                 setValue('tokenList', messageData.tokenList);
