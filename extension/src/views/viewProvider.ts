@@ -196,7 +196,6 @@ export class RightViewProvider extends BaseViewProvider {
                         data: {
                             trainingEvent: {
                                 ...msg.data,
-                                dataType: "image", //TODO: expand to text type
                                 data: image,
                             },
                             influenceSamples: IFSamplesRes['influence_samples'],
@@ -214,9 +213,7 @@ export class RightViewProvider extends BaseViewProvider {
                         data: {
                             trainingEvent: {
                                 ...msg.data,
-                                dataType: "text",
                                 data: data1,
-                                dataType1: "text",
                                 data1: data2
                             },
                             influenceSamples: IFSamplesRes['influence_samples'],

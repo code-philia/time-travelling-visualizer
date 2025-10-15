@@ -15,7 +15,6 @@ export type PredictionFlipEvent = {
   influenceTarget: string;
   type: 'PredictionFlip';
   data?: string; // image data or text data
-  dataType?: 'image' | 'text';
 };
 
 export type ConfidenceChangeEvent = {
@@ -27,7 +26,6 @@ export type ConfidenceChangeEvent = {
   influenceTarget: string;
   type: 'ConfidenceChange';
   data?: string; // image data or text data
-  dataType?: 'image' | 'text';
 };
 
 export type SignificantMovementEvent = {
@@ -38,7 +36,6 @@ export type SignificantMovementEvent = {
   movementType: 'closer' | 'farther';
   type: 'SignificantMovement';
   data?: string; // image data or text data
-  dataType?: 'image' | 'text';
 };
 
 export type InconsistentMovementEvent = {
@@ -48,9 +45,7 @@ export type InconsistentMovementEvent = {
   behavior: "Aligned" | "NotAligned";
   type: 'InconsistentMovement';
   data?: string; // image data or text data
-  dataType?: 'image' | 'text';
   data1?: string; // image data or text data for index1
-  dataType1?: 'image' | 'text';
 };
 
 export type TrainingEvent = 
@@ -58,3 +53,25 @@ export type TrainingEvent =
   | ConfidenceChangeEvent 
   | SignificantMovementEvent 
   | InconsistentMovementEvent;
+
+
+/*
+ Influence Sample Types
+*/
+export type SampleWiseInfluence = {
+  index: number;
+  label: string;
+  score: number;
+  data?: string;
+};
+
+export type PairWiseInfluence = {
+  index: number;
+  index1: number;
+  score: number;
+  type: 'positive' | 'negative';
+  data?: string;
+  data1?: string;
+};
+
+export type InfluenceSample = SampleWiseInfluence | PairWiseInfluence;
