@@ -402,10 +402,14 @@ def get_influence_samples():
     num_samples = int(req['num_samples'])
 
     try:
-        if training_event['type'] == 'InconsistentMovement':
-            influence_samples = calculate_influence_samples_temp(content_path, epoch, training_event, num_samples)
-        else:
-            influence_samples = calculate_influence_samples(content_path, epoch, training_event, num_samples)
+        if training_event['type'] == 'InconsistentMovement': 
+            # attribution of closeness or separation between a pair of samples
+            print("Tracing InconsistentMovement")
+            influence_samples = movement_attribution(content_path, epoch, training_event, num_samples)
+        else: 
+            # atribution of a particular prediction
+            print("Tracing PredictionError")
+            influence_samples = prediction_attribution(content_path, epoch, training_event, num_samples)
         
         result = jsonify({
             "influence_samples": influence_samples,
