@@ -21,7 +21,7 @@ function AppPlotViewOnly() {
 }
 
 function MessageHandler() {
-    const { setValue } = useDefaultStore(['setValue']);
+    const { setValue, clear } = useDefaultStore(['setValue', 'clear']);
     const allEpochDataCopy: Record<number, EpochData> = {};
 
     const handleMessage =(event: MessageEvent) => {
@@ -31,7 +31,13 @@ function MessageHandler() {
             return;
         }
         console.log("plot web received message:", message);
-        if (message.command === 'initPlotSettings') {
+        if (message.comment === 'clear') {
+            clear();
+            for (const key in allEpochDataCopy) {
+                delete allEpochDataCopy[key];
+            }
+        }
+        else if (message.command === 'initPlotSettings') {
             const messageData = message.data;
             setValue('showIndex', messageData.showIndex);
             setValue('showLabel', messageData.showLabel);
