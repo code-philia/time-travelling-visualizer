@@ -2,7 +2,7 @@ import io
 import math
 import random
 from sklearn.neighbors import NearestNeighbors
-import tqdm
+from tqdm import tqdm
 import os
 import json
 import re
@@ -15,12 +15,15 @@ import matplotlib.pyplot as plt
 import torch
 import torchvision
 import torchvision.transforms as transforms
+from torch.utils.data import Dataset, DataLoader
+from transformers import RobertaTokenizer
 
 sys.path.append('..')
 sys.path.append('../visualize')
 from visualize.data_provider import DataProvider
 from visualize.training_event import TrainingEventDetector
-from influence_function.IF import EmpiricalIF
+from influence_function.IF import EmpiricalIF, PairWiseEmpiricalIF
+from influence_function.CustomEncoderModel import CustomEncoderModel
 
 # Func: infer available epochs files, return a list of available epochs
 def infer_epoch_structure(content_path):
@@ -444,7 +447,16 @@ def calculate_visualize_metrics(content_path, vis_id, epoch):
     }
 
 
-def calculate_influence_samples(content_path, epoch, training_event, num_samples=5):
+"""
+Using influence functions to find the most influential training samples
+
+TODO: these two functions have many temp solutions, generalize them according to the target trainging process
+    - dateset
+    - model
+    - criterion / loss
+    - layer to consider
+"""
+def prediction_attribution(content_path, epoch, training_event, num_samples=10):
     # define and load subject model
     sys.path.append(os.path.join(content_path, "scripts"))
     import model as subject_model
@@ -492,7 +504,6 @@ def calculate_influence_samples(content_path, epoch, training_event, num_samples
     
     # Get the indices of the top num_samples maximum and minimum scores
     max_indices = np.argsort(IF_scores)[-num_samples:][::-1]
-    min_indices = np.argsort(IF_scores)[:num_samples]
 
     labels = load_single_attribute(content_path, epoch, 'label')
 
@@ -502,65 +513,85 @@ def calculate_influence_samples(content_path, epoch, training_event, num_samples
             "index": index,
             "label": classes[labels[index]],
             "score": float(IF_scores[index]),
-            "positive": True,
-            "data": "data:image/png;base64,"+load_one_image(content_path, index)
-        })
-        
-    for index in min_indices.tolist():
-        influence_samples.append({
-            "index": index,
-            "label": classes[labels[index]],
-            "score": float(IF_scores[index]),
-            "positive": False,
             "data": "data:image/png;base64,"+load_one_image(content_path, index)
         })
    
     return influence_samples
 
-def calculate_influence_samples_temp(content_path, epoch, training_event, num_samples=5):
-    influence_samples = []
-    noise_path = os.path.join(content_path,  'noise.json')
-    with open(noise_path, 'r') as f:
-        noise_data = json.load(f)
+class CodeSearchNetDataset(Dataset):
+    def __init__(self, file_path, tokenizer, sample_limit=None):
+        self.samples = []
+        count = 0
+        with open(file_path, 'r', encoding='utf-8') as f:
+            for line in tqdm(f, desc="读取数据集"):
+                line_data = json.loads(line)
+                docstring_tensor = tokenizer(line_data['docstring'], padding='max_length', truncation=True, max_length=256, return_tensors='pt')['input_ids'].squeeze(0)
+                code_tensor = tokenizer(line_data['code'], padding='max_length', truncation=True, max_length=256, return_tensors='pt')['input_ids'].squeeze(0)
+                self.samples.append((docstring_tensor, code_tensor))
+                count += 1
+                if sample_limit and count > sample_limit:
+                    break
+
+    def __len__(self):
+        return len(self.samples)
+
+    def __getitem__(self, idx):
+        return self.samples[idx]
         
+
+def movement_attribution(content_path, epoch, training_event, num_samples=10):
+    # define and load subject model
+    device = torch.device("cuda:3" if torch.cuda.is_available() else "cpu")
+    tokenizer = RobertaTokenizer.from_pretrained('/home/kwy/models/codebert-base')  
+    subject_model_location = os.path.join(content_path, "epochs", f"epoch_{epoch}", "model.pth")
+    
+    model = CustomEncoderModel(
+        vocab_size=tokenizer.vocab_size,
+        embed_dim=768,
+        max_len=256
+    )
+    model.load_state_dict(torch.load(subject_model_location, map_location=torch.device("cpu")))
+    model.to(device)
+    model.eval()
+    
+    # construct dataloader
+    train_dataset = CodeSearchNetDataset(os.path.join(content_path, "dataset", "train.jsonl"), tokenizer=tokenizer, sample_limit=None)
+    trainloader = DataLoader(train_dataset, batch_size=128, shuffle=False)    
+        
+    # sub-sample (code or doc) index
     index = training_event['index']
     index1 = training_event['index1']
+
+    # convert to original sampel index
+    ori_index = int(index / 2)
+    ori_index1 = int(index1 / 2)
     
-    sample_index = index / 2
-    sample_index1 = index1 / 2
-        
-    for noise in noise_data:
-        if noise['target_index'] == sample_index or noise['target_index'] == sample_index1:
-            noise_index = noise['noise_index']
-            doc_index = noise_index*2
-            code_index = noise_index*2 + 1
-            doc_data = load_one_text(content_path, doc_index)
-            code_data = load_one_text(content_path, code_index)
-            influence_samples.append({
-                "index": noise['source_index'],
-                "score": random.uniform(-1, 0),
-                "positive": noise['influence_score'] > 0,
-                "dataType": "text",
-                "docData": doc_data,
-                "codeData": code_data
-            })
-        
-    if len(influence_samples) == 0:
-        noise_indices = random.sample(range(200, 299), num_samples*2)
-        for noise_index in noise_indices:
-            doc_index = noise_index*2
-            code_index = noise_index*2 + 1
-            doc_data = load_one_text(content_path, doc_index)
-            code_data = load_one_text(content_path, code_index)
-            influence_samples.append({
-                "index": noise_index,
-                "score": random.uniform(-1, 0),
-                "positive": False,
-                "dataType": "text",
-                "docData": doc_data,
-                "codeData": code_data
-            })
+    tp = 0 if index % 2 == 0 else 1
+    tp1 = 0 if index1 % 2 == 0 else 1
     
+    # construct input query
+    ori_sample = train_dataset[ori_index]
+    ori_sample1 = train_dataset[ori_index1]
+    
+    query_input_part1 = ori_sample[tp] # docstring_tensor
+    query_input_part2 = ori_sample1[tp1] # code_tensor
+    
+    # init IF
+    pairwise_if = PairWiseEmpiricalIF(dl_train=trainloader,model=model,param_filter_fn=lambda name, param: 'transformer_encoder' in name)
+    influences_case = pairwise_if.query_influence(query_input_part1, query_input_part2, query_is_positive=(ori_index == ori_index1))
+    print("Influence case:", influences_case[:3])
+    
+    influence_samples = []
+    for i, (idx1, idx2, influence, fit_type) in enumerate(influences_case[:num_samples]):
+        influence_samples.append({
+            "index": idx1,
+            "index1": idx2, #原始样本的下标
+            "score": float(influence),
+            "type": fit_type,
+            "data": load_one_text(content_path, idx1*2),
+            "data1": load_one_text(content_path, idx2*2+1)
+        })
+
     return influence_samples
 
 def compute_training_events(content_path, epoch, event_types):
