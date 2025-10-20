@@ -141,8 +141,95 @@ class TrainingEventDetector:
         events.sort(key=lambda x: abs(x["distanceChange"]), reverse=True)
         return events
 
+    def _detect_inconsistent_movement_events(self) -> List[Dict[str, Any]]:
+        """
+        Detects pairs of representations that move contrary to the contrastive learning objective.
+        1. Positive pairs (doc-code from the same sample) that move farther apart.
+        2. Negative pairs (doc-code from different samples) that move significantly closer.
+        """
+        events = []
+        epoch_index = self.available_epochs.index(self.epoch)
+        prev_epoch = self.available_epochs[epoch_index - 5] if epoch_index > 4 else -1
+        
+        if prev_epoch < 0:
+            # Cannot compare if there's no previous epoch
+            return events
 
-    def _detect_inconsistent_movement_events(self, std_dev_multiplier=2.5):
+        # 1. Load embeddings for the current and previous epochs
+        curr_emb = self.data_provider.get_representation(self.epoch)
+        prev_emb = self.data_provider.get_representation(prev_epoch)
+        
+        if curr_emb is None or prev_emb is None:
+            return events
+
+        # 2. Separate doc and code embeddings and normalize them for cosine distance calculation
+        # Embeddings are stored as [doc0, code0, doc1, code1, ...]
+        curr_docs = curr_emb[0::2]
+        curr_codes = curr_emb[1::2]
+        prev_docs = prev_emb[0::2]
+        prev_codes = prev_emb[1::2]
+        
+        # L2 normalization
+        curr_docs /= np.linalg.norm(curr_docs, axis=1, keepdims=True)
+        curr_codes /= np.linalg.norm(curr_codes, axis=1, keepdims=True)
+        prev_docs /= np.linalg.norm(prev_docs, axis=1, keepdims=True)
+        prev_codes /= np.linalg.norm(prev_codes, axis=1, keepdims=True)
+
+        # 3. Calculate pairwise cosine distance matrices for both epochs
+        # Cosine Distance = 1 - Cosine Similarity
+        # For normalized vectors, Similarity = A @ B.T
+        prev_dist_matrix = 1 - (prev_docs @ prev_codes.T)
+        curr_dist_matrix = 1 - (curr_docs @ curr_codes.T)
+
+        # 4. Calculate the change in distance between epochs
+        # delta > 0 means they moved farther apart
+        # delta < 0 means they moved closer
+        delta_matrix = curr_dist_matrix - prev_dist_matrix
+        
+        # 5. Define a statistical threshold for "significant" movement
+        # We use mean + 2*std of the absolute changes to capture outliers
+        abs_deltas = np.abs(delta_matrix)
+        # threshold = np.mean(abs_deltas) + 2 * np.std(abs_deltas)
+        threshold = np.mean(abs_deltas)
+        
+        num_pairs = curr_docs.shape[0]
+
+        # 6. Iterate through all pairs to find inconsistent movements
+        for i in range(num_pairs):  # Index for docstrings
+            for j in range(num_pairs):  # Index for code
+                delta = delta_matrix[i, j]
+                
+                # Case 1: Positive Pair (doc_i and code_i)
+                if i == j:
+                    # Inconsistency: Positive pairs should get closer (delta < 0), but they moved farther (delta > 0)
+                    if delta > threshold:
+                        events.append(dict(
+                            index=2 * i,          # Original index of doc_i
+                            index1=2 * j + 1,     # Original index of code_j
+                            expectation="Aligned",
+                            behavior="NotAligned",
+                            distanceChange=float(delta),
+                            type="InconsistentMovement"
+                        ))
+                # Case 2: Negative Pair (doc_i and code_j)
+                else:
+                    # Inconsistency: Negative pairs should get farther (delta > 0), but they moved closer (delta < 0)
+                    if delta < 0 and abs(delta) > 6 * threshold:
+                        events.append(dict(
+                            index=2 * i,
+                            index1=2 * j + 1,
+                            expectation="NotAligned",
+                            behavior="Aligned",
+                            distanceChange=float(delta),
+                            type="InconsistentMovement"
+                        ))
+        
+        # Sort events by the magnitude of the change, showing the most severe cases first
+        events.sort(key=lambda x: abs(x["distanceChange"]), reverse=True)
+        print(f"Detected {len(events)} inconsistent movement events at epoch {self.epoch}.")
+        return events
+
+    def _detect_inconsistent_movement_events_token(self, std_dev_multiplier=2.5):
         events = []
         epoch_index = self.available_epochs.index(self.epoch)
         if epoch_index == 0:
