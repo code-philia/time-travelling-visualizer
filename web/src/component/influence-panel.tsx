@@ -1,7 +1,11 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import styled, { createGlobalStyle } from 'styled-components';
-import { useDefaultStore, InfluenceSample } from '../state/state.influenceView';
-import { TrainingEvent } from './types';
+import { useDefaultStore } from '../state/state.influenceView';
+import type { TrainingEvent, InfluenceSample, SampleWiseInfluence, PairWiseInfluence } from './types';
+
+const isPairWise = (sample: InfluenceSample): sample is PairWiseInfluence => {
+  return 'index1' in sample;
+};
 
 const GlobalStyles = createGlobalStyle`
   * {
@@ -9,854 +13,476 @@ const GlobalStyles = createGlobalStyle`
     margin: 0;
     padding: 0;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-    font-size: 13px;
   }
 `;
 
-const PanelContainer = styled.div`
+const PanelWrapper = styled.div`
   display: flex;
-  flex-direction: column;
   width: 100%;
   height: 100%;
-  background: #fff;
-  overflow: hidden;
-  color: #333;
+  background-color: #f9fafc;
+  gap: 16px;
+  padding: 16px 20px;
+  color: #2d2d32;
+  font-size: 13px;
+  line-height: 1.55;
 `;
 
-const ContentContainer = styled.div`
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-  padding: 8px;
-  gap: 10px;
-  background: #f5f5f5;
-`;
-
-const EventPanel = styled.div`
-  flex: 0 0 240px;
-  background: #fff;
-  border-radius: 3px;
-  padding: 10px;
+const Card = styled.div`
+  background: #ffffff;
+  border: 1px solid #d7dbe2;
+  border-radius: 8px;
+  padding: 18px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  border: 1px solid #ddd;
-  overflow: hidden;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  overflow-y: auto; /* 添加滚动 */
-`;
-
-const EventHeader = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid #eaeaea;
-  
-  h2 {
-    font-size: 11px;
-    font-weight: 600;
-    color: #333;
-  }
-`;
-
-const EventTypeBadge = styled.span<{ $type: string }>`
-  background: ${({ $type }) => 
-    $type === "PredictionFlip" ? "#4a6cf7" : 
-    $type === "ConfidenceChange" ? "#4caf50" :
-    $type === "SignificantMovement" ? "#ff9800" :
-    $type === "InconsistentMovement" ? "#9c27b0" :
-    "#888"};
-  color: white;
-  padding: 1px 6px;
-  border-radius: 2px;
-  font-size: 9px;
-  font-weight: 600;
-`;
-
-const EventContent = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-`;
-
-const EventDetails = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 6px;
-  background: #f8f8f8;
-  border-radius: 3px;
-  font-size: 11px;
-  border: 1px solid #eaeaea;
-  
-  .section-title {
-    font-weight: 600;
-    color: #555;
-    padding-bottom: 3px;
-    border-bottom: 1px solid #eaeaea;
-    font-size: 10px;
-  }
-  
-  .detail-row {
-    display: grid;
-    grid-template-columns: max-content 1fr;
-    gap: 6px;
-    padding: 1px 0;
-    
-    .detail-label {
-      font-weight: 500;
-      color: #666;
-      font-size: 10px;
-    }
-    
-    .detail-value {
-      font-weight: 500;
-      color: #222;
-      font-size: 10px;
-    }
-  }
-`;
-
-const InfluencePanel = styled.div`
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  background: #fff;
-  border-radius: 3px;
-  border: 1px solid #ddd;
-  overflow: hidden;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-`;
-
-const InfluenceHeader = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 10px;
-  background: #f0f0f0;
-  border-bottom: 1px solid #ddd;
-  
-  h2 {
-    font-size: 11px;
-    font-weight: 600;
-    color: #333;
-  }
-`;
-
-const FilterBar = styled.div`
-  display: flex;
-  gap: 4px;
-  
-  button {
-    padding: 3px 6px;
-    border-radius: 2px;
-    border: 1px solid #ccc;
-    background: #f0f0f0;
-    color: #333;
-    font-size: 10px;
-    cursor: pointer;
-    transition: all 0.1s;
-    
-    &:hover { background: #e0e0e0; }
-    &.active { background: #3f51b5; color: white; border-color: #3f51b5; }
-  }
-`;
-
-const InfluenceContent = styled.div`
-  flex: 1;
-  padding: 6px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  gap: 14px;
   overflow-y: auto;
+  box-shadow: 0 6px 18px rgba(20, 32, 52, 0.04);
 `;
 
-const InfluenceSection = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  
-  h3 {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 10px;
-    font-weight: 600;
-    color: #333;
-    padding-bottom: 3px;
-    border-bottom: 1px solid #eaeaea;
-    
-    span {
-      padding: 1px 4px;
-      background: ${({ $positive }) => $positive ? '#e8f5e9' : '#ffebee'};
-      color: ${({ $positive }) => $positive ? '#388e3c' : '#d32f2f'};
-      border-radius: 2px;
-      font-size: 9px;
-    }
-  }
-`;
-
-// -- 旧版图片网格 --
-const InfluenceImageList = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
-  gap: 6px;
-`;
-
-const InfluenceImageCard = styled.div<{ $positive: boolean }>`
-  border-radius: 2px;
-  overflow: hidden;
-  background: ${({ $positive }) => $positive ? '#e8f5e9' : '#ffebee'};
-  border: 1px solid ${({ $positive }) => $positive ? '#c8e6c9' : '#ffcdd2'};
-  transition: all 0.1s;
-  cursor: pointer;
-  
-  &:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  }
-`;
-
-const InfluenceImage = styled.img`
-  width: 100%;
-  height: 50px;
-  object-fit: cover;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-`;
-
-const InfluenceInfo = styled.div<{ $positive: boolean }>`
-  padding: 3px;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  font-size: 7px;
-`;
-
-const InfluenceTextList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-`;
-
-const InfluenceTextRowStyled = styled.div<{ $positive: boolean }>`
+const Header = styled.h2`
+  font-size: 15px;
+  font-weight: 600;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #dfe3eb;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px;
-  border-radius: 3px;
-  background: ${({ $positive }) => $positive ? '#f1f8e9' : '#ffebee'};
-  border: 1px solid ${({ $positive }) => $positive ? '#dcedc8' : '#ffcdd2'};
-  cursor: pointer;
-  transition: background-color 0.2s;
+  gap: 10px;
+  letter-spacing: 0.01em;
+  color: #1f2430;
 
-  &:hover {
-    background: ${({ $positive }) => $positive ? '#e9f5e2' : '#ffeaef'};
-  }
-
-  .index {
-    font-size: 10px;
-    font-weight: 600;
-    color: #555;
-    min-width: 35px;
-  }
-
-  .score {
-    font-size: 11px;
-    font-weight: 600;
-    min-width: 55px;
-    text-align: right;
-    color: ${({ $positive }) => $positive ? '#388e3c' : '#d32f2f'};
+  &::before {
+    content: '';
+    display: inline-block;
+    width: 4px;
+    height: 18px;
+    background-color: #2e5aac;
+    border-radius: 2px;
   }
 `;
 
-const TextDataContainer = styled.div`
-  flex: 1;
+const Badge = styled.span`
+  background-color: #eef1f8;
+  color: #3f4a63;
+  padding: 2px 8px;
+  border-radius: 4px;
   font-size: 11px;
-  color: #333;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border: 1px solid #d7ddec;
+`;
+
+// -- 新增：用于文本截断和提示的容器 --
+const TextContainer = styled.pre`
+  padding: 9px 12px;
+  background-color: #f7f7fa;
+  border: 1px solid #d9d9e3;
+  border-radius: 4px;
+  font-family: 'Source Code Pro', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+  font-size: 12px;
+  white-space: pre-wrap;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  width: 240px;
+  max-width: 100%;
+  min-height: calc(2 * 1.45em);
+  max-height: calc(2 * 1.45em);
+  margin: 0 auto;
 `;
 
-const PairedTextContainer = styled.div`
-  display: flex;
-  flex: 1;
-  gap: 6px;
+const TextExpanded = styled.pre`
+  padding: 12px 14px;
+  background-color: #f9f9fb;
+  border: 1px solid #dedee5;
+  border-radius: 4px;
+  font-family: 'Source Code Pro', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+  font-size: 13px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-x: hidden;
+  overflow-y: auto;
+  max-height: 320px;
+`;
+
+// -- 新增：用于约束图片大小的容器 --
+const ImageContainer = styled.div`
+  width: 96px;
+  height: 96px;
+  border: 1px solid #d9d9e3;
+  border-radius: 6px;
   overflow: hidden;
-
-  .text-snippet {
-    flex: 1;
-    border-left: 2px solid #ccc;
-    padding-left: 6px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-
-    .label {
-      font-size: 9px;
-      font-weight: 600;
-      color: #777;
-      display: block;
-    }
+  background-color: #f7f7fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* 保证图片不变形地填满容器 */
   }
 `;
 
-const ExpandedView = styled.div<{ $show: boolean }>`
+const SamplePreviewGroup = styled.div`
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  align-items: flex-start;
+`;
+
+const SamplePreviewColumn = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+`;
+
+const SampleCaption = styled.div`
+  font-size: 12px;
+  color: #586074;
+  text-align: center;
+`;
+
+const DetailsGrid = styled.div`
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 8px;
+  font-size: 13px;
+
+  & > dt {
+    font-weight: 500;
+    color: #666;
+  }
+  
+  & > dd {
+    font-weight: 500;
+    color: #111;
+  }
+`;
+
+// ==================================================================
+// Modal Component
+// ==================================================================
+const ModalBackdrop = styled.div`
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  display: ${({ $show }) => $show ? 'flex' : 'none'};
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
 `;
 
-const ExpandedCard = styled.div`
+const ModalContent = styled.div`
   background: white;
-  border-radius: 4px;
-  width: 90%;
+  padding: 20px;
+  border-radius: 8px;
+  width: 80%;
   max-width: 800px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  overflow: hidden;
+  max-height: 80vh;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  max-height: 90vh;
-`;
-
-const ExpandedHeader = styled.div`
-  padding: 6px 10px;
-  background: #3f51b5;
-  color: white;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  
-  h3 { font-size: 12px; font-weight: 500; }
-  button { background: none; border: none; color: white; font-size: 16px; cursor: pointer; padding: 2px; }
-`;
-
-const ExpandedContent = styled.div`
-  padding: 12px;
-  display: flex;
   gap: 15px;
-  overflow-y: auto;
 `;
 
-const ExpandedImage = styled.img`
-  width: 140px;
-  height: 140px;
-  object-fit: cover;
+const FullTextDisplay = styled.pre`
+  padding: 15px;
+  background-color: #f9f9f9;
+  border: 1px solid #e0e0e0;
   border-radius: 4px;
-  border: 1px solid #eaeaea;
-`;
-
-const ExpandedDetails = styled.div<{ $positive?: boolean }>`
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  font-size: 11px;
-  /* ... (其余样式无修改) */
-`;
-
-const ExpandedTextContent = styled.div`
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-`;
-
-const ExpandedPairedTextWrapper = styled.div`
-  display: flex;
-  gap: 10px;
-  flex: 1;
-`;
-
-const ExpandedTextColumn = styled.div`
-  flex: 1;
-  background-color: #f8f8f8;
-  border: 1px solid #eaeaea;
-  border-radius: 3px;
-  padding: 8px;
-  overflow-y: auto;
-
-  h4 {
-    font-size: 11px;
-    font-weight: 600;
-    margin-bottom: 6px;
-    padding-bottom: 4px;
-    border-bottom: 1px solid #ddd;
-  }
-
-  pre {
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    font-size: 12px;
-    line-height: 1.5;
-    font-family: 'Courier New', Courier, monospace;
-  }
-`;
-
-const truncateText = (text: string, maxLength = 100) => {
-  if (text.length <= maxLength) return text;
-  return text.substring(0, maxLength) + '...';
-};
-
-const DataContainer = styled.div`
-  padding: 6px;
-  background: #f8f8f8;
-  border-radius: 3px;
-  border: 1px solid #eaeaea;
-  font-size: 11px;
-  line-height: 1.4;
-  max-height: 80px;
-  overflow-y: auto;
-  text-align: left;
+  white-space: pre-wrap;
   word-break: break-word;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+  font-size: 14px;
 `;
 
-const DataImage = styled.img`
-  width: 100%;
-  max-width: 120px;
+const FullImageDisplay = styled.img`
+  max-width: 100%;
   height: auto;
-  border-radius: 3px;
-  object-fit: cover;
-  border: 1px solid #eaeaea;
-  background: #f8f8f8;
-  align-self: center;
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
 `;
 
-const PairedDataContainer = styled.div`
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-  align-items: flex-start;
-  
-  .data-item {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    
-    .item-label {
-      font-size: 10px;
-      font-weight: 600;
-      color: #555;
-    }
-  }
-`;
 
-/**
- * 可重用组件，用于根据 dataType 显示图片或文本
- */
-const DataDisplay = ({ data, dataType, altText }: { data?: string; dataType?: 'image' | 'text'; altText: string; }) => {
-  if (!data) return null;
-  
-  if (dataType === 'image') {
-    return <DataImage src={data} alt={altText} />;
-  }
-  
-  if (dataType === 'text') {
-    return <DataContainer>{truncateText(data.replace(/\\n/g, '\n'), 150)}</DataContainer>;
-  }
-  
-  return <div>Unsupported data type</div>;
+const Modal = ({ sample, dataType, onClose }: { sample: InfluenceSample, dataType: 'Image' | 'Text', onClose: () => void }) => {
+  const isPair = isPairWise(sample);
+
+  return (
+    <ModalBackdrop onClick={onClose}>
+      <ModalContent onClick={(e) => e.stopPropagation()}>
+        <h3>Influence Sample Details</h3>
+        <DetailsGrid>
+            <dt>Score</dt><dd>{sample.score.toFixed(4)}</dd>
+            {isPair ? (
+                <>
+                    <dt>Pair</dt><dd>#{sample.index} & #{sample.index1}</dd>
+                    <dt>Type</dt><dd>{sample.type}</dd>
+                </>
+            ) : (
+                <>
+                    <dt>Index</dt><dd>#{sample.index}</dd>
+                    <dt>Label</dt><dd>{(sample as SampleWiseInfluence).label}</dd>
+                </>
+            )}
+        </DetailsGrid>
+
+        <div style={{ display: 'flex', gap: '15px', marginTop: '10px' }}>
+            <div style={{ flex: 1 }}>
+                <h4>Sample #{sample.index}</h4>
+                {dataType === 'Text' ? <FullTextDisplay>{sample.data?.replace(/\\n/g, '\n')}</FullTextDisplay> : <FullImageDisplay src={sample.data} />}
+            </div>
+            {isPair && (
+                <div style={{ flex: 1 }}>
+                    <h4>Sample #{sample.index1}</h4>
+                    {dataType === 'Text' ? <FullTextDisplay>{sample.data1?.replace(/\\n/g, '\n')}</FullTextDisplay> : <FullImageDisplay src={sample.data1} />}
+                </div>
+            )}
+        </div>
+      </ModalContent>
+    </ModalBackdrop>
+  );
 };
 
-/**
- * 组件，用于渲染训练事件的数据部分，特别处理 InconsistentMovementEvent
- */
-const EventDataDisplay = ({ event }: { event: TrainingEvent }) => {
-  if (event.type === 'InconsistentMovement') {
-    return (
-      <PairedDataContainer>
-        <div className="data-item">
-          <span className="item-label">Sample #{event.index}</span>
-          <DataDisplay data={event.data} dataType={event.dataType} altText={`Sample ${event.index}`} />
-        </div>
-        <div className="data-item">
-          <span className="item-label">Sample #{event.index1}</span>
-          <DataDisplay data={event.data1} dataType={event.dataType1} altText={`Sample ${event.index1}`} />
-        </div>
-      </PairedDataContainer>
-    );
+
+// ==================================================================
+// Data Display Components
+// ==================================================================
+
+// --- 数据显示组件 ---
+const DataDisplay = ({ data, dataType, containerType }: { data?: string; dataType: 'Image' | 'Text', containerType?: 'full' | 'thumb' }) => {
+  if (!data) {
+    const fallbackText = <TextContainer title="No data available.">No data available.</TextContainer>;
+    return containerType === 'thumb' && dataType === 'Image' ? <ImageContainer>{fallbackText}</ImageContainer> : fallbackText;
   }
 
-  // 对所有其他事件类型，显示单个数据
-  return <DataDisplay data={event.data} dataType={event.dataType} altText={`Event sample ${event.index}`} />;
+  const formattedText = data.replace(/\n/g, '\n');
+
+  if (dataType === 'Image') {
+    const img = <img src={data} alt="Sample Data" />;
+    return containerType === 'thumb' ? <ImageContainer>{img}</ImageContainer> : img;
+  }
+
+  if (containerType === 'thumb') {
+    return <TextContainer title={formattedText}>{formattedText}</TextContainer>;
+  }
+
+  return <TextExpanded title={formattedText}>{formattedText}</TextExpanded>;
 };
 
-/**
- * 组件，用于根据事件类型渲染其详细信息
- */
+// --- 事件详情渲染组件 ---
 const EventDetailsRenderer = ({ event }: { event: TrainingEvent }) => {
-  const renderContent = () => {
+  const renderDetails = () => {
     switch (event.type) {
       case 'PredictionFlip':
         return (
           <>
-            <div className="detail-row">
-              <div className="detail-label">Previous:</div>
-              <div className="detail-value">
-                {event.prevPred}
-                <span className={event.prevCorrect ? "positive" : "highlight"}>
-                  {event.prevCorrect ? " ✓" : " ✗"}
-                </span>
-              </div>
-            </div>
-            <div className="detail-row">
-              <div className="detail-label">Current:</div>
-              <div className="detail-value">
-                {event.currPred}
-                <span className={event.currCorrect ? "positive" : "highlight"}>
-                  {event.currCorrect ? " ✓" : " ✗"}
-                </span>
-              </div>
-            </div>
-            <div className="detail-row">
-              <div className="detail-label">Target:</div>
-              <div className="detail-value">{event.influenceTarget}</div>
-            </div>
+            <dt>Previous Prediction</dt><dd>{event.prevPred} ({event.prevCorrect ? 'Correct' : 'Incorrect'})</dd>
+            <dt>Current Prediction</dt><dd>{event.currPred} ({event.currCorrect ? 'Correct' : 'Incorrect'})</dd>
+            <dt>Ground Truth</dt><dd>{event.label}</dd>
           </>
         );
-
       case 'ConfidenceChange':
         return (
           <>
-            <div className="detail-row">
-              <div className="detail-label">Prev Conf:</div>
-              <div className="detail-value">{event.prevConf.toFixed(4)}</div>
-            </div>
-            <div className="detail-row">
-              <div className="detail-label">Curr Conf:</div>
-              <div className="detail-value">{event.currConf.toFixed(4)}</div>
-            </div>
-            <div className="detail-row">
-              <div className="detail-label">Change:</div>
-              <div className="detail-value">
-                <span className={event.change > 0 ? "positive" : "highlight"}>
-                  {event.change > 0 ? '+' : ''}{event.change.toFixed(4)}
-                </span>
-              </div>
-            </div>
-            <div className="detail-row">
-              <div className="detail-label">Target:</div>
-              <div className="detail-value">{event.influenceTarget}</div>
-            </div>
+            <dt>Confidence Change</dt><dd>{event.prevConf.toFixed(3)} → {event.currConf.toFixed(3)}</dd>
+            <dt>Label</dt><dd>{event.label}</dd>
           </>
         );
-      
       case 'SignificantMovement':
         return (
-            <>
-              <div className="detail-row">
-                <div className="detail-label">Movement:</div>
-                <div className="detail-value" style={{ color: event.movementType === 'closer' ? '#4caf50' : '#e53935', fontWeight: '600' }}>
-                  {event.movementType === 'closer' ? 'Moved Closer' : 'Moved Farther'}
-                </div>
-              </div>
-              <div className="detail-row">
-                <div className="detail-label">Prev Dist:</div>
-                <div className="detail-value">{event.prevDist.toFixed(4)}</div>
-              </div>
-              <div className="detail-row">
-                <div className="detail-label">Curr Dist:</div>
-                <div className="detail-value">{event.currDist.toFixed(4)}</div>
-              </div>
-              <div className="detail-row">
-                <div className="detail-label">Change:</div>
-                <div className="detail-value">
-                    <span className={event.distanceChange < 0 ? "positive" : "highlight"}>
-                        {event.distanceChange.toFixed(4)}
-                    </span>
-                </div>
-              </div>
-            </>
+          <>
+            <dt>Movement</dt><dd style={{ textTransform: 'capitalize' }}>{event.movementType}</dd>
+            <dt>Distance Change</dt><dd>{event.prevDist.toFixed(3)} → {event.currDist.toFixed(3)}</dd>
+          </>
         );
-
       case 'InconsistentMovement':
-        const isConsistent = event.expectation === event.behavior;
         return (
-            <>
-                <div className="detail-row">
-                  <div className="detail-label">Expectation:</div>
-                  <div className="detail-value">{event.expectation}</div>
-                </div>
-                <div className="detail-row">
-                  <div className="detail-label">Behavior:</div>
-                  <div className="detail-value">
-                    {event.behavior}
-                    <span className={isConsistent ? "positive" : "highlight"}>
-                        {isConsistent ? " (Consistent)" : " (Inconsistent)"}
-                    </span>
-                  </div>
-                </div>
-            </>
+          <>
+            <dt>Expectation</dt><dd>{event.expectation}</dd>
+            <dt>Actual Behavior</dt><dd>{event.behavior}</dd>
+          </>
         );
-
       default:
-        return <div>No details available for this event type.</div>;
+        return null;
     }
   };
 
+  return <DetailsGrid>{renderDetails()}</DetailsGrid>;
+};
+
+// ==================================================================
+// Panel Components
+// ==================================================================
+
+// --- 左侧事件面板 ---
+const EventPanel = ({ event, dataType }: { event: TrainingEvent, dataType: 'Image' | 'Text' }) => {
+  const isPairedEvent = event.type === 'InconsistentMovement';
+
   return (
-    <EventDetails>
-      <div className="section-title">Event Details</div>
-      {renderContent()}
-    </EventDetails>
+    <Card style={{ flex: '0 0 320px' }}>
+      <Header>
+        Training Event
+        <Badge>{event.type}</Badge>
+      </Header>
+      
+      {isPairedEvent ? (
+        <SamplePreviewGroup>
+          <SamplePreviewColumn>
+            <DataDisplay data={event.data} dataType={dataType} containerType="thumb" />
+            <SampleCaption>Sample #{event.index}</SampleCaption>
+          </SamplePreviewColumn>
+          <SamplePreviewColumn>
+            <DataDisplay data={event.data1} dataType={dataType} containerType="thumb" />
+            <SampleCaption>Sample #{event.index1}</SampleCaption>
+          </SamplePreviewColumn>
+        </SamplePreviewGroup>
+      ) : (
+        <SamplePreviewColumn>
+          <DataDisplay data={event.data} dataType={dataType} containerType="thumb" />
+          <SampleCaption>Sample #{event.index}</SampleCaption>
+        </SamplePreviewColumn>
+      )}
+      
+      <EventDetailsRenderer event={event} />
+    </Card>
   );
 };
 
-const formatTextForDisplay = (text: string = '') => text.replace(/\\n/g, '\n');
+// --- 影响样本卡片 ---
+const InfluenceCard = styled.div`
+  border: 1px solid #d9dfea;
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  cursor: pointer;
+  background-color: #fdfdff;
+  transition: box-shadow 0.2s ease-in-out, border-color 0.2s ease-in-out, transform 0.2s ease-in-out;
 
-const InfluenceTextRow = ({ sample, onClick }: { sample: InfluenceSample; onClick: () => void }) => {
+  &:hover {
+    border-color: #2e5aac;
+    box-shadow: 0 4px 14px rgba(35, 61, 100, 0.12);
+    transform: translateY(-2px);
+  }
+`;
+
+const InfluenceCardHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: #3a4356;
+`;
+
+const ScoreTag = styled.span`
+  font-weight: 600;
+  font-size: 14px;
+  color: #1f3558;
+`;
+
+const PairTypeTag = styled(Badge)<{ $type: 'positive' | 'negative' }>`
+  background-color: ${props => props.$type === 'positive' ? '#e5f0e8' : '#f5e5e7'};
+  color: ${props => props.$type === 'positive' ? '#2b5b32' : '#7a2830'};
+  border-color: ${props => props.$type === 'positive' ? '#c7dfcf' : '#ecc8ce'};
+`;
+
+const SampleWiseDisplay = ({ sample, dataType, onDoubleClick }: { sample: SampleWiseInfluence, dataType: 'Image' | 'Text', onDoubleClick: () => void }) => (
+  <InfluenceCard onDoubleClick={onDoubleClick}>
+    <InfluenceCardHeader>
+      <span>Sample #{sample.index} (Label: {sample.label})</span>
+      <ScoreTag>Score: {sample.score.toFixed(4)}</ScoreTag>
+    </InfluenceCardHeader>
+    <SamplePreviewColumn>
+      <DataDisplay data={sample.data} dataType={dataType} containerType="thumb" />
+      <SampleCaption>Sample #{sample.index}</SampleCaption>
+    </SamplePreviewColumn>
+  </InfluenceCard>
+);
+
+const PairWiseDisplay = ({ sample, dataType, onDoubleClick }: { sample: PairWiseInfluence, dataType: 'Image' | 'Text', onDoubleClick: () => void }) => (
+  <InfluenceCard onDoubleClick={onDoubleClick}>
+    <InfluenceCardHeader>
+      <span>Pair: #{sample.index} & #{sample.index1}</span>
+      <PairTypeTag $type={sample.type}>{sample.type === 'positive' ? 'PULL CLOSER' : 'PUSH APART'}</PairTypeTag>
+      <ScoreTag>Score: {sample.score.toFixed(4)}</ScoreTag>
+    </InfluenceCardHeader>
+    <SamplePreviewGroup>
+      <SamplePreviewColumn>
+        <DataDisplay data={sample.data} dataType={dataType} containerType="thumb" />
+        <SampleCaption>Sample #{sample.index}</SampleCaption>
+      </SamplePreviewColumn>
+      <SamplePreviewColumn>
+        <DataDisplay data={sample.data1} dataType={dataType} containerType="thumb" />
+        <SampleCaption>Sample #{sample.index1}</SampleCaption>
+      </SamplePreviewColumn>
+    </SamplePreviewGroup>
+  </InfluenceCard>
+);
+
+// --- 右侧影响分析面板 ---
+const InfluencePanel = ({ samples, dataType }: { samples: InfluenceSample[], dataType: 'Image' | 'Text' }) => {
+  const [selectedSample, setSelectedSample] = useState<InfluenceSample | null>(null);
+
   return (
-    <InfluenceTextRowStyled $positive={sample.positive} onClick={onClick}>
-      <span className="index">#{sample.index}</span>
-      <TextDataContainer>
-        {sample.docData && sample.codeData ? (
-          <PairedTextContainer>
-            <div className="text-snippet">
-              <span className="label">DOC</span>
-              {truncateText(sample.docData, 50)}
+    <>
+      <Card style={{ flex: 1 }}>
+        <Header>Influence Analysis</Header>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {samples.length > 0 ? (
+            samples.map((sample, idx) => 
+              isPairWise(sample) 
+                ? <PairWiseDisplay key={idx} sample={sample} dataType={dataType} onDoubleClick={() => setSelectedSample(sample)} />
+                : <SampleWiseDisplay key={idx} sample={sample as SampleWiseInfluence} dataType={dataType} onDoubleClick={() => setSelectedSample(sample)} />
+            )
+          ) : (
+            <div style={{ textAlign: 'center', color: '#888', padding: '20px' }}>
+              No influential samples to display for this event.
             </div>
-            <div className="text-snippet">
-              <span className="label">CODE</span>
-              {truncateText(sample.codeData, 50)}
-            </div>
-          </PairedTextContainer>
-        ) : (
-          truncateText(sample.data || '', 120)
-        )}
-      </TextDataContainer>
-      <span className="score">
-        {sample.positive ? '+' : ''}{sample.score.toFixed(4)}
-      </span>
-    </InfluenceTextRowStyled>
+          )}
+        </div>
+      </Card>
+      {selectedSample && <Modal sample={selectedSample} dataType={dataType} onClose={() => setSelectedSample(null)} />}
+    </>
   );
 };
 
-const InfluencePanelComponent = () => {
-  const { dataType, trainingEvent, influenceSamples } = useDefaultStore(['dataType', 'trainingEvent', 'influenceSamples']);
-  const [selectedInfluence, setSelectedInfluence] = useState<InfluenceSample | null>(null);
-  const [filter, setFilter] = useState<'all' | 'positive' | 'negative'>('all');
+// ==================================================================
+// Main Component
+// ==================================================================
+
+const InfluenceAnalysisPanel = () => {
+  const { dataType, trainingEvent, influenceSamples } = useDefaultStore(["dataType", "trainingEvent", "influenceSamples"]);
   
-  const positiveSamples = influenceSamples.filter(sample => sample.positive);
-  const negativeSamples = influenceSamples.filter(sample => !sample.positive);
-
-  const hasSamples = 
-    (filter === 'all' && (positiveSamples.length > 0 || negativeSamples.length > 0)) ||
-    (filter === 'positive' && positiveSamples.length > 0) ||
-    (filter === 'negative' && negativeSamples.length > 0);
-
   if (!trainingEvent) {
     return (
-      <PanelContainer>
+      <PanelWrapper style={{ alignItems: 'center', justifyContent: 'center', color: '#888' }}>
         <GlobalStyles />
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          height: '100%',
-          color: '#666',
-          fontSize: '12px'
-        }}>
-          Select a training event to view influence analysis
-        </div>
-      </PanelContainer>
+        Select a training event to view its influence analysis.
+      </PanelWrapper>
     );
   }
 
-  const renderInfluenceList = (samples: InfluenceSample[]) => {
-    // 兼容旧版：如果数据类型是 image，使用网格布局
-    if (trainingEvent.dataType === 'image') {
-      return (
-        <InfluenceImageList>
-          {samples.map((sample) => (
-            <InfluenceImageCard 
-              key={sample.index} 
-              $positive={sample.positive}
-              onClick={() => setSelectedInfluence(sample)}
-            >
-              <InfluenceImage src={sample.data} alt={`Sample ${sample.index}`} />
-              <InfluenceInfo $positive={sample.positive}>
-                <div className="influence-header">
-                  <div className="index">#{sample.index}</div>
-                  <div className="label">{sample.label}</div>
-                </div>
-                <div className="influence-value">
-                  <span className="icon">{sample.positive ? '↑' : '↓'}</span>
-                  <span className="score">
-                    {sample.positive ? '+' : ''}{sample.score.toFixed(4)}
-                  </span>
-                </div>
-              </InfluenceInfo>
-            </InfluenceImageCard>
-          ))}
-        </InfluenceImageList>
-      );
-    }
-    
-    // 新版：如果数据类型是 text，使用列表行布局
-    return (
-      <InfluenceTextList>
-        {samples.map((sample) => (
-          <InfluenceTextRow 
-            key={sample.index} 
-            sample={sample} 
-            onClick={() => setSelectedInfluence(sample)} 
-          />
-        ))}
-      </InfluenceTextList>
-    );
-  };
-
   return (
-    <PanelContainer>
+    <>
       <GlobalStyles />
-      <ContentContainer>
-        <EventPanel>
-          <EventHeader>
-            <h2>Training Event</h2>
-            <EventTypeBadge $type={trainingEvent.type}>{trainingEvent.type}</EventTypeBadge>
-          </EventHeader>
-          
-          <EventContent>
-            <EventDataDisplay event={trainingEvent} />
-            <EventDetailsRenderer event={trainingEvent} />
-          </EventContent>
-        </EventPanel>
-        
-        <InfluencePanel>
-          <InfluenceHeader>
-            <h2>Influence Analysis</h2>
-            <FilterBar>
-                <button className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}>All</button>
-                <button className={filter === 'positive' ? 'active' : ''} onClick={() => setFilter('positive')}>Positive</button>
-                <button className={filter === 'negative' ? 'active' : ''} onClick={() => setFilter('negative')}>Negative</button>
-            </FilterBar>
-          </InfluenceHeader>
-          
-          <InfluenceContent>
-            {(filter === 'all' || filter === 'positive') && positiveSamples.length > 0 && (
-              <InfluenceSection $positive={true}>
-                <h3>
-                  Positive Influence
-                  <span>{positiveSamples.length} samples</span>
-                </h3>
-                {renderInfluenceList(positiveSamples)}
-              </InfluenceSection>
-            )}
-            
-            {(filter === 'all' || filter === 'negative') && negativeSamples.length > 0 && (
-              <InfluenceSection $positive={false}>
-                <h3>
-                  Negative Influence
-                  <span>{negativeSamples.length} samples</span>
-                </h3>
-                {renderInfluenceList(negativeSamples)}
-              </InfluenceSection>
-            )}
-            
-            {!hasSamples && (
-              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#666', fontSize: '11px' }}>
-                No influence samples found for current filter
-              </div>
-            )}
-          </InfluenceContent>
-        </InfluencePanel>
-      </ContentContainer>
-      
-      <ExpandedView $show={!!selectedInfluence}>
-        {selectedInfluence && (
-          <ExpandedCard>
-            <ExpandedHeader>
-              <h3>Sample #{selectedInfluence.index}</h3>
-              <button onClick={() => setSelectedInfluence(null)}>×</button>
-            </ExpandedHeader>
-            <ExpandedContent>
-              {/* 根据数据类型和结构渲染不同的展开视图 */}
-              {selectedInfluence.dataType === 'image' && (
-                <ExpandedImage src={selectedInfluence.data} alt={`Sample ${selectedInfluence.index}`} />
-              )}
-              {selectedInfluence.dataType === 'text' && (
-                <ExpandedTextContent>
-                  {selectedInfluence.docData && selectedInfluence.codeData ? (
-                    <ExpandedPairedTextWrapper>
-                      <ExpandedTextColumn>
-                        <h4>Document</h4>
-                        <pre>{formatTextForDisplay(selectedInfluence.docData)}</pre>
-                      </ExpandedTextColumn>
-                      <ExpandedTextColumn>
-                        <h4>Code</h4>
-                        <pre>{formatTextForDisplay(selectedInfluence.codeData)}</pre>
-                      </ExpandedTextColumn>
-                    </ExpandedPairedTextWrapper>
-                  ) : (
-                    <ExpandedPairedTextWrapper>
-                        <ExpandedTextColumn>
-                            <h4>Text</h4>
-                            <pre>{formatTextForDisplay(selectedInfluence.data)}</pre>
-                        </ExpandedTextColumn>
-                    </ExpandedPairedTextWrapper>
-                  )}
-                </ExpandedTextContent>
-              )}
-              <ExpandedDetails $positive={selectedInfluence.positive}>
-                <div className="detail-row">
-                  <div className="label">Index</div>
-                  <div className="value">#{selectedInfluence.index}</div>
-                </div>
-                <div className="detail-row">
-                  <div className="label">Label</div>
-                  <div className="value">{selectedInfluence.label}</div>
-                </div>
-                <div className="detail-row">
-                  <div className="label">Influence Type</div>
-                  <div className="value">
-                    {selectedInfluence.positive ? (
-                      <span style={{ color: '#388e3c', fontWeight: 600 }}>Positive</span>
-                    ) : (
-                      <span style={{ color: '#d32f2f', fontWeight: 600 }}>Negative</span>
-                    )}
-                  </div>
-                </div>
-                <div className="detail-row">
-                  <div className="label">Impact</div>
-                  <div className="value">
-                    {selectedInfluence.positive ? (
-                      <span style={{ color: '#388e3c', fontWeight: 500 }}>
-                        Contributed to the event
-                      </span>
-                    ) : (
-                      <span style={{ color: '#d32f2f', fontWeight: 500 }}>
-                        Hindered the event
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className="detail-row">
-                  <div className="label">Influence Score</div>
-                  <div className="value">
-                    <span style={{ 
-                      color: selectedInfluence.positive ? '#388e3c' : '#d32f2f', 
-                      fontWeight: 600 
-                    }}>
-                      {selectedInfluence.positive ? '+' : ''}{selectedInfluence.score.toFixed(6)}
-                    </span>
-                  </div>
-                </div>
-              </ExpandedDetails>
-            </ExpandedContent>
-          </ExpandedCard>
-        )}
-      </ExpandedView>
-    </PanelContainer>
+      <PanelWrapper>
+        <EventPanel event={trainingEvent} dataType={dataType} />
+        <InfluencePanel samples={influenceSamples} dataType={dataType} />
+      </PanelWrapper>
+    </>
   );
 };
 
-export default InfluencePanelComponent;
+export default InfluenceAnalysisPanel;

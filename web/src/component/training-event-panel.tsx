@@ -175,10 +175,10 @@ const InconsistentPair = styled.span`
   color: #333;
 `;
 
-const InconsistentDescriptor = styled.span`
+const InconsistentType = styled.span<{ $positive?: boolean }>`
   font-size: 10px;
-  font-weight: 500;
-  color: #595959;
+  font-weight: 600;
+  color: ${props => props.$positive ? '#52c41a' : '#ff4d4f'};
 `;
 
 const EmptyState = styled.div`
@@ -249,6 +249,9 @@ const getInconsistentDescription = (event: InconsistentMovementEvent) => {
   }
   return 'Unexpected Movement Pattern';
 };
+
+const getInconsistentType = (event: InconsistentMovementEvent) =>
+  event.expectation === 'Aligned' && event.behavior === 'NotAligned' ? 'Positive' : 'Negative';
 
 type EventSubGroup = {
   key: string;
@@ -457,7 +460,9 @@ export function TrainingEventPanel() {
           {item.type === 'InconsistentMovement' && (
             <InconsistentRow>
               <InconsistentPair>Pair: ({item.index}, {item.index1})</InconsistentPair>
-              <InconsistentDescriptor>{getInconsistentDescription(item)}</InconsistentDescriptor>
+              <InconsistentType $positive={getInconsistentType(item) === 'Positive'}>
+                {getInconsistentType(item)} Pair
+              </InconsistentType>
             </InconsistentRow>
           )}
         </EventContent>
@@ -533,20 +538,9 @@ export function TrainingEventPanel() {
                   <CompactEventTypePanel
                     key={group.key}
                     header={
-                      <div style={{ display: 'flex', alignItems: 'center' }}>
-                        <Tag
-                          color={activeType ? getTypeColor(activeType) : undefined}
-                          style={{
-                            marginRight: 6,
-                            fontSize: '10px',
-                            lineHeight: '16px',
-                            padding: '0 4px',
-                            minWidth: '24px'
-                          }}
-                        >
-                          {group.events.length}
-                        </Tag>
-                        <span style={{ fontSize: '11px' }}>{group.title}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '11px' }}>
+                        <span>{group.title}</span>
+                        <span style={{ color: '#888' }}>({group.events.length})</span>
                       </div>
                     }
                   >
