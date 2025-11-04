@@ -131,9 +131,14 @@ def start_visualizing():
     vis_config = req['vis_config']
 
     print('start visualizing')
-    print("vis config:", vis_config)
+    print(f"Content path: {content_path}")
+    print(f"Visualization method: {vis_method}")
+    print(f"Data type: {data_type}")
+    print(f"Task type: {task_type}")
+    print(f"Visualization config: {vis_config}")
+    print("Done!")
     
-    visualize_run(content_path, vis_method, vis_id, data_type, task_type, vis_config)
+    # visualize_run(content_path, vis_method, vis_id, data_type, task_type, vis_config)
     
     return make_response({}, 200)
 
