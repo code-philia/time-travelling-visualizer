@@ -2,8 +2,8 @@ import styled from 'styled-components';
 import { Tag, Form, Button, Collapse, Select } from 'antd';
 import { useEffect, useState } from 'react';
 import { FunctionalBlock } from './custom/basic-components';
-import { useDefaultStore } from '../state/state.rightView';
-import { notifyCalculateEvents, notifyFocusModeSwitch, notifyTracingInfluence, notifyTrainingEventClicked } from '../communication/viewMessage';
+import { useDefaultStore } from '../state/state.unified';
+import { notifyCalculateEvents, notifyFocusModeSwitch, notifyTracingInfluence, notifyTrainingEventClicked } from '../communication/extension';
 import { TrainingEvent, InconsistentMovementEvent, PredictionFlipEvent, ConfidenceChangeEvent, SignificantMovementEvent } from './types';
 
 const { Panel } = Collapse;
@@ -394,7 +394,7 @@ export function TrainingEventPanel() {
   }, [epoch]);
 
   const handleTracingClick = (event: React.MouseEvent, item: TrainingEvent) => {
-    event.stopPropagation(); // 阻止事件冒泡，避免触发 item 的点击事件
+    event.stopPropagation(); 
     notifyTracingInfluence(item, epoch);
   };
 

@@ -1,8 +1,8 @@
 import { AutoComplete, Divider, Input, List, Tag, RefSelectProps, Checkbox, Tooltip, Switch } from 'antd';
-import { useDefaultStore } from '../state/state.rightView';
+import { useDefaultStore } from '../state/state.unified';
 import { useEffect, useRef, useState } from 'react';
 import { ComponentBlock, FunctionalBlock } from './custom/basic-components';
-import { notifyHighlightDataSwitch, notifySelectedIndicesSwitch, notifyshownDataSwitch } from '../communication/viewMessage';
+import { notifyHighlightDataSwitch, notifySelectedIndicesSwitch, notifyshownDataSwitch } from '../communication/extension';
 import { styled } from 'styled-components';
 
 type SampleTag = {

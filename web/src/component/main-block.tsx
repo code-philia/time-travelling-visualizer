@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useDefaultStore } from '../state/state.plotView';
+import { useDefaultStore } from '../state/state.unified';
 import ChartComponent from './vchart';
-import { notifyEpochSwitch } from '../communication/viewMessage';
+import { notifyEpochSwitch } from '../communication/extension';
 
 // https://stackoverflow.com/questions/54095994/react-useeffect-comparing-objects
 // FIXME use a library for all object/array nested comparison

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import styled, { createGlobalStyle } from 'styled-components';
-import { useDefaultStore } from '../state/state.influenceView';
+import { useDefaultStore } from '../state/state.unified';
 import type { TrainingEvent, InfluenceSample, SampleWiseInfluence, PairWiseInfluence } from './types';
 
 const isPairWise = (sample: InfluenceSample): sample is PairWiseInfluence => {
@@ -359,7 +359,6 @@ const EventPanel = ({ event, dataType }: { event: TrainingEvent, dataType: 'Imag
   );
 };
 
-// --- 影响样本卡片 ---
 const InfluenceCard = styled.div`
   border: 1px solid #d9dfea;
   border-radius: 8px;
@@ -431,7 +430,6 @@ const PairWiseDisplay = ({ sample, dataType, onDoubleClick }: { sample: PairWise
   </InfluenceCard>
 );
 
-// --- 右侧影响分析面板 ---
 const InfluencePanel = ({ samples, dataType }: { samples: InfluenceSample[], dataType: 'Image' | 'Text' }) => {
   const [selectedSample, setSelectedSample] = useState<InfluenceSample | null>(null);
 

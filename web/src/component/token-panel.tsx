@@ -1,6 +1,6 @@
 import styled from 'styled-components';
-import { useDefaultStore } from '../state/state.tokenView';
-import { notifyHoveredIndexSwitch, notifySelectedIndicesSwitch } from '../communication/viewMessage';
+import { useDefaultStore } from '../state/state.unified';
+import { notifyHoveredIndexSwitch, notifySelectedIndicesSwitch } from '../communication/extension';
 import { useEffect, useState } from 'react';
 
 const BottomPanelContainer = styled.div<{ $expanded: boolean }>`
@@ -153,21 +153,8 @@ const ALIGNMENT_COLORS = [
     "#52a675", "#36949d", "#4267ac", "#6a4c93", "#b5a6c9"
 ];
 
-function TokenAlignmentDisplay({ labels, tokenList, hoveredIndex, selectedIndices, alignment, epoch, allNeighbors, handleHover, handleClick }: any) {
+function TokenAlignmentDisplay({ labels, tokenList, hoveredIndex, selectedIndices, epoch, handleHover, handleClick }: any) {
     const [alignmentColorMap, setAlignmentColorMap] = useState<Map<number, string>>(new Map());
-
-    useEffect(() => {
-        const newMap = new Map<number, string>();
-        if (alignment && alignment.length > 0) {
-            alignment.forEach((group: number[], groupIndex: number) => {
-                const color = ALIGNMENT_COLORS[groupIndex % ALIGNMENT_COLORS.length];
-                group.forEach(tokenIndex => {
-                    newMap.set(tokenIndex, color);
-                });
-            });
-        }
-        setAlignmentColorMap(newMap);
-    }, [alignment]);
 
     const docTokens: TokenSpan[] = [];
     const codeTokens: TokenSpan[] = [];
@@ -175,7 +162,7 @@ function TokenAlignmentDisplay({ labels, tokenList, hoveredIndex, selectedIndice
         const isDoc = labels[index] === 0;
         const isSelected = selectedIndices.includes(index);
         const isHighlighted = hoveredIndex === index;
-        const isNeighbor = (hoveredIndex !== null && hoveredIndex !== undefined && (allNeighbors[epoch].originalNeighbors[hoveredIndex]?.includes(index) || allNeighbors[epoch].projectionNeighbors[hoveredIndex]?.includes(index)));
+        const isNeighbor = false;
         const alignmentColor = alignmentColorMap.get(index);
 
         const tokenSpan: TokenSpan = {
@@ -214,12 +201,11 @@ function TokenAlignmentDisplay({ labels, tokenList, hoveredIndex, selectedIndice
 
 
 export function TokenPanel() {
-    const { labels, tokenList, hoveredIndex, setHoveredIndex, selectedIndices, setSelectedIndices, alignment } =
-        useDefaultStore(['labels', 'tokenList', 'hoveredIndex', 'setHoveredIndex', 'selectedIndices', 'setSelectedIndices', 'alignment']);
+    const { inherentLabelData, tokenList, hoveredIndex, setHoveredIndex, selectedIndices, setSelectedIndices } =
+        useDefaultStore(['inherentLabelData', 'tokenList', 'hoveredIndex', 'setHoveredIndex', 'selectedIndices', 'setSelectedIndices']);
     const { shownDoc, shownCode } = useDefaultStore(['shownDoc', 'shownCode']);
-    const { epoch, allNeighbors } = useDefaultStore(['epoch', 'allNeighbors']);
+    const { epoch } = useDefaultStore(['epoch']);
 
-    // 根据 tokenList 判断使用哪个视图
     const useSimpleView = !tokenList || tokenList.length === 0;
 
     const handleHover = (index: number | null) => {
@@ -246,13 +232,11 @@ export function TokenPanel() {
                     />
                 ) : (
                     <TokenAlignmentDisplay
-                        labels={labels}
+                        labels={inherentLabelData}
                         tokenList={tokenList}
                         hoveredIndex={hoveredIndex}
                         selectedIndices={selectedIndices}
-                        alignment={alignment}
                         epoch={epoch}
-                        allNeighbors={allNeighbors}
                         handleHover={handleHover}
                         handleClick={handleClick}
                     />

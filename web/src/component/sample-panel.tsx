@@ -1,23 +1,23 @@
 import { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { softmax } from './utils';
-import { useDefaultStore } from '../state/state.rightView';
+import { useDefaultStore } from '../state/state.unified';
 import { FunctionalBlock } from './custom/basic-components';
 
 export function SamplePanel() {
-    const { availableEpochs, hoveredIndex, labels, epoch, allEpochData, labelDict, dataType, rawData, tokenList } =
-        useDefaultStore(['availableEpochs', 'hoveredIndex', 'labels', 'epoch', 'allEpochData', 'labelDict', 'dataType', 'rawData', 'tokenList']);
+    const { availableEpochs, hoveredIndex, inherentLabelData, epoch, allEpochData, labelDict, dataType, rawData, tokenList } =
+        useDefaultStore(['availableEpochs', 'hoveredIndex', 'inherentLabelData', 'epoch', 'allEpochData', 'labelDict', 'dataType', 'rawData', 'tokenList']);
 
     const [data, setData] = useState<string>('');
     const [predictions, setPredictions] = useState<{ value: number, confidence: number, correct: boolean }[]>([]);
     const [historyPrediction, setHistoryPrediction] = useState<{ epoch: number, prediction: number, confidence: number, correct: boolean }[]>([]);
 
     const getDisplayLabel = (index: number) =>
-    tokenList ? tokenList[index] : labelDict.get(labels[index]) || 'Unknown';
+    tokenList ? tokenList[index] : labelDict.get(inherentLabelData[index]) || 'Unknown';
 
     useEffect(() => {
         console.log("hoveredIndex in detail panel: ", hoveredIndex);
-        if (!hoveredIndex || !labels || !allEpochData[epoch]) {
+        if (!hoveredIndex || !inherentLabelData || !allEpochData[epoch]) {
             setData('');
             setPredictions([]);
             setHistoryPrediction([]);
@@ -27,11 +27,11 @@ export function SamplePanel() {
         setData(rawData? rawData : '');
 
         // current epoch prediction
-        if (!allEpochData[epoch].probability[hoveredIndex]) { 
+        if (!allEpochData[epoch].predProbability[hoveredIndex]) { 
             setPredictions([]);
         }
         else {
-            const softmaxProps = softmax(allEpochData[epoch].probability[hoveredIndex]);
+            const softmaxProps = softmax(allEpochData[epoch].predProbability[hoveredIndex]);
             const sortedProps = [...softmaxProps];
             sortedProps.sort((a, b) => b - a);
             const topThreeConfidences = sortedProps.slice(0, 3);
@@ -39,7 +39,7 @@ export function SamplePanel() {
             const topThreeResults = topThreeIndices.map((index, i) => ({
                 value: index,
                 confidence: topThreeConfidences[i],
-                correct: Number(labels[hoveredIndex]) === index
+                correct: Number(inherentLabelData[hoveredIndex]) === index
             }));
             setPredictions(topThreeResults);
         }
@@ -53,8 +53,8 @@ export function SamplePanel() {
             historyPredictionNew.push({
                 epoch: e,
                 prediction: pred,
-                confidence: allEpochData[e].confidence[hoveredIndex],
-                correct: labels[hoveredIndex] === pred
+                confidence: allEpochData[e].predProbability[hoveredIndex][pred],
+                correct: inherentLabelData[hoveredIndex] === pred
             });
         }
         setHistoryPrediction(historyPredictionNew);
@@ -157,7 +157,6 @@ export function SamplePanel() {
 
 export default SamplePanel;
 
-// ================== 统一紧凑样式 ======================
 const CompactInfoColumn = styled.div`
     display: flex;
     flex-direction: column;
@@ -168,9 +167,9 @@ const CompactInfoColumn = styled.div`
 const CompactInfoContainer = styled.div`
     display: flex;
     flex-direction: column;
-    align-items: flex-start;  // 改为左对齐
+    align-items: flex-start;
     gap: 6px;
-    padding: 0;  // 移除内边距
+    padding: 0;
 `;
 
 const ImageContainer = styled.div`
@@ -186,9 +185,9 @@ const ImageContainer = styled.div`
 `;
 
 const CompactImage = styled.img`
-    width: 100%;  // 改为100%填充容器
+    width: 100%;
     height: 100%;
-    object-fit: cover;  // 改为cover以填充整个区域
+    object-fit: cover;
 `;
 
 const EmptyImage = styled.div`
@@ -332,7 +331,7 @@ const HistoryConfidence = styled.span`
 const CompactNeighborList = styled.div`
     display: flex;
     flex-wrap: wrap;
-    gap: 4px;  // 减小标签间距
+    gap: 4px;
 `;
 
 const HighDimNeighborItem = styled.span`
@@ -340,7 +339,7 @@ const HighDimNeighborItem = styled.span`
     border-radius: 3px;
     font-size: 11px;
     font-family: 'Consolas', monospace;
-    background-color: #f0f0f0;  // 灰色表示高维邻居
+    background-color: #f0f0f0;
     color: #595959;
     display: inline-block;
 `;
@@ -350,7 +349,7 @@ const ProjectionNeighborItem = styled.span<{ $correct: boolean }>`
     border-radius: 3px;
     font-size: 11px;
     font-family: 'Consolas', monospace;
-    background-color: ${props => props.$correct ? '#d9f7be' : '#ffd6d6'}; // 正确浅绿，错误浅红
+    background-color: ${props => props.$correct ? '#d9f7be' : '#ffd6d6'};
     color: #262626;
     display: inline-block;
 `;
