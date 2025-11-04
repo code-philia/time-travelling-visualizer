@@ -318,6 +318,10 @@
     ],
     "commands": [
       {
+        "command": "timeTravellingVisualizer.openPlotView",
+        "title": "Open Plot View"
+      },
+      {
         "command": "timeTravellingVisualizer.startVisualizing",
         "title": "Start Visualizing"
       },

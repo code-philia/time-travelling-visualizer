@@ -120,6 +120,7 @@ export class CommandID {
     static readonly setAsDataFolderAndLoadVisualizationResult = withBaseName('setAsDataFolderAndLoadVisualizationResult');
     static readonly setAsDataFolder = withBaseName('setAsDataFolder');
     static readonly configureAndLoadVisualization = withBaseName('configureAndLoadVisualizationResult');
+	static readonly openPlotView = withBaseName('openPlotView');
 }
 
 export class ViewsID {
