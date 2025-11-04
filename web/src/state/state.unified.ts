@@ -5,99 +5,133 @@ import { useStoreWithEqualityFn } from "zustand/traditional";
 import { BUILD_CONSTANTS } from "../constants";
 import { subscribeWithSelector } from "zustand/middleware";
 import { SelectedListener } from "../state/types";
-import { TrainingEvent } from "../component/types";
+import { TrainingEvent, InfluenceSample } from "../component/types";
 
+// Types from plotView
 export type EpochData = {
     projection: number[][];
     prediction: number[];
-    confidence: number[];
     predProbability: number[][];
     originalNeighbors: number[][];
     projectionNeighbors: number[][];
     background: string;
 };
 
+// Unified state interface combining all views
 export type BaseMutableGlobalStore = {
+    // Basic configuration
+    dataType: 'Image' | 'Text';
+    taskType: string;
+    
+    // Epoch and time-related data
     epoch: number;
     availableEpochs: number[];
-    scope: number[];
+    
+    // Color and label mappings
     colorDict: Map<number, [number, number, number]>;
     labelDict: Map<number, string>;
-
+    
+    // Text and token data
     textData: string[];
+    tokenList: string[];
     attentionData: number[][];
     originalTextData: Record<string, string>;
     inherentLabelData: number[];
+    alignment: number[][];
+    
+    // Epoch data
     allEpochData: Record<number, EpochData>;
     progress: number;
-
-    // settings
+    
+    // Display settings
     showIndex: boolean;
     showLabel: boolean;
     showTrail: boolean;
     revealOriginalNeighbors: boolean;
     revealProjectionNeighbors: boolean;
     showBackground: boolean;
-
-    // filter
+    
+    // Filter and display data
     index: Record<string, number[]>;
     shownData: string[];
     highlightData: string[];
-
-    // hovered
+    
+    // Interaction state
     hoveredIndex: number | undefined;
     selectedIndices: number[];
     selectedListener: SelectedListener;
-
-    // focus events
+    
+    // Focus mode
     isFocusMode: boolean;
     focusIndices: number[];
-
-    // training events
+    
+    // Training events and influence
     trainingEvents: TrainingEvent[];
-    alignment?: number[][];
-}
+    trainingEvent: TrainingEvent | null; // Current training event for influence view
+    influenceSamples: InfluenceSample[];
+    
+    // Raw data for detail views
+    rawData: string;
+    shownDoc: string;
+    shownCode: string;
+};
 
 export let initMutableGlobalStore: BaseMutableGlobalStore = {
+    // Basic configuration
+    dataType: 'Image',
+    taskType: '',
+    
+    // Epoch and time-related data
     epoch: 1,
     availableEpochs: [],
-    scope: [],
+    
+    // Color and label mappings
     colorDict: new Map(),
     labelDict: new Map(),
-
-    // FIXME we should use null for not loaded data
+    
+    // Text and token data
     textData: [],
+    tokenList: [],
     attentionData: [],
     originalTextData: {},
     inherentLabelData: [],
+    alignment: [],
+    
+    // Epoch data for different views
     allEpochData: {},
     progress: 0,
-
-    // settings
+    
+    // Display settings
     showIndex: true,
     showLabel: true,
     showTrail: false,
     revealOriginalNeighbors: true,
     revealProjectionNeighbors: true,
     showBackground: false,
-
-    // filter
+    
+    // Filter and display data
     index: {},
     shownData: ["train", "test"],
     highlightData: [],
-
-    // hovered
+    
+    // Interaction state
     hoveredIndex: undefined,
     selectedIndices: [],
     selectedListener: new SelectedListener(),
-
-    // focus events
+    
+    // Focus mode
     isFocusMode: false,
     focusIndices: [],
-
-    // training events
+    
+    // Training events and influence
     trainingEvents: [],
-    alignment: []
+    trainingEvent: null,
+    influenceSamples: [],
+    
+    // Raw data for detail views
+    rawData: "",
+    shownDoc: '',
+    shownCode: ''
 };
 
 type SetFunction<T> = (setState: (state: T) => T | Partial<T>) => void;
@@ -106,12 +140,9 @@ type SettersOnAttr<T> = {
     [K in keyof T as `set${Capitalize<string & K>}`]: (value: T[K]) => void;
 };
 
-// use a flatten-setter type for this
 type WithSettersOnAttr<T> = T & SettersOnAttr<T>;
 
-// this can not only be used to the setter of zustand create
 function createMutableTypes<T>(initialState: T, set: SetFunction<object>): WithSettersOnAttr<T> {
-    // Don't know how to pre declare a type for this
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const setters: any = {};
 
@@ -145,7 +176,6 @@ function createDefaultValueSetter(set: SetFunction<GlobalStore>): DefaultValueSe
     return (key, value) => set(() => ({ [key]: value }));
 }
 
-// FIXME does this lead to cyclic reference of type GlobalStore?
 type WithDefaultValueSetter = {
     setValue: DefaultValueSetter<GlobalStore>
 };
@@ -160,30 +190,30 @@ const useGlobalStore = create<GlobalStore>()(subscribeWithSelector((set) => ({
     setValue: createDefaultValueSetter(set),
     ...createMutableTypes(configuredMutableGlobalStore, set),
     clear: () => {
-      const newInitialState = { ...initMutableGlobalStore };
-      newInitialState.colorDict = new Map();
-      newInitialState.labelDict = new Map();
-      set(newInitialState);
-      console.log('Global store has been cleared.');
+        const newInitialState = { 
+            ...initMutableGlobalStore,
+            colorDict: new Map(),
+            labelDict: new Map(),
+            selectedListener: new SelectedListener()
+        };
+        set(newInitialState);
     },
-})));    // don't use "as xxx" here so that we can check
+})));
 
-
-// comparison-based update
+// Utility functions for shallow comparison
 export function useShallow<T, K extends keyof T>(
     store: UseBoundStore<StoreApi<T>>,
     keys: K[]
 ): Pick<T, K> {
     return useStoreWithEqualityFn(
         store,
-        (state) =>
-            keys.reduce(
-                (prev, curr) => {
-                    prev[curr] = state[curr];
-                    return prev;
-                },
-                {} as Pick<T, K>
-            ),
+        (state) => {
+            const result = {} as Pick<T, K>;
+            for (const key of keys) {
+                result[key] = state[key];
+            }
+            return result;
+        },
         shallow
     );
 };
@@ -196,16 +226,17 @@ export function useOnSetOperation<T, K extends keyof T>(
     store: UseBoundStore<StoreApi<T>>,
     keys: K[]
 ): Pick<T, K> {
-    const selector = (state: T) =>
-        keys.reduce(
-            (prev, curr) => {
-                prev[curr] = state[curr];
-                return prev;
-            },
-            {} as Pick<T, K>
-        );
-
-    return store(selector);
+    return useStoreWithEqualityFn(
+        store,
+        (state) => {
+            const result = {} as Pick<T, K>;
+            for (const key of keys) {
+                result[key] = state[key];
+            }
+            return result;
+        },
+        shallow
+    );
 }
 
 export const useDefaultStore = <K extends keyof GlobalStore>(keys: K[]) => {
