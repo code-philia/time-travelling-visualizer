@@ -39,6 +39,25 @@ Response:
 @cross_origin()
 def get_training_process_info():
     content_path = request.args.get('content_path')
+    
+    epochs_dir = os.path.join(content_path, 'epochs')
+    available_epochs = []
+
+    if os.path.exists(epochs_dir) and os.path.isdir(epochs_dir):
+        try:
+            for item in os.listdir(epochs_dir):
+                if item.startswith('epoch_'):
+                    full_path = os.path.join(epochs_dir, item)
+                    if os.path.isdir(full_path):
+                        epoch_num_str = item[len('epoch_'):]
+                        if epoch_num_str.isdigit():
+                            available_epochs.append(int(epoch_num_str))
+            
+            available_epochs.sort()
+        except Exception as e:
+            print(f"Error scanning epochs directory: {e}")
+            available_epochs = []
+
     config = read_file_as_json(os.path.join(content_path, 'dataset', 'info.json'))
     
     if config == None or 'classes' not in config:
@@ -55,6 +74,7 @@ def get_training_process_info():
     result = jsonify({
         'color_list': color_list,
         'label_text_list': label_text_list,
+        'available_epochs': available_epochs
     })
     return make_response(result, 200)
 
@@ -377,19 +397,6 @@ def get_visualize_metrics():
     except Exception as e:
         print(e)
         return make_response(jsonify({'error_message': 'Error in calculating metrics'}), 400)
-
-
-@app.route('/getLLMResponse', methods = ["POST"])
-@cross_origin()
-def getLLMResponse():
-    req = request.get_json()
-    input = req['input']
-    try:
-        result = call_llm_agent(input) # {"tool": "xxx", "output": "xxx"}
-        return make_response(jsonify(result), 200)
-    except Exception as e:
-        print(e)
-        return make_response(jsonify({'error_message': 'Error in calculating LLM'}), 400)
 
 
 @app.route('/getInfluenceSamples', methods=["POST"])
