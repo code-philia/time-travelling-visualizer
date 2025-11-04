@@ -35,11 +35,7 @@ export default defineConfig({
         outDir: 'dist',
         rollupOptions: {
             input: {
-                full: resolve(__dirname, './index.html'),
-                extensionPanel: resolve(__dirname, './configs/extension-token-view/index.html'),
-                extensionPlot: resolve(__dirname, './configs/extension-plot-view/index.html'),
-                extensionRight: resolve(__dirname, './configs/extension-function-view/index.html'),
-                extensionInfluence: resolve(__dirname, './configs/extension-influence-view/index.html'),
+                plotView: resolve(__dirname, './configs/plotView/index.html'),
             }
         },
     }
