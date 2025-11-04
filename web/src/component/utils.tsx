@@ -15,6 +15,11 @@ export function createEdges(
     const edges: Edge[] = [];
     const allNodes = new Set<number>();
 
+    if(currentSameType.length === 0 && currentCrossType.length === 0 &&
+       previousSameType.length === 0 && previousCrossType.length === 0) {
+        return edges;
+    }
+
     // Collect all nodes
     [currentSameType, currentCrossType, previousSameType, previousCrossType].forEach(matrix => {
         matrix.forEach((neighbors, node) => {
