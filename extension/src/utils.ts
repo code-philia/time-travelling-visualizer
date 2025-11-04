@@ -1,26 +1,26 @@
-export function convertPropsToPredictions(props: number[][]) {
-    const pred: number[] = [];
-    const confidence: number[] = [];
-    props.forEach((prop) => {
-        let predConfidence = getPredConfidence(prop);
-        pred.push(predConfidence.pred);
-        confidence.push(predConfidence.confidence);
+import * as vscode from 'vscode';
+import * as path from 'path';
+import * as fs from 'fs';
+import * as config from './config';
+
+function replaceUri(html: string, webview: vscode.Webview, srcPattern: string, dst: string): string {
+    // replace all 'matched pattern' URI using webview.asWebviewUri,
+    // which is hosted by VS Code client,
+    // or it cannot be loaded
+    // where the regex pattern should yield the first group as a correct relative path
+    const cssFormattedHtml = html.replace(new RegExp(`(?<=href\="|src\=")${srcPattern}(?=")`, 'g'), (match, ...args) => {
+        if (match) {
+            // console.log(`matched: ${match}`);
+            const formattedCss = webview.asWebviewUri(vscode.Uri.file(path.join(dst, args[0])));
+            return formattedCss.toString();
+        }
+        return "";
     });
-    return { pred: pred, confidence: confidence };
+
+    return cssFormattedHtml;
 }
 
-export function softmax(arr: number[]): number[] {
-    const expValues = arr.map(val => Math.exp(val));
-    const sumExpValues = expValues.reduce((acc, val) => acc + val, 0);
-    return expValues.map(val => val / sumExpValues);
-}
-
-export function getPredConfidence(props: number[]): any {
-    let softmaxValues = softmax(props);
-    let confidence = Math.max(...softmaxValues);
-    let pred = softmaxValues.indexOf(confidence);
-    return {
-        pred: pred,
-        confidence: confidence
-    }
+export function loadHomePage(webview: vscode.Webview, root: string, mapSrc: string, mapDst: string): string {
+    const html = fs.readFileSync(root, 'utf8');
+    return replaceUri(html, webview, mapSrc, mapDst);
 }

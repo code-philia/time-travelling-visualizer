@@ -2,13 +2,10 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as CONFIG from './config';
 import * as api from './api';
-import { PlotViewManager } from "./views/plotView";
 import { isDirectory } from './ioUtils';
 import { getIconUri } from './resources';
 import { MessageManager } from './views/messageManager';
-import { fetchEpochProjection, fetchTrainingProcessInfo, getAlignment, getAttributeResource, getBackground, getOriginalNeighbors, getProjectionNeighbors, getText, triggerStartVisualizing } from './communication/api';
 import path from 'path';
-import { convertPropsToPredictions } from './utils';
 
 /**
  * Config
@@ -323,224 +320,24 @@ export function getPlotSettings(){
  * Load the visualization result
  */
 export async function loadVisualization(forceReconfig: boolean = false): Promise<boolean> {
-	// 1. create or show plot view
-	if (!(PlotViewManager.view)) {
-		try {
-			await PlotViewManager.showView();
-		} catch(e) {
-			vscode.window.showErrorMessage(`Cannot start main view: ${e}`);
-			return false;
-		}
-	}
-
-	// claer cache in each view
-	const clearMessage = {command: 'clear'};
-	MessageManager.sendToPlotView(clearMessage);
-	MessageManager.sendToRightView(clearMessage);
-	MessageManager.sendToTokenView(clearMessage);
-	MessageManager.sendToInfluenceView(clearMessage);
-
-
-	// 2. check the configuration
 	const config = await getConfig(forceReconfig);
 	if (!config) {
 		vscode.window.showErrorMessage("Cannot start visualization: invalid configuration");
 		return false;
 	}
-	
-	// 3. connect with backend
-	const data: {
-		dataType?: string,
-		taskType?: string,
-		availableEpochs?: number[],
-		colorList?: number[][],
-		labelTextList?: string[],
-		tokenList?: string[],
-		labelList?: number[],
-		index?: Record<string, number[]>,
-		scope?: number[],
-		alignment?: number[][],
-	} = {};
-	data['dataType'] = config.dataType;
-	data['taskType'] = config.taskType;
 
-	const infoFilePath = path.join(config.contentPath, 'visualize', config.visualizationID, 'info.json');
-	if (!fs.existsSync(infoFilePath)) {
-		vscode.window.showErrorMessage('No visualization info found!');
-		return false;
-	}
-	const infoContent = fs.readFileSync(infoFilePath, 'utf-8');
-	let info;
-	try {
-		info = JSON.parse(infoContent);
-	} catch (error) {
-		vscode.window.showErrorMessage('Error parsing info.json.');
-		return false;
-	}
-	data['availableEpochs'] = info.available_epochs;
-	data['scope'] = info.scope;
-
-	const trainingInfoRes: any = await fetchTrainingProcessInfo(config.contentPath);
-	data['colorList'] = trainingInfoRes['color_list'];
-	if (data['colorList']) {
-		const colorDict = new Map<number, [number, number, number]>();
-		for (let i = 0; i < data['colorList'].length; i++) {
-			colorDict.set(i, [data['colorList'][i][0], data['colorList'][i][1], data['colorList'][i][2]]);
-		}
-	}
-
-	data['labelTextList'] = trainingInfoRes['label_text_list'];
-	if (data['labelTextList']) {
-		const labelDict = new Map<number, string>();
-		for (let i = 0; i < data['labelTextList'].length; i++) {
-			labelDict.set(i, data['labelTextList'][i]);
-		}
-	}
-
-	const labelRes: any = await getAttributeResource(config.contentPath, 1, 'label');
-	data['labelList'] = labelRes['label'];
-
-	if (config.taskType === "Code-Retrieval") {
-		const textRes: any = await getText(config.contentPath);
-		data['tokenList'] = textRes['text_list'];
-
-		const alignmentRes: any = await getAlignment(config.contentPath);
-		const alignment = alignmentRes['alignment'];
-		data['alignment'] = alignment;
-	}
-
-	const indexRes: any = await getAttributeResource(config.contentPath, 1, 'index');
-	data['index'] = indexRes['index'];
-	
-
-	// 4. send message to views
-	// to plot view
-	const settings = getPlotSettings();
 	const msgToPlotView = {
-		command: 'initPlotSettings',
-		data: settings
+		command: 'loadVisualization',
+		data: {
+			config: config
+		}
 	};
+
+	console.log("Loading visualization with config:", config);
+
 	MessageManager.sendToPlotView(msgToPlotView);
 
-	const msgToPlotView1 = {
-		command: 'initTrainingInfo',
-		data: data
-	};
-	MessageManager.sendToPlotView(msgToPlotView1);
-
-	// to function view
-	const msgToFunctionView = {
-		command: 'init',
-		data: {
-			dataType: data['dataType'],
-			labels: data['labelList'],
-			labelTextList: data['labelTextList'],
-			availableEpochs: data['availableEpochs'],
-			colorList: data['colorList'],
-			tokenList: data['tokenList'],
-		}
-	};
-	MessageManager.sendToRightView(msgToFunctionView);
-
-    // to token view
-    if (config.taskType === "Code-Retrieval") {
-        const msgToTokenView = {
-            command: "init",
-            data: {
-                labels: data["labelList"],
-                tokenList: data["tokenList"],
-                alignment: data["alignment"],
-            },
-        };
-        MessageManager.sendToTokenView(msgToTokenView);
-    }
-
-    // to influence view
-    const msgToInfluenceView = {
-        command: "init",
-        data: {
-            dataType: data["dataType"],
-        },
-    };
-    MessageManager.sendToInfluenceView(msgToInfluenceView);
-
-    loadAllEpochData(config, data["availableEpochs"] || []);
-    return true;
-}
-
-async function loadAllEpochData(config: api.BasicVisualizationConfig, availableEpochs: number[] ): Promise<void> {
-	for (const epoch of availableEpochs) {
-		await loadEpochData(config, epoch);
-	}
-}
-
-async function loadEpochData(config: api.BasicVisualizationConfig, epoch: number): Promise<void> {
-	// projection
-	const projectionRes: any = await fetchEpochProjection(config.contentPath, config.visualizationID, epoch);
-
-	// neighborhood
-	let originalNeighbors: number[][] = [];
-	let projectionNeighbors: number[][] = [];
-	const originalNeighborsRes: any = await getOriginalNeighbors(config.contentPath, epoch);
-	originalNeighbors = originalNeighborsRes['neighbors'];
-	const projectionNeighborsRes: any = await getProjectionNeighbors(config.contentPath, config.visualizationID, epoch);
-	projectionNeighbors = projectionNeighborsRes['neighbors'];
-
-	// classification info
-	let predProbability: number[][] = [];
-	let bgimg: string = '';
-	if (config.taskType === 'Classification') {
-		const predRes: any = await getAttributeResource(config.contentPath, epoch, 'prediction');
-		predProbability = predRes['prediction'];
-
-		const bgimgRes = await getBackground(config.contentPath, config.visualizationID, epoch);
-		bgimg = bgimgRes;
-	}
-	const predAndConf = convertPropsToPredictions(predProbability);
-
-	// send messages to views
-	// to plot view
-	const msgToPlotView = {
-		command: 'updateEpochData',
-		data: {
-			epoch: epoch,
-			taskType: config.taskType,
-			projection: projectionRes['projection'],
-			originalNeighbors: originalNeighbors,
-			projectionNeighbors: projectionNeighbors,
-			prediction: predAndConf.pred,
-			confidence: predAndConf.confidence,
-			predProbability: predProbability,
-			background: bgimg
-		}
-	};
-	MessageManager.sendToPlotView(msgToPlotView);
-
-	// to function view
-	const msgToFunctionView = {
-		command: 'updateEpochData',
-		data: {
-			epoch: epoch,
-			prediction: predAndConf.pred,
-			confidence: predAndConf.confidence,
-			probability: predProbability,
-			originalNeighbors: originalNeighbors,
-			projectionNeighbors: projectionNeighbors,
-			projection: projectionRes['projection'],
-		}
-	};
-	MessageManager.sendToRightView(msgToFunctionView);
-
-	// to token view
-	const msgToTokenView = {
-		command: 'updateNeighbors',
-		data: {
-			epoch: epoch,
-			originalNeighbors: originalNeighbors,
-			projectionNeighbors: projectionNeighbors,
-		}
-	};
-	MessageManager.sendToTokenView(msgToTokenView);
+	return true;
 }
 
 export async function loadVisualizationThroughTreeItem(dataType: string, taskType: string, trainingProcess: string, visualizationID: string): Promise<boolean> {
@@ -555,53 +352,12 @@ export async function loadVisualizationThroughTreeItem(dataType: string, taskTyp
  * Start visualizing
  */
 export async function startVisualizing(): Promise<boolean> {
-	const config = getBasicConfig();
-	if (!config) {
-		vscode.window.showErrorMessage("Cannot start visualization: invalid configuration");
-		return false;
-	}
-	vscode.window.showInformationMessage("Start visualizing...");
-	const visConfig = getVisConfig(config.visualizationMethod);
-	await triggerStartVisualizing(config.contentPath, config.visualizationMethod, config.visualizationID, config.dataType, config.taskType, visConfig );
+	// TODO: send command to plot view to indicate starting visualization
 	return true;
 }
 
 export async function startVisualizingThroughTreeItem(trainingProcess: string): Promise<boolean> {
-    const dataType = await repickConfig(
-        "Select the type of your data",
-        [
-            { iconId: "image-type", label: "Image" },
-            { iconId: "text-type", label: "Text" },
-        ]
-    );
-    const taskType = await repickConfig(
-        "Select the type of your model task",
-        [
-            { iconId: "classification-task", label: "Classification" },
-            { iconId: "non-classification-task", label: "Code-Retrieval" },
-        ]
-	);
-	const visualizationMethod = await repickConfig(
-		"Select the visualization method",
-		[
-			{ label: "UMAP", description: "(default)" },
-			{ label: "TimeVis" },
-			{ label: "DVI" },
-			{ label: "DynaVis" },
-		]
-	);
-	const visualizationID = await repickConfig(
-		"Enter the output folder name (e.g. TimeVis_1)"
-	);
-
-    // Wait for settings to update before proceeding
-	await updateBasicConfig(dataType, taskType, trainingProcess, visualizationID);
-	
-	vscode.window.showInformationMessage("Start visualizing...");
-	const visConfig = getVisConfig(visualizationMethod);
-
-	const workspacePath = getOpenedFolderPath();
-	await triggerStartVisualizing(path.join(workspacePath, trainingProcess), visualizationMethod, visualizationID, dataType, taskType, visConfig );
+	// TODO: send command to plot view to indicate starting visualization
 	return true;
 }
 
