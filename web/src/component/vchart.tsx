@@ -2,9 +2,9 @@
 import { memo, useEffect, useRef } from 'react';
 import VChart from '@visactor/vchart';
 import { Edge } from './types';
-import { useDefaultStore } from "../state/state.plotView";
+import { useDefaultStore } from "../state/state.unified";
 import { createEdges, softmax, transferArray2Color } from './utils';
-import { notifyHoveredIndexSwitch, notifySelectedIndicesSwitch } from '../communication/viewMessage';
+import { notifyHoveredIndexSwitch, notifySelectedIndicesSwitch } from '../communication/extension';
 const BACKGROUND_PADDING = 0.5;
 
 export const ChartComponent = memo(() => {
@@ -12,13 +12,9 @@ export const ChartComponent = memo(() => {
     const vchartRef = useRef<VChart | null>(null);
 
     // Here are data from useStore
-    const { epoch, allEpochData, alignment} = useDefaultStore(["epoch", "allEpochData", "alignment"]);
+    const { epoch, availableEpochs, allEpochData} = useDefaultStore(["epoch", "availableEpochs", "allEpochData"]);
     const { inherentLabelData, labelDict, colorDict } = useDefaultStore(["inherentLabelData", "labelDict", "colorDict"]);
-    // const { filterValue, filterType } = useDefaultStore(["filterValue", "filterType"]);
-    // const { filterState } = useDefaultStore(["filterState"]);
     const { showIndex, showLabel,showBackground, showTrail, textData } = useDefaultStore(["showIndex", "showLabel", "showBackground","showTrail","textData"])
-    const { availableEpochs } = useDefaultStore(["availableEpochs"]);
-    const { scope } = useDefaultStore(["scope"]);
     const { revealProjectionNeighbors, revealOriginalNeighbors } = useDefaultStore(["revealProjectionNeighbors", "revealOriginalNeighbors"]);
     const { hoveredIndex, setHoveredIndex, selectedIndices, setSelectedIndices, selectedListener } = useDefaultStore(["hoveredIndex", "setHoveredIndex", "selectedIndices", "setSelectedIndices", "selectedListener"]);
     const { shownData, highlightData, index } = useDefaultStore(["shownData", "highlightData", "index"]);
@@ -26,7 +22,7 @@ export const ChartComponent = memo(() => {
     const { isFocusMode, focusIndices } = useDefaultStore(["isFocusMode", "focusIndices"]);
     const { trainingEvents } = useDefaultStore(["trainingEvents"]);
 
-    const samplesRef = useRef<{ pointId: number, x: number; y: number; label: number; pred: number; label_desc: string; pred_desc: string; confidence: number; textSample: string; groupColor?: string}[]>([]);
+    const samplesRef = useRef<{ pointId: number, x: number; y: number; label: number; pred: number; label_desc: string; pred_desc: string; confidence: number; textSample: string;}[]>([]);
     const edgesRef = useRef<Edge[]>([]);
     const wrongRef = useRef<number[]>([]);
     const flipRef = useRef<number[]>([]);
@@ -63,21 +59,24 @@ export const ChartComponent = memo(() => {
             return;
         }
 
+        console.log('Rendering epoch: ', epoch);
+        console.log('Epoch data: ', epochData);
+
         samplesRef.current = [];
         wrongRef.current = [];
         flipRef.current = [];
-        let x_min = scope[0], y_min = scope[1], x_max = scope[2], y_max = scope[3];
 
-        const groupColors = ["#ff595e","#1982c4","#8ac926","#ff924c","#ffca3a","#52a675","#36949d","#4267ac","#6a4c93","#b5a6c9"];
-
-        const tokenToGroup = new Map<number, number>();
-        (alignment || []).forEach((group, gIdx) => {
-            group.forEach(tokenIdx => tokenToGroup.set(tokenIdx, gIdx));
-        });
+        let x_min = Infinity, x_max=-Infinity, y_min=Infinity, y_max=-Infinity;
 
         epochData.projection.forEach((p, i) => {
             const x = parseFloat(p[0].toFixed(3));
             const y = parseFloat(p[1].toFixed(3));
+
+            if (x < x_min) x_min = x;
+            if (x > x_max) x_max = x;
+            if (y < y_min) y_min = y;
+            if (y > y_max) y_max = y;
+
             let confidence = 1.0;
             let pred = inherentLabelData[i];
             if (epochData.predProbability && epochData.predProbability.length > 0) {
@@ -85,9 +84,6 @@ export const ChartComponent = memo(() => {
                 confidence = Math.max(...softmaxValues);
                 pred = softmaxValues.indexOf(confidence);
             }
-
-            const groupIdx = tokenToGroup.get(i);
-            const groupColor = groupIdx !== undefined ? groupColors[groupIdx] : undefined;
 
             samplesRef.current.push({
                 pointId: i,
@@ -99,7 +95,6 @@ export const ChartComponent = memo(() => {
                 pred_desc: labelDict.get(pred) ?? labelDict.get(inherentLabelData[i]) ?? '',
                 confidence,
                 textSample: textData ? textData[i] ?? '' : '',
-                groupColor,
             });
 
             if (pred !== inherentLabelData[i]) {
@@ -113,11 +108,13 @@ export const ChartComponent = memo(() => {
                 }
             }
         });
+
         edgesRef.current = createEdges(epochData.originalNeighbors, epochData.projectionNeighbors, [], []);
+
+        console.log("All samples: ", samplesRef.current);
 
         // create spec
         const spec: any = {
-            // ================= meta data =================
             type: 'common', // chart type
             padding: 0,
             animation: false,
@@ -125,29 +122,6 @@ export const ChartComponent = memo(() => {
                 {
                     id: 'points',
                     values: samplesRef.current,
-                    transforms: [
-                        {
-                            type: 'filter',
-                            options: {
-                                // callback: (datum: { label_desc: string; pred_desc: string; }) => {
-                                //     if (filterState) {
-                                //         const filterValues = filterValue.split(',').map(value => value.trim());
-                                //         if (filterType === 'label') {
-                                //             return filterValues.includes(datum.label_desc);
-                                //         } else if (filterType === 'prediction') {
-                                //             return filterValues.includes(datum.pred_desc);
-                                //         }
-                                //     }
-                                //     return true;
-                                // }
-                                callback: (datum: { pointId: number; }) => {
-                                    let includeByIndexFile= shownData.some((key) => index[key]?.includes(datum.pointId));
-                                    let includeByFocus = isFocusMode ? focusIndices.includes(datum.pointId) : true;
-                                    return includeByIndexFile && includeByFocus;
-                                }
-                            }
-                        }
-                    ]
                 },
                 {
                     id: 'edges',
@@ -366,8 +340,6 @@ export const ChartComponent = memo(() => {
                                 },
                                 type: 'text',
                                 fontFamily: 'Console',
-                                // fontStyle: 'italic',
-                                // fontWeight: 'bold',
                                 text: (datum: { pointId: any; textSample: string; label: number; }) => {
                                     if (showLabel && showIndex) {
                                         return `${datum.pointId}.${datum.textSample == '' ? labelDict.get(datum.label) : datum.textSample}`;
@@ -388,7 +360,6 @@ export const ChartComponent = memo(() => {
                 }
             ],
 
-            // ================= axes =================
             axes: [
                 {
                     visible: false,
@@ -467,7 +438,7 @@ export const ChartComponent = memo(() => {
             vchartRef.current.updateSpec(spec);
         }
         vchartRef.current.renderSync();
-    }, [epoch, allEpochData, showIndex, showLabel, showBackground, shownData, highlightData, index, availableEpochs, isFocusMode, focusIndices, alignment]);
+    }, [epoch, allEpochData, showIndex, showLabel, showBackground, shownData, highlightData, index, availableEpochs, isFocusMode, focusIndices]);
 
 
     /*
