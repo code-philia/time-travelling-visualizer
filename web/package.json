@@ -17,6 +17,7 @@
     "@types/three": "^0.169.0",
     "@visactor/vchart": "^1.13.2",
     "antd": "^5.24.8",
+    "axios": "^1.13.1",
     "js-cookie": "^3.0.5",
     "mathjax3-react": "^1.2.0",
     "react": "^18.3.1",
