@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useDefaultStore } from '../state/state.unified';
-import ChartComponent from './vchart';
+import ChartComponent from './chart';
 import { notifyEpochSwitch } from '../communication/extension';
 
 // https://stackoverflow.com/questions/54095994/react-useeffect-comparing-objects
@@ -234,9 +234,7 @@ export function MainBlock() {
     // only consider single container for now
     return (
         <div className="canvas-column">
-            <div id="canvas-wrapper" style={{ height: "100%", width: "100%" }}>
-                <ChartComponent/>
-            </div>
+            <ChartComponent/>
             <div id="footer">
                 <div style={{ display: 'flex', alignItems: 'center', height: '100%', width: '100%', overflowX: 'auto', overflowY: 'hidden' }}>
                     <Timeline epoch={epoch} epochs={availableEpochs} progress={ progress} onSwitchEpoch={(e) => {
