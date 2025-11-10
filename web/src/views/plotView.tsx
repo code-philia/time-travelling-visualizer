@@ -16,6 +16,12 @@ import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 
 import { acquireSettings } from '../communication/extension';
 
+const LOG_PREFIX = '[TTVisualizer]';
+
+function logWithTimestamp(message: string): void {
+    console.log(`${LOG_PREFIX}[${new Date().toISOString()}] ${message}`);
+}
+
 createRoot(document.getElementById("root")!).render(
     <StrictMode>
         <AppCombinedView />
@@ -51,7 +57,7 @@ function MessageHandler() {
         try {
             const { contentPath, visualizationMethod, visualizationID, dataType, taskType} = config;
             
-            console.log('Loading visualization with config:', config);
+            logWithTimestamp(`Web plot view start loading visualization. config=${JSON.stringify({ contentPath, visualizationMethod, visualizationID, dataType, taskType })}`);
             
             // Set basic configuration
             setContentPath(contentPath);
@@ -62,6 +68,9 @@ function MessageHandler() {
             const processInfo = await BackendAPI.fetchTrainingProcessInfo(contentPath);
             const epochs = processInfo.available_epochs || [];
             setAvailableEpochs(epochs);
+            if (!epochs.length) {
+                logWithTimestamp('No epochs available from backend.');
+            }
 
             const colorMap = new Map();
             const labelMap = new Map();
@@ -85,8 +94,19 @@ function MessageHandler() {
 
             // Load epoch data for all available epochs
             let allEpochDataTemp: Record<number, any> = {};
+            let firstEpochRequestTimestamp: Date | undefined;
+            let lastEpochReceiveTimestamp: Date | undefined;
+            const totalEpochCount = epochs.length;
 
             for (const epochNum of epochs) {
+                const epochRequestStart = new Date();
+                if (!firstEpochRequestTimestamp) {
+                    firstEpochRequestTimestamp = epochRequestStart;
+                    logWithTimestamp(`First epoch request sent. epoch=${epochNum} at ${epochRequestStart.toISOString()}`);
+                } else {
+                    logWithTimestamp(`Epoch request sent. epoch=${epochNum} at ${epochRequestStart.toISOString()}`);
+                }
+
                 setProgress((epochNum / epochs.length) * 100);
 
                 allEpochDataTemp = { ...allEpochDataTemp, [epochNum]: {} };
@@ -118,6 +138,17 @@ function MessageHandler() {
                 }
 
                 setValue('allEpochData', { ...allEpochDataTemp });
+
+                lastEpochReceiveTimestamp = new Date();
+                const latencyMs = lastEpochReceiveTimestamp.getTime() - epochRequestStart.getTime();
+                logWithTimestamp(`Epoch data received. epoch=${epochNum} at ${lastEpochReceiveTimestamp.toISOString()} duration=${latencyMs} ms`);
+            }
+
+            if (firstEpochRequestTimestamp) {
+                logWithTimestamp(`First epoch request timestamp recorded at ${firstEpochRequestTimestamp.toISOString()}.`);
+            }
+            if (lastEpochReceiveTimestamp) {
+                logWithTimestamp(`Last epoch data received at ${lastEpochReceiveTimestamp.toISOString()} after processing ${totalEpochCount} epoch(s).`);
             }
             
             setProgress(100);
