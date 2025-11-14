@@ -194,7 +194,6 @@ type WithClear = {
     clear: () => void;
 };
 
-// NEW: helpers for loadedEpochs used by plotView / main-block
 type WithLoadedEpochHelpers = {
     addLoadedEpoch: (epoch: number) => void;
     resetLoadedEpochs: () => void;

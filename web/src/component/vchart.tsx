@@ -1,34 +1,42 @@
-// web/src/component/vchart.tsx
+// ChartComponent.tsx
 import { memo, useEffect, useRef } from 'react';
 import VChart from '@visactor/vchart';
 import { Edge } from './types';
 import { useDefaultStore } from "../state/state.unified";
 import { createEdges, softmax, transferArray2Color } from './utils';
 import { notifyHoveredIndexSwitch, notifySelectedIndicesSwitch } from '../communication/extension';
-
 const BACKGROUND_PADDING = 0.5;
 
 export const ChartComponent = memo(() => {
     const chartRef = useRef<HTMLDivElement>(null);
     const vchartRef = useRef<VChart | null>(null);
 
-    // Store data
+    // Here are data from useStore
     const { epoch, availableEpochs, allEpochData } = useDefaultStore(["epoch", "availableEpochs", "allEpochData"]);
     const { inherentLabelData, labelDict, colorDict } = useDefaultStore(["inherentLabelData", "labelDict", "colorDict"]);
-    const { showIndex, showLabel, showBackground, showTrail, textData } = useDefaultStore(["showIndex", "showLabel", "showBackground", "showTrail", "textData"]);
-    const { revealProjectionNeighbors, revealOriginalNeighbors } = useDefaultStore(["revealProjectionNeighbors", "revealOriginalNeighbors"]);
+    const { showIndex, showLabel, showBackground, showTrail, textData } =
+        useDefaultStore(["showIndex", "showLabel", "showBackground", "showTrail", "textData"]);
+    const { revealProjectionNeighbors, revealOriginalNeighbors } =
+        useDefaultStore(["revealProjectionNeighbors", "revealOriginalNeighbors"]);
     const { hoveredIndex, setHoveredIndex, selectedIndices, setSelectedIndices, selectedListener } =
         useDefaultStore(["hoveredIndex", "setHoveredIndex", "selectedIndices", "setSelectedIndices", "selectedListener"]);
     const { shownData, highlightData, index } = useDefaultStore(["shownData", "highlightData", "index"]);
+
     const { isFocusMode, focusIndices } = useDefaultStore(["isFocusMode", "focusIndices"]);
     const { trainingEvents } = useDefaultStore(["trainingEvents"]);
 
-    const samplesRef = useRef<{ pointId: number; x: number; y: number; label: number; pred: number; label_desc: string; pred_desc: string; confidence: number; textSample: string; }[]>([]);
+    const samplesRef = useRef<{
+        pointId: number,
+        x: number; y: number;
+        label: number; pred: number;
+        label_desc: string; pred_desc: string;
+        confidence: number; textSample: string;
+    }[]>([]);
     const edgesRef = useRef<Edge[]>([]);
     const wrongRef = useRef<number[]>([]);
     const flipRef = useRef<number[]>([]);
 
-    // Listen to selectedIndices changes originating from canvas (clicks / training events)
+    // listen to selectedIndices change in canvas
     useEffect(() => {
         const listener = () => {
             console.log("Highlight Listener In VChart Triggered.");
@@ -43,13 +51,13 @@ export const ChartComponent = memo(() => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // Propagate selectedIndices changes from other components into SelectedListener
+    // listen to selectedIndices change in other components
     useEffect(() => {
         selectedListener.setSelected([...selectedIndices]);
     }, [selectedIndices, selectedListener]);
 
     /*
-        Main update logic (re-render scatter plot when epoch or config changes)
+        Main update logic
     */
     useEffect(() => {
         if (!chartRef.current) {
@@ -89,11 +97,11 @@ export const ChartComponent = memo(() => {
 
             samplesRef.current.push({
                 pointId: i,
-                x,
-                y,
+                x: x,
+                y: y,
                 label: inherentLabelData[i],
                 label_desc: labelDict.get(inherentLabelData[i]) ?? '',
-                pred,
+                pred: pred,
                 pred_desc: labelDict.get(pred) ?? labelDict.get(inherentLabelData[i]) ?? '',
                 confidence,
                 textSample: textData ? textData[i] ?? '' : '',
@@ -102,7 +110,6 @@ export const ChartComponent = memo(() => {
             if (pred !== inherentLabelData[i]) {
                 wrongRef.current.push(i);
             }
-
             const epochId = availableEpochs.indexOf(epoch);
             if (epochId > 0 && epochData.predProbability && epochData.predProbability.length > 0) {
                 const lastEpochData = allEpochData[availableEpochs[epochId - 1]];
@@ -116,29 +123,30 @@ export const ChartComponent = memo(() => {
 
         console.log("All samples: ", samplesRef.current);
 
-        // VChart spec
+        // create spec
         const spec: any = {
-            type: 'common',
+            type: 'common', // chart type
             padding: 0,
             animation: false,
             data: [
                 {
                     id: 'points',
-                    values: samplesRef.current
+                    values: samplesRef.current,
                 },
                 {
                     id: 'edges',
-                    values: []
+                    values: [] // dynamically constructed
                 },
                 {
                     id: 'trails',
-                    values: []
+                    values: [] // dynamically constructed
                 },
                 {
                     id: 'events',
-                    values: []
+                    values: [] // dynamically constructed
                 }
             ],
+
             series: [
                 {
                     id: 'background-series',
@@ -157,10 +165,10 @@ export const ChartComponent = memo(() => {
                     xField: 'xx',
                     yField: 'yy',
                     point: {
-                        visible: false
+                        visible: false,
                     },
                     line: {
-                        visible: false
+                        visible: false,
                     },
                     area: {
                         interactive: false,
@@ -173,10 +181,10 @@ export const ChartComponent = memo(() => {
                         }
                     },
                     hover: {
-                        enable: false
+                        enable: false,
                     },
                     select: {
-                        enable: false
+                        enable: false,
                     }
                 },
                 {
@@ -202,16 +210,17 @@ export const ChartComponent = memo(() => {
                             fillOpacity: (datum: { opacity: number }) => {
                                 return Math.max(0.5, datum.opacity);
                             },
-                            size: () => {
+                            size: (datum: { opacity: number }) => {
+                                // return Math.max(5, 7.5 * datum.opacity);
                                 return 6.5;
-                            }
+                            },
                         }
                     },
                     hover: {
-                        enable: false
+                        enable: false,
                     },
                     select: {
-                        enable: false
+                        enable: false,
                     }
                 },
                 {
@@ -226,7 +235,7 @@ export const ChartComponent = memo(() => {
                             stroke: 'rgb(168, 168, 168)',
                             lineWidth: 3,
                             lineDash: [4, 4],
-                            boundsPadding: 10
+                            boundsPadding: 10,
                         }
                     },
                     point: {
@@ -254,11 +263,8 @@ export const ChartComponent = memo(() => {
                     yField: 'y',
                     line: {
                         style: {
-                            stroke: (datum: { from: number; to: number; type: string; }) => {
-                                return transferArray2Color(
-                                    colorDict.get(samplesRef.current[datum.to].label),
-                                    0.6
-                                );
+                            stroke: (datum: { from: number, to: number, type: string; }) => {
+                                return transferArray2Color(colorDict.get(samplesRef.current[datum.to].label), 0.6);
                             },
                             lineDash: (datum: { type: string; }) => {
                                 if (datum.type === 'highDim') {
@@ -275,7 +281,7 @@ export const ChartComponent = memo(() => {
                                     return 1;
                                 }
                                 return 0.8;
-                            }
+                            },
                         }
                     },
                     point: { visible: false }
@@ -315,9 +321,10 @@ export const ChartComponent = memo(() => {
                             fill: (datum: { label: number; groupColor: string }) => {
                                 if (highlightData.includes("prediction_flip")) {
                                     return datum.groupColor ?? "black";
-                                } else {
+                                }
+                                else {
                                     const color = colorDict.get(datum.label) ?? [0, 0, 0];
-                                    return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
+                                    return `rgb(${color[0]}, ${color[1]}, ${color[2]})`
                                 }
                             },
                             fillOpacity: (datum: { confidence: number; }) => {
@@ -329,9 +336,9 @@ export const ChartComponent = memo(() => {
                                         distance: 1.5,
                                         lineWidth: 1.5,
                                         stroke: 'rgba(255, 0, 0, 0.75)'
-                                    };
+                                    }
                                 }
-                            }
+                            },
                         }
                     },
                     label: [
@@ -345,13 +352,16 @@ export const ChartComponent = memo(() => {
                                 fontFamily: 'Console',
                                 text: (datum: { pointId: any; textSample: string; label: number; }) => {
                                     if (showLabel && showIndex) {
-                                        return `${datum.pointId}.${datum.textSample === '' ? labelDict.get(datum.label) : datum.textSample}`;
-                                    } else if (showLabel) {
-                                        return datum.textSample === '' ? labelDict.get(datum.label) : datum.textSample;
-                                    } else if (showIndex) {
+                                        return `${datum.pointId}.${datum.textSample == '' ? labelDict.get(datum.label) : datum.textSample}`;
+                                    }
+                                    else if (showLabel) {
+                                        return datum.textSample == '' ? labelDict.get(datum.label) : datum.textSample;
+                                    }
+                                    else if (showIndex) {
                                         return `${datum.pointId}`;
                                     }
                                 },
+
                                 fill: 'black',
                                 fontSize: 12
                             }
@@ -359,6 +369,7 @@ export const ChartComponent = memo(() => {
                     ]
                 }
             ],
+
             axes: [
                 {
                     visible: false,
@@ -408,14 +419,14 @@ export const ChartComponent = memo(() => {
                         enable: true,
                         reverse: true,
                         rate: 0.3
-                    }
+                    },
                 }
             ],
             tooltip: { visible: false },
             direction: 'horizontal'
         };
 
-        // Create or update chart
+        // create or update vchart
         if (!vchartRef.current) {
             const vchart = new VChart(spec, { dom: chartRef.current });
             vchartRef.current = vchart;
@@ -424,20 +435,18 @@ export const ChartComponent = memo(() => {
                 setHoveredIndex(e.datum?.pointId);
                 notifyHoveredIndexSwitch(e.datum?.pointId);
             });
-
             vchartRef.current.on('pointerout', { id: 'point-series' }, () => {
                 setHoveredIndex(undefined);
                 notifyHoveredIndexSwitch(undefined);
             });
-
             vchartRef.current.on('click', { id: 'point-series' }, (e: any) => {
                 const pointId = e.datum?.pointId;
                 selectedListener.switchSelected(pointId);
             });
-        } else {
+        }
+        else {
             vchartRef.current.updateSpec(spec);
         }
-
         vchartRef.current.renderSync();
     }, [
         epoch,
@@ -458,8 +467,9 @@ export const ChartComponent = memo(() => {
         selectedListener
     ]);
 
+
     /*
-        Highlight locked points and neighbors
+        Highlight locked points
     */
     useEffect(() => {
         if (!vchartRef.current) {
@@ -469,50 +479,54 @@ export const ChartComponent = memo(() => {
         if (selectedIndices.length === 0 && hoveredIndex === -1) {
             vchartRef.current.updateState({
                 locked: {
-                    filter: () => false
+                    filter: () => {
+                        return false;
+                    }
                 },
                 as_neighbor: {
-                    filter: () => false
+                    filter: () => {
+                        return false;
+                    }
                 }
             });
             return;
         }
 
         const selectedNeighbors: number[] = [];
-        edgesRef.current.forEach((edge) => {
-            if (edge.from === hoveredIndex || selectedIndices.includes(edge.from)) {
+        edgesRef.current.forEach((edge, _) => {
+            if (edge.from == hoveredIndex || selectedIndices.includes(edge.from)) {
                 selectedNeighbors.push(edge.to);
             }
         });
-
         vchartRef.current.updateState({
             as_neighbor: {
-                filter: (datum: any) => selectedNeighbors.includes(datum.pointId)
+                filter: (datum: any) => {
+                    return selectedNeighbors.includes(datum.pointId);
+                }
             }
         });
 
         vchartRef.current.updateState({
             locked: {
-                filter: (datum: any) => selectedIndices.includes(datum.pointId)
+                filter: (datum: any) => {
+                    return selectedIndices.includes(datum.pointId);
+                }
             }
         });
     }, [epoch, allEpochData, hoveredIndex, selectedIndices]);
 
     /*
-        Show neighborhood relationships (edges)
+        Show neighborhood relationship
     */
     useEffect(() => {
         if (!vchartRef.current) {
             return;
         }
 
-        const endpoints: { edgeId: number; from: number; to: number; x: number; y: number; type: string; status: string }[] = [];
+        const endpoints: { edgeId: number, from: number, to: number, x: number, y: number, type: string, status: string }[] = [];
         edgesRef.current.forEach((edge, index) => {
             if (edge.from === hoveredIndex) {
-                if (
-                    (revealProjectionNeighbors && edge.type === 'lowDim') ||
-                    (revealOriginalNeighbors && edge.type === 'highDim')
-                ) {
+                if ((revealProjectionNeighbors && edge.type === 'lowDim') || (revealOriginalNeighbors && edge.type === 'highDim')) {
                     endpoints.push({
                         edgeId: index,
                         from: edge.from,
@@ -534,9 +548,10 @@ export const ChartComponent = memo(() => {
                 }
             }
         });
-
         vchartRef.current.updateDataSync('edges', endpoints);
+
     }, [revealProjectionNeighbors, revealOriginalNeighbors, hoveredIndex]);
+
 
     /*
         Update motion trail
@@ -545,19 +560,16 @@ export const ChartComponent = memo(() => {
         if (!vchartRef.current) {
             return;
         }
-
         if (!showTrail || selectedIndices.length === 0) {
             vchartRef.current.updateDataSync('trails', []);
             return;
         }
-
-        const trailpoints: { trailId: number; x: number; y: number; opacity: number }[] = [];
+        const trailpoints: { trailId: number, x: number, y: number, opacity: number }[] = [];
         const epochId = availableEpochs.indexOf(epoch);
-
         selectedIndices.forEach(idx => {
             let i;
             for (i = 0; i <= epochId; i += 1) {
-                const epochData = allEpochData[availableEpochs[i]];
+                let epochData = allEpochData[availableEpochs[i]];
                 trailpoints.push({
                     trailId: idx,
                     x: epochData.projection[idx][0],
@@ -566,7 +578,7 @@ export const ChartComponent = memo(() => {
                 });
             }
             if (i !== epochId + 1) {
-                const epochData = allEpochData[epoch];
+                let epochData = allEpochData[epoch];
                 trailpoints.push({
                     trailId: idx,
                     x: epochData.projection[idx][0],
@@ -575,24 +587,23 @@ export const ChartComponent = memo(() => {
                 });
             }
         });
-
         vchartRef.current.updateDataSync('trails', trailpoints);
     }, [showTrail, selectedIndices, epoch, availableEpochs, allEpochData]);
 
-    /*
-        Update training-event-based selection
-
-        IMPORTANT FIX:
-        - Do NOT clear selections when there are no trainingEvents.
+    /*  
+        Update training events 
+        FIX FOR TASK 55:
+        - Do NOT clear selections when there are no training events.
         - This preserves manually locked points when switching epochs.
     */
     useEffect(() => {
-        if (!vchartRef.current || !trainingEvents) {
+        if (!vchartRef.current) {
             return;
         }
 
-        // If there are no training events, don't touch the current selections.
-        if (trainingEvents.length === 0) {
+        // If there are no training events, just clear the event lines but KEEP current selections.
+        if (!trainingEvents || trainingEvents.length === 0) {
+            vchartRef.current.updateDataSync('events', []);
             return;
         }
 
@@ -602,7 +613,7 @@ export const ChartComponent = memo(() => {
             return;
         }
 
-        // Now we know we have training events; these control selection.
+        // Now we know we have training events for this epoch — they control selection.
         selectedListener.clearSelected();
 
         trainingEvents.forEach((event) => {
@@ -618,18 +629,16 @@ export const ChartComponent = memo(() => {
         });
     }, [trainingEvents, epoch, allEpochData, availableEpochs, selectedListener]);
 
-    return (
-        <div
-            ref={chartRef}
-            id="chart"
-            style={{
-                width: '100%',
-                height: '100%',
-                margin: 0,
-                padding: 0
-            }}
-        />
-    );
+    return <div
+        ref={chartRef}
+        id="chart"
+        style={{
+            width: '100%',
+            height: '100%',
+            margin: 0,
+            padding: 0
+        }}>
+    </div>;
 });
 
 export default ChartComponent;

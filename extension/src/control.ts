@@ -46,7 +46,6 @@ export function getOpenedFolderPath(): string {
     return "";
 }
 
-
 function checkDefaultVisualizationConfig(): api.BasicVisualizationConfig | undefined {
 	const visConfigSet = vscode.workspace.getConfiguration(CONFIG.configurationBaseName);
 	const dataType = visConfigSet.get(CONFIG.ConfigurationID.dataType);
@@ -244,7 +243,7 @@ function updateBasicConfig(
             visConfigSet.update(CONFIG.ConfigurationID.visualizationID, visualizationID, vscode.ConfigurationTarget.Global),
         ])
         .then(() => {
-            // All good, nothing to return -> Promise<void>
+
         })
         .catch((err) => {
             vscode.window.showErrorMessage(`Failed to update user settings: ${err}`);
@@ -403,10 +402,9 @@ export async function startVisualizingThroughTreeItem(
 	trainingProcess?: string,
 	visualizationID?: string
 ): Promise<boolean> {
-	// Case 1: called with 4 arguments:
-	//   (dataType, taskType, trainingProcess, visualizationID)
+	
 	if (taskType && trainingProcess && typeof visualizationID === 'string') {
-		// Update full basic config from tree item selection
+	
 		await updateBasicConfig(
 			dataTypeOrTrainingProcess, // dataType
 			taskType,
@@ -414,16 +412,13 @@ export async function startVisualizingThroughTreeItem(
 			visualizationID
 		);
 
-		// Then trigger start visualizing with the current config
+		
 		return await startVisualizing();
 	}
 
-	// Case 2: called with a single argument:
-	//   (trainingProcess)
-	// This keeps compatibility with older call sites that only pass the path
+
 	const trainingProcessPath = dataTypeOrTrainingProcess;
 
-	// Update just the training process in the user settings
 	const visConfigSet = vscode.workspace.getConfiguration(CONFIG.configurationBaseName);
 	await visConfigSet.update(
 		CONFIG.ConfigurationID.trainingProcess,
@@ -431,7 +426,6 @@ export async function startVisualizingThroughTreeItem(
 		vscode.ConfigurationTarget.Global
 	);
 
-	// Now start visualizing using whatever dataType/taskType/etc. are already saved
 	return await startVisualizing();
 }
 

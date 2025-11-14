@@ -64,7 +64,6 @@ function openPlotView() {
             'revealProjectionNeighbors',
         ];
     
-        // Collect all changed settings
         const updatedSettings: Record<string, any> = {};
     
         for (const setting of settingsToCheck) {
@@ -75,7 +74,6 @@ function openPlotView() {
             }
         }
     
-        // Send all updated settings in one message
         if (Object.keys(updatedSettings).length > 0 && panel) {
             panel.webview.postMessage({
                 command: 'updatePlotSettings',

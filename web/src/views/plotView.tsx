@@ -25,31 +25,11 @@ createRoot(document.getElementById("root")!).render(
 // MessageHandler component for handling extension communication and backend requests
 function MessageHandler() {
     const {
-        setAvailableEpochs,
-        setDataType,
-        setTaskType,
-        setTextData,
-        setTokenList,
-        setInherentLabelData,
-        setColorDict,
-        setLabelDict,
-        setProgress,
-        setValue,
-        addLoadedEpoch,
-        resetLoadedEpochs,
+        setAvailableEpochs,setDataType,setTaskType,setTextData,setTokenList,setInherentLabelData,setColorDict,
+        setLabelDict,setProgress,setValue,addLoadedEpoch,resetLoadedEpochs,
     } = useDefaultStore([
-        'setAvailableEpochs',
-        'setDataType',
-        'setTaskType',
-        'setTextData',
-        'setTokenList',
-        'setInherentLabelData',
-        'setColorDict',
-        'setLabelDict',
-        'setProgress',
-        'setValue',
-        'addLoadedEpoch',
-        'resetLoadedEpochs',
+        'setAvailableEpochs', 'setDataType','setTaskType','setTextData','setTokenList','setInherentLabelData',
+        'setColorDict','setLabelDict','setProgress','setValue','addLoadedEpoch','resetLoadedEpochs',
     ]);
 
     const handleUpdateSettings = (settings: any) => {
@@ -67,8 +47,6 @@ function MessageHandler() {
             const { contentPath, visualizationID, dataType, taskType } = config;
 
             console.log('Loading visualization with config:', config);
-
-            // reset progress and loaded-epoch state at the beginning of a new load
             setProgress(0);
             resetLoadedEpochs();
 
@@ -95,7 +73,6 @@ function MessageHandler() {
             setColorDict(colorMap);
             setLabelDict(labelMap);
 
-            // Load labels for the first epoch
             if (epochs.length === 0) {
                 message.warning('No epochs available in this training process.');
                 return;
@@ -115,7 +92,6 @@ function MessageHandler() {
                 setTokenList(textResponse.token_list || []);
             }
 
-            // Load epoch data for all available epochs
             let allEpochDataTemp: Record<number, any> = {};
             const totalEpochs = epochs.length;
 
@@ -172,13 +148,10 @@ function MessageHandler() {
                     allEpochDataTemp[epochNum]['background'] = background || '';
                 }
 
-                // Store accumulated epoch data
                 setValue('allEpochData', { ...allEpochDataTemp });
 
-                // Mark this epoch as fully loaded
                 addLoadedEpoch(epochNum);
 
-                // Update progress as a percentage of finished epochs
                 const percent = ((i + 1) / totalEpochs) * 100;
                 setProgress(percent);
             }

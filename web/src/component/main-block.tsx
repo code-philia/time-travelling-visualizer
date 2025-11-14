@@ -5,7 +5,7 @@ import { notifyEpochSwitch } from '../communication/extension';
 
 // https://stackoverflow.com/questions/54095994/react-useeffect-comparing-objects
 // FIXME use a library for all object/array nested comparison
-function deepCompareEquals(a: Array<number>, b: Array<number>) {
+function deepCompareEquals(a: Array<number>, b: Array<number>){
     if (a.length !== b.length) {
         return false;
     }
