@@ -1,13 +1,14 @@
 // ChartComponent.tsx
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
-import { EmbeddingView, type EmbeddingViewProps } from 'embedding-atlas/react';
+import { EmbeddingView, type EmbeddingViewProps, type DataPoint, type Rectangle, type ViewportState } from 'embedding-atlas/react';
 import { useDefaultStore } from "../state/state.unified";
 import { transferArray2Color } from './utils';
 
 type EmbeddingData = NonNullable<EmbeddingViewProps['data']>;
 
 type PreparedEmbedding = {
-    data: EmbeddingData;
+    simpleData: EmbeddingData;
+    dataPoints: DataPoint[];
     categoryColors: string[] | null;
 };
 
@@ -19,8 +20,15 @@ export const ChartComponent = memo(() => {
     const { inherentLabelData, colorDict } = useDefaultStore(["inherentLabelData", "colorDict"]);
     const { shownData, index, isFocusMode, focusIndices } = useDefaultStore(["shownData", "index", "isFocusMode", "focusIndices"]);
 
+    const { hoveredIndex, setHoveredIndex } = useDefaultStore(["hoveredIndex", "setHoveredIndex"]);
+
     const epochData = allEpochData[epoch];
 
+    // plot view helpers
+    let [tooltip, setTooltip] = useState<DataPoint | null>(null);
+    let [selection, setSelection] = useState<DataPoint[] | null>([]);
+
+    // observe container size change
     useEffect(() => {
         const node = atlasRef.current;
         if (!node) {
@@ -46,6 +54,7 @@ export const ChartComponent = memo(() => {
         };
     }, []);
 
+    // filter dataIndices
     const filteredIndices = useMemo(() => {
         if (!epochData) {
             return [] as number[];
@@ -74,6 +83,7 @@ export const ChartComponent = memo(() => {
         return current;
     }, [epochData, focusIndices, index, isFocusMode, shownData]);
 
+    // convert data for embedding view
     const prepared = useMemo<PreparedEmbedding | null>(() => {
         if (!epochData || filteredIndices.length === 0) {
             return null;
@@ -84,6 +94,8 @@ export const ChartComponent = memo(() => {
         const category = new Uint8Array(filteredIndices.length);
         const categoryColorList: string[] = [];
         const labelToCategoryIndex = new Map<number, number>();
+
+        let dataPoints : DataPoint[] = []
 
         filteredIndices.forEach((originalIndex, position) => {
             const [px, py] = epochData.projection[originalIndex] ?? [0, 0];
@@ -100,27 +112,64 @@ export const ChartComponent = memo(() => {
                 categoryColorList.push(colorString);
             }
             category[position] = categoryIndex;
+
+            dataPoints.push({
+                x: px,
+                y: py,
+                category: label,
+                text: `Index: ${originalIndex}\nLabel: ${label}`,
+                identifier: originalIndex,
+                fields: {} // add more fields if needed
+            })
         });
 
-        const data = {
+        const simpleData = {
             x,
             y,
             category: categoryColorList.length > 0 ? category : undefined,
         } as unknown as EmbeddingData;
 
         return {
-            data,
+            simpleData,
+            dataPoints,
             categoryColors: categoryColorList.length > 0 ? categoryColorList : null,
         };
     }, [colorDict, epochData, filteredIndices, inherentLabelData]);
 
+    // find selected datapoint
+    async function querySelection(x: number, y: number, unitDistance: number): Promise<DataPoint | null> {
+        if (!prepared) {
+            return null;
+        }
+        let simpleData = prepared.simpleData;
+        let minDistance2: number | null = null;
+        let minIndex: number | null = null;
+        for (let i = 0; i < simpleData.x.length; i++) {
+        let d2 = (simpleData.x[i] - x) * (simpleData.x[i] - x) + (simpleData.y[i] - y) * (simpleData.y[i] - y);
+        if (minDistance2 == null || d2 < minDistance2) {
+            minDistance2 = d2;
+            minIndex = i;
+        }
+        }
+        if (minIndex == null || minDistance2 == null || Math.sqrt(minDistance2) > unitDistance * 10) {
+            return null;
+        }
+        return prepared.dataPoints[minIndex];
+    }
+
     const content = prepared ? (
         <EmbeddingView
-            data={prepared.data}
+            data={prepared.simpleData}
             categoryColors={prepared.categoryColors}
             width={dimensions.width || undefined}
             height={dimensions.height || undefined}
             config={{ mode: 'points', colorScheme: 'light' }}
+            tooltip={tooltip}
+            onTooltip={(v) => {
+                setHoveredIndex(v ? v.identifier as number : undefined);
+                setTooltip(v);
+            }}
+            querySelection={ querySelection }
         />
     ) : null;
 
