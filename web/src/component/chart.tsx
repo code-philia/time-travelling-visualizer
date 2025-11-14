@@ -16,7 +16,7 @@ export const ChartComponent = memo(() => {
     const atlasRef = useRef<HTMLDivElement | null>(null);
     const [dimensions, setDimensions] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
 
-    const { epoch, allEpochData } = useDefaultStore(["epoch", "allEpochData"]);
+    const { epoch, allEpochData, globalBounds } = useDefaultStore(["epoch", "allEpochData","globalBounds"]);
     const { inherentLabelData, colorDict } = useDefaultStore(["inherentLabelData", "colorDict"]);
     const { shownData, index, isFocusMode, focusIndices } = useDefaultStore(["shownData", "index", "isFocusMode", "focusIndices"]);
 
@@ -27,6 +27,7 @@ export const ChartComponent = memo(() => {
     // plot view helpers
     let [tooltip, setTooltip] = useState<DataPoint | null>(null);
     let [selection, setSelection] = useState<DataPoint[] | null>([]);
+    let [viewportState, setViewportState] = useState<ViewportState | null>(null);
 
     // observe container size change
     useEffect(() => {
@@ -53,6 +54,37 @@ export const ChartComponent = memo(() => {
             observer.disconnect();
         };
     }, []);
+
+    // set viewport based on global bounds
+    useEffect(() => {
+        if (!globalBounds) return;
+
+        const { minX, maxX, minY, maxY } = globalBounds;
+
+        const centerX = (minX + maxX) / 2;
+        const centerY = (minY + maxY) / 2;
+
+        const rangeX = maxX - minX;
+        const rangeY = maxY - minY;
+
+        const safeRangeX = rangeX === 0 ? 1 : rangeX;
+        const safeRangeY = rangeY === 0 ? 1 : rangeY;
+
+        const padding = 1.5;
+
+        const scaleX = 2 / (safeRangeX * padding);
+        const scaleY = 2 / (safeRangeY * padding);
+
+        const scale = Math.min(scaleX, scaleY);
+
+        setViewportState({
+            x: centerX,
+            y: centerY,
+            scale,
+        });
+
+    }, [globalBounds]);
+
 
     // filter dataIndices
     const filteredIndices = useMemo(() => {
@@ -163,12 +195,13 @@ export const ChartComponent = memo(() => {
             categoryColors={prepared.categoryColors}
             width={dimensions.width || undefined}
             height={dimensions.height || undefined}
-            config={{ mode: 'points', colorScheme: 'light' }}
+            config={{ mode: 'points', colorScheme: 'light', pointSize: 2 }}
             tooltip={tooltip}
             onTooltip={(v) => {
                 setHoveredIndex(v ? v.identifier as number : undefined);
                 setTooltip(v);
             }}
+            viewportState={viewportState}
             querySelection={ querySelection }
         />
     ) : null;

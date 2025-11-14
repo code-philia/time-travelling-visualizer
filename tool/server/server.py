@@ -99,12 +99,10 @@ def update_projection():
     vis_id = req['vis_id']
     epoch = int(req['epoch'])
 
-    # NOTE dont't hide exception to backend output
-    projection, scope = load_projection(content_path, vis_id, epoch)
+    projection = load_projection(content_path, vis_id, epoch)
 
     result = jsonify({
         'projection': projection,
-        'scope': scope
     })
     return make_response(result, 200)
 
