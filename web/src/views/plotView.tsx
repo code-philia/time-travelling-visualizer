@@ -98,6 +98,9 @@ function MessageHandler() {
             let lastEpochReceiveTimestamp: Date | undefined;
             const totalEpochCount = epochs.length;
 
+            let globalMinX = Infinity, globalMaxX = -Infinity;
+            let globalMinY = Infinity, globalMaxY = -Infinity;
+
             for (const epochNum of epochs) {
                 const epochRequestStart = new Date();
                 if (!firstEpochRequestTimestamp) {
@@ -114,7 +117,6 @@ function MessageHandler() {
                 // Load main plot data
                 const projection = await BackendAPI.fetchEpochProjection(contentPath, visualizationID, epochNum);
                 allEpochDataTemp[epochNum]['projection'] = projection.projection || [];
-                allEpochDataTemp[epochNum]['scope'] = projection.scope || [];
 
                 // Load neighbors data
                 const originalNeighbors = await BackendAPI.getOriginalNeighbors(contentPath, epochNum);
@@ -137,6 +139,23 @@ function MessageHandler() {
                     allEpochDataTemp[epochNum]['background'] = background || '';
                 }
 
+                let minX = allEpochDataTemp[epochNum]['projection'].reduce((min: number, p: number[]) => p[0] < min ? p[0] : min, Infinity);
+                let maxX = allEpochDataTemp[epochNum]['projection'].reduce((max: number, p: number[]) => p[0] > max ? p[0] : max, -Infinity);
+                let minY = allEpochDataTemp[epochNum]['projection'].reduce((min: number, p: number[]) => p[1] < min ? p[1] : min, Infinity);
+                let maxY = allEpochDataTemp[epochNum]['projection'].reduce((max: number, p: number[]) => p[1] > max ? p[1] : max, -Infinity);
+
+                globalMinX = Math.min(globalMinX, minX);
+                globalMaxX = Math.max(globalMaxX, maxX);
+                globalMinY = Math.min(globalMinY, minY);
+                globalMaxY = Math.max(globalMaxY, maxY);
+
+                // Update store with new epoch data
+                setValue('globalBounds', {
+                    minX: globalMinX,
+                    maxX: globalMaxX,
+                    minY: globalMinY,
+                    maxY: globalMaxY
+                });
                 setValue('allEpochData', { ...allEpochDataTemp });
 
                 lastEpochReceiveTimestamp = new Date();

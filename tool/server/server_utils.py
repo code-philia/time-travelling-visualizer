@@ -55,17 +55,11 @@ def load_projection(content_path, vis_id, epoch):
     projection = np.load(projection_path)
     projection_list = projection.tolist()
 
-    x_min = float(np.min(projection[:, 0]))
-    y_min = float(np.min(projection[:, 1]))
-    x_max = float(np.max(projection[:, 0]))
-    y_max = float(np.max(projection[:, 1]))
-    scope = [x_min, y_min, x_max, y_max]
-
     index_dict = load_or_create_index(content_path)
     all_indices = index_dict['train'] + index_dict['test']
     projection_list = [projection_list[i] for i in all_indices]
 
-    return projection_list, scope
+    return projection_list
 
 # Func: load one sample from content_path
 def load_one_sample(config, content_path, index):

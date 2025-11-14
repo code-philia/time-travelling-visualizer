@@ -27,6 +27,7 @@ export type BaseMutableGlobalStore = {
     // Epoch and time-related data
     epoch: number;
     availableEpochs: number[];
+    globalBounds: { minX:number; maxX:number; minY:number; maxY:number } | null;
     
     // Color and label mappings
     colorDict: Map<number, [number, number, number]>;
@@ -86,6 +87,7 @@ export let initMutableGlobalStore: BaseMutableGlobalStore = {
     // Epoch and time-related data
     epoch: 1,
     availableEpochs: [],
+    globalBounds: null,
     
     // Color and label mappings
     colorDict: new Map(),
