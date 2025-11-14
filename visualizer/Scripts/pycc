@@ -1,0 +1,3 @@
+#!D:\task\time-travelling-visualizer\visualizer\Scripts\python.exe
+from numba.pycc import main
+main()

@@ -1,6 +1,12 @@
 import * as vscode from 'vscode';
 import * as config from './config';
-import { getPlotSettings, loadVisualization, setAsDataFolder, setAsDataFolderAndLoadVisualizationResult, startVisualizing } from './control';
+import {
+  getPlotSettings,
+  loadVisualization,
+  setAsDataFolder,
+  setAsDataFolderAndLoadVisualizationResult,
+  startVisualizing,
+} from './control';
 import path from 'path';
 import { loadHomePage } from './utils';
 import { MessageManager } from './views/messageManager';

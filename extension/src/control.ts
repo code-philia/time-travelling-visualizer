@@ -46,6 +46,7 @@ export function getOpenedFolderPath(): string {
     return "";
 }
 
+
 function checkDefaultVisualizationConfig(): api.BasicVisualizationConfig | undefined {
 	const visConfigSet = vscode.workspace.getConfiguration(CONFIG.configurationBaseName);
 	const dataType = visConfigSet.get(CONFIG.ConfigurationID.dataType);
@@ -54,9 +55,6 @@ function checkDefaultVisualizationConfig(): api.BasicVisualizationConfig | undef
 	const visualizationMethod = visConfigSet.get(CONFIG.ConfigurationID.visualizationMethod);
 	const visualizationID = visConfigSet.get(CONFIG.ConfigurationID.visualizationID);
 	const workspacePath = getOpenedFolderPath();
-
-	// TODO create a class for a configuration
-	// that can both define the ID and validate the value
 
 	if (api.Types.VisualizationDataType.has(dataType) &&
 		api.Types.VisualizationTaskType.has(taskType) &&
@@ -74,7 +72,7 @@ function checkDefaultVisualizationConfig(): api.BasicVisualizationConfig | undef
 }
 
 async function reconfigureVisualizationConfig(): Promise<api.BasicVisualizationConfig | undefined> {
-	const visConfigSet = vscode.workspace.getConfiguration('timeTravellingVisualizer');	// Should we call this each time?
+	const visConfigSet = vscode.workspace.getConfiguration('timeTravellingVisualizer');
 
 	const dataType = await repickConfig(
 		"Select the type of your data",
@@ -98,9 +96,8 @@ async function reconfigureVisualizationConfig(): Promise<api.BasicVisualizationC
 		return undefined;
 	}
 
-	// const contentPathConfig = config.get('loadVisualization.contentPath');
 	const contentPathConfig = "";
-	var trainingProcess: string = "";
+	let trainingProcess: string = "";
 	if (!(typeof contentPathConfig === 'string' && isDirectory(contentPathConfig))) {
 		trainingProcess = await new Promise((resolve, reject) => {
 			const inputBox: vscode.InputBox = vscode.window.createInputBox();
@@ -136,7 +133,7 @@ async function reconfigureVisualizationConfig(): Promise<api.BasicVisualizationC
 					if (folderPath) {
 						const pathResult = folderPath[0].fsPath;
 						if (validate(pathResult)) {
-							inputBox.value = fs.realpathSync.native(pathResult);	// deal with uppercase of c: on windows
+							inputBox.value = fs.realpathSync.native(pathResult);
 						}
 						inputBox.valueSelection = [inputBox.value.length, inputBox.value.length];
 					}
@@ -184,6 +181,7 @@ async function reconfigureVisualizationConfig(): Promise<api.BasicVisualizationC
 	visConfigSet.update(CONFIG.ConfigurationID.taskType, taskType);
 	visConfigSet.update(CONFIG.ConfigurationID.trainingProcess, trainingProcess);
 	visConfigSet.update(CONFIG.ConfigurationID.visualizationMethod, visualizationMethod);
+
 	const workspacePath = getOpenedFolderPath();
 
 	return {
@@ -196,7 +194,7 @@ async function reconfigureVisualizationConfig(): Promise<api.BasicVisualizationC
 }
 
 async function getConfig(forceReconfig: boolean = false): Promise<api.BasicVisualizationConfig | undefined> {
-	var config: api.BasicVisualizationConfig | undefined;
+	let config: api.BasicVisualizationConfig | undefined;
 	if (!forceReconfig) {
 		config = checkDefaultVisualizationConfig();
 		if (config) {
@@ -216,7 +214,7 @@ export function getBasicConfig() {
 	const visualizationID = visConfigSet.get(CONFIG.ConfigurationID.visualizationID);
 	const workspacePath = getOpenedFolderPath();
 
-	if(typeof trainingProcess !== 'string') {
+	if (typeof trainingProcess !== 'string') {
 		vscode.window.showErrorMessage("Invalid training process path");
 		return undefined;
 	}
@@ -227,24 +225,33 @@ export function getBasicConfig() {
 		contentPath: path.join(workspacePath, trainingProcess),
 		visualizationMethod: visualizationMethod,
 		visualizationID: visualizationID,
-	} as api.BasicVisualizationConfig | undefined;;
+	} as api.BasicVisualizationConfig | undefined;
 }
 
-function updateBasicConfig(dataType: string, taskType: string, trainingProcess: string, visualizationID: string): Promise<void> {
+function updateBasicConfig(
+    dataType: string,
+    taskType: string,
+    trainingProcess: string,
+    visualizationID: string
+): Promise<void> {
     const visConfigSet = vscode.workspace.getConfiguration(CONFIG.configurationBaseName);
-    return Promise.all([
-        visConfigSet.update(CONFIG.ConfigurationID.dataType, dataType, vscode.ConfigurationTarget.Global), // Update user settings
-        visConfigSet.update(CONFIG.ConfigurationID.taskType, taskType, vscode.ConfigurationTarget.Global), // Update user settings
-        visConfigSet.update(CONFIG.ConfigurationID.trainingProcess, trainingProcess, vscode.ConfigurationTarget.Global), // Update user settings
-        // visConfigSet.update(CONFIG.ConfigurationID.visualizationMethod, visualizationMethod, vscode.ConfigurationTarget.Global), // Update user settings
-        visConfigSet.update(CONFIG.ConfigurationID.visualizationID, visualizationID, vscode.ConfigurationTarget.Global), // Update user settings
-    ]).then(() => {
-    }).catch((err) => {
-        vscode.window.showErrorMessage(`Failed to update user settings: ${err}`);
-    });
+
+    return Promise
+        .all([
+            visConfigSet.update(CONFIG.ConfigurationID.dataType, dataType, vscode.ConfigurationTarget.Global),
+            visConfigSet.update(CONFIG.ConfigurationID.taskType, taskType, vscode.ConfigurationTarget.Global),
+            visConfigSet.update(CONFIG.ConfigurationID.trainingProcess, trainingProcess, vscode.ConfigurationTarget.Global),
+            visConfigSet.update(CONFIG.ConfigurationID.visualizationID, visualizationID, vscode.ConfigurationTarget.Global),
+        ])
+        .then(() => {
+            // All good, nothing to return -> Promise<void>
+        })
+        .catch((err) => {
+            vscode.window.showErrorMessage(`Failed to update user settings: ${err}`);
+        });
 }
 
-export function getVisConfig(visualizationMethod: string) { 
+export function getVisConfig(visualizationMethod: string) {
 	const visConfigSet = vscode.workspace.getConfiguration(CONFIG.configurationBaseName);
 	if (visualizationMethod === "TimeVis") {
 		return {
@@ -273,11 +280,11 @@ export function getVisConfig(visualizationMethod: string) {
 		};
 	}
 	else if (visualizationMethod === "UMAP") {
-        return {
-            n_neighbors: visConfigSet.get(CONFIG.ConfigurationID.UmapNNeighbors),
-            min_dist: visConfigSet.get(CONFIG.ConfigurationID.UmapMinDist),
-            metric: visConfigSet.get(CONFIG.ConfigurationID.UmapMetric),
-        };
+		return {
+			n_neighbors: visConfigSet.get(CONFIG.ConfigurationID.UmapNNeighbors),
+			min_dist: visConfigSet.get(CONFIG.ConfigurationID.UmapMinDist),
+			metric: visConfigSet.get(CONFIG.ConfigurationID.UmapMetric),
+		};
 	}
 	else if (visualizationMethod === "DynaVis") {
 		return {
@@ -297,7 +304,7 @@ export function getVisConfig(visualizationMethod: string) {
 	return {};
 }
 
-export function getPlotSettings(){
+export function getPlotSettings() {
 	const plotSettings = vscode.workspace.getConfiguration(CONFIG.configurationBaseName);
 	const showIndex = plotSettings.get(CONFIG.ConfigurationID.showIndex);
 	const showLabel = plotSettings.get(CONFIG.ConfigurationID.showLabel);
@@ -341,24 +348,91 @@ export async function loadVisualization(forceReconfig: boolean = false): Promise
 }
 
 export async function loadVisualizationThroughTreeItem(dataType: string, taskType: string, trainingProcess: string, visualizationID: string): Promise<boolean> {
-    // Wait for settings to update before proceeding
-    await updateBasicConfig(dataType, taskType, trainingProcess, visualizationID);
-
-    // Call loadVisualization after settings are updated
-    return await loadVisualization();
+	await updateBasicConfig(dataType, taskType, trainingProcess, visualizationID);
+	return await loadVisualization();
 }
 
 /**
  * Start visualizing
  */
 export async function startVisualizing(): Promise<boolean> {
-	// TODO: send command to plot view to indicate starting visualization
+	const basicConfig = getBasicConfig();
+
+	if (!basicConfig) {
+		vscode.window.showErrorMessage("Cannot start visualizing: invalid basic configuration");
+		return false;
+	}
+
+	const { dataType, taskType, contentPath, visualizationMethod, visualizationID } = basicConfig;
+
+	if (!visualizationMethod) {
+		vscode.window.showErrorMessage("Cannot start visualizing: visualization method is not set");
+		return false;
+	}
+
+	const visConfig = getVisConfig(String(visualizationMethod));
+
+	const configForStart = {
+		contentPath: contentPath,
+		visMethod: visualizationMethod,
+		visID: visualizationID,
+		dataType: dataType,
+		taskType: taskType,
+		visConfig: visConfig,
+	};
+
+
+  
+	console.log("Starting visualizing with config:", configForStart);
+
+	const msgToPlotView = {
+		command: 'startVisualizing',
+		data: {
+			config: configForStart,
+		},
+	};
+
+	MessageManager.sendToPlotView(msgToPlotView);
+
 	return true;
 }
 
-export async function startVisualizingThroughTreeItem(trainingProcess: string): Promise<boolean> {
-	// TODO: send command to plot view to indicate starting visualization
-	return true;
+export async function startVisualizingThroughTreeItem(
+	dataTypeOrTrainingProcess: string,
+	taskType?: string,
+	trainingProcess?: string,
+	visualizationID?: string
+): Promise<boolean> {
+	// Case 1: called with 4 arguments:
+	//   (dataType, taskType, trainingProcess, visualizationID)
+	if (taskType && trainingProcess && typeof visualizationID === 'string') {
+		// Update full basic config from tree item selection
+		await updateBasicConfig(
+			dataTypeOrTrainingProcess, // dataType
+			taskType,
+			trainingProcess,
+			visualizationID
+		);
+
+		// Then trigger start visualizing with the current config
+		return await startVisualizing();
+	}
+
+	// Case 2: called with a single argument:
+	//   (trainingProcess)
+	// This keeps compatibility with older call sites that only pass the path
+	const trainingProcessPath = dataTypeOrTrainingProcess;
+
+	// Update just the training process in the user settings
+	const visConfigSet = vscode.workspace.getConfiguration(CONFIG.configurationBaseName);
+	await visConfigSet.update(
+		CONFIG.ConfigurationID.trainingProcess,
+		trainingProcessPath,
+		vscode.ConfigurationTarget.Global
+	);
+
+	// Now start visualizing using whatever dataType/taskType/etc. are already saved
+	return await startVisualizing();
 }
 
 /**
@@ -380,18 +454,18 @@ function setDataFolder(file: vscode.Uri | undefined): boolean {
 }
 
 export function setAsDataFolderAndLoadVisualizationResult(file: vscode.Uri | undefined): void {
-    if (!(file instanceof vscode.Uri)) {
-        return;
-    }
-    const success = setDataFolder(file);
-    if (success) {
-        loadVisualization();
-    }
+	if (!(file instanceof vscode.Uri)) {
+		return;
+	}
+	const success = setDataFolder(file);
+	if (success) {
+		loadVisualization();
+	}
 }
 
 export function setAsDataFolder(file: vscode.Uri | undefined): void {
-    if (!(file instanceof vscode.Uri)) {
-        return;
-    }
-    setDataFolder(file);
+	if (!(file instanceof vscode.Uri)) {
+		return;
+	}
+	setDataFolder(file);
 }

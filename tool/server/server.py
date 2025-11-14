@@ -3,7 +3,7 @@ import sys
 # from llm_agent import call_llm_agent
 from run_visualization import visualize_run
 
-from flask import request, Flask, jsonify, make_response, send_file,send_from_directory
+from flask import request, Flask, jsonify, make_response, send_file, send_from_directory
 from flask_cors import CORS, cross_origin
 
 sys.path.append('.')
@@ -52,7 +52,6 @@ def get_training_process_info():
                         epoch_num_str = item[len('epoch_'):]
                         if epoch_num_str.isdigit():
                             available_epochs.append(int(epoch_num_str))
-            
             available_epochs.sort()
         except Exception as e:
             print(f"Error scanning epochs directory: {e}")
@@ -60,7 +59,7 @@ def get_training_process_info():
 
     config = read_file_as_json(os.path.join(content_path, 'dataset', 'info.json'))
     
-    if config == None or 'classes' not in config:
+    if config is None or 'classes' not in config:
         # infer from labels.npy
         label_file = os.path.join(content_path, 'dataset', 'labels.npy')
         labels = np.load(label_file, allow_pickle=True)
@@ -91,7 +90,7 @@ Response:
     project (list)
     label_list (list): label list of samples in projection
 """
-@app.route('/updateProjection', methods = ["POST"])
+@app.route('/updateProjection', methods=["POST"])
 @cross_origin()
 def update_projection():
     req = request.get_json()
@@ -115,12 +114,15 @@ Api: start training visualization model and get visualization result
 Request:
     content_path (str)
     vis_method (str)
+    vis_id (str)
+    data_type (str)
     task_type (str): "classification", "regression"
     vis_config (dict): visualization config
 Response:
     None
 """
-@app.route('/startVisualizing', methods = ["POST"])
+@app.route('/startVisualizing', methods=["POST"])
+@cross_origin()
 def start_visualizing():
     req = request.get_json()
     content_path = req['content_path']
@@ -137,10 +139,10 @@ def start_visualizing():
     print(f"Task type: {task_type}")
     print(f"Visualization config: {vis_config}")
     print("Done!")
-    
+
     # visualize_run(content_path, vis_method, vis_id, data_type, task_type, vis_config)
-    
     return make_response({}, 200)
+
 
 """
 Api: get text data of all samples
@@ -148,9 +150,9 @@ Api: get text data of all samples
 Request:
     content_path (str)
 Response:
-    text_list (lsit of str)
+    text_list (list of str)
 """
-@app.route('/getAllText', methods = ["POST"])
+@app.route('/getAllText', methods=["POST"])
 def get_all_text():
     req = request.get_json()
     content_path = req['content_path']
@@ -165,7 +167,8 @@ def get_all_text():
     })
     return make_response(result, 200)
 
-@app.route('/getAlignment', methods = ["POST"])
+
+@app.route('/getAlignment', methods=["POST"])
 def get_alignment():
     req = request.get_json()
     content_path = req['content_path']
@@ -180,19 +183,11 @@ def get_alignment():
     })
     return make_response(result, 200)
 
+
 """
 Api: get selected attributes of the dataset
-
-Request:
-    content_path (str)
-    epoch (str): epoch number
-    attributes (list): selected attributes
-Response:
-    attribute1 (object)
-    attribute2 (object)
-    ...
 """
-@app.route('/getAttributes', methods = ["POST"])
+@app.route('/getAttributes', methods=["POST"])
 @cross_origin()
 def get_attributes():
     req = request.get_json()
@@ -210,16 +205,8 @@ def get_attributes():
 
 """
 Api: get simple filter result
-
-Request:
-    content_path (str)
-    epoch (str)
-    filter_type (str): "label", "prediction", "train", "test"
-    filter_data (str): label name
-Response:
-    indices (list of int): indeices of samples that satisfy the filter
 """
-@app.route('/getSimpleFilterResult', methods = ["POST"])
+@app.route('/getSimpleFilterResult', methods=["POST"])
 @cross_origin()
 def get_simple_filter_result():
     req = request.get_json()
@@ -233,25 +220,14 @@ def get_simple_filter_result():
     if indices is None:
         return make_response(jsonify({'error_message': error_message}), 400)
 
-    result = jsonify({
-        'indices': indices
-    })
+    result = jsonify({'indices': indices})
     return make_response(result, 200)
 
 
 """
 Api: get background image
-
-Request:
-    content_path (str)
-    vis_id (str)
-    width (int)
-    height (int)
-    scale (list of float)
-Response:
-    background_image_base64 (str): base64 encoded im
 """    
-@app.route('/getBackground', methods = ["POST"])
+@app.route('/getBackground', methods=["POST"])
 @cross_origin()
 def get_background():
     req = request.get_json()
@@ -261,87 +237,60 @@ def get_background():
     
     try:
         base64_image = load_background(content_path, vis_id, epoch)
-        result = jsonify({
-            'background_image_base64': base64_image
-        })
+        result = jsonify({'background_image_base64': base64_image})
         return make_response(result, 200)
     except Exception as e:
         return make_response(jsonify({'error_message': 'Error in loading background'}), 400)
 
+
 """
 Api: get image data of one sample
-
-Request:
-    content_path (str)
-    index (str): sample index
-Response:
-    image_base64 (str): base64 encoded image
 """
-@app.route('/getImageData', methods = ["POST"])
+@app.route('/getImageData', methods=["POST"])
 @cross_origin()
 def get_image_data():
     req = request.get_json()
     content_path = req['content_path']
-    if('index' not in req):
+    if 'index' not in req:
         return make_response(jsonify({'image_base64': ''}), 200)
     
     index = req['index']
 
     try:
         base64_image = load_one_image(content_path, index)
-        result = jsonify({
-            'image_base64': base64_image
-        })
+        result = jsonify({'image_base64': base64_image})
         return make_response(result, 200)
-    except Exception as e:
-        result = jsonify({
-            'image_base64': ''
-        })
+    except Exception:
+        result = jsonify({'image_base64': ''})
         return make_response(result, 200)
 
 
 """
 Api: get text data of one sample
-
-Request:
-    content_path (str)
-    index (str): sample index
-Response:
-    text (str): text data
 """
-@app.route('/getTextData', methods = ["POST"])
+@app.route('/getTextData', methods=["POST"])
 @cross_origin()
 def get_text_data():
     req = request.get_json()
     content_path = req['content_path']
-    if('index' not in req):
+    if 'index' not in req:
         return make_response(jsonify({'text': ''}), 200)
     
     index = req['index']
 
     try:
         text = load_one_text(content_path, index)
-        result = jsonify({
-            'text': text
-        })
+        result = jsonify({'text': text})
         return make_response(result, 200)
-    except Exception as e:
-        result = jsonify({
-            'text': ''
-        })
+    except Exception:
+        result = jsonify({'text': ''})
         return make_response(result, 200)
 
 
 """
 Api: get high dimensional neighbors of one sample
-
-Request:
-    content_path (str)
-    epoch (str)
-Response:
-    neighbors (array[][])
 """
-@app.route('/getOriginalNeighbors', methods = ["POST"])
+@app.route('/getOriginalNeighbors', methods=["POST"])
 @cross_origin()
 def get_original_neighbors():
     req = request.get_json()
@@ -350,25 +299,17 @@ def get_original_neighbors():
     
     try:
         neighbors = calculate_high_dimensional_neighbors(content_path, epoch)
-        result = jsonify({
-            'neighbors': neighbors,
-        })
+        result = jsonify({'neighbors': neighbors})
         return make_response(result, 200)
     except Exception as e:
         print(e)
         return make_response(jsonify({'error_message': 'Error in calculating neighbors'}), 400)
 
+
 """
 Api: get projection neighbors of one sample
-
-Request:
-    content_path (str)
-    vis_id (str)
-    epoch (str)
-Response:
-    neighbors (array[][])
 """
-@app.route('/getProjectionNeighbors', methods = ["POST"])
+@app.route('/getProjectionNeighbors', methods=["POST"])
 @cross_origin()
 def get_projection_neighbors():
     req = request.get_json()
@@ -378,16 +319,14 @@ def get_projection_neighbors():
     
     try:
         neighbors = calculate_projection_neighbors(content_path, vis_id, epoch)
-        result = jsonify({
-            'neighbors': neighbors,
-        })
+        result = jsonify({'neighbors': neighbors})
         return make_response(result, 200)
     except Exception as e:
         print(e)
         return make_response(jsonify({'error_message': 'Error in calculating neighbors'}), 400)
 
-    
-@app.route('/getVisualizeMetrics', methods = ["POST"])
+
+@app.route('/getVisualizeMetrics', methods=["POST"])
 @cross_origin()
 def get_visualize_metrics():
     req = request.get_json()
@@ -415,17 +354,13 @@ def get_influence_samples():
 
     try:
         if training_event['type'] == 'InconsistentMovement': 
-            # attribution of closeness or separation between a pair of samples
             print("Tracing InconsistentMovement")
             influence_samples = movement_attribution(content_path, epoch, training_event, num_samples)
         else: 
-            # atribution of a particular prediction
             print("Tracing PredictionError")
             influence_samples = prediction_attribution(content_path, epoch, training_event, num_samples)
         
-        result = jsonify({
-            "influence_samples": influence_samples,
-        })
+        result = jsonify({"influence_samples": influence_samples})
         return make_response(result, 200)
     except Exception as e:
         print(e)
@@ -442,9 +377,7 @@ def calculate_training_events():
 
     try:
         training_events = compute_training_events(content_path, epoch, event_types)
-        result = jsonify({
-            "training_events": training_events,
-        })
+        result = jsonify({"training_events": training_events})
         return make_response(result, 200)
     except Exception as e:
         print(e)
@@ -453,7 +386,6 @@ def calculate_training_events():
 
 def check_port_inuse(port, host):
     import socket
-
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.settimeout(1)
