@@ -1,4 +1,4 @@
-import { AutoComplete, Input, List, Tag, RefSelectProps, Checkbox, Switch } from 'antd';
+import { AutoComplete, Input, List, Tag, RefSelectProps, Checkbox, Switch, Select, Slider } from 'antd';
 import { useDefaultStore } from '../state/state.unified';
 import { useEffect, useRef, useState } from 'react';
 import { ComponentBlock, FunctionalBlock } from './custom/basic-components';
@@ -101,8 +101,19 @@ function hexToRgbArray(hex: string): [number, number, number] {
 }
 
 export function FunctionPanel() {
-    const { tokenList, labelDict, colorDict, setColorDict, selectedIndices, setSelectedIndices, setShownData } =
-        useDefaultStore(["tokenList","labelDict", "colorDict", "setColorDict", "selectedIndices", "setSelectedIndices", "setShownData"]);
+    const { tokenList, labelDict, colorDict, setColorDict, selectedIndices, setSelectedIndices, setShownData, pointSize, setPointSize, mode, setMode } =
+        useDefaultStore(["tokenList","labelDict", "colorDict", "setColorDict", "selectedIndices", "setSelectedIndices", "setShownData", "pointSize", "setPointSize", "mode", "setMode"]);
+
+    useEffect(() => {
+        if (pointSize < 1) {
+            setPointSize(1);
+        } else if (pointSize > 3) {
+            setPointSize(3);
+        }
+    }, [pointSize, setPointSize]);
+
+    const pointSizeMarks: Record<number, string> = { 1: 'small', 2: 'middle', 3: 'large' };
+    const pointSizeLabel = pointSizeMarks[pointSize] ?? pointSize.toString();
 
     function changeLabelColor(i: number, newColor: [number, number, number]) {
         setColorDict(new Map([...colorDict, [i, newColor]]));
@@ -226,7 +237,7 @@ export function FunctionPanel() {
                     ref={searchElementRef}
                     options={searchHistoryRender(searchHistoryFiltered)}
                     value={searchValue}
-                    open={false}
+                    open={searchHistoryOpen}
                     onChange={(value: string) => { handleSearch(value) }}
                     onBlur={() => {
                         addHistory(searchValue);    // TODO only add successful history
@@ -321,6 +332,38 @@ export function FunctionPanel() {
                                 :
                                 <div className='alt-text placeholder-block'>No selected item</div>
                         }
+                    </div>
+                </ComponentBlock>
+            </FunctionalBlock>
+            <FunctionalBlock label="Settings">
+                <ComponentBlock>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ minWidth: 80 }}>Point Size:</span>
+                            <Slider
+                                min={1}
+                                max={3}
+                                step={1}
+                                dots
+                                marks={pointSizeMarks}
+                                value={pointSize}
+                                onChange={(v) => setPointSize(v as number)}
+                                style={{ minWidth: 80, flex: 1 }}
+                            />
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ minWidth: 80 }}>Mode:</span>
+                            <Select
+                                size="small"
+                                style={{ minWidth: 140 }}
+                                value={mode}
+                                onChange={(v) => setMode(v)}
+                                options={[
+                                    { label: 'Points', value: 'points' },
+                                    { label: 'Density', value: 'density' },
+                                ]}
+                            />
+                        </div>
                     </div>
                 </ComponentBlock>
             </FunctionalBlock>
