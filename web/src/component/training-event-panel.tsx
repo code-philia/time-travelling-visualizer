@@ -77,7 +77,7 @@ const ResultContainer = styled.div`
   border: 1px solid #d9d9d9;
   border-radius: 4px;
   padding: 10px;
-  height: 400px; /* 固定高度 */
+  height: 100%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
