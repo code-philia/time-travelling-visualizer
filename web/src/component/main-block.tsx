@@ -241,7 +241,7 @@ export function MainBlock() {
                 <ChartComponent/>
             </div>
             <div id="footer">
-                <div style={{ overflow: "auto" }}>
+                <div style={{ display: 'flex', alignItems: 'center', height: '100%', width: '100%', overflowX: 'auto', overflowY: 'hidden' }}>
                     <Timeline epoch={epoch} epochs={availableEpochs} progress={ progress} onSwitchEpoch={(e) => {
                         setEpoch(e);
                         notifyEpochSwitch(e);
