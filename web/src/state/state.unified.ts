@@ -46,6 +46,8 @@ export type BaseMutableGlobalStore = {
     progress: number;
     
     // Display settings
+    mode: 'points' | 'density';
+    pointSize: number;
     showIndex: boolean;
     showLabel: boolean;
     showTrail: boolean;
@@ -106,6 +108,8 @@ export let initMutableGlobalStore: BaseMutableGlobalStore = {
     progress: 0,
     
     // Display settings
+    mode: 'points',
+    pointSize: 2,
     showIndex: true,
     showLabel: true,
     showTrail: false,

@@ -1,6 +1,6 @@
 // ChartComponent.tsx
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
-import { EmbeddingView, type EmbeddingViewProps, type DataPoint, type Rectangle, type ViewportState } from 'embedding-atlas/react';
+import { EmbeddingView, type EmbeddingViewProps, type DataPoint, type ViewportState } from 'embedding-atlas/react';
 import { useDefaultStore } from "../state/state.unified";
 import { transferArray2Color } from './utils';
 
@@ -20,13 +20,15 @@ export const ChartComponent = memo(() => {
     const { inherentLabelData, colorDict } = useDefaultStore(["inherentLabelData", "colorDict"]);
     const { shownData, index, isFocusMode, focusIndices } = useDefaultStore(["shownData", "index", "isFocusMode", "focusIndices"]);
 
-    const { hoveredIndex, setHoveredIndex } = useDefaultStore(["hoveredIndex", "setHoveredIndex"]);
+    const { setHoveredIndex } = useDefaultStore(["setHoveredIndex"]);
+    const { mode } = useDefaultStore(["mode"]);
+    const { pointSize } = useDefaultStore(["pointSize"]);
 
     const epochData = allEpochData[epoch];
 
     // plot view helpers
     let [tooltip, setTooltip] = useState<DataPoint | null>(null);
-    let [selection, setSelection] = useState<DataPoint[] | null>([]);
+    // selection can be added later when needed
     let [viewportState, setViewportState] = useState<ViewportState | null>(null);
 
     // observe container size change
@@ -195,7 +197,7 @@ export const ChartComponent = memo(() => {
             categoryColors={prepared.categoryColors}
             width={dimensions.width || undefined}
             height={dimensions.height || undefined}
-            config={{ mode: 'points', colorScheme: 'light', pointSize: 2 }}
+            config={{ mode: mode, colorScheme: 'light', pointSize: pointSize }}
             tooltip={tooltip}
             onTooltip={(v) => {
                 setHoveredIndex(v ? v.identifier as number : undefined);
