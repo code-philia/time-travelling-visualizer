@@ -3,13 +3,13 @@ import { useDefaultStore } from '../state/state.unified';
 import { notifyHoveredIndexSwitch, notifySelectedIndicesSwitch } from '../communication/extension';
 import { useEffect, useState } from 'react';
 
-const BottomPanelContainer = styled.div<{ $expanded: boolean }>`
+const BottomPanelContainer = styled.div`
     display: flex;
-    border-top: 1px solid var(--layout-border-color);
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
     background-color: white;
-    height: ${props => props.$expanded ? '320px' : '0px'};
-    transition: height 0.3s ease;
-    z-index: 1000;
+    overflow: hidden;
 `;
 
 const TokenBlockContainer = styled.div`
@@ -222,7 +222,7 @@ export function TokenPanel() {
     };
 
     return (
-        <BottomPanelContainer className="bottom-panel" $expanded={true}>
+        <BottomPanelContainer>
             <TokenBlockWrapper>
                 {useSimpleView ? (
                     <SimplePairDisplay

@@ -157,16 +157,26 @@ function MessageHandler() {
 export function AppCombinedView() {
     return (
         <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column" }}>
-            <PanelGroup direction="horizontal" style={{ flex: 1, display: "flex" }} autoSaveId="plot-view-layout">
-                <Panel defaultSize={70} minSize={20}>
-                    <div style={{ display: "flex", width: "100%", height: "100%" }}>
-                        <MainBlock />
-                    </div>
+            <PanelGroup direction="vertical" style={{ flex: 1, display: "flex" }} autoSaveId="plot-view-root">
+                <Panel defaultSize={76} minSize={40}>
+                    <PanelGroup direction="horizontal" style={{ height: "100%", display: "flex" }} autoSaveId="plot-view-layout">
+                        <Panel defaultSize={70} minSize={20}>
+                            <div style={{ display: "flex", width: "100%", height: "100%" }}>
+                                <MainBlock />
+                            </div>
+                        </Panel>
+                        <PanelResizeHandle className="subtle-resize-handle" hitAreaMargins={{ coarse: 12, fine: 6 }} />
+                        <Panel defaultSize={30} minSize={8} maxSize={60} collapsible collapsedSize={0}>
+                            <div style={{ width: '100%', height: '100%', borderLeft: '1px solid #ccc' }}>
+                                <FunctionViewPanels />
+                            </div>
+                        </Panel>
+                    </PanelGroup>
                 </Panel>
-                <PanelResizeHandle className="subtle-resize-handle" hitAreaMargins={{ coarse: 12, fine: 6 }} />
-                <Panel defaultSize={30} minSize={8} maxSize={60} collapsible collapsedSize={0}>
-                    <div style={{ width: '100%', height: '100%', borderLeft: '1px solid #ccc' }}>
-                        <FunctionViewPanels />
+                <PanelResizeHandle className="subtle-resize-handle-horizontal" />
+                <Panel defaultSize={24} minSize={8} maxSize={50} collapsible collapsedSize={0}>
+                    <div style={{ width: '100%', height: '100%', borderTop: '1px solid #ccc' }}>
+                        <BottomDock />
                     </div>
                 </Panel>
             </PanelGroup>
@@ -202,6 +212,26 @@ function FunctionViewPanels() {
     );
 }
 
+function BottomDock() {
+    const [activeKey, setActiveKey] = useState<'Influence' | 'Tokens'>('Influence');
+    const items = [
+        { key: 'Influence', label: <span style={{ fontSize: 12 }}>Influence</span>, children: <InfluenceAnalysisPanel /> },
+        { key: 'Tokens', label: <span style={{ fontSize: 12 }}>Tokens</span>, children: <TokenPanel /> },
+    ];
 
+    return (
+        <Tabs
+            className="bottom-dock-tabs"
+            tabPosition="right"
+            size="small"
+            tabBarGutter={0}
+            tabBarStyle={{ marginLeft: 0 }}
+            style={{ height: '100%' }}
+            items={items}
+            activeKey={activeKey}
+            onChange={(key) => setActiveKey(key as typeof activeKey)}
+        />
+    );
+}
 
 window.vscode?.postMessage({ state: 'load' }, '*');
