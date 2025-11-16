@@ -205,7 +205,7 @@ function FunctionViewPanels() {
                 tabBarGutter={0}
                 items={items}
             />
-            <div style={{ flex: 1, display: 'flex' }}>
+            <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
                 {activeKey === 'FunctionPanel' && <FunctionPanel />}
                 {activeKey === 'TrainingEventPanel' && <TrainingEventPanel />}
             </div>
