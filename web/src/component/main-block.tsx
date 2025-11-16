@@ -37,6 +37,8 @@ function Timeline({ epoch, epochs, progress, onSwitchEpoch }: { epoch: number, e
     const intervalRef = useRef<any | null>(null);
     const currentEpochIndexRef = useRef<number>(epochs.indexOf(epoch));
     const nodeOffset = 40;
+    const NODE_LINE_HEIGHT = 60;
+    const NODE_CENTER_Y = NODE_LINE_HEIGHT / 2;
 
     // Set the initial epoch from the passed epochs array
     useEffect(() => {
@@ -93,7 +95,7 @@ function Timeline({ epoch, epochs, progress, onSwitchEpoch }: { epoch: number, e
             return epochs.map((epoch, index) => ({
                 value: epoch,
                 x: index * 40 + nodeOffset,
-                y: 30,
+                y: NODE_CENTER_Y,
             }));
         }
         return [];
@@ -102,21 +104,16 @@ function Timeline({ epoch, epochs, progress, onSwitchEpoch }: { epoch: number, e
     // Convert epochs into a list of nodes with x and y positions
     const svgDimensions = useMemo(() => {
         if (nodes.length > 0) {
-            // Calculate the bounds for all elements (nodes and links) with padding
             const minX = Math.min(...nodes.map(node => node.x)) - 20;
             const maxX = Math.max(...nodes.map(node => node.x)) + 20;
-            const minY = Math.min(...nodes.map(node => node.y)) - 35;
-            const maxY = Math.max(...nodes.map(node => node.y)) + 35;
-
-            // Set the SVG dimensions to fit all nodes
             return {
                 width: maxX - minX + nodeOffset,
-                height: maxY - minY,
+                height: NODE_LINE_HEIGHT,
             }
         } else {
             return {
                 width: 0,
-                height: 0,
+                height: NODE_LINE_HEIGHT,
             }
         }
     }, [nodes]);
@@ -206,7 +203,7 @@ function Timeline({ epoch, epochs, progress, onSwitchEpoch }: { epoch: number, e
                 onClick={togglePlayPause}
                 style={{
                     position: 'absolute',
-                    top: '48%',
+                    top: '50%',
                     transform: 'translateY(-50%)',
                     backgroundColor: '#3278F0',
                     border: 'none',
