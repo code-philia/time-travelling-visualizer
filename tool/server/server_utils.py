@@ -274,7 +274,7 @@ def calculate_high_dimensional_neighbors(content_path, epoch, max_neighbors=10):
     return neighbors
 
 def calculate_projection_neighbors(content_path, vis_id, epoch, max_neighbors=10):
-    projection_list, _ = load_projection(content_path, vis_id, epoch)
+    projection_list = load_projection(content_path, vis_id, epoch)
     projection = np.array(projection_list)
     num_samples = len(projection)
     
