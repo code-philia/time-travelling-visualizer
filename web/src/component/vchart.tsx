@@ -4,7 +4,6 @@ import VChart from '@visactor/vchart';
 import { Edge } from './types';
 import { useDefaultStore } from "../state/state.unified";
 import { createEdges, softmax, transferArray2Color } from './utils';
-import { notifyHoveredIndexSwitch, notifySelectedIndicesSwitch } from '../communication/extension';
 const BACKGROUND_PADDING = 0.5;
 
 export const ChartComponent = memo(() => {
@@ -32,7 +31,6 @@ export const ChartComponent = memo(() => {
         const listener = () => {
             console.log("Highlight Listener In VChart Triggered.");
             setSelectedIndices([...selectedListener.selectedIndices]);
-            notifySelectedIndicesSwitch([...selectedListener.selectedIndices]);
         };
         console.log("Add Highlight Listener In VChart");
         selectedListener.addHighlightChangedListener(listener);
@@ -423,11 +421,9 @@ export const ChartComponent = memo(() => {
 
             vchartRef.current.on('pointerover', { id: 'point-series' }, (e) => {
                 setHoveredIndex(e.datum?.pointId);
-                notifyHoveredIndexSwitch(e.datum?.pointId);
             });
             vchartRef.current.on('pointerout', { id: 'point-series' }, () => {
                 setHoveredIndex(undefined);
-                notifyHoveredIndexSwitch(undefined);
             });
             vchartRef.current.on('click', { id: 'point-series' }, (e) => {
                 const pointId = e.datum?.pointId;
@@ -438,7 +434,7 @@ export const ChartComponent = memo(() => {
             vchartRef.current.updateSpec(spec);
         }
         vchartRef.current.renderSync();
-    }, [epoch, allEpochData, showIndex, showLabel, showBackground, shownData, highlightData, index, availableEpochs, isFocusMode, focusIndices]);
+    }, [epoch, allEpochData, showIndex, showLabel, showBackground, shownData, highlightData, index, availableEpochs, isFocusMode, focusIndices, colorDict]);
 
 
     /*
