@@ -1,10 +1,12 @@
 import styled from 'styled-components';
-import { Tag, Form, Button, Collapse, Select } from 'antd';
+import { Tag, Form, Button, Collapse, Select, message } from 'antd';
 import { useEffect, useState } from 'react';
 import { FunctionalBlock } from './custom/basic-components';
 import { useDefaultStore } from '../state/state.unified';
-import { notifyCalculateEvents, notifyFocusModeSwitch, notifyTracingInfluence, notifyTrainingEventClicked } from '../communication/extension';
+import { notifyFocusModeSwitch, notifyTracingInfluence } from '../communication/extension';
 import { TrainingEvent, InconsistentMovementEvent, PredictionFlipEvent, ConfidenceChangeEvent, SignificantMovementEvent } from './types';
+import { calculateTrainingEvents } from '../communication/backend';
+
 
 const { Panel } = Collapse;
 
@@ -342,13 +344,26 @@ export function TrainingEventPanel() {
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [groupedEvents, setGroupedEvents] = useState<Record<string, TrainingEvent[]>>({});
 
-  const { epoch, trainingEvents } = useDefaultStore(["epoch", "trainingEvents"]);
+  const { contentPath, epoch, trainingEvents, setTrainingEvents } = useDefaultStore(["contentPath", "epoch", "trainingEvents", "setTrainingEvents"]);
 
-  const handleFormSubmit = () => {
-    const newTypes = tempSelectedTypes.filter(type => !selectedTypes.includes(type));
+  const handleFormSubmit = async () => {
+    if (tempSelectedTypes.length === 0) {
+      message.warning('Please select a training event type');
+      return;
+    }
+
     setSelectedTypes(tempSelectedTypes);
-    if (newTypes.length > 0) {
-      notifyCalculateEvents(epoch, newTypes);
+
+    const hide = message.loading('Computing training events...', 0);
+    try {
+      const resp = await calculateTrainingEvents(contentPath, epoch, tempSelectedTypes);
+      const events = Array.isArray(resp?.training_events) ? resp.training_events : [];
+      setTrainingEvents(events as TrainingEvent[]);
+      message.success(`Computed ${events.length} event(s)`);
+    } catch (e) {
+      message.error('Failed to compute training events');
+    } finally {
+      hide();
     }
   };
 
@@ -384,13 +399,7 @@ export function TrainingEventPanel() {
   }, [isFocusMode, trainingEvents]);
 
   useEffect(() => {
-    // Re-compute events when epoch changes
-    if (selectedTypes.length > 0) {
-      notifyCalculateEvents(epoch, selectedTypes);
-    }
-    // Reset selected training events when epoch changes
     setSelectedTrainingEvents([]);
-    notifyTrainingEventClicked([]);
   }, [epoch]);
 
   const handleTracingClick = (event: React.MouseEvent, item: TrainingEvent) => {
@@ -404,7 +413,6 @@ export function TrainingEventPanel() {
       : [...selectedTrainingEvents, item];
     
     setSelectedTrainingEvents(newSelectedEvents);
-    notifyTrainingEventClicked(newSelectedEvents);
   };
 
   // Function to render events by type

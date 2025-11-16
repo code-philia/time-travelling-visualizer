@@ -54,12 +54,3 @@ export function notifyTrainingEventClicked(trainingEvents: TrainingEvent[]) {
     };
     window.vscode?.postMessage(message, '*');
 }
-
-export function notifyCalculateEvents(epoch: number, eventTypes: string[]) {
-    const data = { epoch: epoch, eventTypes: eventTypes };
-    const message = {
-        command: 'calculateEvents',
-        data: data
-    };
-    window.vscode?.postMessage(message, '*');
-}

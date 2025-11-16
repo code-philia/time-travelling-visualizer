@@ -26,11 +26,11 @@ createRoot(document.getElementById("root")!).render(
 function MessageHandler() {
     // State from unified store
     const { 
-        setAvailableEpochs, setDataType, setTaskType,
+        setContentPath, setAvailableEpochs, setDataType, setTaskType,
         setTextData, setTokenList, setInherentLabelData,
         setColorDict, setLabelDict, setProgress, setValue
     } = useDefaultStore([
-        'setAvailableEpochs', 'setDataType', 'setTaskType',
+        'setContentPath', 'setAvailableEpochs', 'setDataType', 'setTaskType',
         'setTextData', 'setTokenList', 'setInherentLabelData',
         'setColorDict', 'setLabelDict', 'setProgress', 'setValue'
     ]);
@@ -54,6 +54,7 @@ function MessageHandler() {
             console.log('Loading visualization with config:', config);
             
             // Set basic configuration
+            setContentPath(contentPath);
             setDataType(dataType);
             setTaskType(taskType);
             
