@@ -19,7 +19,6 @@ export const ChartComponent = memo(() => {
     const { shownData, highlightData, index } = useDefaultStore(["shownData", "highlightData", "index"]);
 
     const { isFocusMode, focusIndices } = useDefaultStore(["isFocusMode", "focusIndices"]);
-    const { trainingEvents } = useDefaultStore(["trainingEvents"]);
 
     const samplesRef = useRef<{ pointId: number, x: number; y: number; label: number; pred: number; label_desc: string; pred_desc: string; confidence: number; textSample: string;}[]>([]);
     const edgesRef = useRef<Edge[]>([]);
@@ -307,13 +306,8 @@ export const ChartComponent = memo(() => {
                         style: {
                             size: 3,
                             fill: (datum: { label: number; groupColor: string }) => {
-                                if (highlightData.includes("prediction_flip")) {
-                                   return datum.groupColor ?? "black";
-                                }
-                                else {
-                                    const color = colorDict.get(datum.label) ?? [0, 0, 0];
-                                    return `rgb(${color[0]}, ${color[1]}, ${color[2]})`
-                                }
+                                const color = colorDict.get(datum.label) ?? [0, 0, 0];
+                                return `rgb(${color[0]}, ${color[1]}, ${color[2]})`
                             },
                             fillOpacity: (datum: { confidence: number; }) => {
                                 return datum.confidence;
@@ -325,6 +319,16 @@ export const ChartComponent = memo(() => {
                                         lineWidth: 1.5,
                                         stroke: 'rgba(255, 0, 0, 0.75)'
                                     }
+                                }
+                                else if (highlightData.includes('prediction_flip') && flipRef.current.includes(datum.pointId)) {
+                                    return {
+                                        distance: 1.5,
+                                        lineWidth: 1.5,
+                                        stroke: 'rgba(0, 0, 255, 0.75)'
+                                    }
+                                }
+                                else {
+                                    return null;
                                 }
                             },
                         }
@@ -532,35 +536,6 @@ export const ChartComponent = memo(() => {
          });
          vchartRef.current.updateDataSync('trails', trailpoints);
      }, [showTrail, selectedIndices, epoch, availableEpochs, allEpochData]);
-    
-    /*  
-        Update training events 
-    */
-    useEffect(() => {
-        if (!vchartRef.current || !trainingEvents) {
-            return;
-        }
-        
-        const currentEpochIndex = availableEpochs.indexOf(epoch);
-        if (currentEpochIndex <= 0) {
-            vchartRef.current.updateDataSync('events', []);
-            return;
-        }
-        
-        selectedListener.clearSelected();
-
-        trainingEvents.forEach((event, index) => {
-            const sampleIndex = event.index;
-            if (!selectedListener.checkSelected(sampleIndex)) {
-                selectedListener.switchSelected(sampleIndex);
-            }
-            if (event.type === 'InconsistentMovement') {
-                if (!selectedListener.checkSelected(event.index1)) {
-                    selectedListener.switchSelected(event.index1);
-                }
-            }
-        });
-    }, [trainingEvents, epoch, allEpochData, availableEpochs]);
 
     return <div
         ref={chartRef}
