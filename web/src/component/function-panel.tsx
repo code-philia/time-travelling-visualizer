@@ -1,8 +1,7 @@
-import { AutoComplete, Divider, Input, List, Tag, RefSelectProps, Checkbox, Tooltip, Switch } from 'antd';
+import { AutoComplete, Input, List, Tag, RefSelectProps, Checkbox, Switch } from 'antd';
 import { useDefaultStore } from '../state/state.unified';
 import { useEffect, useRef, useState } from 'react';
 import { ComponentBlock, FunctionalBlock } from './custom/basic-components';
-import { notifyHighlightDataSwitch, notifySelectedIndicesSwitch, notifyshownDataSwitch } from '../communication/extension';
 import { styled } from 'styled-components';
 
 type SampleTag = {
@@ -102,7 +101,6 @@ function hexToRgbArray(hex: string): [number, number, number] {
 }
 
 export function FunctionPanel() {
-    // TODO this is too messy all using useStore
     const { tokenList, labelDict, colorDict, setColorDict, selectedIndices, setSelectedIndices, setShownData } =
         useDefaultStore(["tokenList","labelDict", "colorDict", "setColorDict", "selectedIndices", "setSelectedIndices", "setShownData"]);
 
@@ -192,7 +190,6 @@ export function FunctionPanel() {
                         : [...selectedIndices, item.num];
 
                     setSelectedIndices(newSelectedIndices);
-                    notifySelectedIndicesSwitch(newSelectedIndices);
                 }}
             >
                 <div className="search-result-sample-field">
@@ -212,7 +209,6 @@ export function FunctionPanel() {
     const handleClose = (item: SampleTag) => {
         const newSelectedIndices = selectedIndices.filter(i => i !== item.num);
         setSelectedIndices(newSelectedIndices);
-        notifySelectedIndicesSwitch(newSelectedIndices);
     };
 
     useEffect(() => {
@@ -338,7 +334,6 @@ export function FunctionPanel() {
                     onChange={(checkedValues) => {
                         console.log('Dataset filter changed:', checkedValues);
                         setShownData(checkedValues as string[]);
-                        notifyshownDataSwitch(checkedValues as string[]);
                     }}
                 />
             </FunctionalBlock>
@@ -353,9 +348,11 @@ export default FunctionPanel;
 
 
 function HighlightOptionBlock() {
+    const { highlightData, setHighlightData } = useDefaultStore(["highlightData", "setHighlightData"]);
+
     const [highlightTypes, setHighlightTypes] = useState([
         { type: 'prediction_error', label: 'Prediction Error', enabled: false, icon: '❌', description: 'Samples with wrong prediction at current epoch.' },
-        { type: 'prediction_flip', label: 'Show Alignment', enabled: false, icon: '🔄', description: 'Label samples in alignment view.' }
+        { type: 'prediction_flip', label: 'Prediction Flip', enabled: false, icon: '🔄', description: 'Samples with prediction flip at current epoch.' }
     ]);
 
     const handleToggleHighlightType = (type: string) => {
@@ -366,20 +363,19 @@ function HighlightOptionBlock() {
             .filter(highlight => highlight.enabled)
             .map(highlight => highlight.type);
 
-        notifyHighlightDataSwitch(enabledTypes);
+        setHighlightData(enabledTypes);
     };
 
     const renderHighlightTypeItem = (highlight: { type: string, label: string, enabled: boolean, icon: string, description: string}) => {
         return (
             <List.Item
                 className={`highlight-type-item ${highlight.enabled ? 'enabled' : 'disabled'}`}
-                onClick={() => handleToggleHighlightType(highlight.type)}
                 style={{
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'flex-start',
                     width: '100%',
-                    paddingLeft: '4px', // Reduce left padding
+                    paddingLeft: '4px',
                 }}
             >
                 <div

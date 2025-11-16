@@ -1,6 +1,5 @@
 import styled from 'styled-components';
 import { useDefaultStore } from '../state/state.unified';
-import { notifyHoveredIndexSwitch, notifySelectedIndicesSwitch } from '../communication/extension';
 import { useEffect, useState } from 'react';
 
 const BottomPanelContainer = styled.div`
@@ -210,7 +209,6 @@ export function TokenPanel() {
 
     const handleHover = (index: number | null) => {
         setHoveredIndex(index ?? undefined);
-        notifyHoveredIndexSwitch(index ?? undefined);
     };
 
     const handleClick = (index: number) => {
@@ -218,7 +216,6 @@ export function TokenPanel() {
             ? selectedIndices.filter(i => i !== index)
             : [...selectedIndices, index];
         setSelectedIndices(newSelectedIndices);
-        notifySelectedIndicesSwitch(newSelectedIndices);
     };
 
     return (

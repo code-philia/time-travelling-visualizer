@@ -25,42 +25,6 @@ export function notifyEpochSwitch(e: number) {
     window.vscode?.postMessage(message, '*');
 }
 
-export function notifyHoveredIndexSwitch(e: number | undefined) {
-    const data = { hoveredIndex: e };
-    const message = {
-        command: 'hoveredIndexSwitch',
-        data: data
-    };
-    window.vscode?.postMessage(message, '*');
-}
-
-export function notifySelectedIndicesSwitch(e: number[]) {
-    const data = { selectedIndices: e };
-    const message = {
-        command: 'selectedIndicesSwitch',
-        data: data
-    };
-    window.vscode?.postMessage(message, '*');
-}
-
-export function notifyshownDataSwitch(e: string[]) {
-    const data = { shownData: e };
-    const message = {
-        command: 'shownDataSwitch',
-        data: data
-    };
-    window.vscode?.postMessage(message, '*');
-}
-
-export function notifyHighlightDataSwitch(e: string[]) {
-    const data = { highlightData: e };
-    const message = {
-        command: 'highlightDataSwitch',
-        data: data
-    };
-    window.vscode?.postMessage(message, '*');
-}
-
 export function notifyFocusModeSwitch(isFocusMode: boolean, focusIndices: number[] = []) {
     const data = {
         isFocusMode: isFocusMode,
