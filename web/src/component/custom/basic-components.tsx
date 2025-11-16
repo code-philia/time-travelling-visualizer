@@ -2,7 +2,7 @@
 // TODO add resize/drag/dock-to mouse interaction
 export function FunctionalBlock(props: { label?: string; children?: null | React.ReactNode | React.ReactNode[]; }) {
     return (
-        <div className="functional-block">
+        <div className="functional-block" style={{ overflow: 'visible' }}>
             {props.label && <div className="functional-block-title">{props.label}</div>}
             {props.children}
         </div>

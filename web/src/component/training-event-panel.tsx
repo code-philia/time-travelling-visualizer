@@ -492,8 +492,7 @@ export function TrainingEventPanel() {
   return (
     <div className="info-column" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <FunctionalBlock label="Training Events">
-        <CompactForm>
-          <FormHeader>Please select training events to show</FormHeader>
+        <CompactForm style={{ marginBottom: 8 }}>
           <Form.Item style={{ marginBottom: 10 }}>
             <CompactSelect
               placeholder="Select a training event type"
@@ -524,41 +523,43 @@ export function TrainingEventPanel() {
           </div>
         </CompactForm>
         
-        <ResultContainer>
-          <ResultHeader>
-            Detected Training Events
-            <EventsCount>{eventsCount} events</EventsCount>
-          </ResultHeader>
-          <EventsContainer>
-            {selectedTypes.length === 0 ? (
-              <EmptyState>Click "Compute" to see results</EmptyState>
-            ) : activeEvents.length === 0 ? (
-              <EmptyState>No events detected with current filters</EmptyState>
-            ) : subGroups.length === 0 ? (
-              <EmptyState>No events detected with current filters</EmptyState>
-            ) : (
-              <Collapse
-                defaultActiveKey={collapseDefaultKeys}
-                bordered={false}
-                style={{ background: 'transparent' }}
-              >
-                {subGroups.map(group => (
-                  <CompactEventTypePanel
-                    key={group.key}
-                    header={
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '11px' }}>
-                        <span>{group.title}</span>
-                        <span style={{ color: '#888' }}>({group.events.length})</span>
-                      </div>
-                    }
-                  >
-                    {group.events.map(item => renderEventItem(item))}
-                  </CompactEventTypePanel>
-                ))}
-              </Collapse>
-            )}
-          </EventsContainer>
-        </ResultContainer>
+        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+          <ResultContainer style={{ flex: 1, minHeight: 0 }}>
+            <ResultHeader>
+              Detected Training Events
+              <EventsCount>{eventsCount} events</EventsCount>
+            </ResultHeader>
+            <EventsContainer>
+              {selectedTypes.length === 0 ? (
+                <EmptyState>Click "Compute" to see results</EmptyState>
+              ) : activeEvents.length === 0 ? (
+                <EmptyState>No events detected with current filters</EmptyState>
+              ) : subGroups.length === 0 ? (
+                <EmptyState>No events detected with current filters</EmptyState>
+              ) : (
+                <Collapse
+                  defaultActiveKey={collapseDefaultKeys}
+                  bordered={false}
+                  style={{ background: 'transparent' }}
+                >
+                  {subGroups.map(group => (
+                    <CompactEventTypePanel
+                      key={group.key}
+                      header={
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '11px' }}>
+                          <span>{group.title}</span>
+                          <span style={{ color: '#888' }}>({group.events.length})</span>
+                        </div>
+                      }
+                    >
+                      {group.events.map(item => renderEventItem(item))}
+                    </CompactEventTypePanel>
+                  ))}
+                </Collapse>
+              )}
+            </EventsContainer>
+          </ResultContainer>
+        </div>
       </FunctionalBlock>
     </div>
   );

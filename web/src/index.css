@@ -383,12 +383,14 @@ body {
 }
 
 .user-column, .info-column {
-  flex: 1 0 auto;
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   width: 100%;
-  padding: 1em;  
-  overflow-y: auto;
+  padding: 0.8em;  
+  gap: 0.8em;
+  min-height: 0;
+  overflow: auto;
 }
 
 .user-column {
@@ -400,7 +402,7 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: auto;
 }
 
 .info-column {
