@@ -23,6 +23,7 @@ export const ChartComponent = memo(() => {
     const { setHoveredIndex } = useDefaultStore(["setHoveredIndex"]);
     const { mode } = useDefaultStore(["mode"]);
     const { pointSize } = useDefaultStore(["pointSize"]);
+    const { revealOriginalNeighbors, revealProjectionNeighbors } = useDefaultStore(["revealOriginalNeighbors", "revealProjectionNeighbors"]);
 
     const epochData = allEpochData[epoch];
 
@@ -170,6 +171,124 @@ export const ChartComponent = memo(() => {
         };
     }, [colorDict, epochData, filteredIndices, inherentLabelData]);
 
+    const posMap = useMemo(() => {
+        const m = new Map<number, number>();
+        if (prepared) {
+            prepared.dataPoints.forEach((p, i) => {
+                m.set(p.identifier as number, i);
+            });
+        }
+        return m;
+    }, [prepared]);
+
+    const neighborOverlayProps = useMemo(() => {
+        if (!prepared || !epochData) return { center: null, original: [], projection: [], dataX: new Float32Array(0), dataY: new Float32Array(0), pointSize, revealOriginalNeighbors, revealProjectionNeighbors } as any;
+        if (!tooltip) return { center: null, original: [], projection: [], dataX: prepared.simpleData.x as Float32Array, dataY: prepared.simpleData.y as Float32Array, pointSize, revealOriginalNeighbors, revealProjectionNeighbors } as any;
+        const hoverId = tooltip.identifier as number;
+        const orig = (epochData.originalNeighbors?.[hoverId] ?? []).filter((nid) => posMap.has(nid));
+        const proj = (epochData.projectionNeighbors?.[hoverId] ?? []).filter((nid) => posMap.has(nid));
+        return {
+            center: tooltip,
+            original: orig,
+            projection: proj,
+            dataX: prepared.simpleData.x as Float32Array,
+            dataY: prepared.simpleData.y as Float32Array,
+            pointSize,
+            revealOriginalNeighbors,
+            revealProjectionNeighbors,
+        };
+    }, [prepared, epochData, tooltip, posMap, pointSize, revealOriginalNeighbors, revealProjectionNeighbors]);
+
+    class NeighborOverlay {
+        private el: HTMLDivElement | null = null;
+        private svg: SVGSVGElement | null = null;
+        private props: any;
+        private proxy: any;
+        constructor(target: HTMLDivElement, props: any) {
+            this.el = target;
+            this.props = props;
+            this.proxy = props.proxy;
+            this.mount();
+        }
+        mount() {
+            if (!this.el) return;
+            this.svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            this.svg.setAttribute('width', String(this.proxy.width));
+            this.svg.setAttribute('height', String(this.proxy.height));
+            this.el.appendChild(this.svg);
+            this.render();
+        }
+        clear() {
+            if (this.svg) {
+                while (this.svg.firstChild) this.svg.removeChild(this.svg.firstChild);
+            }
+        }
+        render() {
+            if (!this.svg) return;
+            this.clear();
+            const { center, original, projection, dataX, dataY, pointSize, revealOriginalNeighbors, revealProjectionNeighbors } = this.props;
+            if (!center) return;
+            const centerLoc = this.proxy.location(center.x, center.y);
+            const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            const drawNeighbor = (nid: number, color: string) => {
+                const pos = this.props.posMap.get(nid);
+                if (pos == null) return;
+                const x = dataX[pos];
+                const y = dataY[pos];
+                const loc = this.proxy.location(x, y);
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', String(centerLoc.x));
+                line.setAttribute('y1', String(centerLoc.y));
+                line.setAttribute('x2', String(loc.x));
+                line.setAttribute('y2', String(loc.y));
+                line.setAttribute('stroke', color);
+                line.setAttribute('stroke-width', '1.5');
+                line.setAttribute('stroke-linecap', 'round');
+                group.appendChild(line);
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', String(loc.x));
+                circle.setAttribute('cy', String(loc.y));
+                circle.setAttribute('r', String(pointSize + 1.5));
+                circle.setAttribute('fill', 'none');
+                circle.setAttribute('stroke', color);
+                circle.setAttribute('stroke-width', '2');
+                group.appendChild(circle);
+            };
+            const COLOR_ORIG = '#E74C3C';
+            const COLOR_PROJ = '#2E86DE';
+            if (revealOriginalNeighbors) {
+                original.forEach((nid: number) => drawNeighbor(nid, COLOR_ORIG));
+            }
+            if (revealProjectionNeighbors) {
+                projection.forEach((nid: number) => drawNeighbor(nid, COLOR_PROJ));
+            }
+            this.svg.appendChild(group);
+            const centerCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            centerCircle.setAttribute('cx', String(centerLoc.x));
+            centerCircle.setAttribute('cy', String(centerLoc.y));
+            centerCircle.setAttribute('r', String(pointSize + 2));
+            centerCircle.setAttribute('fill', 'none');
+            centerCircle.setAttribute('stroke', '#666');
+            centerCircle.setAttribute('stroke-width', '2');
+            this.svg.appendChild(centerCircle);
+        }
+        update(nextProps: Partial<any>) {
+            this.props = { ...this.props, ...nextProps };
+            if (this.svg) {
+                this.svg.setAttribute('width', String(this.props.proxy.width));
+                this.svg.setAttribute('height', String(this.props.proxy.height));
+            }
+            this.render();
+        }
+        destroy() {
+            if (this.svg && this.el) {
+                this.el.removeChild(this.svg);
+            }
+            this.svg = null;
+            this.el = null;
+        }
+    }
+
     // find selected datapoint
     async function querySelection(x: number, y: number, unitDistance: number): Promise<DataPoint | null> {
         if (!prepared) {
@@ -205,6 +324,10 @@ export const ChartComponent = memo(() => {
             }}
             viewportState={viewportState}
             querySelection={ querySelection }
+            customOverlay={{
+                class: NeighborOverlay as any,
+                props: { ...neighborOverlayProps, posMap }
+            }}
         />
     ) : null;
 
