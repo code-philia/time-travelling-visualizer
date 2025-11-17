@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as config from './config';
-import { getPlotSettings, loadVisualization, setAsDataFolder, setAsDataFolderAndLoadVisualizationResult, startVisualizing } from './control';
+import { loadVisualization, setAsDataFolder, setAsDataFolderAndLoadVisualizationResult, startVisualizing } from './control';
 import path from 'path';
 import { loadHomePage } from './utils';
 import { MessageManager } from './views/messageManager';
@@ -34,43 +34,7 @@ function openPlotView() {
     );
 
     panel.webview.onDidReceiveMessage(async (msg) => {
-        console.log("[Extension] webview received message: ", msg);        
-        if (msg.command === 'acquireSettings') { 
-            let allPlotSettings = getPlotSettings();
-            panel.webview.postMessage({
-                command: 'updatePlotSettings',
-                data: {
-                    settings: allPlotSettings
-                }
-            });
-        }
-    });
-
-    // Listen for configuration changes
-    vscode.workspace.onDidChangeConfiguration(async (event) => {
-        const settingsPrefix = 'timeTravellingVisualizer.plotSettings';
-        const settingsToCheck = [
-            'showIndex',
-            'showLabel',
-            'showBackground',
-            'showTrail',
-        ];
-
-        const updatedSettings: Record<string, any> = {};
-        for (const setting of settingsToCheck) {
-            const fullSettingKey = `${settingsPrefix}.${setting}`;
-            if (event.affectsConfiguration(fullSettingKey)) {
-                const updatedValue = vscode.workspace.getConfiguration('timeTravellingVisualizer.plotSettings').get(setting);
-                updatedSettings[setting] = updatedValue;
-            }
-        }
-
-        if (Object.keys(updatedSettings).length > 0 && panel) {
-            panel.webview.postMessage({
-                command: 'updatePlotSettings',
-                data: { settings: updatedSettings }
-            });
-        }
+        console.log("[Extension] webview received message: ", msg);
     });
 
     MessageManager.setPlotViewMessageManager(new PlotViewMessageManager(panel));

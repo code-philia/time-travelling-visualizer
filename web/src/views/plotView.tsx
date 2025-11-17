@@ -13,9 +13,6 @@ import { StrictMode } from "react";
 import "../index.css";
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 
-
-import { acquireSettings } from '../communication/extension';
-
 const LOG_PREFIX = '[TTVisualizer]';
 
 function logWithTimestamp(message: string): void {
@@ -40,15 +37,6 @@ function MessageHandler() {
         'setTextData', 'setTokenList', 'setInherentLabelData',
         'setColorDict', 'setLabelDict', 'setProgress', 'setValue'
     ]);
-
-    // Update settings in the store
-    const handleUpdateSettings = (settings: any) => {
-        console.log('Updating settings:', settings);
-        setValue('showIndex', settings.showIndex);
-        setValue('showLabel', settings.showLabel);
-        setValue('showTrail', settings.showTrail);
-        setValue('showBackground', settings.showBackground);
-    }
 
     // Load visualization data from backend with configuration
     const handleLoadVisualization = async (config: any) => {
@@ -182,9 +170,6 @@ function MessageHandler() {
         console.log('Received message from extension:', event);
 
         switch (command) {
-            case 'updatePlotSettings':
-                handleUpdateSettings(data.settings);
-                break;
             case 'loadVisualization':
                 await handleLoadVisualization(data.config);
                 break;
@@ -195,7 +180,6 @@ function MessageHandler() {
 
     useEffect(() => {
         window.addEventListener('message', handleMessage);
-        acquireSettings();
 
         return () => window.removeEventListener('message', handleMessage);
     }, []);

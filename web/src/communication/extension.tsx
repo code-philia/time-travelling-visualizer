@@ -12,10 +12,6 @@ if (canConnectToVsCode) {
   window.vscode = window.acquireVsCodeApi();
 }
 
-export function acquireSettings() {
-    window.vscode?.postMessage({ command: 'acquireSettings' }, '*');
-}
-
 export function notifyEpochSwitch(e: number) {
     const data = { epoch: e };
     const message = {
