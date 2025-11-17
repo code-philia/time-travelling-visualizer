@@ -17,13 +17,14 @@ export const ChartComponent = memo(() => {
     const [dimensions, setDimensions] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
 
     const { epoch, allEpochData, globalBounds } = useDefaultStore(["epoch", "allEpochData","globalBounds"]);
-    const { inherentLabelData, colorDict } = useDefaultStore(["inherentLabelData", "colorDict"]);
+    const { inherentLabelData, colorDict, labelDict, textData } = useDefaultStore(["inherentLabelData", "colorDict", "labelDict", "textData"]);
     const { shownData, index, isFocusMode, focusIndices } = useDefaultStore(["shownData", "index", "isFocusMode", "focusIndices"]);
 
     const { setHoveredIndex } = useDefaultStore(["setHoveredIndex"]);
     const { mode } = useDefaultStore(["mode"]);
     const { pointSize } = useDefaultStore(["pointSize"]);
     const { revealOriginalNeighbors, revealProjectionNeighbors } = useDefaultStore(["revealOriginalNeighbors", "revealProjectionNeighbors"]);
+    const { showLabel, showIndex } = useDefaultStore(["showLabel", "showIndex"]);
 
     const epochData = allEpochData[epoch];
 
@@ -183,7 +184,8 @@ export const ChartComponent = memo(() => {
 
     const neighborOverlayProps = useMemo(() => {
         if (!prepared || !epochData) return { center: null, original: [], projection: [], dataX: new Float32Array(0), dataY: new Float32Array(0), pointSize, revealOriginalNeighbors, revealProjectionNeighbors } as any;
-        if (!tooltip) return { center: null, original: [], projection: [], dataX: prepared.simpleData.x as Float32Array, dataY: prepared.simpleData.y as Float32Array, pointSize, revealOriginalNeighbors, revealProjectionNeighbors } as any;
+        const idsByPos = prepared.dataPoints.map((p) => p.identifier as number);
+        if (!tooltip) return { center: null, original: [], projection: [], dataX: prepared.simpleData.x as Float32Array, dataY: prepared.simpleData.y as Float32Array, pointSize, revealOriginalNeighbors, revealProjectionNeighbors, idsByPos, showLabel, showIndex, labelDict, textData, inherentLabelData, viewportState } as any;
         const hoverId = tooltip.identifier as number;
         const orig = (epochData.originalNeighbors?.[hoverId] ?? []).filter((nid) => posMap.has(nid));
         const proj = (epochData.projectionNeighbors?.[hoverId] ?? []).filter((nid) => posMap.has(nid));
@@ -196,8 +198,15 @@ export const ChartComponent = memo(() => {
             pointSize,
             revealOriginalNeighbors,
             revealProjectionNeighbors,
+            idsByPos,
+            showLabel,
+            showIndex,
+            labelDict,
+            textData,
+            inherentLabelData,
+            viewportState,
         };
-    }, [prepared, epochData, tooltip, posMap, pointSize, revealOriginalNeighbors, revealProjectionNeighbors]);
+    }, [prepared, epochData, tooltip, posMap, pointSize, revealOriginalNeighbors, revealProjectionNeighbors, showLabel, showIndex, labelDict, textData, inherentLabelData, viewportState]);
 
     class NeighborOverlay {
         private el: HTMLDivElement | null = null;
@@ -227,9 +236,8 @@ export const ChartComponent = memo(() => {
             if (!this.svg) return;
             this.clear();
             const { center, original, projection, dataX, dataY, pointSize, revealOriginalNeighbors, revealProjectionNeighbors } = this.props;
-            if (!center) return;
-            const centerLoc = this.proxy.location(center.x, center.y);
-            const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            const centerLoc = center ? this.proxy.location(center.x, center.y) : null;
+            const neighborGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
             const drawNeighbor = (nid: number, color: string) => {
                 const pos = this.props.posMap.get(nid);
                 if (pos == null) return;
@@ -244,7 +252,7 @@ export const ChartComponent = memo(() => {
                 line.setAttribute('stroke', color);
                 line.setAttribute('stroke-width', '1.5');
                 line.setAttribute('stroke-linecap', 'round');
-                group.appendChild(line);
+                neighborGroup.appendChild(line);
                 const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
                 circle.setAttribute('cx', String(loc.x));
                 circle.setAttribute('cy', String(loc.y));
@@ -252,25 +260,58 @@ export const ChartComponent = memo(() => {
                 circle.setAttribute('fill', 'none');
                 circle.setAttribute('stroke', color);
                 circle.setAttribute('stroke-width', '2');
-                group.appendChild(circle);
+                neighborGroup.appendChild(circle);
             };
             const COLOR_ORIG = '#E74C3C';
             const COLOR_PROJ = '#2E86DE';
-            if (revealOriginalNeighbors) {
-                original.forEach((nid: number) => drawNeighbor(nid, COLOR_ORIG));
+            if (centerLoc) {
+                if (revealOriginalNeighbors) {
+                    original.forEach((nid: number) => drawNeighbor(nid, COLOR_ORIG));
+                }
+                if (revealProjectionNeighbors) {
+                    projection.forEach((nid: number) => drawNeighbor(nid, COLOR_PROJ));
+                }
+                this.svg.appendChild(neighborGroup);
+                const centerCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                centerCircle.setAttribute('cx', String(centerLoc.x));
+                centerCircle.setAttribute('cy', String(centerLoc.y));
+                centerCircle.setAttribute('r', String(pointSize + 2));
+                centerCircle.setAttribute('fill', 'none');
+                centerCircle.setAttribute('stroke', '#666');
+                centerCircle.setAttribute('stroke-width', '2');
+                this.svg.appendChild(centerCircle);
+            } else {
+                this.svg.appendChild(neighborGroup);
             }
-            if (revealProjectionNeighbors) {
-                projection.forEach((nid: number) => drawNeighbor(nid, COLOR_PROJ));
+
+            if (this.props.showLabel || this.props.showIndex) {
+                const textGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                for (let i = 0; i < this.props.dataX.length; i++) {
+                    const id = this.props.idsByPos[i];
+                    const x = this.props.dataX[i];
+                    const y = this.props.dataY[i];
+                    const loc = this.proxy.location(x, y);
+                    const labelTextData = this.props.textData && this.props.textData[id] ? this.props.textData[id] : (this.props.labelDict?.get(this.props.inherentLabelData[id]) ?? '');
+                    let content = '';
+                    if (this.props.showLabel && this.props.showIndex) {
+                        content = `${id}.${labelTextData}`;
+                    } else if (this.props.showLabel) {
+                        content = labelTextData;
+                    } else if (this.props.showIndex) {
+                        content = String(id);
+                    }
+                    if (!content) continue;
+                    const textEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    textEl.setAttribute('x', String(loc.x + (pointSize + 2)));
+                    textEl.setAttribute('y', String(loc.y - (pointSize + 2)));
+                    textEl.setAttribute('fill', '#000');
+                    textEl.setAttribute('font-size', '10');
+                    textEl.setAttribute('font-family', 'Console, monospace');
+                    textEl.textContent = content;
+                    textGroup.appendChild(textEl);
+                }
+                this.svg.appendChild(textGroup);
             }
-            this.svg.appendChild(group);
-            const centerCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            centerCircle.setAttribute('cx', String(centerLoc.x));
-            centerCircle.setAttribute('cy', String(centerLoc.y));
-            centerCircle.setAttribute('r', String(pointSize + 2));
-            centerCircle.setAttribute('fill', 'none');
-            centerCircle.setAttribute('stroke', '#666');
-            centerCircle.setAttribute('stroke-width', '2');
-            this.svg.appendChild(centerCircle);
         }
         update(nextProps: Partial<any>) {
             this.props = { ...this.props, ...nextProps };
@@ -323,6 +364,7 @@ export const ChartComponent = memo(() => {
                 setTooltip(v);
             }}
             viewportState={viewportState}
+            onViewportState={(v) => setViewportState(v)}
             querySelection={ querySelection }
             customOverlay={{
                 class: NeighborOverlay as any,
