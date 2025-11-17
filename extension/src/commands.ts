@@ -54,13 +54,9 @@ function openPlotView() {
             'showLabel',
             'showBackground',
             'showTrail',
-            'revealOriginalNeighbors',
-            'revealProjectionNeighbors',
         ];
-    
-        // Collect all changed settings
+
         const updatedSettings: Record<string, any> = {};
-    
         for (const setting of settingsToCheck) {
             const fullSettingKey = `${settingsPrefix}.${setting}`;
             if (event.affectsConfiguration(fullSettingKey)) {
@@ -68,14 +64,11 @@ function openPlotView() {
                 updatedSettings[setting] = updatedValue;
             }
         }
-    
-        // Send all updated settings in one message
+
         if (Object.keys(updatedSettings).length > 0 && panel) {
             panel.webview.postMessage({
                 command: 'updatePlotSettings',
-                data: {
-                    settings: updatedSettings
-                }
+                data: { settings: updatedSettings }
             });
         }
     });

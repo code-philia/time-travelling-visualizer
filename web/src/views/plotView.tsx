@@ -47,8 +47,6 @@ function MessageHandler() {
         setValue('showIndex', settings.showIndex);
         setValue('showLabel', settings.showLabel);
         setValue('showTrail', settings.showTrail);
-        setValue('revealOriginalNeighbors', settings.revealOriginalNeighbors);
-        setValue('revealProjectionNeighbors', settings.revealProjectionNeighbors);
         setValue('showBackground', settings.showBackground);
     }
 

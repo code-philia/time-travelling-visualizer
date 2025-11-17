@@ -302,16 +302,6 @@
             "type": "boolean",
             "default": false,
             "description": "Show the trail of data points over time."
-          },
-          "timeTravellingVisualizer.plotSettings.revealOriginalNeighbors": {
-            "type": "boolean",
-            "default": true,
-            "description": "Show neighbors in high-dimensional space."
-          },
-          "timeTravellingVisualizer.plotSettings.revealProjectionNeighbors": {
-            "type": "boolean",
-            "default": true,
-            "description": "Show neighbors in the projection space."
           }
         }
       }

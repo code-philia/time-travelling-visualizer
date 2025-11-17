@@ -364,6 +364,39 @@ export function FunctionPanel() {
                                 ]}
                             />
                         </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ minWidth: 80, fontSize: 12, fontWeight: 600 }}>Neighbors</span>
+                            <Select
+                                size="small"
+                                style={{ minWidth: 140 }}
+                                value={
+                                    revealOriginalNeighbors && revealProjectionNeighbors ? 'both'
+                                    : (revealOriginalNeighbors ? 'original'
+                                    : (revealProjectionNeighbors ? 'projection' : 'none'))
+                                }
+                                onChange={(v) => {
+                                    if (v === 'none') {
+                                        setRevealOriginalNeighbors(false);
+                                        setRevealProjectionNeighbors(false);
+                                    } else if (v === 'original') {
+                                        setRevealOriginalNeighbors(true);
+                                        setRevealProjectionNeighbors(false);
+                                    } else if (v === 'projection') {
+                                        setRevealOriginalNeighbors(false);
+                                        setRevealProjectionNeighbors(true);
+                                    } else if (v === 'both') {
+                                        setRevealOriginalNeighbors(true);
+                                        setRevealProjectionNeighbors(true);
+                                    }
+                                }}
+                                options={[
+                                    { label: 'None', value: 'none' },
+                                    { label: 'Original', value: 'original' },
+                                    { label: 'Projection', value: 'projection' },
+                                    { label: 'Both', value: 'both' },
+                                ]}
+                            />
+                        </div>
                     </div>
                 </ComponentBlock>
             </FunctionalBlock>
