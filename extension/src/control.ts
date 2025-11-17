@@ -297,20 +297,6 @@ export function getVisConfig(visualizationMethod: string) {
 	return {};
 }
 
-export function getPlotSettings(){
-    const plotSettings = vscode.workspace.getConfiguration(CONFIG.configurationBaseName);
-    const showIndex = plotSettings.get(CONFIG.ConfigurationID.showIndex);
-    const showLabel = plotSettings.get(CONFIG.ConfigurationID.showLabel);
-    const showBackground = plotSettings.get(CONFIG.ConfigurationID.showBackground);
-    const showTrail = plotSettings.get(CONFIG.ConfigurationID.showTrail);
-
-    return {
-        showIndex: showIndex,
-        showLabel: showLabel,
-        showBackground: showBackground,
-        showTrail: showTrail,
-    };
-}
 
 /**
  * Load the visualization result

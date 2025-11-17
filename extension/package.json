@@ -279,32 +279,8 @@
             "description": "The metric to use for computing distances in high-dimensional space."
           }
         }
-      },
-      {
-        "title": "Plot Settings",
-        "properties": {
-          "timeTravellingVisualizer.plotSettings.showIndex": {
-            "type": "boolean",
-            "default": true,
-            "description": "Show the index of the data points."
-          },
-          "timeTravellingVisualizer.plotSettings.showLabel": {
-            "type": "boolean",
-            "default": true,
-            "description": "Show the label or original text associated with the data points."
-          },
-          "timeTravellingVisualizer.plotSettings.showBackground": {
-            "type": "boolean",
-            "default": false,
-            "description": "Show the classification background"
-          },
-          "timeTravellingVisualizer.plotSettings.showTrail": {
-            "type": "boolean",
-            "default": false,
-            "description": "Show the trail of data points over time."
-          }
-        }
       }
+      
     ],
     "commands": [
       {

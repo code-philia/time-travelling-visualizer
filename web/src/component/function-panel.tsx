@@ -399,6 +399,29 @@ export function FunctionPanel() {
                                 ]}
                             />
                         </div>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                            <span style={{ minWidth: 80, fontSize: 12, fontWeight: 600 }}>Display</span>
+                            <div style={{ border: '1px solid #d9d9d9', borderRadius: 6, padding: '8px', background: '#ffffff', width: 240 }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                        <span style={{ fontSize: 12 }}>Show Label</span>
+                                        <Switch size="small" checked={showLabel} onChange={(v) => setShowLabel(v)} />
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                        <span style={{ fontSize: 12 }}>Show Index</span>
+                                        <Switch size="small" checked={showIndex} onChange={(v) => setShowIndex(v)} />
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                        <span style={{ fontSize: 12 }}>Show Trail</span>
+                                        <Switch size="small" checked={showTrail} onChange={(v) => setShowTrail(v)} />
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                        <span style={{ fontSize: 12 }}>Show Background</span>
+                                        <Switch size="small" checked={showBackground} onChange={(v) => setShowBackground(v)} />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </ComponentBlock>
             </FunctionalBlock>
