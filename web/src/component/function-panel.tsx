@@ -24,10 +24,10 @@ const CompactCheckboxGroup = styled(Checkbox.Group)`
   .ant-checkbox-wrapper {
     display: flex;
     align-items: center;
-    padding: 2px 6px;
-    border-radius: 3px;
-    font-size: 12px;
-    font-weight: 500;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
     cursor: pointer;
     transition: background-color 0.2s ease;
     background-color: #ffffff;
@@ -35,20 +35,20 @@ const CompactCheckboxGroup = styled(Checkbox.Group)`
     
     &:hover {
       background-color: #f5f5f5;
-      border-color: #1890ff;
+      border-color: #3278F0;
     }
   }
 
   .ant-checkbox-checked .ant-checkbox-inner {
-    background-color: #1890ff;
-    border-color: #1890ff;
-    width: 12px;
-    height: 12px;
+    background-color: #3278F0;
+    border-color: #3278F0;
+    width: 14px;
+    height: 14px;
   }
   
   .ant-checkbox-inner {
-    width: 12px;
-    height: 12px;
+    width: 14px;
+    height: 14px;
   }
 `;
 
@@ -103,6 +103,8 @@ function hexToRgbArray(hex: string): [number, number, number] {
 export function FunctionPanel() {
     const { tokenList, labelDict, colorDict, setColorDict, selectedIndices, setSelectedIndices, setShownData, pointSize, setPointSize, mode, setMode } =
         useDefaultStore(["tokenList","labelDict", "colorDict", "setColorDict", "selectedIndices", "setSelectedIndices", "setShownData", "pointSize", "setPointSize", "mode", "setMode"]);
+    const { revealOriginalNeighbors, revealProjectionNeighbors, setRevealOriginalNeighbors, setRevealProjectionNeighbors } =
+        useDefaultStore(["revealOriginalNeighbors", "revealProjectionNeighbors", "setRevealOriginalNeighbors", "setRevealProjectionNeighbors"]);
 
     useEffect(() => {
         if (pointSize < 1) {
@@ -339,7 +341,7 @@ export function FunctionPanel() {
                 <ComponentBlock>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span style={{ minWidth: 80 }}>Point Size:</span>
+                            <span style={{ minWidth: 80, fontSize: 12, fontWeight: 600 }}>Point Size</span>
                             <Slider
                                 min={1}
                                 max={3}
@@ -352,7 +354,7 @@ export function FunctionPanel() {
                             />
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span style={{ minWidth: 80 }}>Mode:</span>
+                            <span style={{ minWidth: 80, fontSize: 12, fontWeight: 600 }}>Mode</span>
                             <Select
                                 size="small"
                                 style={{ minWidth: 140 }}
@@ -401,17 +403,20 @@ export function FunctionPanel() {
                 </ComponentBlock>
             </FunctionalBlock>
             <FunctionalBlock label="Filter">
-                <CompactCheckboxGroup
-                    options={[
-                        { label: 'Train Data', value: 'train' },
-                        { label: 'Test Data', value: 'test' },
-                    ]}
-                    defaultValue={['train', 'test']}
-                    onChange={(checkedValues) => {
-                        console.log('Dataset filter changed:', checkedValues);
-                        setShownData(checkedValues as string[]);
-                    }}
-                />
+                <ComponentBlock>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                        <CompactCheckboxGroup
+                            options={[
+                                { label: 'Train Data', value: 'train' },
+                                { label: 'Test Data', value: 'test' },
+                            ]}
+                            defaultValue={['train', 'test']}
+                            onChange={(checkedValues) => {
+                                setShownData(checkedValues as string[]);
+                            }}
+                        />
+                    </div>
+                </ComponentBlock>
             </FunctionalBlock>
             <FunctionalBlock label="Highlight">
                 <HighlightOptionBlock />
