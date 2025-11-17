@@ -105,16 +105,18 @@ export function FunctionPanel() {
         useDefaultStore(["tokenList","labelDict", "colorDict", "setColorDict", "selectedIndices", "setSelectedIndices", "setShownData", "pointSize", "setPointSize", "mode", "setMode"]);
     const { revealOriginalNeighbors, revealProjectionNeighbors, setRevealOriginalNeighbors, setRevealProjectionNeighbors } =
         useDefaultStore(["revealOriginalNeighbors", "revealProjectionNeighbors", "setRevealOriginalNeighbors", "setRevealProjectionNeighbors"]);
+    const { showIndex, showLabel, showBackground, showTrail, setShowIndex, setShowLabel, setShowBackground, setShowTrail } =
+        useDefaultStore(["showIndex","showLabel","showBackground","showTrail","setShowIndex","setShowLabel","setShowBackground","setShowTrail"]);
 
     useEffect(() => {
         if (pointSize < 1) {
             setPointSize(1);
-        } else if (pointSize > 3) {
-            setPointSize(3);
+        } else if (pointSize > 5) {
+            setPointSize(5);
         }
     }, [pointSize, setPointSize]);
 
-    const pointSizeMarks: Record<number, string> = { 1: 'small', 2: 'middle', 3: 'large' };
+    const pointSizeMarks: Record<number, string> = { 1: '1', 2: '2', 3: '3', 4: '4', 5: '5' };
     const pointSizeLabel = pointSizeMarks[pointSize] ?? pointSize.toString();
 
     function changeLabelColor(i: number, newColor: [number, number, number]) {
@@ -344,7 +346,7 @@ export function FunctionPanel() {
                             <span style={{ minWidth: 80, fontSize: 12, fontWeight: 600 }}>Point Size</span>
                             <Slider
                                 min={1}
-                                max={3}
+                                max={5}
                                 step={1}
                                 dots
                                 marks={pointSizeMarks}
@@ -357,7 +359,7 @@ export function FunctionPanel() {
                             <span style={{ minWidth: 80, fontSize: 12, fontWeight: 600 }}>Mode</span>
                             <Select
                                 size="small"
-                                style={{ minWidth: 140 }}
+                                style={{ width: 240 }}
                                 value={mode}
                                 onChange={(v) => setMode(v)}
                                 options={[
@@ -370,7 +372,7 @@ export function FunctionPanel() {
                             <span style={{ minWidth: 80, fontSize: 12, fontWeight: 600 }}>Neighbors</span>
                             <Select
                                 size="small"
-                                style={{ minWidth: 140 }}
+                                style={{ width: 240 }}
                                 value={
                                     revealOriginalNeighbors && revealProjectionNeighbors ? 'both'
                                     : (revealOriginalNeighbors ? 'original'
