@@ -11,8 +11,7 @@ export type BasicVisualizationConfig = {
     dataType: string,
 	taskType: string,
 	contentPath: string,
-    visualizationMethod: string,
-    visualizationID: string,
+    visualizationMethod: string
 };
 
 export class StringSelection {

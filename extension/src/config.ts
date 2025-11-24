@@ -64,7 +64,6 @@ export class ConfigurationID {
     static readonly taskType = 'loadVisualization.taskType';
 	static readonly trainingProcess = 'loadVisualization.trainingProcess';
 	static readonly visualizationMethod = 'loadVisualization.visualizationMethod';
-	static readonly visualizationID = 'loadVisualization.visualizationID';
 	
 	// pllot settings
 	static readonly showIndex = 'plotSettings.showIndex';
