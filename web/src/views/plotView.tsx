@@ -48,10 +48,9 @@ function MessageHandler() {
         visConfig: any
     ) => {
         try {
-            logWithTimestamp(`Web plot view start visualizing. params=${JSON.stringify({ contentPath, visualizationMethod, visualizationID, dataType, taskType })}`);
-            setProgress(0);
+            let startTime = Date.now();
             await BackendAPI.triggerStartVisualizing(contentPath, visualizationMethod, visualizationID, dataType, taskType, visConfig);
-            logWithTimestamp('Visualization process started in backend.');
+            logWithTimestamp(`Visualization process started in backend. timeCost=${Date.now() - startTime}ms`);
         } catch (error) {
             console.error('Error starting visualization process:', error);
             message.error('Failed to start visualization process');
