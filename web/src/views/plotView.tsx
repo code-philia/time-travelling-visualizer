@@ -38,10 +38,30 @@ function MessageHandler() {
         'setColorDict', 'setLabelDict', 'setProgress', 'setValue'
     ]);
 
-    // Load visualization data from backend with configuration
-    const handleLoadVisualization = async (config: any) => {
+    // Start visualizing process
+    const handleStartVisualizing = async (
+        contentPath: string,
+        visualizationMethod: string,
+        visualizationID: string,
+        dataType: string,
+        taskType: string,
+        visConfig: any
+    ) => {
         try {
-            const { contentPath, visualizationMethod, visualizationID, dataType, taskType} = config;
+            logWithTimestamp(`Web plot view start visualizing. params=${JSON.stringify({ contentPath, visualizationMethod, visualizationID, dataType, taskType })}`);
+            setProgress(0);
+            await BackendAPI.triggerStartVisualizing(contentPath, visualizationMethod, visualizationID, dataType, taskType, visConfig);
+            logWithTimestamp('Visualization process started in backend.');
+        } catch (error) {
+            console.error('Error starting visualization process:', error);
+            message.error('Failed to start visualization process');
+        }
+    }
+
+    // Load visualization data from backend with configuration
+    const handleLoadVisualization = async (config: any, visualizationID: string) => {
+        try {
+            const { contentPath, visualizationMethod, dataType, taskType } = config;
             
             logWithTimestamp(`Web plot view start loading visualization. config=${JSON.stringify({ contentPath, visualizationMethod, visualizationID, dataType, taskType })}`);
             
@@ -170,8 +190,11 @@ function MessageHandler() {
         console.log('Received message from extension:', event);
 
         switch (command) {
+            case 'startVisualizing':
+                await handleStartVisualizing(data.contentPath, data.visualizationMethod, data.visualizationID, data.dataType, data.taskType, data.visConfig);
+                break;
             case 'loadVisualization':
-                await handleLoadVisualization(data.config);
+                await handleLoadVisualization(data.config, data.visualizationID);
                 break;
             default:
                 console.log('Unknown message command:', command);

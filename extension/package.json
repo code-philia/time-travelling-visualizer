@@ -80,11 +80,6 @@
               "UMAP"
             ],
             "description": "The visualization method for model to use."
-          },
-          "timeTravellingVisualizer.loadVisualization.visualizationID": {
-            "type": "string",
-            "default": "",
-            "description": "The visualization result to show (e.g. 'DVI_1')."
           }
         }
       },
