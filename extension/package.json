@@ -289,23 +289,23 @@
       },
       {
         "command": "timeTravellingVisualizer.startVisualizing",
-        "title": "Start Visualizing"
+        "title": "Visualizer: Start Visualizing"
       },
       {
         "command": "timeTravellingVisualizer.loadVisualizationResult",
-        "title": "Load Visualization Result"
+        "title": "Visualizer: Load Visualization Result"
       },
       {
         "command": "trainingProcess.info",
-        "title": "Info"
+        "title": "Training Process: Info"
       },
       {
         "command": "trainingProcess.loadResult",
-        "title": "Load Result"
+        "title": "Training Process: Load Result"
       },
       {
         "command": "trainingProcess.startVisualizing",
-        "title": "Start Visualizing"
+        "title": "Training Process: Start Visualizing"
       }
     ],
     "viewsContainers": {
