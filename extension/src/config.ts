@@ -115,9 +115,6 @@ export class ConfigurationID {
 export class CommandID {
     static readonly loadVisualization = withBaseName('loadVisualizationResult');
     static readonly startVisualizing = withBaseName('startVisualizing');
-    static readonly setAsDataFolderAndLoadVisualizationResult = withBaseName('setAsDataFolderAndLoadVisualizationResult');
-    static readonly setAsDataFolder = withBaseName('setAsDataFolder');
-    static readonly configureAndLoadVisualization = withBaseName('configureAndLoadVisualizationResult');
 	static readonly openPlotView = withBaseName('openPlotView');
 }
 

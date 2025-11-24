@@ -296,14 +296,6 @@
         "title": "Load Visualization Result"
       },
       {
-        "command": "timeTravellingVisualizer.setAsDataFolderAndLoadVisualizationResult",
-        "title": "Set as Data Folder and Visualize Training Process"
-      },
-      {
-        "command": "timeTravellingVisualizer.configureAndLoadVisualizationResult",
-        "title": "Configure and Visualize Training Process"
-      },
-      {
         "command": "trainingProcess.info",
         "title": "Info"
       },

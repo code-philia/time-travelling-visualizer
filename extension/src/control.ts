@@ -342,38 +342,3 @@ export async function startVisualizingThroughTreeItem(trainingProcess: string): 
 	// TODO: send command to plot view to indicate starting visualization
 	return true;
 }
-
-/**
- * Other commands
- */
-function setDataFolder(file: vscode.Uri | undefined): boolean {
-	if (!file) {
-		return false;
-	}
-	const fsPath = file.fsPath;
-	if (isDirectory(fsPath)) {
-		const extensionConfig = vscode.workspace.getConfiguration('timeTravellingVisualizer');
-		extensionConfig.update(CONFIG.ConfigurationID.trainingProcess, fsPath);
-		return true;
-	} else {
-		vscode.window.showErrorMessage("Selected path is not a directory 😮");
-		return false;
-	}
-}
-
-export function setAsDataFolderAndLoadVisualizationResult(file: vscode.Uri | undefined): void {
-    if (!(file instanceof vscode.Uri)) {
-        return;
-    }
-    const success = setDataFolder(file);
-    if (success) {
-        loadVisualization();
-    }
-}
-
-export function setAsDataFolder(file: vscode.Uri | undefined): void {
-    if (!(file instanceof vscode.Uri)) {
-        return;
-    }
-    setDataFolder(file);
-}
