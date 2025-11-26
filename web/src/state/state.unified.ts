@@ -110,8 +110,8 @@ export let initMutableGlobalStore: BaseMutableGlobalStore = {
     // Display settings
     mode: 'points',
     pointSize: 2,
-    showIndex: true,
-    showLabel: true,
+    showIndex: false,
+    showLabel: false,
     showTrail: false,
     revealOriginalNeighbors: true,
     revealProjectionNeighbors: true,

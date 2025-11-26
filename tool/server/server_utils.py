@@ -12,18 +12,13 @@ import base64
 from PIL import Image
 
 import matplotlib.pyplot as plt
-import torch
-import torchvision
-import torchvision.transforms as transforms
-from torch.utils.data import Dataset, DataLoader
-from transformers import RobertaTokenizer
 
 sys.path.append('..')
 sys.path.append('../visualize')
-from visualize.data_provider import DataProvider
-from visualize.training_event import TrainingEventDetector
-from influence_function.IF import EmpiricalIF, PairWiseEmpiricalIF
-from influence_function.CustomEncoderModel import CustomEncoderModel
+# from visualize.data_provider import DataProvider
+# from visualize.training_event import TrainingEventDetector
+# from influence_function.IF import EmpiricalIF, PairWiseEmpiricalIF
+# from influence_function.CustomEncoderModel import CustomEncoderModel
 
 # Func: infer available epochs files, return a list of available epochs
 def infer_epoch_structure(content_path):
@@ -511,26 +506,6 @@ def prediction_attribution(content_path, epoch, training_event, num_samples=10):
         })
    
     return influence_samples
-
-class CodeSearchNetDataset(Dataset):
-    def __init__(self, file_path, tokenizer, sample_limit=None):
-        self.samples = []
-        count = 0
-        with open(file_path, 'r', encoding='utf-8') as f:
-            for line in tqdm(f, desc="读取数据集"):
-                line_data = json.loads(line)
-                docstring_tensor = tokenizer(line_data['docstring'], padding='max_length', truncation=True, max_length=256, return_tensors='pt')['input_ids'].squeeze(0)
-                code_tensor = tokenizer(line_data['code'], padding='max_length', truncation=True, max_length=256, return_tensors='pt')['input_ids'].squeeze(0)
-                self.samples.append((docstring_tensor, code_tensor))
-                count += 1
-                if sample_limit and count > sample_limit:
-                    break
-
-    def __len__(self):
-        return len(self.samples)
-
-    def __getitem__(self, idx):
-        return self.samples[idx]
         
 
 def movement_attribution(content_path, epoch, training_event, num_samples=10):
