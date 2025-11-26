@@ -44,6 +44,7 @@ export type BaseMutableGlobalStore = {
     // Epoch data
     allEpochData: Record<number, EpochData>;
     progress: number;
+    loadedEpochs: Set<number>;
     
     // Display settings
     mode: 'points' | 'density';
@@ -54,6 +55,7 @@ export type BaseMutableGlobalStore = {
     revealOriginalNeighbors: boolean;
     revealProjectionNeighbors: boolean;
     showBackground: boolean;
+    isLoading: boolean;
     
     // Filter and display data
     index: Record<string, number[]>;
@@ -106,6 +108,8 @@ export let initMutableGlobalStore: BaseMutableGlobalStore = {
     // Epoch data for different views
     allEpochData: {},
     progress: 0,
+    loadedEpochs: new Set(),
+    isLoading: false,
     
     // Display settings
     mode: 'points',
