@@ -1,6 +1,7 @@
 # Time-Travelling Visualizer 🚀
 
 > A VS Code extension for visualizing and debugging the training process of machine learning models.
+> OH, I changed readme!
 
 
 ## ✨ Features
