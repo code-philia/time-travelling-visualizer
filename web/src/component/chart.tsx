@@ -286,6 +286,13 @@ export const ChartComponent = memo(() => {
 
             if (this.props.showLabel || this.props.showIndex) {
                 const textGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                
+                // Store occupied bounding boxes
+                const occupiedBoxes: { x: number, y: number, width: number, height: number }[] = [];
+                const padding = 2; // Padding between labels
+                const charWidth = 6; // Approximate width per character for font-size 10 monospace
+                const charHeight = 10; // Approximate height for font-size 10
+
                 for (let i = 0; i < this.props.dataX.length; i++) {
                     const id = this.props.idsByPos[i];
                     const x = this.props.dataX[i];
@@ -301,14 +308,53 @@ export const ChartComponent = memo(() => {
                         content = String(id);
                     }
                     if (!content) continue;
-                    const textEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                    textEl.setAttribute('x', String(loc.x + (pointSize + 2)));
-                    textEl.setAttribute('y', String(loc.y - (pointSize + 2)));
-                    textEl.setAttribute('fill', '#000');
-                    textEl.setAttribute('font-size', '10');
-                    textEl.setAttribute('font-family', 'Console, monospace');
-                    textEl.textContent = content;
-                    textGroup.appendChild(textEl);
+
+                    // Calculate label bounding box
+                    const labelX = loc.x + (pointSize + 2);
+                    const labelY = loc.y - (pointSize + 2); // This is roughly the bottom-left corner of the text? No, SVG text y is baseline.
+                    // Let's assume y is baseline. The text will extend upwards by charHeight.
+                    // Actually, to make collision detection easier, let's treat (labelX, labelY) as the top-left corner for calculation purposes,
+                    // but we need to adjust for SVG text rendering which uses baseline.
+                    // Standard SVG text y is the baseline. So the box top is y - charHeight.
+                    
+                    const boxX = labelX;
+                    const boxY = labelY - charHeight; 
+                    const boxWidth = content.length * charWidth;
+                    const boxHeight = charHeight;
+
+                    // Check for collision
+                    let collision = false;
+                    // Check against canvas boundaries
+                    if (boxX < 0 || boxY < 0 || boxX + boxWidth > this.props.proxy.width || boxY + boxHeight > this.props.proxy.height) {
+                         // Optional: we might want to allow labels to be slightly out or just clip them. 
+                         // But usually we want to avoid drawing them if they are cut off? 
+                         // For now let's just check against other labels.
+                    }
+
+                    for (const box of occupiedBoxes) {
+                        if (
+                            boxX < box.x + box.width + padding &&
+                            boxX + boxWidth + padding > box.x &&
+                            boxY < box.y + box.height + padding &&
+                            boxY + boxHeight + padding > box.y
+                        ) {
+                            collision = true;
+                            break;
+                        }
+                    }
+
+                    if (!collision) {
+                        const textEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                        textEl.setAttribute('x', String(labelX));
+                        textEl.setAttribute('y', String(labelY));
+                        textEl.setAttribute('fill', '#000');
+                        textEl.setAttribute('font-size', '10');
+                        textEl.setAttribute('font-family', 'Console, monospace');
+                        textEl.textContent = content;
+                        textGroup.appendChild(textEl);
+
+                        occupiedBoxes.push({ x: boxX, y: boxY, width: boxWidth, height: boxHeight });
+                    }
                 }
                 this.svg.appendChild(textGroup);
             }
