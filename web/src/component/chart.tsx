@@ -232,6 +232,12 @@ export const ChartComponent = memo(() => {
                 while (this.svg.firstChild) this.svg.removeChild(this.svg.firstChild);
             }
         }
+        
+        /**
+         * UPDATED RENDER METHOD
+         * Uses mathematical approximation instead of getBBox for better performance
+         * and fixes the 0-dimension overlap bug.
+         */
         render() {
             if (!this.svg) return;
             this.clear();
@@ -287,11 +293,17 @@ export const ChartComponent = memo(() => {
 
             if (this.props.showLabel || this.props.showIndex) {
                 const textGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+
+
+                // Keep track of placed label bounding boxes to avoid overlap
                 const placedBoxes: { x1: number; y1: number; x2: number; y2: number }[] = [];
+
+                // Font approximation constants (for 10px monospace)
                 const CHAR_WIDTH = 6;
                 const CHAR_HEIGHT = 12;
-                const PADDING = 2;
+                const PADDING = 2; // Spacing between labels
 
+                // helper to test overlap
                 const overlapsAny = (box: { x1: number; y1: number; x2: number; y2: number }) => {
                     for (const b of placedBoxes) {
                         if (!(box.x2 < b.x1 || box.x1 > b.x2 || box.y2 < b.y1 || box.y1 > b.y2)) {
@@ -318,13 +330,18 @@ export const ChartComponent = memo(() => {
                     }
                     if (!content) continue;
 
+
+                    // Calculate approximate BBox mathematically
                     const dx = (pointSize + 2);
                     const dy = (pointSize + 2);
                     const labelX = loc.x + dx;
                     const labelY = loc.y - dy;
+
                     const textWidth = content.length * CHAR_WIDTH;
                     const textHeight = CHAR_HEIGHT;
 
+                    // Define the collision box (with padding)
+                    // Note: SVG Text y is baseline, so top is y - height
                     const box = { 
                         x1: labelX - PADDING, 
                         y1: labelY - textHeight - PADDING, 
@@ -334,23 +351,30 @@ export const ChartComponent = memo(() => {
 
                     if (!overlapsAny(box)) {
                         placedBoxes.push(box);
+                        
+                        // Create text element
                         const textEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                         textEl.setAttribute('x', String(labelX));
                         textEl.setAttribute('y', String(labelY));
                         textEl.setAttribute('fill', '#000');
                         textEl.setAttribute('font-size', '10');
                         textEl.setAttribute('font-family', 'Console, monospace');
+                        
+                        // Add white halo (stroke) for readability over points
                         textEl.setAttribute('stroke', '#ffffff');
                         textEl.setAttribute('stroke-width', '2');
                         textEl.setAttribute('stroke-opacity', '0.7');
-                        textEl.setAttribute('paint-order', 'stroke');
+                        textEl.setAttribute('paint-order', 'stroke'); // Draw stroke behind text
+
                         textEl.textContent = content;
                         textGroup.appendChild(textEl);
                     }
                 }
+
                 this.svg.appendChild(textGroup);
             }
         }
+
         update(nextProps: Partial<any>) {
             this.props = { ...this.props, ...nextProps };
             if (this.svg) {
