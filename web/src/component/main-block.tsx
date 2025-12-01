@@ -140,8 +140,10 @@ function Timeline({ epoch, epochs, progress, onSwitchEpoch }: { epoch: number, e
                 {nodes.map((node, index) => {
                     if (index < nodes.length - 1) {
                         const nextNode = nodes[index + 1];
-                        const nextNodeId = (nextNode.x - nodeOffset) / 40 + 1;
-                        const isLinkLoaded = progress >= nextNodeId;
+                        // progress is 0-100, so we map it to the number of nodes
+                        const loadedNodeCount = (progress / 100) * nodes.length;
+                        const nextNodeIndex = index + 1;
+                        const isLinkLoaded = loadedNodeCount >= (nextNodeIndex + 1);
                         return (
                             <line
                                 key={`link-${index}`}
@@ -163,8 +165,9 @@ function Timeline({ epoch, epochs, progress, onSwitchEpoch }: { epoch: number, e
 
                 {/* Nodes */}
                 {nodes.map((node, index) => {
-                    const nodeId = (node.x - nodeOffset) / 40 + 1;
-                    const isLoaded = progress >= nodeId;
+                    // progress is 0-100, so we map it to the number of nodes
+                    const loadedNodeCount = (progress / 100) * nodes.length;
+                    const isLoaded = loadedNodeCount >= (index + 1);
 
                     return (
                         <g key={index} transform={`translate(${node.x}, ${node.y})`}>
