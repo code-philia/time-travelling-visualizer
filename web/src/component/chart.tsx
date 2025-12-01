@@ -25,6 +25,10 @@ export const ChartComponent = memo(() => {
     const { pointSize } = useDefaultStore(["pointSize"]);
     const { revealOriginalNeighbors, revealProjectionNeighbors } = useDefaultStore(["revealOriginalNeighbors", "revealProjectionNeighbors"]);
     const { showLabel, showIndex } = useDefaultStore(["showLabel", "showIndex"]);
+    const { selectedIndices } = useDefaultStore(["selectedIndices"]);
+    const { availableEpochs } = useDefaultStore(["availableEpochs"]);
+    const { showTrail } = useDefaultStore(["showTrail"]);
+    const { setSelectedIndices } = useDefaultStore(["setSelectedIndices"]);
 
     const epochData = allEpochData[epoch];
 
@@ -182,10 +186,13 @@ export const ChartComponent = memo(() => {
         return m;
     }, [prepared]);
 
+    const [trailRefresh, setTrailRefresh] = useState(0);
+    useEffect(() => { setTrailRefresh((v) => v + 1); }, [selectedIndices]);
+
     const neighborOverlayProps = useMemo(() => {
         if (!prepared || !epochData) return { center: null, original: [], projection: [], dataX: new Float32Array(0), dataY: new Float32Array(0), pointSize, revealOriginalNeighbors, revealProjectionNeighbors } as any;
         const idsByPos = prepared.dataPoints.map((p) => p.identifier as number);
-        if (!tooltip) return { center: null, original: [], projection: [], dataX: prepared.simpleData.x as Float32Array, dataY: prepared.simpleData.y as Float32Array, pointSize, revealOriginalNeighbors, revealProjectionNeighbors, idsByPos, showLabel, showIndex, labelDict, textData, inherentLabelData, viewportState } as any;
+        if (!tooltip) return { center: null, original: [], projection: [], dataX: prepared.simpleData.x as Float32Array, dataY: prepared.simpleData.y as Float32Array, pointSize, revealOriginalNeighbors, revealProjectionNeighbors, idsByPos, showLabel, showIndex, labelDict, textData, inherentLabelData, viewportState, showTrail, availableEpochs, allEpochData, currentEpoch: epoch, setSelectedIndices, selectedIndices } as any;
         const hoverId = tooltip.identifier as number;
         const orig = (epochData.originalNeighbors?.[hoverId] ?? []).filter((nid) => posMap.has(nid));
         const proj = (epochData.projectionNeighbors?.[hoverId] ?? []).filter((nid) => posMap.has(nid));
@@ -205,18 +212,27 @@ export const ChartComponent = memo(() => {
             textData,
             inherentLabelData,
             viewportState,
+            showTrail,
+            availableEpochs,
+            allEpochData,
+            currentEpoch: epoch,
+            setSelectedIndices,
+            selectedIndices,
         };
-    }, [prepared, epochData, tooltip, posMap, pointSize, revealOriginalNeighbors, revealProjectionNeighbors, showLabel, showIndex, labelDict, textData, inherentLabelData, viewportState]);
+    }, [prepared, epochData, tooltip, posMap, pointSize, revealOriginalNeighbors, revealProjectionNeighbors, showLabel, showIndex, labelDict, textData, inherentLabelData, viewportState, showTrail, availableEpochs, allEpochData, epoch, trailRefresh, selectedIndices]);
 
     class NeighborOverlay {
         private el: HTMLDivElement | null = null;
         private svg: SVGSVGElement | null = null;
         private props: any;
         private proxy: any;
+        private handleClickBound: any;
+        private defs: SVGDefsElement | null = null;
         constructor(target: HTMLDivElement, props: any) {
             this.el = target;
             this.props = props;
             this.proxy = props.proxy;
+            this.handleClickBound = this.handleClick.bind(this);
             this.mount();
         }
         mount() {
@@ -225,11 +241,61 @@ export const ChartComponent = memo(() => {
             this.svg.setAttribute('width', String(this.proxy.width));
             this.svg.setAttribute('height', String(this.proxy.height));
             this.el.appendChild(this.svg);
+            this.svg.addEventListener('click', this.handleClickBound);
+            this.defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+            const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+            marker.setAttribute('id', 'trail-arrow');
+            marker.setAttribute('viewBox', '0 0 10 10');
+            marker.setAttribute('markerUnits', 'userSpaceOnUse');
+            marker.setAttribute('markerWidth', '10');
+            marker.setAttribute('markerHeight', '10');
+            marker.setAttribute('refX', '8');
+            marker.setAttribute('refY', '5');
+            marker.setAttribute('orient', 'auto');
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', 'M0,0 L10,5 L0,10 Z');
+            path.setAttribute('fill', '#7F8C8D');
+            marker.appendChild(path);
+            this.defs.appendChild(marker);
+            this.svg.appendChild(this.defs);
             this.render();
         }
         clear() {
             if (this.svg) {
-                while (this.svg.firstChild) this.svg.removeChild(this.svg.firstChild);
+                const children = Array.from(this.svg.childNodes);
+                for (const child of children) {
+                    if ((child as Element).nodeName.toLowerCase() !== 'defs') {
+                        this.svg.removeChild(child);
+                    }
+                }
+            }
+        }
+        handleClick(e: MouseEvent) {
+            if (!this.svg) return;
+            const rect = this.svg.getBoundingClientRect();
+            const sx = e.clientX - rect.left;
+            const sy = e.clientY - rect.top;
+            let minD2 = Infinity;
+            let minIdx = -1;
+            for (let i = 0; i < this.props.dataX.length; i++) {
+                const x = this.props.dataX[i];
+                const y = this.props.dataY[i];
+                const loc = this.proxy.location(x, y);
+                const dx = loc.x - sx;
+                const dy = loc.y - sy;
+                const d2 = dx * dx + dy * dy;
+                if (d2 < minD2) {
+                    minD2 = d2;
+                    minIdx = i;
+                }
+            }
+            const threshold = 100;
+            if (minIdx >= 0 && minD2 <= threshold) {
+                const id = this.props.idsByPos[minIdx];
+                if (this.props.setSelectedIndices) {
+                    console.log(`Click on id ${id}`);
+                    this.props.setSelectedIndices([id]);
+                }
             }
         }
         render() {
@@ -280,6 +346,49 @@ export const ChartComponent = memo(() => {
                 centerCircle.setAttribute('stroke', '#666');
                 centerCircle.setAttribute('stroke-width', '2');
                 this.svg.appendChild(centerCircle);
+                if (this.props.showTrail) {
+                    const trailGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                    const epochs = this.props.availableEpochs || [];
+                    const currentIdx = epochs.indexOf(this.props.currentEpoch);
+                    const centerId = this.props.center?.identifier as number;
+                    if (typeof centerId === 'number') {
+                        const points: { x: number; y: number }[] = [];
+                        for (let i = 0; i <= currentIdx; i++) {
+                            const ep = epochs[i];
+                            const epData = this.props.allEpochData?.[ep];
+                            const coord = epData?.projection?.[centerId];
+                            if (!coord) continue;
+                            const locp = this.proxy.location(coord[0], coord[1]);
+                            points.push({ x: locp.x, y: locp.y });
+                        }
+                        for (let i = 0; i < points.length; i++) {
+                        const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                        c.setAttribute('cx', String(points[i].x));
+                        c.setAttribute('cy', String(points[i].y));
+                        c.setAttribute('r', String(Math.max(3, pointSize + 1)));
+                        c.setAttribute('fill', '#7F8C8D');
+                        c.setAttribute('fill-opacity', '0.85');
+                        c.setAttribute('stroke', '#7F8C8D');
+                        c.setAttribute('stroke-width', '0.5');
+                        trailGroup.appendChild(c);
+                        }
+                        for (let i = 1; i < points.length; i++) {
+                            const l = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                            l.setAttribute('x1', String(points[i - 1].x));
+                            l.setAttribute('y1', String(points[i - 1].y));
+                            l.setAttribute('x2', String(points[i].x));
+                            l.setAttribute('y2', String(points[i].y));
+                            l.setAttribute('stroke', '#7F8C8D');
+                            l.setAttribute('stroke-width', '2');
+                            l.setAttribute('stroke-dasharray', '6 3');
+                            l.setAttribute('stroke-linecap', 'round');
+                            l.setAttribute('stroke-opacity', '0.9');
+                            l.setAttribute('marker-end', 'url(#trail-arrow)');
+                            trailGroup.appendChild(l);
+                        }
+                    }
+                    this.svg.appendChild(trailGroup);
+                }
             } else {
                 this.svg.appendChild(neighborGroup);
             }
@@ -358,6 +467,8 @@ export const ChartComponent = memo(() => {
                 }
                 this.svg.appendChild(textGroup);
             }
+
+            
         }
         update(nextProps: Partial<any>) {
             this.props = { ...this.props, ...nextProps };
@@ -371,6 +482,10 @@ export const ChartComponent = memo(() => {
             if (this.svg && this.el) {
                 this.el.removeChild(this.svg);
             }
+            if (this.svg) {
+                this.svg.removeEventListener('click', this.handleClickBound);
+            }
+            this.defs = null;
             this.svg = null;
             this.el = null;
         }
