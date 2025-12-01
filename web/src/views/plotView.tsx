@@ -9,206 +9,178 @@ import { useDefaultStore } from '../state/state.unified';
 import * as BackendAPI from '../communication/backend';
 import { createRoot } from "react-dom/client";
 import { StrictMode } from "react";
-
 import "../index.css";
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 
 const LOG_PREFIX = '[TTVisualizer]';
-
 function logWithTimestamp(message: string): void {
     console.log(`${LOG_PREFIX}[${new Date().toISOString()}] ${message}`);
 }
 
-createRoot(document.getElementById("root")!).render(
-    <StrictMode>
-        <AppCombinedView />
-    </StrictMode>
-);
+// Helper to allow the UI to paint between heavy tasks
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-// MessageHandler component for handling extension communication and backend requests
 function MessageHandler() {
-    // State from unified store
-    const { 
+    const {
         setContentPath, setAvailableEpochs, setDataType, setTaskType,
         setTextData, setTokenList, setInherentLabelData,
-        setColorDict, setLabelDict, setProgress, setValue
+        setColorDict, setLabelDict, setProgress, setValue, setLoadedEpochs, isLoading, setIsLoading
     } = useDefaultStore([
         'setContentPath', 'setAvailableEpochs', 'setDataType', 'setTaskType',
         'setTextData', 'setTokenList', 'setInherentLabelData',
-        'setColorDict', 'setLabelDict', 'setProgress', 'setValue'
+        'setColorDict', 'setLabelDict', 'setProgress', 'setValue', 'setLoadedEpochs', 'isLoading', 'setIsLoading'
     ]);
 
-    // Start visualizing process
     const handleStartVisualizing = async (
-        contentPath: string,
-        visualizationMethod: string,
-        visualizationID: string,
-        dataType: string,
-        taskType: string,
-        visConfig: any
+        contentPath: string, visualizationMethod: string, visualizationID: string,
+        dataType: string, taskType: string, visConfig: any
     ) => {
         try {
-            logWithTimestamp(`Web plot view start visualizing. params=${JSON.stringify({ contentPath, visualizationMethod, visualizationID, dataType, taskType })}`);
+            logWithTimestamp(`Start visualizing params=${JSON.stringify({ contentPath, visualizationMethod, visualizationID, dataType, taskType })}`);
             setProgress(0);
             await BackendAPI.triggerStartVisualizing(contentPath, visualizationMethod, visualizationID, dataType, taskType, visConfig);
-            logWithTimestamp('Visualization process started in backend.');
         } catch (error) {
             console.error('Error starting visualization process:', error);
             message.error('Failed to start visualization process');
         }
     }
 
-    // Load visualization data from backend with configuration
     const handleLoadVisualization = async (config: any, visualizationID: string) => {
         try {
-            const { contentPath, visualizationMethod, dataType, taskType } = config;
-            
-            logWithTimestamp(`Web plot view start loading visualization. config=${JSON.stringify({ contentPath, visualizationMethod, visualizationID, dataType, taskType })}`);
-            
-            // Set basic configuration
+            const { contentPath, dataType, taskType } = config;
+
+            // Prevent concurrent loads
+            if (isLoading) {
+                message.warning('A load is already in progress');
+                return;
+            }
+            // Set loading flag and reset loaded epochs before starting
+            setProgress(0);
+            setLoadedEpochs(new Set()); // Clear visible nodes immediately
+            setIsLoading(true);
+
             setContentPath(contentPath);
             setDataType(dataType);
             setTaskType(taskType);
             
-            // Get training process info
+            // Allow React to render the "Cleared" state (all gray)
+            await delay(0);
+
+            // Fetch available epochs
             const processInfo = await BackendAPI.fetchTrainingProcessInfo(contentPath);
             const epochs = processInfo.available_epochs || [];
             setAvailableEpochs(epochs);
-            if (!epochs.length) {
-                logWithTimestamp('No epochs available from backend.');
-            }
+            if (!epochs.length) return message.warning('No epochs available');
 
-            const colorMap = new Map();
-            const labelMap = new Map();
-            for(let i = 0; i < processInfo.color_list.length; i++) {
-                colorMap.set(i, [processInfo.color_list[i][0], processInfo.color_list[i][1], processInfo.color_list[i][2]]);
-                labelMap.set(i, processInfo.label_text_list[i]);
-            }
-            
+            // Color and label maps
+            const colorMap = new Map<number, [number, number, number]>();
+            const labelMap = new Map<number, string>();
+            processInfo.color_list.forEach((c: number[], i: number) => colorMap.set(i, [c[0], c[1], c[2]]));
+            processInfo.label_text_list.forEach((l: string, i: number) => labelMap.set(i, l));
             setColorDict(colorMap);
             setLabelDict(labelMap);
 
+            // Inherent labels for first epoch
             const labelsResponse = await BackendAPI.getAttributeResource(contentPath, epochs[0], 'label');
             setInherentLabelData(labelsResponse.label || []);
-            
-            // Load text data if text type
+
+            // Text data if required
             if (dataType === 'Text') {
                 const textResponse = await BackendAPI.getText(contentPath);
                 setTextData(textResponse.text_data || []);
                 setTokenList(textResponse.token_list || []);
             }
 
-            // Load epoch data for all available epochs
-            let allEpochDataTemp: Record<number, any> = {};
-            let firstEpochRequestTimestamp: Date | undefined;
-            let lastEpochReceiveTimestamp: Date | undefined;
-            const totalEpochCount = epochs.length;
+            // Temp storage for all epochs
+            const allEpochDataTemp: Record<number, any> = {};
+            const loadedEpochsTemp = new Set<number>();
 
-            let globalMinX = Infinity, globalMaxX = -Infinity;
-            let globalMinY = Infinity, globalMaxY = -Infinity;
+            // Sequentially load each epoch and mark it loaded only after full data fetched
+            for (let i = 0; i < epochs.length; i++) {
+                const epochNum = epochs[i];
 
-            for (const epochNum of epochs) {
-                const epochRequestStart = new Date();
-                if (!firstEpochRequestTimestamp) {
-                    firstEpochRequestTimestamp = epochRequestStart;
-                    logWithTimestamp(`First epoch request sent. epoch=${epochNum} at ${epochRequestStart.toISOString()}`);
-                } else {
-                    logWithTimestamp(`Epoch request sent. epoch=${epochNum} at ${epochRequestStart.toISOString()}`);
-                }
+                // Fetch all epoch data in parallel
+                const [projection, originalNeighbors, projectionNeighbors] = await Promise.all([
+                    BackendAPI.fetchEpochProjection(contentPath, visualizationID, epochNum),
+                    BackendAPI.getOriginalNeighbors(contentPath, epochNum),
+                    BackendAPI.getProjectionNeighbors(contentPath, visualizationID, epochNum)
+                ]);
 
-                setProgress((epochNum / epochs.length) * 100);
-
-                allEpochDataTemp = { ...allEpochDataTemp, [epochNum]: {} };
-
-                // Load main plot data
-                const projection = await BackendAPI.fetchEpochProjection(contentPath, visualizationID, epochNum);
-                allEpochDataTemp[epochNum]['projection'] = projection.projection || [];
-
-                // Load neighbors data
-                const originalNeighbors = await BackendAPI.getOriginalNeighbors(contentPath, epochNum);
-                const projectionNeighbors = await BackendAPI.getProjectionNeighbors(contentPath, visualizationID, epochNum);
-                allEpochDataTemp[epochNum]['originalNeighbors'] = originalNeighbors.neighbors || [];
-                allEpochDataTemp[epochNum]['projectionNeighbors'] = projectionNeighbors.neighbors || [];
+                const epochData: any = {
+                    projection: projection.projection || [],
+                    originalNeighbors: originalNeighbors.neighbors || [],
+                    projectionNeighbors: projectionNeighbors.neighbors || []
+                };
 
                 if (taskType === 'Classification') {
-                    const predictionResponse = await BackendAPI.getAttributeResource(contentPath, epochNum, 'prediction');
-                    allEpochDataTemp[epochNum]['predProbability'] = predictionResponse.prediction || [];
-
-                    let predictions: number[] = [];
-                    for (const prob of allEpochDataTemp[epochNum]['predProbability']) {
-                        const predClass = prob.indexOf(Math.max(...prob));
-                        predictions.push(predClass);
-                    }
-                    allEpochDataTemp[epochNum]['prediction'] = predictions;
-
-                    const background = await BackendAPI.getBackground(contentPath, visualizationID, epochNum);
-                    allEpochDataTemp[epochNum]['background'] = background || '';
+                    const [predResponse, background] = await Promise.all([
+                        BackendAPI.getAttributeResource(contentPath, epochNum, 'prediction'),
+                        BackendAPI.getBackground(contentPath, visualizationID, epochNum)
+                    ]);
+                    epochData.predProbability = predResponse.prediction || [];
+                    epochData.prediction = epochData.predProbability.map((prob: number[]) => prob.indexOf(Math.max(...prob)));
+                    epochData.background = background || '';
                 }
 
-                let minX = allEpochDataTemp[epochNum]['projection'].reduce((min: number, p: number[]) => p[0] < min ? p[0] : min, Infinity);
-                let maxX = allEpochDataTemp[epochNum]['projection'].reduce((max: number, p: number[]) => p[0] > max ? p[0] : max, -Infinity);
-                let minY = allEpochDataTemp[epochNum]['projection'].reduce((min: number, p: number[]) => p[1] < min ? p[1] : min, Infinity);
-                let maxY = allEpochDataTemp[epochNum]['projection'].reduce((max: number, p: number[]) => p[1] > max ? p[1] : max, -Infinity);
+                // Save epoch data
+                allEpochDataTemp[epochNum] = epochData;
 
-                globalMinX = Math.min(globalMinX, minX);
-                globalMaxX = Math.max(globalMaxX, maxX);
-                globalMinY = Math.min(globalMinY, minY);
-                globalMaxY = Math.max(globalMaxY, maxY);
-
-                // Update store with new epoch data
-                setValue('globalBounds', {
-                    minX: globalMinX,
-                    maxX: globalMaxX,
-                    minY: globalMinY,
-                    maxY: globalMaxY
-                });
+                // Update global store with data
                 setValue('allEpochData', { ...allEpochDataTemp });
 
-                lastEpochReceiveTimestamp = new Date();
-                const latencyMs = lastEpochReceiveTimestamp.getTime() - epochRequestStart.getTime();
-                logWithTimestamp(`Epoch data received. epoch=${epochNum} at ${lastEpochReceiveTimestamp.toISOString()} duration=${latencyMs} ms`);
+                // Mark epoch as loaded VISUALLY
+                loadedEpochsTemp.add(epochNum);
+                setLoadedEpochs(new Set(loadedEpochsTemp));
+
+                // Update progress bar
+                setProgress(((i + 1) / epochs.length) * 100);
+
+                // IMPORTANT: Small delay to break React update batching
+                // This ensures the UI actually paints the blue node before starting the next fetch
+                await delay(10); 
             }
 
-            if (firstEpochRequestTimestamp) {
-                logWithTimestamp(`First epoch request timestamp recorded at ${firstEpochRequestTimestamp.toISOString()}.`);
-            }
-            if (lastEpochReceiveTimestamp) {
-                logWithTimestamp(`Last epoch data received at ${lastEpochReceiveTimestamp.toISOString()} after processing ${totalEpochCount} epoch(s).`);
-            }
-            
-            setProgress(100);
             message.success('Visualization loaded successfully!');
-            
         } catch (error) {
             console.error('Error loading visualization:', error);
             message.error('Failed to load visualization');
+        }
+        finally {
+            // Clear loading flag
+            setIsLoading(false);
         }
     };
 
     const handleMessage = async (event: MessageEvent) => {
         const { command, data } = event.data;
-        console.log('Received message from extension:', event);
-
         switch (command) {
             case 'startVisualizing':
-                await handleStartVisualizing(data.contentPath, data.visualizationMethod, data.visualizationID, data.dataType, data.taskType, data.visConfig);
+                await handleStartVisualizing(
+                    data.contentPath,
+                    data.visualizationMethod,
+                    data.visualizationID,
+                    data.dataType,
+                    data.taskType,
+                    data.visConfig
+                );
                 break;
             case 'loadVisualization':
                 await handleLoadVisualization(data.config, data.visualizationID);
                 break;
             default:
-                console.log('Unknown message command:', command);
+                console.log('Unknown command:', command);
         }
     };
 
     useEffect(() => {
         window.addEventListener('message', handleMessage);
-
         return () => window.removeEventListener('message', handleMessage);
     }, []);
 
     return <></>;
 }
+
+// ... (Rest of the file remains unchanged: AppCombinedView, FunctionViewPanels, BottomDock)
 
 export function AppCombinedView() {
     return (
@@ -243,12 +215,10 @@ export function AppCombinedView() {
 
 function FunctionViewPanels() {
     const [activeKey, setActiveKey] = useState<'FunctionPanel' | 'TrainingEventPanel'>('FunctionPanel');
-
     const items = [
         { key: 'FunctionPanel', label: <span style={{ fontSize: 12 }}>Functions</span> },
-        { key: 'TrainingEventPanel', label: <span style={{ fontSize: 12 }}>Training Events</span> },
+        { key: 'TrainingEventPanel', label: <span style={{ fontSize: 12 }}>Training Events</span> }
     ];
-
     return (
         <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
             <Tabs
@@ -272,9 +242,8 @@ function BottomDock() {
     const [activeKey, setActiveKey] = useState<'Influence' | 'Tokens'>('Influence');
     const items = [
         { key: 'Influence', label: <span style={{ fontSize: 12 }}>Influence</span>, children: <InfluenceAnalysisPanel /> },
-        { key: 'Tokens', label: <span style={{ fontSize: 12 }}>Tokens</span>, children: <TokenPanel /> },
+        { key: 'Tokens', label: <span style={{ fontSize: 12 }}>Tokens</span>, children: <TokenPanel /> }
     ];
-
     return (
         <Tabs
             className="bottom-dock-tabs"
@@ -289,5 +258,3 @@ function BottomDock() {
         />
     );
 }
-
-window.vscode?.postMessage({ state: 'load' }, '*');
