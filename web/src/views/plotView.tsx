@@ -115,8 +115,6 @@ function MessageHandler() {
                     logWithTimestamp(`Epoch request sent. epoch=${epochNum} at ${epochRequestStart.toISOString()}`);
                 }
 
-                setProgress((epochNum / epochs.length) * 100);
-
                 allEpochDataTemp = { ...allEpochDataTemp, [epochNum]: {} };
 
                 // Load main plot data
@@ -162,6 +160,11 @@ function MessageHandler() {
                     maxY: globalMaxY
                 });
                 setValue('allEpochData', { ...allEpochDataTemp });
+                
+                // Calculate progress based on the number of processed epochs
+                // We use index + 1 because epochs array is 0-indexed in the loop, but we want to show progress for the current epoch
+                const currentEpochIndex = epochs.indexOf(epochNum);
+                setProgress(((currentEpochIndex + 1) / epochs.length) * 100);
 
                 lastEpochReceiveTimestamp = new Date();
                 const latencyMs = lastEpochReceiveTimestamp.getTime() - epochRequestStart.getTime();
