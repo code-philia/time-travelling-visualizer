@@ -232,7 +232,6 @@ export const ChartComponent = memo(() => {
             this.el = target;
             this.props = props;
             this.proxy = props.proxy;
-            this.handleClickBound = this.handleClick.bind(this);
             this.mount();
         }
         mount() {
@@ -267,34 +266,6 @@ export const ChartComponent = memo(() => {
                     if ((child as Element).nodeName.toLowerCase() !== 'defs') {
                         this.svg.removeChild(child);
                     }
-                }
-            }
-        }
-        handleClick(e: MouseEvent) {
-            if (!this.svg) return;
-            const rect = this.svg.getBoundingClientRect();
-            const sx = e.clientX - rect.left;
-            const sy = e.clientY - rect.top;
-            let minD2 = Infinity;
-            let minIdx = -1;
-            for (let i = 0; i < this.props.dataX.length; i++) {
-                const x = this.props.dataX[i];
-                const y = this.props.dataY[i];
-                const loc = this.proxy.location(x, y);
-                const dx = loc.x - sx;
-                const dy = loc.y - sy;
-                const d2 = dx * dx + dy * dy;
-                if (d2 < minD2) {
-                    minD2 = d2;
-                    minIdx = i;
-                }
-            }
-            const threshold = 100;
-            if (minIdx >= 0 && minD2 <= threshold) {
-                const id = this.props.idsByPos[minIdx];
-                if (this.props.setSelectedIndices) {
-                    console.log(`Click on id ${id}`);
-                    this.props.setSelectedIndices([id]);
                 }
             }
         }
@@ -346,6 +317,8 @@ export const ChartComponent = memo(() => {
                 centerCircle.setAttribute('stroke', '#666');
                 centerCircle.setAttribute('stroke-width', '2');
                 this.svg.appendChild(centerCircle);
+
+                // TODO: show trail for all selected points
                 if (this.props.showTrail) {
                     const trailGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
                     const epochs = this.props.availableEpochs || [];
@@ -527,6 +500,7 @@ export const ChartComponent = memo(() => {
             viewportState={viewportState}
             onViewportState={(v) => setViewportState(v)}
             querySelection={ querySelection }
+            onSelection={(v) => console.log("Current Selected Points: ", v)} //TODO: set selectedIndices
             customOverlay={{
                 class: NeighborOverlay as any,
                 props: { ...neighborOverlayProps, posMap }
