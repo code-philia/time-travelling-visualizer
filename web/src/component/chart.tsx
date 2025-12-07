@@ -302,6 +302,15 @@ export const ChartComponent = memo(() => {
             }
 
             // [Task 2 Fix] Render motion trails for ALL selected points
+            // HELPER: Strict check for invalid points to avoid "falling lines"
+            const isValidPoint = (coord: any) => {
+                if (!coord || coord.length < 2) return false;
+                if (!Number.isFinite(coord[0]) || !Number.isFinite(coord[1])) return false;
+                // Strict zero check (e.g. 0.000000)
+                if (Math.abs(coord[0]) < 0.00001 && Math.abs(coord[1]) < 0.00001) return false;
+                return true;
+            };
+
             if (showTrail) {
                 const trailGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
                 const epochs = this.props.availableEpochs || [];
@@ -325,11 +334,8 @@ export const ChartComponent = memo(() => {
                         const epData = this.props.allEpochData?.[ep];
                         const coord = epData?.projection?.[centerId];
                         
-                        // [CRITICAL FIX] 
-                        // Strictly filter out (0,0) points to fix the "downward line" bug.
-                        if (!coord || coord.length < 2) continue;
-                        if (!Number.isFinite(coord[0]) || !Number.isFinite(coord[1])) continue;
-                        if (Math.abs(coord[0]) < 0.01 && Math.abs(coord[1]) < 0.01) continue;
+                        // Use strict validator
+                        if (!isValidPoint(coord)) continue;
 
                         const locp = this.proxy.location(coord[0], coord[1]);
                         points.push({ x: locp.x, y: locp.y });
@@ -496,7 +502,7 @@ export const ChartComponent = memo(() => {
                    // Map DataPoints back to indices
                    setSelectedIndices(v.map(p => p.identifier as number));
                 } else {
-                   // Handle empty selection
+                   // Handle deselection (v can be null or empty)
                    setSelectedIndices([]);
                 }
             }}
