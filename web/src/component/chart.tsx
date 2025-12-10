@@ -1,4 +1,3 @@
-// ChartComponent.tsx
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { EmbeddingView, type EmbeddingViewProps, type DataPoint, type ViewportState } from 'embedding-atlas/react';
 import { useDefaultStore } from "../state/state.unified";
@@ -32,12 +31,10 @@ export const ChartComponent = memo(() => {
 
     const epochData = allEpochData[epoch];
 
-    // plot view helpers
     let [tooltip, setTooltip] = useState<DataPoint | null>(null);
-    // selection can be added later when needed
+    let [canvasSelection, setCanvasSelection] = useState<DataPoint[] | null>(null);
     let [viewportState, setViewportState] = useState<ViewportState | null>(null);
 
-    // observe container size change
     useEffect(() => {
         const node = atlasRef.current;
         if (!node) {
@@ -63,7 +60,6 @@ export const ChartComponent = memo(() => {
         };
     }, []);
 
-    // set viewport based on global bounds
     useEffect(() => {
         if (!globalBounds) return;
 
@@ -94,7 +90,6 @@ export const ChartComponent = memo(() => {
     }, [globalBounds]);
 
 
-    // filter dataIndices
     const filteredIndices = useMemo(() => {
         if (!epochData) {
             return [] as number[];
@@ -123,7 +118,6 @@ export const ChartComponent = memo(() => {
         return current;
     }, [epochData, focusIndices, index, isFocusMode, shownData]);
 
-    // convert data for embedding view
     const prepared = useMemo<PreparedEmbedding | null>(() => {
         if (!epochData || filteredIndices.length === 0) {
             return null;
@@ -159,7 +153,7 @@ export const ChartComponent = memo(() => {
                 category: label,
                 text: `Index: ${originalIndex}\nLabel: ${label}`,
                 identifier: originalIndex,
-                fields: {} // add more fields if needed
+                fields: {} 
             })
         });
 
@@ -185,6 +179,23 @@ export const ChartComponent = memo(() => {
         }
         return m;
     }, [prepared]);
+
+    useEffect(() => {
+        if (!prepared) {
+            setCanvasSelection(null);
+            return;
+        }
+        
+        const selection = selectedIndices
+            .map(idx => {
+                const pos = posMap.get(idx);
+                if (pos === undefined) return null;
+                return prepared.dataPoints[pos];
+            })
+            .filter((dp): dp is DataPoint => dp !== null);
+        
+        setCanvasSelection(selection.length > 0 ? selection : null);
+    }, [selectedIndices, prepared, posMap]);
 
     const [trailRefresh, setTrailRefresh] = useState(0);
     useEffect(() => { setTrailRefresh((v) => v + 1); }, [selectedIndices]);
@@ -318,40 +329,47 @@ export const ChartComponent = memo(() => {
                 centerCircle.setAttribute('stroke-width', '2');
                 this.svg.appendChild(centerCircle);
 
-                // TODO: show trail for all selected points
-                if (this.props.showTrail) {
+                if (this.props.showTrail && this.props.selectedIndices && this.props.selectedIndices.length > 0) {
                     const trailGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
                     const epochs = this.props.availableEpochs || [];
                     const currentIdx = epochs.indexOf(this.props.currentEpoch);
-                    const centerId = this.props.center?.identifier as number;
-                    if (typeof centerId === 'number') {
+                    
+                    this.props.selectedIndices.forEach((selectedId: number, selIdx: number) => {
                         const points: { x: number; y: number }[] = [];
+                        
                         for (let i = 0; i <= currentIdx; i++) {
                             const ep = epochs[i];
                             const epData = this.props.allEpochData?.[ep];
-                            const coord = epData?.projection?.[centerId];
+                            const coord = epData?.projection?.[selectedId];
                             if (!coord) continue;
                             const locp = this.proxy.location(coord[0], coord[1]);
                             points.push({ x: locp.x, y: locp.y });
                         }
+                        
+                        if (points.length === 0) return;
+                        
+                        const trailColors = ['#7F8C8D', '#E74C3C', '#2E86DE', '#F39C12', '#27AE60', '#8E44AD'];
+                        const trailColor = trailColors[selIdx % trailColors.length];
+                        
                         for (let i = 0; i < points.length; i++) {
-                        const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                        c.setAttribute('cx', String(points[i].x));
-                        c.setAttribute('cy', String(points[i].y));
-                        c.setAttribute('r', String(Math.max(3, pointSize + 1)));
-                        c.setAttribute('fill', '#7F8C8D');
-                        c.setAttribute('fill-opacity', '0.85');
-                        c.setAttribute('stroke', '#7F8C8D');
-                        c.setAttribute('stroke-width', '0.5');
-                        trailGroup.appendChild(c);
+                            const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                            c.setAttribute('cx', String(points[i].x));
+                            c.setAttribute('cy', String(points[i].y));
+                            c.setAttribute('r', String(Math.max(3, pointSize + 1)));
+                            c.setAttribute('fill', trailColor);
+                            c.setAttribute('fill-opacity', '0.85');
+                            c.setAttribute('stroke', trailColor);
+                            c.setAttribute('stroke-width', '0.5');
+                            trailGroup.appendChild(c);
                         }
+                        
                         for (let i = 1; i < points.length; i++) {
                             const l = document.createElementNS('http://www.w3.org/2000/svg', 'line');
                             l.setAttribute('x1', String(points[i - 1].x));
                             l.setAttribute('y1', String(points[i - 1].y));
                             l.setAttribute('x2', String(points[i].x));
                             l.setAttribute('y2', String(points[i].y));
-                            l.setAttribute('stroke', '#7F8C8D');
+                            l.setAttribute('stroke', trailColor);
                             l.setAttribute('stroke-width', '2');
                             l.setAttribute('stroke-dasharray', '6 3');
                             l.setAttribute('stroke-linecap', 'round');
@@ -359,7 +377,8 @@ export const ChartComponent = memo(() => {
                             l.setAttribute('marker-end', 'url(#trail-arrow)');
                             trailGroup.appendChild(l);
                         }
-                    }
+                    });
+                    
                     this.svg.appendChild(trailGroup);
                 }
             } else {
@@ -369,11 +388,10 @@ export const ChartComponent = memo(() => {
             if (this.props.showLabel || this.props.showIndex) {
                 const textGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
                 
-                // Store occupied bounding boxes
                 const occupiedBoxes: { x: number, y: number, width: number, height: number }[] = [];
-                const padding = 2; // Padding between labels
-                const charWidth = 6; // Approximate width per character for font-size 10 monospace
-                const charHeight = 10; // Approximate height for font-size 10
+                const padding = 2; 
+                const charWidth = 6; 
+                const charHeight = 10; 
 
                 for (let i = 0; i < this.props.dataX.length; i++) {
                     const id = this.props.idsByPos[i];
@@ -393,24 +411,16 @@ export const ChartComponent = memo(() => {
 
                     // Calculate label bounding box
                     const labelX = loc.x + (pointSize + 2);
-                    const labelY = loc.y - (pointSize + 2); // This is roughly the bottom-left corner of the text? No, SVG text y is baseline.
-                    // Let's assume y is baseline. The text will extend upwards by charHeight.
-                    // Actually, to make collision detection easier, let's treat (labelX, labelY) as the top-left corner for calculation purposes,
-                    // but we need to adjust for SVG text rendering which uses baseline.
-                    // Standard SVG text y is the baseline. So the box top is y - charHeight.
+                    const labelY = loc.y - (pointSize + 2); 
+
                     
                     const boxX = labelX;
                     const boxY = labelY - charHeight; 
                     const boxWidth = content.length * charWidth;
                     const boxHeight = charHeight;
 
-                    // Check for collision
                     let collision = false;
-                    // Check against canvas boundaries
                     if (boxX < 0 || boxY < 0 || boxX + boxWidth > this.props.proxy.width || boxY + boxHeight > this.props.proxy.height) {
-                         // Optional: we might want to allow labels to be slightly out or just clip them. 
-                         // But usually we want to avoid drawing them if they are cut off? 
-                         // For now let's just check against other labels.
                     }
 
                     for (const box of occupiedBoxes) {
@@ -464,7 +474,6 @@ export const ChartComponent = memo(() => {
         }
     }
 
-    // find selected datapoint
     async function querySelection(x: number, y: number, unitDistance: number): Promise<DataPoint | null> {
         if (!prepared) {
             return null;
@@ -500,7 +509,16 @@ export const ChartComponent = memo(() => {
             viewportState={viewportState}
             onViewportState={(v) => setViewportState(v)}
             querySelection={ querySelection }
-            onSelection={(v) => console.log("Current Selected Points: ", v)} //TODO: set selectedIndices
+            selection={canvasSelection}
+            onSelection={(v) => {
+                console.log("Current Selected Points: ", v);
+                if (!v || v.length === 0) {
+                    setSelectedIndices([]);
+                } else {
+                    const newIndices = v.map(dp => dp.identifier as number);
+                    setSelectedIndices(newIndices);
+                }
+            }}
             customOverlay={{
                 class: NeighborOverlay as any,
                 props: { ...neighborOverlayProps, posMap }
