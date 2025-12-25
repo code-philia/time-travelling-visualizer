@@ -176,6 +176,11 @@ export const ChartComponent = memo(() => {
         };
     }, [colorDict, epochData, filteredIndices, inherentLabelData]);
 
+    const selectedPoints = useMemo(() => {
+        if (!prepared) return [];
+        return selectedIndices.map(idx => prepared.dataPoints[idx]);
+    }, [prepared, selectedIndices]);
+
     const posMap = useMemo(() => {
         const m = new Map<number, number>();
         if (prepared) {
@@ -520,6 +525,7 @@ export const ChartComponent = memo(() => {
                 const newSelectedIndices = v.map(pt => pt.identifier as number);
                 setSelectedIndices(newSelectedIndices);
             }}
+            selection={selectedPoints}
             customOverlay={{
                 class: NeighborOverlay as any,
                 props: { ...neighborOverlayProps, posMap }
