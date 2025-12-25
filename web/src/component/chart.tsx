@@ -275,6 +275,7 @@ export const ChartComponent = memo(() => {
             const { center, original, projection, dataX, dataY, pointSize, revealOriginalNeighbors, revealProjectionNeighbors } = this.props;
             const centerLoc = center ? this.proxy.location(center.x, center.y) : null;
             const neighborGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            const trailGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
             const drawNeighbor = (nid: number, color: string) => {
                 const pos = this.props.posMap.get(nid);
                 if (pos == null) return;
@@ -299,6 +300,60 @@ export const ChartComponent = memo(() => {
                 circle.setAttribute('stroke-width', '2');
                 neighborGroup.appendChild(circle);
             };
+            const drawTrail = (nid: number) => {
+                const epochs = this.props.availableEpochs || [];
+                const currentIdx = epochs.indexOf(this.props.currentEpoch);
+                if (typeof nid === 'number') {
+                    const points: { x: number; y: number }[] = [];
+                    for (let i = 0; i <= currentIdx; i++) {
+                        const ep = epochs[i];
+                        const epData = this.props.allEpochData?.[ep];
+                        const coord = epData?.projection?.[nid];
+                        if (!coord) continue;
+                        const locp = this.proxy.location(coord[0], coord[1]);
+                        points.push({ x: locp.x, y: locp.y });
+                    }
+                    for (let i = 0; i < points.length; i++) {
+                    const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    c.setAttribute('cx', String(points[i].x));
+                    c.setAttribute('cy', String(points[i].y));
+                    c.setAttribute('r', String(Math.max(3, pointSize + 1)));
+                    c.setAttribute('fill', '#7F8C8D');
+                    c.setAttribute('fill-opacity', '0.85');
+                    c.setAttribute('stroke', '#7F8C8D');
+                    c.setAttribute('stroke-width', '0.5');
+                    trailGroup.appendChild(c);
+                    }
+                    for (let i = 1; i < points.length; i++) {
+                        const l = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                        l.setAttribute('x1', String(points[i - 1].x));
+                        l.setAttribute('y1', String(points[i - 1].y));
+                        l.setAttribute('x2', String(points[i].x));
+                        l.setAttribute('y2', String(points[i].y));
+                        l.setAttribute('stroke', '#7F8C8D');
+                        l.setAttribute('stroke-width', '2');
+                        l.setAttribute('stroke-dasharray', '6 3');
+                        l.setAttribute('stroke-linecap', 'round');
+                        l.setAttribute('stroke-opacity', '0.9');
+                        l.setAttribute('marker-end', 'url(#trail-arrow)');
+                        trailGroup.appendChild(l);
+                    }
+                }
+            };
+
+            if (this.props.showTrail) {
+                const trailIds = new Set<number>(this.props.selectedIndices || []);
+                console.log("Drawing trails for selected IDs: ", trailIds);
+                if (typeof this.props.center?.identifier === 'number') {
+                    trailIds.add(this.props.center.identifier);
+                }
+                for (const id of trailIds) {
+                    drawTrail(id);
+                }
+                this.svg.appendChild(trailGroup);
+            }
+
+
             const COLOR_ORIG = '#E74C3C';
             const COLOR_PROJ = '#2E86DE';
             if (centerLoc) {
@@ -318,50 +373,6 @@ export const ChartComponent = memo(() => {
                 centerCircle.setAttribute('stroke-width', '2');
                 this.svg.appendChild(centerCircle);
 
-                // TODO: show trail for all selected points
-                if (this.props.showTrail) {
-                    const trailGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                    const epochs = this.props.availableEpochs || [];
-                    const currentIdx = epochs.indexOf(this.props.currentEpoch);
-                    const centerId = this.props.center?.identifier as number;
-                    if (typeof centerId === 'number') {
-                        const points: { x: number; y: number }[] = [];
-                        for (let i = 0; i <= currentIdx; i++) {
-                            const ep = epochs[i];
-                            const epData = this.props.allEpochData?.[ep];
-                            const coord = epData?.projection?.[centerId];
-                            if (!coord) continue;
-                            const locp = this.proxy.location(coord[0], coord[1]);
-                            points.push({ x: locp.x, y: locp.y });
-                        }
-                        for (let i = 0; i < points.length; i++) {
-                        const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                        c.setAttribute('cx', String(points[i].x));
-                        c.setAttribute('cy', String(points[i].y));
-                        c.setAttribute('r', String(Math.max(3, pointSize + 1)));
-                        c.setAttribute('fill', '#7F8C8D');
-                        c.setAttribute('fill-opacity', '0.85');
-                        c.setAttribute('stroke', '#7F8C8D');
-                        c.setAttribute('stroke-width', '0.5');
-                        trailGroup.appendChild(c);
-                        }
-                        for (let i = 1; i < points.length; i++) {
-                            const l = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                            l.setAttribute('x1', String(points[i - 1].x));
-                            l.setAttribute('y1', String(points[i - 1].y));
-                            l.setAttribute('x2', String(points[i].x));
-                            l.setAttribute('y2', String(points[i].y));
-                            l.setAttribute('stroke', '#7F8C8D');
-                            l.setAttribute('stroke-width', '2');
-                            l.setAttribute('stroke-dasharray', '6 3');
-                            l.setAttribute('stroke-linecap', 'round');
-                            l.setAttribute('stroke-opacity', '0.9');
-                            l.setAttribute('marker-end', 'url(#trail-arrow)');
-                            trailGroup.appendChild(l);
-                        }
-                    }
-                    this.svg.appendChild(trailGroup);
-                }
             } else {
                 this.svg.appendChild(neighborGroup);
             }
