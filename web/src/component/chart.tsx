@@ -368,7 +368,7 @@ export const ChartComponent = memo(() => {
 
             if (this.props.showLabel || this.props.showIndex) {
                 const textGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                
+
                 // Store occupied bounding boxes
                 const occupiedBoxes: { x: number, y: number, width: number, height: number }[] = [];
                 const padding = 2; // Padding between labels
@@ -398,9 +398,9 @@ export const ChartComponent = memo(() => {
                     // Actually, to make collision detection easier, let's treat (labelX, labelY) as the top-left corner for calculation purposes,
                     // but we need to adjust for SVG text rendering which uses baseline.
                     // Standard SVG text y is the baseline. So the box top is y - charHeight.
-                    
+
                     const boxX = labelX;
-                    const boxY = labelY - charHeight; 
+                    const boxY = labelY - charHeight;
                     const boxWidth = content.length * charWidth;
                     const boxHeight = charHeight;
 
@@ -408,8 +408,8 @@ export const ChartComponent = memo(() => {
                     let collision = false;
                     // Check against canvas boundaries
                     if (boxX < 0 || boxY < 0 || boxX + boxWidth > this.props.proxy.width || boxY + boxHeight > this.props.proxy.height) {
-                         // Optional: we might want to allow labels to be slightly out or just clip them. 
-                         // But usually we want to avoid drawing them if they are cut off? 
+                         // Optional: we might want to allow labels to be slightly out or just clip them.
+                         // But usually we want to avoid drawing them if they are cut off?
                          // For now let's just check against other labels.
                     }
 
@@ -441,7 +441,7 @@ export const ChartComponent = memo(() => {
                 this.svg.appendChild(textGroup);
             }
 
-            
+
         }
         update(nextProps: Partial<any>) {
             this.props = { ...this.props, ...nextProps };
@@ -500,7 +500,15 @@ export const ChartComponent = memo(() => {
             viewportState={viewportState}
             onViewportState={(v) => setViewportState(v)}
             querySelection={ querySelection }
-            onSelection={(v) => console.log("Current Selected Points: ", v)} //TODO: set selectedIndices
+            onSelection={(v) => {
+                console.log("Current Selected Points: ", v);
+                if (v === null || v.length === 0) {
+                    setSelectedIndices([]);
+                    return;
+                }
+                const newSelectedIndices = v.map(pt => pt.identifier as number);
+                setSelectedIndices(newSelectedIndices);
+            }}
             customOverlay={{
                 class: NeighborOverlay as any,
                 props: { ...neighborOverlayProps, posMap }
