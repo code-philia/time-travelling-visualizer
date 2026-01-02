@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { message, Tabs } from 'antd';
+import { Button, message } from 'antd';
 import { MainBlock } from '../component/main-block';
 import { FunctionPanel } from '../component/function-panel';
+import { SamplePanel } from '../component/sample-panel';
 import { TrainingEventPanel } from '../component/training-event-panel';
 import InfluenceAnalysisPanel from '../component/influence-panel';
 import { TokenPanel } from '../component/token-panel';
@@ -11,9 +12,10 @@ import { createRoot } from "react-dom/client";
 import { StrictMode } from "react";
 
 import "../index.css";
-import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 
-
+import FunctionIcon from '../../assets/settings_applications_24dp_5F6368_FILL0_wght300_GRAD0_opsz24.svg';
+import SampleIcon from '../../assets/frame_inspect_24dp_5F6368_FILL0_wght300_GRAD0_opsz24.svg';
+import VisAnalysisIcon from '../../assets/analytics_24dp_5F6368_FILL0_wght300_GRAD0_opsz24.svg';
 import { acquireSettings } from '../communication/extension';
 
 createRoot(document.getElementById("root")!).render(
@@ -26,11 +28,11 @@ createRoot(document.getElementById("root")!).render(
 function MessageHandler() {
     // State from unified store
     const { 
-        setContentPath, setAvailableEpochs, setDataType, setTaskType,
+        setAvailableEpochs, setDataType, setTaskType,
         setTextData, setTokenList, setInherentLabelData,
         setColorDict, setLabelDict, setProgress, setValue
     } = useDefaultStore([
-        'setContentPath', 'setAvailableEpochs', 'setDataType', 'setTaskType',
+        'setAvailableEpochs', 'setDataType', 'setTaskType',
         'setTextData', 'setTokenList', 'setInherentLabelData',
         'setColorDict', 'setLabelDict', 'setProgress', 'setValue'
     ]);
@@ -54,7 +56,6 @@ function MessageHandler() {
             console.log('Loading visualization with config:', config);
             
             // Set basic configuration
-            setContentPath(contentPath);
             setDataType(dataType);
             setTaskType(taskType);
             
@@ -86,9 +87,10 @@ function MessageHandler() {
             // Load epoch data for all available epochs
             let allEpochDataTemp: Record<number, any> = {};
 
-            for (const epochNum of epochs) {
-                setProgress((epochNum / epochs.length) * 100);
-
+            for (let i = 0; i < epochs.length; i++) {
+                const epochNum = epochs[i];
+                console.log(`Loading epoch ${epochNum} (${i + 1}/${epochs.length})...`);
+                
                 allEpochDataTemp = { ...allEpochDataTemp, [epochNum]: {} };
 
                 // Load main plot data
@@ -118,9 +120,14 @@ function MessageHandler() {
                 }
 
                 setValue('allEpochData', { ...allEpochDataTemp });
+                
+                // Update progress to reflect the number of epochs loaded (1-based index)
+                setProgress(i + 1);
+                console.log(`Progress updated: ${i + 1}/${epochs.length} epochs loaded`);
             }
             
-            setProgress(100);
+            setProgress(epochs.length);
+            console.log(`All epochs loaded. Total: ${epochs.length}`);
             message.success('Visualization loaded successfully!');
             
         } catch (error) {
@@ -155,84 +162,118 @@ function MessageHandler() {
     return <></>;
 }
 
-export function AppCombinedView() {
+function AppCombinedView() {
     return (
-        <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column" }}>
-            <PanelGroup direction="vertical" style={{ flex: 1, display: "flex" }} autoSaveId="plot-view-root">
-                <Panel defaultSize={76} minSize={40}>
-                    <PanelGroup direction="horizontal" style={{ height: "100%", display: "flex" }} autoSaveId="plot-view-layout">
-                        <Panel defaultSize={70} minSize={20}>
-                            <div style={{ display: "flex", width: "100%", height: "100%" }}>
-                                <MainBlock />
-                            </div>
-                        </Panel>
-                        <PanelResizeHandle className="subtle-resize-handle" hitAreaMargins={{ coarse: 12, fine: 6 }} />
-                        <Panel defaultSize={30} minSize={8} maxSize={60} collapsible collapsedSize={0}>
-                            <div style={{ width: '100%', height: '100%', borderLeft: '1px solid #ccc' }}>
-                                <FunctionViewPanels />
-                            </div>
-                        </Panel>
-                    </PanelGroup>
-                </Panel>
-                <PanelResizeHandle className="subtle-resize-handle-horizontal" />
-                <Panel defaultSize={24} minSize={8} maxSize={50} collapsible collapsedSize={0}>
-                    <div style={{ width: '100%', height: '100%', borderTop: '1px solid #ccc' }}>
-                        <BottomDock />
-                    </div>
-                </Panel>
-            </PanelGroup>
+        <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column" }}>            
+            <div style={{ flex: 1, display: "flex" }}>
+                {/* Main plot area (center) */}
+                <div style={{ flex: 1, display: "flex" }}>
+                    <MainBlock />
+                </div>
+                
+                {/* Function view panels (right side) */}
+                <div style={{ width: "300px", borderLeft: "1px solid #ccc" }}>
+                    <FunctionViewPanels />
+                </div>
+            </div>
+            
+            {/* <div style={{ height: "200px", borderTop: "1px solid #ccc", display: "flex", justifyContent: "center" }}>
+                <div style={{ width: "100%", height: "100%" }}>
+                    <InfluenceAnalysisPanel />
+                </div>
+            </div>
+            
+            <div style={{ borderTop: "1px solid #ccc" }}>
+                <TokenPanel />
+            </div> */}
             <MessageHandler />
         </div>
     );
 }
 
 function FunctionViewPanels() {
-    const [activeKey, setActiveKey] = useState<'FunctionPanel' | 'TrainingEventPanel'>('FunctionPanel');
+    const [activePanel, setActivePanel] = useState<'FunctionPanel' | 'SamplePanel' | 'TrainingEventPanel'>('FunctionPanel');
 
-    const items = [
-        { key: 'FunctionPanel', label: <span style={{ fontSize: 12 }}>Functions</span> },
-        { key: 'TrainingEventPanel', label: <span style={{ fontSize: 12 }}>Training Events</span> },
-    ];
+    const buttonStyle = (isActive: boolean): React.CSSProperties => ({
+        width: '20px',
+        height: '20px',
+        margin: '0 2px',
+        borderRadius: '25%',
+        backgroundColor: isActive ? '#9fd4fc' : '#ffffff',
+        border: `2px solid ${isActive ? '#007bff' : '#cccccc'}`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        cursor: 'pointer',
+        position: 'relative',
+        transition: 'all 0.3s ease',
+    });
+
+    const tooltipStyle: React.CSSProperties = {
+        position: 'absolute',
+        bottom: '-25px',
+        left: '50%',
+        transform: 'translateX(-75%)',
+        padding: '5px 5px',
+        borderRadius: '4px',
+        backgroundColor: '#333',
+        color: '#fff',
+        fontSize: '10px',
+        whiteSpace: 'nowrap',
+        opacity: 0,
+        visibility: 'hidden',
+        transition: 'opacity 0.3s ease, visibility 0.3s ease',
+        zIndex: 9999,
+    };
+
+    const buttonContainerStyle: React.CSSProperties = {
+        position: 'absolute',
+        top: '10px',
+        right: '10px',
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'center',
+    };
 
     return (
-        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <Tabs
-                className="function-tabs"
-                activeKey={activeKey}
-                onChange={(key) => setActiveKey(key as typeof activeKey)}
-                size="small"
-                tabBarStyle={{ marginBottom: 0 }}
-                tabBarGutter={0}
-                items={items}
-            />
-            <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
-                {activeKey === 'FunctionPanel' && <FunctionPanel />}
-                {activeKey === 'TrainingEventPanel' && <TrainingEventPanel />}
+        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+            <div style={buttonContainerStyle}>
+                {[
+                    { panel: 'FunctionPanel', icon: FunctionIcon, tooltip: 'Function Panel' },
+                    { panel: 'SamplePanel', icon: SampleIcon, tooltip: 'Sample Panel' },
+                    { panel: 'TrainingEventPanel', icon: VisAnalysisIcon, tooltip: 'Training Event Panel' },
+                ].map(({ panel, icon, tooltip }) => (
+                    <div
+                        key={panel}
+                        style={buttonStyle(activePanel === panel)}
+                        onClick={() => setActivePanel(panel as typeof activePanel)}
+                        onMouseEnter={(e) => {
+                            const tooltipDiv = e.currentTarget.querySelector('.tooltip') as HTMLDivElement;
+                            tooltipDiv.style.opacity = '1';
+                            tooltipDiv.style.visibility = 'visible';
+                        }}
+                        onMouseLeave={(e) => {
+                            const tooltipDiv = e.currentTarget.querySelector('.tooltip') as HTMLDivElement;
+                            tooltipDiv.style.opacity = '0';
+                            tooltipDiv.style.visibility = 'hidden';
+                        }}
+                    >
+                        <img src={icon} alt={`${panel} icon`} style={{ width: '20px', height: '20px' }} />
+                        <div className="tooltip" style={tooltipStyle}>
+                            {tooltip}
+                        </div>
+                    </div>
+                ))}
+            </div>
+            <div style={{ flex: 1, display: 'flex' }}>
+                {activePanel === 'FunctionPanel' && <FunctionPanel />}
+                {activePanel === 'SamplePanel' && <SamplePanel />}
+                {activePanel === 'TrainingEventPanel' && <TrainingEventPanel />}
             </div>
         </div>
     );
 }
 
-function BottomDock() {
-    const [activeKey, setActiveKey] = useState<'Influence' | 'Tokens'>('Influence');
-    const items = [
-        { key: 'Influence', label: <span style={{ fontSize: 12 }}>Influence</span>, children: <InfluenceAnalysisPanel /> },
-        { key: 'Tokens', label: <span style={{ fontSize: 12 }}>Tokens</span>, children: <TokenPanel /> },
-    ];
 
-    return (
-        <Tabs
-            className="bottom-dock-tabs"
-            tabPosition="right"
-            size="small"
-            tabBarGutter={0}
-            tabBarStyle={{ marginLeft: 0 }}
-            style={{ height: '100%' }}
-            items={items}
-            activeKey={activeKey}
-            onChange={(key) => setActiveKey(key as typeof activeKey)}
-        />
-    );
-}
 
 window.vscode?.postMessage({ state: 'load' }, '*');

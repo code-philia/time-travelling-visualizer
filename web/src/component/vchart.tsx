@@ -4,6 +4,7 @@ import VChart from '@visactor/vchart';
 import { Edge } from './types';
 import { useDefaultStore } from "../state/state.unified";
 import { createEdges, softmax, transferArray2Color } from './utils';
+import { notifyHoveredIndexSwitch, notifySelectedIndicesSwitch } from '../communication/extension';
 const BACKGROUND_PADDING = 0.5;
 
 export const ChartComponent = memo(() => {
@@ -19,17 +20,28 @@ export const ChartComponent = memo(() => {
     const { shownData, highlightData, index } = useDefaultStore(["shownData", "highlightData", "index"]);
 
     const { isFocusMode, focusIndices } = useDefaultStore(["isFocusMode", "focusIndices"]);
+    const { trainingEvents } = useDefaultStore(["trainingEvents"]);
 
     const samplesRef = useRef<{ pointId: number, x: number; y: number; label: number; pred: number; label_desc: string; pred_desc: string; confidence: number; textSample: string;}[]>([]);
     const edgesRef = useRef<Edge[]>([]);
     const wrongRef = useRef<number[]>([]);
     const flipRef = useRef<number[]>([]);
+    
+    // Cache for neighbor lookup to improve performance
+    const neighborCacheRef = useRef<Map<number, number[]>>(new Map());
+    const selectedIndicesSetRef = useRef<Set<number>>(new Set());
+    // Cache for edge lookup by from->to
+    const edgeMapRef = useRef<Map<string, Edge>>(new Map());
+    
+    // Debounce hover events to improve performance
+    const hoverTimeoutRef = useRef<any>(null);
 
     // listen to selectedIndices change in canvas
     useEffect(() => {
         const listener = () => {
             console.log("Highlight Listener In VChart Triggered.");
             setSelectedIndices([...selectedListener.selectedIndices]);
+            notifySelectedIndicesSwitch([...selectedListener.selectedIndices]);
         };
         console.log("Add Highlight Listener In VChart");
         selectedListener.addHighlightChangedListener(listener);
@@ -58,6 +70,7 @@ export const ChartComponent = memo(() => {
 
         console.log('Rendering epoch: ', epoch);
         console.log('Epoch data: ', epochData);
+        console.log('Current selected indices before render:', selectedIndices);
 
         samplesRef.current = [];
         wrongRef.current = [];
@@ -107,8 +120,28 @@ export const ChartComponent = memo(() => {
         });
 
         edgesRef.current = createEdges(epochData.originalNeighbors, epochData.projectionNeighbors, [], []);
+        
+        // Build neighbor cache and edge map for performance optimization
+        neighborCacheRef.current.clear();
+        edgeMapRef.current.clear();
+        
+        edgesRef.current.forEach((edge) => {
+            // Build neighbor cache
+            if (!neighborCacheRef.current.has(edge.from)) {
+                neighborCacheRef.current.set(edge.from, []);
+            }
+            neighborCacheRef.current.get(edge.from)!.push(edge.to);
+            
+            // Build edge map for O(1) lookup
+            const key = `${edge.from}-${edge.to}`;
+            edgeMapRef.current.set(key, edge);
+        });
+        
+        // Update selectedIndices Set for O(1) lookup
+        selectedIndicesSetRef.current = new Set(selectedIndices);
 
         console.log("All samples: ", samplesRef.current);
+        console.log("Neighbor cache built with", neighborCacheRef.current.size, "entries");
 
         // create spec
         const spec: any = {
@@ -306,8 +339,13 @@ export const ChartComponent = memo(() => {
                         style: {
                             size: 3,
                             fill: (datum: { label: number; groupColor: string }) => {
-                                const color = colorDict.get(datum.label) ?? [0, 0, 0];
-                                return `rgb(${color[0]}, ${color[1]}, ${color[2]})`
+                                if (highlightData.includes("prediction_flip")) {
+                                   return datum.groupColor ?? "black";
+                                }
+                                else {
+                                    const color = colorDict.get(datum.label) ?? [0, 0, 0];
+                                    return `rgb(${color[0]}, ${color[1]}, ${color[2]})`
+                                }
                             },
                             fillOpacity: (datum: { confidence: number; }) => {
                                 return datum.confidence;
@@ -319,16 +357,6 @@ export const ChartComponent = memo(() => {
                                         lineWidth: 1.5,
                                         stroke: 'rgba(255, 0, 0, 0.75)'
                                     }
-                                }
-                                else if (highlightData.includes('prediction_flip') && flipRef.current.includes(datum.pointId)) {
-                                    return {
-                                        distance: 1.5,
-                                        lineWidth: 1.5,
-                                        stroke: 'rgba(0, 0, 255, 0.75)'
-                                    }
-                                }
-                                else {
-                                    return null;
                                 }
                             },
                         }
@@ -423,12 +451,30 @@ export const ChartComponent = memo(() => {
             const vchart = new VChart(spec, { dom: chartRef.current });
             vchartRef.current = vchart;
 
+            // Debounced hover handler for better performance
             vchartRef.current.on('pointerover', { id: 'point-series' }, (e) => {
-                setHoveredIndex(e.datum?.pointId);
+                const pointId = e.datum?.pointId;
+                // Clear any pending hover timeout
+                if (hoverTimeoutRef.current) {
+                    clearTimeout(hoverTimeoutRef.current);
+                }
+                // Set new hover state with small delay to debounce rapid movements
+                hoverTimeoutRef.current = setTimeout(() => {
+                    setHoveredIndex(pointId);
+                    notifyHoveredIndexSwitch(pointId);
+                }, 50); // 50ms debounce
             });
+            
             vchartRef.current.on('pointerout', { id: 'point-series' }, () => {
+                // Clear pending hover timeout
+                if (hoverTimeoutRef.current) {
+                    clearTimeout(hoverTimeoutRef.current);
+                    hoverTimeoutRef.current = null;
+                }
                 setHoveredIndex(undefined);
+                notifyHoveredIndexSwitch(undefined);
             });
+            
             vchartRef.current.on('click', { id: 'point-series' }, (e) => {
                 const pointId = e.datum?.pointId;
                 selectedListener.switchSelected(pointId);
@@ -438,76 +484,247 @@ export const ChartComponent = memo(() => {
             vchartRef.current.updateSpec(spec);
         }
         vchartRef.current.renderSync();
-    }, [epoch, allEpochData, showIndex, showLabel, showBackground, shownData, highlightData, index, availableEpochs, isFocusMode, focusIndices, colorDict]);
-
-
-    /*
-    Highlight locked points
-    */
-    useEffect(() => {
-        if (!vchartRef.current) {
-            return;
-        }
-
-        if (selectedIndices.length === 0 && hoveredIndex === -1) {
-            vchartRef.current?.updateState({
-                locked: {
-                    filter: () => {
-                        return false;
-                    }
-                },
-                as_neighbor: {
-                    filter: () => {
-                        return false;
-                    }
+        
+        console.log('[Main Render] Epoch:', epoch, 'Selected:', selectedIndices, 'Hovered:', hoveredIndex);
+        
+        // CRITICAL: Immediately restore selected state after renderSync()
+        // renderSync() clears all chart states including 'locked', so we must restore synchronously
+        // Read from selectedListener (the single source of truth) to ensure consistency across epochs
+        const currentSelectedIndices = Array.from(selectedListener.selectedIndices);
+        if (currentSelectedIndices.length > 0) {
+            console.log('[Main Render] Restoring locked state from pool:', currentSelectedIndices);
+            
+            // Update cache for fast lookup
+            selectedIndicesSetRef.current = new Set(currentSelectedIndices);
+            
+            // Calculate neighbors for selected points
+            const selectedNeighbors = new Set<number>();
+            currentSelectedIndices.forEach(idx => {
+                const neighbors = neighborCacheRef.current.get(idx);
+                if (neighbors) {
+                    neighbors.forEach(n => selectedNeighbors.add(n));
                 }
             });
-            return;
+            
+            // Restore locked state synchronously (no setTimeout!)
+            vchartRef.current.updateState({
+                locked: {
+                    filter: (datum: any) => selectedIndicesSetRef.current.has(datum.pointId)
+                },
+                as_neighbor: {
+                    filter: (datum: any) => selectedNeighbors.has(datum.pointId)
+                }
+            });
+            
+            console.log('[Main Render] Locked state restored from pool immediately after renderSync');
         }
+    }, [epoch, allEpochData, showIndex, showLabel, showBackground, shownData, highlightData, index, availableEpochs, isFocusMode, focusIndices]);
 
-        const selectedNeighbors: number[] = [];
-        edgesRef.current.forEach((edge, _) => {
-            if (edge.from == hoveredIndex || selectedIndices.includes(edge.from)) {
-                selectedNeighbors.push(edge.to);
-            }
-        });
-        vchartRef.current?.updateState({
-            as_neighbor: {
-                filter: (datum) => {
-                    return selectedNeighbors.includes(datum.pointId);
-                }
-            }
-        });
-
-        vchartRef.current?.updateState({
-            locked: {
-                filter: (datum) => {
-                    return selectedIndices.includes(datum.pointId);
-                }
-            }
-        });
-    }, [epoch, allEpochData, hoveredIndex, selectedIndices]);
 
     /*
-        Show neighborhood relationship
+    Unified state and edge management
+    Handles hover state and selected state changes (NOT epoch changes - that's in main render)
+    Reads from selectedListener pool to ensure cross-epoch consistency
+    Priority: hover > selected
     */
     useEffect(() => {
         if (!vchartRef.current) {
             return;
         }
 
-        const endpoints: { edgeId: number, from: number, to: number, x: number, y: number, type: string, status: string }[] = [];
-        edgesRef.current.forEach((edge, index) => {
-            if (edge.from === hoveredIndex) {
-                if ((revealProjectionNeighbors && edge.type === 'lowDim') || (revealOriginalNeighbors && edge.type === 'highDim')) {
-                    endpoints.push({ edgeId: index, from: edge.from, to: edge.to, x: samplesRef.current[edge.from].x, y: samplesRef.current[edge.from].y, type: edge.type, status: edge.status });
-                    endpoints.push({ edgeId: index, from: edge.from, to: edge.to, x: samplesRef.current[edge.to].x, y: samplesRef.current[edge.to].y, type: edge.type, status: edge.status });
-                }
-            }
-        });
-        vchartRef.current?.updateDataSync('edges', endpoints);
+        // Read from the pool (single source of truth)
+        const currentSelectedIndices = Array.from(selectedListener.selectedIndices);
+        console.log('[Unified Update] Hovered:', hoveredIndex, 'Selected from pool:', currentSelectedIndices);
 
-    }, [revealProjectionNeighbors, revealOriginalNeighbors, hoveredIndex]);
+        // Update selectedIndices Set for fast lookup
+        selectedIndicesSetRef.current = new Set(currentSelectedIndices);
+
+        // === PART 1: Update point states (locked and neighbors) ===
+        
+        // Case 1: No selection and no hover - clear all states
+        if (currentSelectedIndices.length === 0 && (hoveredIndex === undefined || hoveredIndex === -1)) {
+            console.log('[Unified Update] Clearing all states');
+            vchartRef.current.updateState({
+                locked: { filter: () => false },
+                as_neighbor: { filter: () => false }
+            });
+            // Clear edges as well
+            vchartRef.current.updateDataSync('edges', []);
+            return;
+        }
+
+        // Prepare for state update and edge calculation
+        let edgeSourceIndices: number[] = [];
+        
+        // Case 2: Has hover - prioritize showing hovered point's neighbors
+        if (hoveredIndex !== undefined && hoveredIndex !== -1) {
+            const hoveredNeighbors = neighborCacheRef.current.get(hoveredIndex) || [];
+            const hoveredNeighborsSet = new Set(hoveredNeighbors);
+            
+            console.log('[Unified Update] Applying hover state for point:', hoveredIndex);
+            vchartRef.current.updateState({
+                locked: {
+                    filter: (datum: any) => selectedIndicesSetRef.current.has(datum.pointId)
+                },
+                as_neighbor: {
+                    filter: (datum: any) => hoveredNeighborsSet.has(datum.pointId)
+                }
+            });
+            
+            // Only show edges for hovered point
+            edgeSourceIndices = [hoveredIndex];
+        }
+        // Case 3: Has selection but no hover
+        else if (currentSelectedIndices.length > 0) {
+            const selectedNeighbors = new Set<number>();
+            currentSelectedIndices.forEach(idx => {
+                const neighbors = neighborCacheRef.current.get(idx);
+                if (neighbors) {
+                    neighbors.forEach(n => selectedNeighbors.add(n));
+                }
+            });
+            
+            console.log('[Unified Update] Applying selected state for points from pool:', currentSelectedIndices);
+            vchartRef.current.updateState({
+                locked: {
+                    filter: (datum: any) => selectedIndicesSetRef.current.has(datum.pointId)
+                },
+                as_neighbor: {
+                    filter: (datum: any) => selectedNeighbors.has(datum.pointId)
+                }
+            });
+            
+            // Show edges for all selected points
+            edgeSourceIndices = currentSelectedIndices;
+        }
+
+        // === PART 2: Update edges efficiently ===
+        const endpoints: { edgeId: number, from: number, to: number, x: number, y: number, type: string, status: string }[] = [];
+        
+        // Use Set to avoid duplicate edges when multiple selected points share neighbors
+        const processedEdges = new Set<string>();
+        
+        edgeSourceIndices.forEach(idx => {
+            const neighbors = neighborCacheRef.current.get(idx);
+            if (!neighbors) return;
+            
+            neighbors.forEach((toIdx) => {
+                const key = `${idx}-${toIdx}`;
+                
+                // Skip if already processed (important for multiple selected points)
+                if (processedEdges.has(key)) return;
+                processedEdges.add(key);
+                
+                const edge = edgeMapRef.current.get(key);
+                if (!edge) return;
+                
+                // Check visibility settings
+                if ((revealProjectionNeighbors && edge.type === 'lowDim') || 
+                    (revealOriginalNeighbors && edge.type === 'highDim')) {
+                    const edgeId = endpoints.length / 2; // Each edge needs 2 endpoints
+                    endpoints.push(
+                        { 
+                            edgeId, 
+                            from: edge.from, 
+                            to: edge.to, 
+                            x: samplesRef.current[edge.from].x, 
+                            y: samplesRef.current[edge.from].y, 
+                            type: edge.type, 
+                            status: edge.status 
+                        },
+                        { 
+                            edgeId, 
+                            from: edge.from, 
+                            to: edge.to, 
+                            x: samplesRef.current[edge.to].x, 
+                            y: samplesRef.current[edge.to].y, 
+                            type: edge.type, 
+                            status: edge.status 
+                        }
+                    );
+                }
+            });
+        });
+        
+        vchartRef.current.updateDataSync('edges', endpoints);
+        console.log('[Unified Update] Updated', endpoints.length / 2, 'edges for', edgeSourceIndices.length, 'points');
+        
+    }, [hoveredIndex, selectedIndices, revealProjectionNeighbors, revealOriginalNeighbors]); // NO epoch dependency - epoch handled in separate effect below!
+
+    /*
+    Update edges when epoch changes
+    Reads from selectedListener pool for consistency
+    This is separate from the unified update to avoid re-applying states unnecessarily
+    */
+    useEffect(() => {
+        if (!vchartRef.current) {
+            return;
+        }
+        
+        // Read from the pool (single source of truth)
+        const currentSelectedIndices = Array.from(selectedListener.selectedIndices);
+        console.log('[Epoch Edge Update] Updating edges for new epoch:', epoch, 'Selected from pool:', currentSelectedIndices);
+        
+        // Determine which points' edges to show
+        let edgeSourceIndices: number[] = [];
+        
+        if (hoveredIndex !== undefined && hoveredIndex !== -1) {
+            edgeSourceIndices = [hoveredIndex];
+        } else if (currentSelectedIndices.length > 0) {
+            edgeSourceIndices = currentSelectedIndices;
+        } else {
+            // No hover or selection, clear edges
+            vchartRef.current.updateDataSync('edges', []);
+            return;
+        }
+        
+        // Build edges with new epoch coordinates
+        const endpoints: { edgeId: number, from: number, to: number, x: number, y: number, type: string, status: string }[] = [];
+        const processedEdges = new Set<string>();
+        
+        edgeSourceIndices.forEach(idx => {
+            const neighbors = neighborCacheRef.current.get(idx);
+            if (!neighbors) return;
+            
+            neighbors.forEach((toIdx) => {
+                const key = `${idx}-${toIdx}`;
+                if (processedEdges.has(key)) return;
+                processedEdges.add(key);
+                
+                const edge = edgeMapRef.current.get(key);
+                if (!edge) return;
+                
+                if ((revealProjectionNeighbors && edge.type === 'lowDim') || 
+                    (revealOriginalNeighbors && edge.type === 'highDim')) {
+                    const edgeId = endpoints.length / 2;
+                    endpoints.push(
+                        { 
+                            edgeId, 
+                            from: edge.from, 
+                            to: edge.to, 
+                            x: samplesRef.current[edge.from].x, 
+                            y: samplesRef.current[edge.from].y, 
+                            type: edge.type, 
+                            status: edge.status 
+                        },
+                        { 
+                            edgeId, 
+                            from: edge.from, 
+                            to: edge.to, 
+                            x: samplesRef.current[edge.to].x, 
+                            y: samplesRef.current[edge.to].y, 
+                            type: edge.type, 
+                            status: edge.status 
+                        }
+                    );
+                }
+            });
+        });
+        
+        vchartRef.current.updateDataSync('edges', endpoints);
+        console.log('[Epoch Edge Update] Updated', endpoints.length / 2, 'edges for epoch', epoch);
+        
+    }, [epoch, hoveredIndex, selectedIndices, revealProjectionNeighbors, revealOriginalNeighbors]);
 
 
      /*
@@ -536,6 +753,48 @@ export const ChartComponent = memo(() => {
          });
          vchartRef.current.updateDataSync('trails', trailpoints);
      }, [showTrail, selectedIndices, epoch, availableEpochs, allEpochData]);
+    
+    /*  
+        Update training events 
+        NOTE: This should NOT clear the selected pool!
+        Training events are separate from user manual selections
+    */
+    useEffect(() => {
+        if (!vchartRef.current || !trainingEvents) {
+            return;
+        }
+        
+        const currentEpochIndex = availableEpochs.indexOf(epoch);
+        if (currentEpochIndex <= 0) {
+            vchartRef.current.updateDataSync('events', []);
+            return;
+        }
+        
+        // DO NOT clear selected pool - user selections should persist across epochs
+        // selectedListener.clearSelected(); // REMOVED - this was causing the bug!
+
+        // Training events visualization (if needed, handle separately)
+        // trainingEvents.forEach((event, index) => {
+        //     const sampleIndex = event.index;
+        //     if (!selectedListener.checkSelected(sampleIndex)) {
+        //         selectedListener.switchSelected(sampleIndex);
+        //     }
+        //     if (event.type === 'InconsistentMovement') {
+        //         if (!selectedListener.checkSelected(event.index1)) {
+        //             selectedListener.switchSelected(event.index1);
+        //         }
+        //     }
+        // });
+    }, [trainingEvents, epoch, allEpochData, availableEpochs]);
+    
+    // Cleanup hover timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (hoverTimeoutRef.current) {
+                clearTimeout(hoverTimeoutRef.current);
+            }
+        };
+    }, []);
 
     return <div
         ref={chartRef}

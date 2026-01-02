@@ -37,8 +37,11 @@ function Timeline({ epoch, epochs, progress, onSwitchEpoch }: { epoch: number, e
     const intervalRef = useRef<any | null>(null);
     const currentEpochIndexRef = useRef<number>(epochs.indexOf(epoch));
     const nodeOffset = 40;
-    const NODE_LINE_HEIGHT = 60;
-    const NODE_CENTER_Y = NODE_LINE_HEIGHT / 2;
+
+    // Log progress changes for debugging
+    useEffect(() => {
+        console.log(`Timeline: progress updated to ${progress}, total epochs: ${epochs.length}`);
+    }, [progress, epochs.length]);
 
     // Set the initial epoch from the passed epochs array
     useEffect(() => {
@@ -95,7 +98,7 @@ function Timeline({ epoch, epochs, progress, onSwitchEpoch }: { epoch: number, e
             return epochs.map((epoch, index) => ({
                 value: epoch,
                 x: index * 40 + nodeOffset,
-                y: NODE_CENTER_Y,
+                y: 30,
             }));
         }
         return [];
@@ -104,16 +107,21 @@ function Timeline({ epoch, epochs, progress, onSwitchEpoch }: { epoch: number, e
     // Convert epochs into a list of nodes with x and y positions
     const svgDimensions = useMemo(() => {
         if (nodes.length > 0) {
+            // Calculate the bounds for all elements (nodes and links) with padding
             const minX = Math.min(...nodes.map(node => node.x)) - 20;
             const maxX = Math.max(...nodes.map(node => node.x)) + 20;
+            const minY = Math.min(...nodes.map(node => node.y)) - 35;
+            const maxY = Math.max(...nodes.map(node => node.y)) + 35;
+
+            // Set the SVG dimensions to fit all nodes
             return {
                 width: maxX - minX + nodeOffset,
-                height: NODE_LINE_HEIGHT,
+                height: maxY - minY,
             }
         } else {
             return {
                 width: 0,
-                height: NODE_LINE_HEIGHT,
+                height: 0,
             }
         }
     }, [nodes]);
@@ -140,8 +148,8 @@ function Timeline({ epoch, epochs, progress, onSwitchEpoch }: { epoch: number, e
                 {nodes.map((node, index) => {
                     if (index < nodes.length - 1) {
                         const nextNode = nodes[index + 1];
-                        const nextNodeId = (nextNode.x - nodeOffset) / 40 + 1;
-                        const isLinkLoaded = progress >= nextNodeId;
+                        // Check if the next epoch is loaded (progress represents number of epochs loaded)
+                        const isLinkLoaded = progress > index + 1;
                         return (
                             <line
                                 key={`link-${index}`}
@@ -163,8 +171,8 @@ function Timeline({ epoch, epochs, progress, onSwitchEpoch }: { epoch: number, e
 
                 {/* Nodes */}
                 {nodes.map((node, index) => {
-                    const nodeId = (node.x - nodeOffset) / 40 + 1;
-                    const isLoaded = progress >= nodeId;
+                    // Check if this epoch is loaded (progress represents number of epochs loaded)
+                    const isLoaded = progress > index;
 
                     return (
                         <g key={index} transform={`translate(${node.x}, ${node.y})`}>
@@ -203,7 +211,7 @@ function Timeline({ epoch, epochs, progress, onSwitchEpoch }: { epoch: number, e
                 onClick={togglePlayPause}
                 style={{
                     position: 'absolute',
-                    top: '50%',
+                    top: '48%',
                     transform: 'translateY(-50%)',
                     backgroundColor: '#3278F0',
                     border: 'none',
@@ -238,7 +246,7 @@ export function MainBlock() {
                 <ChartComponent/>
             </div>
             <div id="footer">
-                <div style={{ display: 'flex', alignItems: 'center', height: '100%', width: '100%', overflowX: 'auto', overflowY: 'hidden' }}>
+                <div style={{ overflow: "auto" }}>
                     <Timeline epoch={epoch} epochs={availableEpochs} progress={ progress} onSwitchEpoch={(e) => {
                         setEpoch(e);
                         notifyEpochSwitch(e);

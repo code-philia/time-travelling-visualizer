@@ -20,7 +20,6 @@ export type EpochData = {
 // Unified state interface combining all views
 export type BaseMutableGlobalStore = {
     // Basic configuration
-    contentPath: string;
     dataType: 'Image' | 'Text';
     taskType: string;
     
@@ -79,7 +78,6 @@ export type BaseMutableGlobalStore = {
 
 export let initMutableGlobalStore: BaseMutableGlobalStore = {
     // Basic configuration
-    contentPath: '',
     dataType: 'Image',
     taskType: '',
     
