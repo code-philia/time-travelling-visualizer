@@ -16,8 +16,8 @@
                 "format": [ "camelCase", "PascalCase" ]
             }
         ],
-        "semi": ["error", "always"],
-        "space-before-blocks": ["error", "always"],
+        "semi": ["warn", "always"],
+        "space-before-blocks": ["warn", "always"],
         "curly": "off",
         "eqeqeq": ["error", "always"],
         "no-throw-literal": "warn"

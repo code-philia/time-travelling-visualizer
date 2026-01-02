@@ -1,0 +1,72 @@
+{
+  "timestamp": 1766718664,
+  "host": "http://localhost:5050",
+  "user_count": 0,
+  "total": {
+    "name": "Aggregated",
+    "method": "",
+    "num_requests": 47,
+    "num_failures": 29,
+    "avg_response_time": 11.574682574451373,
+    "min_response_time": 3.171166999891284,
+    "max_response_time": 27.653332999761915,
+    "median_response_time": 11,
+    "current_rps": 4.625,
+    "fail_ratio": 0.6170212765957447,
+    "avg_content_length": 197.9787234042553
+  },
+  "entries": [
+    {
+      "name": "/startVisualizing",
+      "method": "POST",
+      "num_requests": 5,
+      "num_failures": 0,
+      "avg_response_time": 10.126191599920276,
+      "min_response_time": 8.227374999478343,
+      "max_response_time": 12.049792000652815,
+      "median_response_time": 10,
+      "current_rps": 0.625,
+      "fail_ratio": 0.0,
+      "avg_content_length": 3.0
+    },
+    {
+      "name": "/getTrainingProcessInfo",
+      "method": "GET",
+      "num_requests": 5,
+      "num_failures": 0,
+      "avg_response_time": 8.38852480010246,
+      "min_response_time": 7.055625000248256,
+      "max_response_time": 9.458582999286591,
+      "median_response_time": 9,
+      "current_rps": 0.625,
+      "fail_ratio": 0.0,
+      "avg_content_length": 289.0
+    },
+    {
+      "name": "/updateProjection",
+      "method": "POST",
+      "num_requests": 29,
+      "num_failures": 29,
+      "avg_response_time": 12.64686058622264,
+      "min_response_time": 3.171166999891284,
+      "max_response_time": 27.653332999761915,
+      "median_response_time": 12,
+      "current_rps": 2.5,
+      "fail_ratio": 1.0,
+      "avg_content_length": 265.0
+    },
+    {
+      "name": "/getImageData",
+      "method": "POST",
+      "num_requests": 8,
+      "num_failures": 0,
+      "avg_response_time": 10.584692749830538,
+      "min_response_time": 5.370292000407062,
+      "max_response_time": 17.199459000039496,
+      "median_response_time": 10,
+      "current_rps": 0.875,
+      "fail_ratio": 0.0,
+      "avg_content_length": 20.0
+    }
+  ]
+}

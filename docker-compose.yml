@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  visualizer:
+    # Build using the custom environment Dockerfile
+    build:
+      context: .
+      dockerfile: Dockerfile.env
+    image: visualizer-env
+    # Mount the current directory to /app in the container
+    # This allows code changes to be reflected immediately without rebuilding
+    volumes:
+      - .:/app
+    # Expose the Flask server port
+    ports:
+      - "5050:5050"
+    working_dir: /app/tool/server
+    environment:
+      - FLASK_ENV=development
+    # Run the server script
+    command: python server.py
+

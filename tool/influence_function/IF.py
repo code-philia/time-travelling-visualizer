@@ -1,7 +1,7 @@
 import random
 
 from tqdm import tqdm
-from influence_function.utils import grad_loss, grad_pair_loss, calc_loss, calc_pair_loss
+from influence_function.utils import grad_loss, grad_pair_loss, calc_loss, calc_pair_loss, inverse_hessian_product
 from influence_function.ContrastiveLoss import ContrastiveLossWrapper
 from influence_function.CustomEncoderModel import CustomEncoderModel
 import torch
