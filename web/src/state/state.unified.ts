@@ -20,7 +20,6 @@ export type EpochData = {
 // Unified state interface combining all views
 export type BaseMutableGlobalStore = {
     // Basic configuration
-    contentPath: string;
     dataType: 'Image' | 'Text';
     taskType: string;
     
@@ -43,6 +42,22 @@ export type BaseMutableGlobalStore = {
     // Epoch data
     allEpochData: Record<number, EpochData>;
     progress: number;
+    
+    // Loading performance tracking
+    loadingStats: {
+        currentEpoch: number | null;
+        currentBatchEpochs: number[];  // All epochs in current batch
+        currentBatch: number;
+        totalBatches: number;
+        totalEpochs: number;
+        epochLoadTimes: Record<number, { fetchTime: number; renderTime: number }>;
+        totalFetchTime: number;
+        totalRenderTime: number;
+        isLoading: boolean;
+        currentPhase: 'idle' | 'fetching' | 'rendering';
+        lastBatchTime: number;
+        avgEpochTime: number;
+    };
     
     // Display settings
     showIndex: boolean;
@@ -79,7 +94,6 @@ export type BaseMutableGlobalStore = {
 
 export let initMutableGlobalStore: BaseMutableGlobalStore = {
     // Basic configuration
-    contentPath: '',
     dataType: 'Image',
     taskType: '',
     
@@ -102,6 +116,22 @@ export let initMutableGlobalStore: BaseMutableGlobalStore = {
     // Epoch data for different views
     allEpochData: {},
     progress: 0,
+    
+    // Loading performance tracking
+    loadingStats: {
+        currentEpoch: null,
+        currentBatchEpochs: [],
+        currentBatch: 0,
+        totalBatches: 0,
+        totalEpochs: 0,
+        epochLoadTimes: {},
+        totalFetchTime: 0,
+        totalRenderTime: 0,
+        isLoading: false,
+        currentPhase: 'idle' as const,
+        lastBatchTime: 0,
+        avgEpochTime: 0,
+    },
     
     // Display settings
     showIndex: true,

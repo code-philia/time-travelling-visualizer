@@ -263,35 +263,170 @@ def load_one_text(content_path, index):
     else:
         return ""
 
-def calculate_high_dimensional_neighbors(content_path, epoch, max_neighbors=10):
-    featrue_list = load_single_attribute(content_path, epoch, 'representation')
+# Cache for computed neighbors to avoid repeated KNN calculations
+_neighbors_cache = {}
 
-    features = np.array(featrue_list)
-    num_samples = len(features)
-    nbrs = NearestNeighbors(n_neighbors=max_neighbors + 1, algorithm='auto').fit(features)
-    distances, indices = nbrs.kneighbors(features)
+# Try to import faster KNN implementations
+try:
+    from scipy.spatial import cKDTree
+    HAS_CKDTREE = True
+except ImportError:
+    HAS_CKDTREE = False
+
+try:
+    import faiss
+    HAS_FAISS = True
+except ImportError:
+    HAS_FAISS = False
+
+def _knn_with_faiss(features, k):
+    """Fast KNN using FAISS (if available).
     
-    neighbors = [[] for _ in range(num_samples)]
-    for i in range(num_samples):
-        for j in range(1, max_neighbors + 1):
-            neighbor_idx = indices[i][j]
-            neighbors[i].append(int(neighbor_idx))
+    FAISS uses optimized BLAS operations and can be 5-10x faster than sklearn
+    for high-dimensional data.
+    """
+    n, d = features.shape
+    # Use flat L2 index for exact search (fastest for small-medium datasets)
+    index = faiss.IndexFlatL2(d)
+    index.add(features.astype(np.float32))
+    distances, indices = index.search(features.astype(np.float32), k + 1)
+    return indices
+
+def _knn_with_kdtree(features, k):
+    """Fast KNN using scipy cKDTree.
+    
+    cKDTree is a C implementation that's 2-5x faster than sklearn for low-dimensional data.
+    Best for 2D projection neighbors.
+    """
+    tree = cKDTree(features)
+    distances, indices = tree.query(features, k=k + 1, workers=-1)  # Use all CPU cores
+    return indices
+
+def _knn_with_sklearn(features, k):
+    """Fallback KNN using sklearn."""
+    nbrs = NearestNeighbors(n_neighbors=k + 1, algorithm='auto').fit(features)
+    distances, indices = nbrs.kneighbors(features)
+    return indices
+
+def _compute_knn(features, k, use_fast=True):
+    """Compute KNN using the fastest available implementation.
+    
+    Selection logic:
+    - For high-dimensional data (d > 10): prefer FAISS if available
+    - For low-dimensional data (d <= 10): prefer cKDTree
+    - Fallback to sklearn
+    """
+    import time
+    start = time.time()
+    
+    n, d = features.shape
+    
+    if use_fast:
+        if d <= 10 and HAS_CKDTREE:
+            # Low-dimensional: cKDTree is fastest
+            method = 'cKDTree'
+            indices = _knn_with_kdtree(features, k)
+        elif HAS_FAISS:
+            # High-dimensional: FAISS is fastest
+            method = 'FAISS'
+            indices = _knn_with_faiss(features, k)
+        elif HAS_CKDTREE:
+            method = 'cKDTree'
+            indices = _knn_with_kdtree(features, k)
+        else:
+            method = 'sklearn'
+            indices = _knn_with_sklearn(features, k)
+    else:
+        method = 'sklearn'
+        indices = _knn_with_sklearn(features, k)
+    
+    elapsed = time.time() - start
+    print(f"[KNN] {method}: {n} samples, {d}D, k={k} in {elapsed:.3f}s")
+    
+    return indices
+
+def calculate_high_dimensional_neighbors(content_path, epoch, max_neighbors=10):
+    """Calculate high-dimensional neighbors using fastest available KNN.
+    
+    Algorithm optimization:
+    - Uses FAISS for high-dimensional data (5-10x faster than sklearn)
+    - Uses cKDTree for low-dimensional data (2-5x faster than sklearn)
+    - Falls back to sklearn NearestNeighbors
+    """
+    cache_key = f"{content_path}:high:{epoch}:{max_neighbors}"
+    
+    # Check memory cache first
+    if cache_key in _neighbors_cache:
+        return _neighbors_cache[cache_key]
+    
+    # Check file cache
+    cache_file = os.path.join(content_path, 'epochs', f'epoch_{epoch}', f'high_neighbors_{max_neighbors}.npy')
+    if os.path.exists(cache_file):
+        neighbors = np.load(cache_file, allow_pickle=True).tolist()
+        _neighbors_cache[cache_key] = neighbors
+        return neighbors
+    
+    # Compute neighbors using optimized KNN
+    featrue_list = load_single_attribute(content_path, epoch, 'representation')
+    features = np.array(featrue_list, dtype=np.float32)
+    num_samples = len(features)
+    
+    # Use optimized KNN implementation
+    indices = _compute_knn(features, max_neighbors, use_fast=True)
+    
+    # Convert to neighbor list (skip self at index 0)
+    neighbors = [[int(indices[i][j]) for j in range(1, max_neighbors + 1)] for i in range(num_samples)]
+    
+    # Save to file cache
+    try:
+        np.save(cache_file, np.array(neighbors, dtype=object))
+    except Exception as e:
+        print(f"Warning: Could not cache neighbors to {cache_file}: {e}")
+    
+    # Save to memory cache
+    _neighbors_cache[cache_key] = neighbors
     
     return neighbors
 
 def calculate_projection_neighbors(content_path, vis_id, epoch, max_neighbors=10):
+    """Calculate projection neighbors using fastest available KNN.
+    
+    Algorithm optimization:
+    - Uses cKDTree for 2D data (2-5x faster than sklearn)
+    - Falls back to sklearn NearestNeighbors
+    """
+    cache_key = f"{content_path}:proj:{vis_id}:{epoch}:{max_neighbors}"
+    
+    # Check memory cache first
+    if cache_key in _neighbors_cache:
+        return _neighbors_cache[cache_key]
+    
+    # Check file cache
+    cache_file = os.path.join(content_path, 'visualize', vis_id, 'epochs', f'epoch_{epoch}', f'proj_neighbors_{max_neighbors}.npy')
+    if os.path.exists(cache_file):
+        neighbors = np.load(cache_file, allow_pickle=True).tolist()
+        _neighbors_cache[cache_key] = neighbors
+        return neighbors
+    
+    # Compute neighbors using optimized KNN
     projection_list, _ = load_projection(content_path, vis_id, epoch)
-    projection = np.array(projection_list)
+    projection = np.array(projection_list, dtype=np.float32)
     num_samples = len(projection)
     
-    nbrs = NearestNeighbors(n_neighbors=max_neighbors + 1, algorithm='auto').fit(projection)
-    distances, indices = nbrs.kneighbors(projection)
+    # Use optimized KNN (cKDTree is ideal for 2D data)
+    indices = _compute_knn(projection, max_neighbors, use_fast=True)
     
-    neighbors = [[] for _ in range(num_samples)]
-    for i in range(num_samples):
-        for j in range(1, max_neighbors + 1):
-            neighbor_idx = indices[i][j]
-            neighbors[i].append(int(neighbor_idx))
+    # Convert to neighbor list (skip self at index 0)
+    neighbors = [[int(indices[i][j]) for j in range(1, max_neighbors + 1)] for i in range(num_samples)]
+    
+    # Save to file cache
+    try:
+        np.save(cache_file, np.array(neighbors, dtype=object))
+    except Exception as e:
+        print(f"Warning: Could not cache neighbors to {cache_file}: {e}")
+    
+    # Save to memory cache
+    _neighbors_cache[cache_key] = neighbors
     
     return neighbors
 
