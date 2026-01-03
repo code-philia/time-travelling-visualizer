@@ -1,0 +1,2 @@
+<?xml version='1.0' encoding='utf-8'?>
+<testsuite name="locust" tests="4" failures="29" errors="0" time="9.861"><testcase name="POST /startVisualizing" time="0.010" /><testcase name="GET /getTrainingProcessInfo" time="0.008" /><testcase name="POST /updateProjection" time="0.013"><failure message="29 failures out of 29" type="LocustFailure">Fail ratio: 1.000, avg rt: 12.6 ms, rps: 2.50</failure></testcase><testcase name="POST /getImageData" time="0.011" /></testsuite>
