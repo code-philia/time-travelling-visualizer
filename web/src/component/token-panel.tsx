@@ -1,14 +1,15 @@
 import styled from 'styled-components';
 import { useDefaultStore } from '../state/state.unified';
+import { notifyHoveredIndexSwitch, notifySelectedIndicesSwitch } from '../communication/extension';
 import { useEffect, useState } from 'react';
 
-const BottomPanelContainer = styled.div`
+const BottomPanelContainer = styled.div<{ $expanded: boolean }>`
     display: flex;
-    flex-direction: column;
-    width: 100%;
-    height: 100%;
+    border-top: 1px solid var(--layout-border-color);
     background-color: white;
-    overflow: hidden;
+    height: ${props => props.$expanded ? '320px' : '0px'};
+    transition: height 0.3s ease;
+    z-index: 1000;
 `;
 
 const TokenBlockContainer = styled.div`
@@ -209,6 +210,7 @@ export function TokenPanel() {
 
     const handleHover = (index: number | null) => {
         setHoveredIndex(index ?? undefined);
+        notifyHoveredIndexSwitch(index ?? undefined);
     };
 
     const handleClick = (index: number) => {
@@ -216,10 +218,11 @@ export function TokenPanel() {
             ? selectedIndices.filter(i => i !== index)
             : [...selectedIndices, index];
         setSelectedIndices(newSelectedIndices);
+        notifySelectedIndicesSwitch(newSelectedIndices);
     };
 
     return (
-        <BottomPanelContainer>
+        <BottomPanelContainer className="bottom-panel" $expanded={true}>
             <TokenBlockWrapper>
                 {useSimpleView ? (
                     <SimplePairDisplay

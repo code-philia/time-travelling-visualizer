@@ -5,33 +5,45 @@ import { useDefaultStore } from '../state/state.unified';
 import { FunctionalBlock } from './custom/basic-components';
 
 export function SamplePanel() {
-    const { availableEpochs, hoveredIndex, inherentLabelData, epoch, allEpochData, labelDict, dataType, rawData, tokenList } =
-        useDefaultStore(['availableEpochs', 'hoveredIndex', 'inherentLabelData', 'epoch', 'allEpochData', 'labelDict', 'dataType', 'rawData', 'tokenList']);
+    const { availableEpochs, hoveredIndex, selectedIndices, setSelectedIndices, selectedListener, inherentLabelData, epoch, allEpochData, labelDict, dataType, textData, tokenList } =
+        useDefaultStore(['availableEpochs', 'hoveredIndex', 'selectedIndices', 'setSelectedIndices', 'selectedListener', 'inherentLabelData', 'epoch', 'allEpochData', 'labelDict', 'dataType', 'textData', 'tokenList']);
 
     const [data, setData] = useState<string>('');
     const [predictions, setPredictions] = useState<{ value: number, confidence: number, correct: boolean }[]>([]);
     const [historyPrediction, setHistoryPrediction] = useState<{ epoch: number, prediction: number, confidence: number, correct: boolean }[]>([]);
+    
+    // Use selectedIndices[0] if hoveredIndex is undefined
+    const displayIndex = hoveredIndex !== undefined ? hoveredIndex : (selectedIndices.length > 0 ? selectedIndices[0] : undefined);
+    
+    // Handle removing a selected sample
+    const handleRemoveSelected = (idx: number) => {
+        console.log('[SamplePanel] Removing selected index:', idx);
+        selectedListener.removeSelected(idx);
+    };
 
     const getDisplayLabel = (index: number) =>
     tokenList ? tokenList[index] : labelDict.get(inherentLabelData[index]) || 'Unknown';
 
     useEffect(() => {
-        console.log("hoveredIndex in detail panel: ", hoveredIndex);
-        if (!hoveredIndex || !inherentLabelData || !allEpochData[epoch]) {
+        console.log('[SamplePanel] displayIndex:', displayIndex, 'epoch:', epoch, 'hoveredIndex:', hoveredIndex, 'selectedIndices:', selectedIndices);
+        if (displayIndex === undefined || !inherentLabelData || !allEpochData[epoch]) {
             setData('');
             setPredictions([]);
             setHistoryPrediction([]);
             return;
         }
 
-        setData(rawData? rawData : '');
+        // Get data from textData array based on displayIndex
+        const rawDataForIndex = textData && textData[displayIndex] ? textData[displayIndex] : '';
+        setData(rawDataForIndex);
+        console.log('[SamplePanel] Updated data for index', displayIndex, ':', rawDataForIndex);
 
         // current epoch prediction
-        if (!allEpochData[epoch].predProbability[hoveredIndex]) { 
+        if (!allEpochData[epoch].predProbability[displayIndex]) { 
             setPredictions([]);
         }
         else {
-            const softmaxProps = softmax(allEpochData[epoch].predProbability[hoveredIndex]);
+            const softmaxProps = softmax(allEpochData[epoch].predProbability[displayIndex]);
             const sortedProps = [...softmaxProps];
             sortedProps.sort((a, b) => b - a);
             const topThreeConfidences = sortedProps.slice(0, 3);
@@ -39,7 +51,7 @@ export function SamplePanel() {
             const topThreeResults = topThreeIndices.map((index, i) => ({
                 value: index,
                 confidence: topThreeConfidences[i],
-                correct: Number(inherentLabelData[hoveredIndex]) === index
+                correct: Number(inherentLabelData[displayIndex]) === index
             }));
             setPredictions(topThreeResults);
         }
@@ -49,25 +61,47 @@ export function SamplePanel() {
         const epochId = availableEpochs.indexOf(epoch);
         for (let i = epochId - 1; i >= Math.max(0, epochId - 5); i--) {
             const e = availableEpochs[i];
-            const pred = allEpochData[e].prediction[hoveredIndex];
+            const pred = allEpochData[e].prediction[displayIndex];
             historyPredictionNew.push({
                 epoch: e,
                 prediction: pred,
-                confidence: allEpochData[e].predProbability[hoveredIndex][pred],
-                correct: inherentLabelData[hoveredIndex] === pred
+                confidence: allEpochData[e].predProbability[displayIndex][pred],
+                correct: inherentLabelData[displayIndex] === pred
             });
         }
         setHistoryPrediction(historyPredictionNew);
 
-    }, [hoveredIndex, rawData, epoch, allEpochData, availableEpochs]);
+    }, [displayIndex, textData, epoch, allEpochData, availableEpochs, inherentLabelData, hoveredIndex, selectedIndices]);
 
     return (
         <CompactInfoColumn>
+            {/* Selected Samples Pool */}
+            {selectedIndices.length > 0 && (
+                <FunctionalBlock label={`Selected Samples (${selectedIndices.length})`}>
+                    <SelectedSamplesContainer>
+                        {selectedIndices.map((idx) => (
+                            <SelectedSampleChip key={idx}>
+                                <SampleChipContent>
+                                    <SampleChipIndex>#{idx}</SampleChipIndex>
+                                    <SampleChipLabel>{getDisplayLabel(idx)}</SampleChipLabel>
+                                </SampleChipContent>
+                                <RemoveButton
+                                    onClick={() => handleRemoveSelected(idx)}
+                                    title="Remove from selection"
+                                >
+                                    ×
+                                </RemoveButton>
+                            </SelectedSampleChip>
+                        ))}
+                    </SelectedSamplesContainer>
+                </FunctionalBlock>
+            )}
+            
             <FunctionalBlock label="Basic Information">
                 <CompactInfoContainer>
                     {dataType === 'Text' ? (
                         <TextContainer>
-                            {hoveredIndex === undefined || !data ? (
+                            {displayIndex === undefined || !data ? (
                                 <EmptyText>No text</EmptyText>
                             ) : (
                                 <CompactText>{String(data)}</CompactText>
@@ -75,7 +109,7 @@ export function SamplePanel() {
                         </TextContainer>
                     ) : (
                         <ImageContainer>
-                            {hoveredIndex === undefined ? (
+                            {displayIndex === undefined ? (
                                 <EmptyImage>No image</EmptyImage>
                             ) : data ? (
                                 <CompactImage src={data} alt="Sample" />
@@ -85,9 +119,9 @@ export function SamplePanel() {
                         </ImageContainer>
                     )}
 
-                    {hoveredIndex !== undefined && (
+                    {displayIndex !== undefined && (
                         <SampleInfo>
-                            #{hoveredIndex}: {getDisplayLabel(hoveredIndex)}
+                            #{displayIndex}: {getDisplayLabel(displayIndex)}
                         </SampleInfo>
                     )}
                 </CompactInfoContainer>
@@ -129,7 +163,7 @@ export function SamplePanel() {
                 <CompactSection>
                     <CompactSectionLabel>HIGH-DIM</CompactSectionLabel>
                     <CompactNeighborList>
-                        {hoveredIndex !== undefined && allEpochData[epoch]?.originalNeighbors[hoveredIndex]?.map((neighbor, index) => (
+                        {displayIndex !== undefined && allEpochData[epoch]?.originalNeighbors[displayIndex]?.map((neighbor, index) => (
                             <HighDimNeighborItem key={index}>
                                 {neighbor}.{getDisplayLabel(neighbor)}
                             </HighDimNeighborItem>
@@ -140,8 +174,8 @@ export function SamplePanel() {
                 <CompactSection>
                     <CompactSectionLabel>PROJECTION</CompactSectionLabel>
                     <CompactNeighborList>
-                        {hoveredIndex !== undefined && allEpochData[epoch]?.projectionNeighbors[hoveredIndex]?.map((neighbor, index) => {
-                            const isCorrect = allEpochData[epoch].originalNeighbors[hoveredIndex]?.includes(neighbor);
+                        {displayIndex !== undefined && allEpochData[epoch]?.projectionNeighbors[displayIndex]?.map((neighbor, index) => {
+                            const isCorrect = allEpochData[epoch].originalNeighbors[displayIndex]?.includes(neighbor);
                             return (
                                 <ProjectionNeighborItem key={index} $correct={isCorrect}>
                                     {neighbor}.{getDisplayLabel(neighbor)}
@@ -352,4 +386,78 @@ const ProjectionNeighborItem = styled.span<{ $correct: boolean }>`
     background-color: ${props => props.$correct ? '#d9f7be' : '#ffd6d6'};
     color: #262626;
     display: inline-block;
+`;
+
+// Selected samples pool styles
+const SelectedSamplesContainer = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 200px;
+    overflow-y: auto;
+`;
+
+const SelectedSampleChip = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 8px;
+    background-color: #e6f7ff;
+    border: 1px solid #91d5ff;
+    border-radius: 4px;
+    font-size: 12px;
+    transition: all 0.2s;
+    
+    &:hover {
+        background-color: #bae7ff;
+        border-color: #40a9ff;
+    }
+`;
+
+const SampleChipContent = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    overflow: hidden;
+`;
+
+const SampleChipIndex = styled.span`
+    font-family: 'Consolas', monospace;
+    font-weight: 600;
+    color: #096dd9;
+    flex-shrink: 0;
+`;
+
+const SampleChipLabel = styled.span`
+    color: #262626;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+`;
+
+const RemoveButton = styled.button`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border: none;
+    background-color: #ff4d4f;
+    color: white;
+    border-radius: 50%;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    
+    &:hover {
+        background-color: #ff7875;
+        transform: scale(1.1);
+    }
+    
+    &:active {
+        transform: scale(0.95);
+    }
 `;
