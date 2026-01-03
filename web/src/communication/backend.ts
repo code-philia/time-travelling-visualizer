@@ -138,50 +138,6 @@ export function getProjectionNeighbors(
     return basicPostWithJsonResponse('/getProjectionNeighbors', data, options);
 }
 
-/**
- * Optimized API: Get all data for a single epoch in one request
- * Reduces network round-trips from 5 requests to 1
- */
-export function getEpochData(
-    contentPath: string,
-    visId: string,
-    epoch: number,
-    taskType: string = 'Classification',
-    includeBackground: boolean = true,
-    options?: NetworkOptions
-) {
-    const data = {
-        "content_path": contentPath,
-        "vis_id": visId,
-        "epoch": epoch,
-        "task_type": taskType,
-        "include_background": includeBackground
-    };
-    return basicPostWithJsonResponse('/getEpochData', data, options);
-}
-
-/**
- * Optimized API: Get data for multiple epochs in one request
- * Maximum efficiency for loading many epochs at once
- */
-export function getBatchEpochData(
-    contentPath: string,
-    visId: string,
-    epochs: number[],
-    taskType: string = 'Classification',
-    includeBackground: boolean = false,
-    options?: NetworkOptions
-) {
-    const data = {
-        "content_path": contentPath,
-        "vis_id": visId,
-        "epochs": epochs,
-        "task_type": taskType,
-        "include_background": includeBackground
-    };
-    return basicPostWithJsonResponse('/getBatchEpochData', data, options);
-}
-
 export function getBackground(
     contentPath: string, 
     visID: string, 

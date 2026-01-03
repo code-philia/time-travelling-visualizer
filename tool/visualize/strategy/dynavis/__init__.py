@@ -1,4 +1,0 @@
-"""
-Dynavis strategy package initialization.
-"""
-

@@ -313,8 +313,3 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
-
-.cursor/** 
-.DS_Store
-# Large Files (HF)
-tool/server/test_data/

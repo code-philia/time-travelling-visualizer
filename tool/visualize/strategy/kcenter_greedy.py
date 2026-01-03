@@ -164,7 +164,7 @@ def fps(data, num):
   from dgl.geometry import farthest_point_sampler
   data = torch.from_numpy(data[np.newaxis,:,:]).to(device=torch.device("cuda"))
   point_idxs = farthest_point_sampler(data, num).squeeze(axis=0)
-  point_idxs = point_idxs.cpu().numpy()
+  point_idxs = point_idx.cpu().numpy()
   return point_idxs
 
 if __name__ == "__main__":
