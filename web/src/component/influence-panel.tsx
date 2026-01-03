@@ -21,23 +21,23 @@ const PanelWrapper = styled.div`
   width: 100%;
   height: 100%;
   background-color: #f9fafc;
-  gap: 12px;
-  padding: 8px 12px;
+  gap: 16px;
+  padding: 16px 20px;
   color: #2d2d32;
   font-size: 13px;
   line-height: 1.55;
-  overflow: hidden;
 `;
 
 const Card = styled.div`
   background: #ffffff;
   border: 1px solid #d7dbe2;
   border-radius: 8px;
-  padding: 12px;
+  padding: 18px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  overflow: hidden;
+  gap: 14px;
+  overflow-y: auto;
+  box-shadow: 0 6px 18px rgba(20, 32, 52, 0.04);
 `;
 
 const Header = styled.h2`
@@ -106,7 +106,7 @@ const TextExpanded = styled.pre`
   white-space: pre-wrap;
   overflow-x: hidden;
   overflow-y: auto;
-  max-height: 100%;
+  max-height: 320px;
 `;
 
 // -- 新增：用于约束图片大小的容器 --
@@ -330,7 +330,7 @@ const EventPanel = ({ event, dataType }: { event: TrainingEvent, dataType: 'Imag
   const isPairedEvent = event.type === 'InconsistentMovement';
 
   return (
-    <Card style={{ flex: '0 0 280px', overflowY: 'auto' }}>
+    <Card style={{ flex: '0 0 320px' }}>
       <Header>
         Training Event
         <Badge>{event.type}</Badge>
@@ -435,9 +435,9 @@ const InfluencePanel = ({ samples, dataType }: { samples: InfluenceSample[], dat
 
   return (
     <>
-      <Card style={{ flex: 1, overflowY: 'auto' }}>
+      <Card style={{ flex: 1 }}>
         <Header>Influence Analysis</Header>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {samples.length > 0 ? (
             samples.map((sample, idx) => 
               isPairWise(sample) 
@@ -445,7 +445,7 @@ const InfluencePanel = ({ samples, dataType }: { samples: InfluenceSample[], dat
                 : <SampleWiseDisplay key={idx} sample={sample as SampleWiseInfluence} dataType={dataType} onDoubleClick={() => setSelectedSample(sample)} />
             )
           ) : (
-            <div style={{ textAlign: 'center', color: '#888', padding: '12px' }}>
+            <div style={{ textAlign: 'center', color: '#888', padding: '20px' }}>
               No influential samples to display for this event.
             </div>
           )}

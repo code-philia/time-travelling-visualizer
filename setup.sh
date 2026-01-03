@@ -54,7 +54,7 @@ install_dependencies
 # Install additional Python dependencies from requirements.txt
 if [ -f "requirements.txt" ]; then
   echo "Installing additional Python dependencies from requirements.txt..."
-  conda run -n "$ENV_NAME" pip install -r requirements.txt
+  conda run -n "$ENV_NAME" pip install -r requirements.txt 
 else
   error_exit "requirements.txt not found in the current directory."
 fi
