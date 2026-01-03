@@ -3,13 +3,44 @@ import { memo, useEffect, useRef } from 'react';
 import VChart from '@visactor/vchart';
 import { Edge } from './types';
 import { useDefaultStore } from "../state/state.unified";
-import { createEdges, softmax, transferArray2Color } from './utils';
+import { createEdgesWithMaps, softmaxWithMax, transferArray2Color } from './utils';
 import { notifyHoveredIndexSwitch, notifySelectedIndicesSwitch } from '../communication/extension';
 const BACKGROUND_PADDING = 0.5;
+
+// Performance optimization: Pre-compute sample data structure
+interface SampleData {
+    pointId: number;
+    x: number;
+    y: number;
+    label: number;
+    pred: number;
+    label_desc: string;
+    pred_desc: string;
+    confidence: number;
+    textSample: string;
+}
+
+// Cached epoch data structure
+interface CachedEpochData {
+    samples: SampleData[];
+    edges: Edge[];
+    neighborCache: Map<number, number[]>;
+    edgeMap: Map<string, Edge>;
+    bounds: { x_min: number; x_max: number; y_min: number; y_max: number };
+    wrong: number[];
+    flip: number[];
+}
 
 export const ChartComponent = memo(() => {
     const chartRef = useRef<HTMLDivElement>(null);
     const vchartRef = useRef<VChart | null>(null);
+    
+    // Flag to track if chart is initialized
+    const isChartInitialized = useRef<boolean>(false);
+    // Cache for pre-computed epoch data
+    const epochCacheRef = useRef<Map<number, CachedEpochData>>(new Map());
+    // Track last rendered epoch for logging
+    const lastRenderedEpochRef = useRef<number | null>(null);
 
     // Here are data from useStore
     const { epoch, availableEpochs, allEpochData} = useDefaultStore(["epoch", "availableEpochs", "allEpochData"]);
@@ -22,10 +53,13 @@ export const ChartComponent = memo(() => {
     const { isFocusMode, focusIndices } = useDefaultStore(["isFocusMode", "focusIndices"]);
     const { trainingEvents } = useDefaultStore(["trainingEvents"]);
 
-    const samplesRef = useRef<{ pointId: number, x: number; y: number; label: number; pred: number; label_desc: string; pred_desc: string; confidence: number; textSample: string;}[]>([]);
+    const samplesRef = useRef<SampleData[]>([]);
     const edgesRef = useRef<Edge[]>([]);
     const wrongRef = useRef<number[]>([]);
     const flipRef = useRef<number[]>([]);
+    
+    // Render time tracking
+    const renderTimeRef = useRef<number>(0);
     
     // Cache for neighbor lookup to improve performance
     const neighborCacheRef = useRef<Map<number, number[]>>(new Map());
@@ -35,6 +69,121 @@ export const ChartComponent = memo(() => {
     
     // Debounce hover events to improve performance
     const hoverTimeoutRef = useRef<any>(null);
+    
+    // Pre-compute epoch data and cache it - optimized version
+    const getOrComputeEpochCache = (epochNum: number): CachedEpochData | null => {
+        // Check cache first
+        if (epochCacheRef.current.has(epochNum)) {
+            return epochCacheRef.current.get(epochNum)!;
+        }
+        
+        const epochData = allEpochData[epochNum];
+        if (!epochData || !epochData.projection) {
+            return null;
+        }
+        
+        const cacheStart = performance.now();
+        const projectionLength = epochData.projection.length;
+        
+        // Pre-allocate arrays
+        const samples: SampleData[] = new Array(projectionLength);
+        const wrong: number[] = [];
+        const flip: number[] = [];
+        
+        let x_min = Infinity, x_max = -Infinity, y_min = Infinity, y_max = -Infinity;
+        
+        const hasPredProbability = epochData.predProbability && epochData.predProbability.length > 0;
+        const epochId = availableEpochs.indexOf(epochNum);
+        const lastEpochData = epochId > 0 ? allEpochData[availableEpochs[epochId - 1]] : null;
+        const lastPredictions = lastEpochData?.prediction;
+        
+        // Process all points in a single optimized loop
+        const projection = epochData.projection;
+        const predProb = epochData.predProbability;
+        const textDataArr = textData || [];
+        
+        for (let i = 0; i < projectionLength; i++) {
+            const p = projection[i];
+            // Use bitwise operations for faster rounding
+            const x = ((p[0] * 1000 + 0.5) | 0) / 1000;
+            const y = ((p[1] * 1000 + 0.5) | 0) / 1000;
+            
+            // Inline min/max for speed
+            if (x < x_min) x_min = x;
+            else if (x > x_max) x_max = x;
+            if (y < y_min) y_min = y;
+            else if (y > y_max) y_max = y;
+            
+            const label = inherentLabelData[i];
+            let confidence = 1.0;
+            let pred = label;
+            
+            if (hasPredProbability) {
+                const probArr = predProb[i];
+                // Inline softmaxWithMax for critical path
+                const len = probArr.length;
+                let maxVal = probArr[0];
+                for (let k = 1; k < len; k++) {
+                    if (probArr[k] > maxVal) maxVal = probArr[k];
+                }
+                let sum = 0;
+                let expMax = 0;
+                let maxIndex = 0;
+                for (let k = 0; k < len; k++) {
+                    const exp = Math.exp(probArr[k] - maxVal);
+                    sum += exp;
+                    if (exp > expMax) {
+                        expMax = exp;
+                        maxIndex = k;
+                    }
+                }
+                confidence = expMax / sum;
+                pred = maxIndex;
+                
+                if (pred !== label) {
+                    wrong.push(i);
+                }
+                
+                if (lastPredictions && lastPredictions[i] !== pred) {
+                    flip.push(i);
+                }
+            }
+            
+            samples[i] = {
+                pointId: i,
+                x,
+                y,
+                label,
+                label_desc: labelDict.get(label) ?? '',
+                pred,
+                pred_desc: labelDict.get(pred) ?? labelDict.get(label) ?? '',
+                confidence,
+                textSample: textDataArr[i] ?? '',
+            };
+        }
+        
+        // Build edges with optimized function that returns pre-built maps
+        const { edges, neighborMap, edgeMap } = createEdgesWithMaps(
+            epochData.originalNeighbors || [], 
+            epochData.projectionNeighbors || []
+        );
+        
+        const cachedData: CachedEpochData = {
+            samples,
+            edges,
+            neighborCache: neighborMap,
+            edgeMap,
+            bounds: { x_min, x_max, y_min, y_max },
+            wrong,
+            flip
+        };
+        
+        epochCacheRef.current.set(epochNum, cachedData);
+        const cacheTime = performance.now() - cacheStart;
+        console.log(`[Cache Build] Epoch ${epochNum}: ${cacheTime.toFixed(0)}ms for ${projectionLength} points, ${edges.length} edges`);
+        
+        return cachedData;
+    };
 
     // listen to selectedIndices change in canvas
     useEffect(() => {
@@ -54,9 +203,59 @@ export const ChartComponent = memo(() => {
     useEffect(() => {
         selectedListener.setSelected([...selectedIndices]);
     }, [selectedIndices]);
+    
+    // Clear cache when data source changes (new visualization loaded)
+    useEffect(() => {
+        // When availableEpochs changes to a different set, clear all caches
+        console.log('[Cache] Data source changed, clearing epoch cache');
+        epochCacheRef.current.clear();
+        lastRenderedEpochRef.current = null;
+        isChartInitialized.current = false;
+        
+        // Also reset the chart if it exists
+        if (vchartRef.current) {
+            vchartRef.current.release();
+            vchartRef.current = null;
+        }
+    }, [availableEpochs]);
+    
+    // Pre-compute cache for adjacent epochs when data loads
+    useEffect(() => {
+        if (availableEpochs.length === 0 || Object.keys(allEpochData).length === 0) {
+            return;
+        }
+        
+        // Clear old cache when data changes significantly
+        if (epochCacheRef.current.size > availableEpochs.length * 2) {
+            epochCacheRef.current.clear();
+        }
+        
+        // Pre-compute cache for current and adjacent epochs
+        const currentIdx = availableEpochs.indexOf(epoch);
+        const epochsToCache = [
+            epoch,
+            ...(currentIdx > 0 ? [availableEpochs[currentIdx - 1]] : []),
+            ...(currentIdx < availableEpochs.length - 1 ? [availableEpochs[currentIdx + 1]] : [])
+        ];
+        
+        // Use requestIdleCallback or setTimeout to avoid blocking
+        const precomputeCache = () => {
+            for (const ep of epochsToCache) {
+                if (!epochCacheRef.current.has(ep) && allEpochData[ep]) {
+                    getOrComputeEpochCache(ep);
+                }
+            }
+        };
+        
+        if ('requestIdleCallback' in window) {
+            (window as any).requestIdleCallback(precomputeCache, { timeout: 1000 });
+        } else {
+            setTimeout(precomputeCache, 100);
+        }
+    }, [epoch, availableEpochs, allEpochData]);
 
     /*
-        Main update logic
+        Main update logic - optimized with caching and incremental updates
     */
     useEffect(() => {
         if (!chartRef.current) {
@@ -68,80 +267,30 @@ export const ChartComponent = memo(() => {
             return;
         }
 
-        console.log('Rendering epoch: ', epoch);
-        console.log('Epoch data: ', epochData);
-        console.log('Current selected indices before render:', selectedIndices);
-
-        samplesRef.current = [];
-        wrongRef.current = [];
-        flipRef.current = [];
-
-        let x_min = Infinity, x_max=-Infinity, y_min=Infinity, y_max=-Infinity;
-
-        epochData.projection.forEach((p, i) => {
-            const x = parseFloat(p[0].toFixed(3));
-            const y = parseFloat(p[1].toFixed(3));
-
-            if (x < x_min) x_min = x;
-            if (x > x_max) x_max = x;
-            if (y < y_min) y_min = y;
-            if (y > y_max) y_max = y;
-
-            let confidence = 1.0;
-            let pred = inherentLabelData[i];
-            if (epochData.predProbability && epochData.predProbability.length > 0) {
-                const softmaxValues = softmax(epochData.predProbability[i]);
-                confidence = Math.max(...softmaxValues);
-                pred = softmaxValues.indexOf(confidence);
-            }
-
-            samplesRef.current.push({
-                pointId: i,
-                x: x,
-                y: y,
-                label: inherentLabelData[i],
-                label_desc: labelDict.get(inherentLabelData[i]) ?? '',
-                pred: pred,
-                pred_desc: labelDict.get(pred) ?? labelDict.get(inherentLabelData[i]) ?? '',
-                confidence,
-                textSample: textData ? textData[i] ?? '' : '',
-            });
-
-            if (pred !== inherentLabelData[i]) {
-                wrongRef.current.push(i);
-            }
-            const epochId = availableEpochs.indexOf(epoch);
-            if (epochId > 0 && epochData.predProbability && epochData.predProbability.length > 0) {
-                const lastEpochData = allEpochData[availableEpochs[epochId - 1]];
-                if (lastEpochData.prediction[i] !== pred) {
-                    flipRef.current.push(i);
-                }
-            }
-        });
-
-        edgesRef.current = createEdges(epochData.originalNeighbors, epochData.projectionNeighbors, [], []);
+        const renderStartTime = performance.now();
+        console.log('Rendering epoch:', epoch);
         
-        // Build neighbor cache and edge map for performance optimization
-        neighborCacheRef.current.clear();
-        edgeMapRef.current.clear();
+        // Get or compute cached data for this epoch
+        const cachedData = getOrComputeEpochCache(epoch);
+        if (!cachedData) {
+            console.log('Failed to get cached data for epoch:', epoch);
+            return;
+        }
         
-        edgesRef.current.forEach((edge) => {
-            // Build neighbor cache
-            if (!neighborCacheRef.current.has(edge.from)) {
-                neighborCacheRef.current.set(edge.from, []);
-            }
-            neighborCacheRef.current.get(edge.from)!.push(edge.to);
-            
-            // Build edge map for O(1) lookup
-            const key = `${edge.from}-${edge.to}`;
-            edgeMapRef.current.set(key, edge);
-        });
-        
-        // Update selectedIndices Set for O(1) lookup
+        // Update refs from cache
+        samplesRef.current = cachedData.samples;
+        wrongRef.current = cachedData.wrong;
+        flipRef.current = cachedData.flip;
+        edgesRef.current = cachedData.edges;
+        neighborCacheRef.current = cachedData.neighborCache;
+        edgeMapRef.current = cachedData.edgeMap;
         selectedIndicesSetRef.current = new Set(selectedIndices);
-
-        console.log("All samples: ", samplesRef.current);
-        console.log("Neighbor cache built with", neighborCacheRef.current.size, "entries");
+        
+        const { x_min, x_max, y_min, y_max } = cachedData.bounds;
+        const projectionLength = cachedData.samples.length;
+        
+        const cacheTime = performance.now() - renderStartTime;
+        console.log(`Cache lookup/build: ${cacheTime.toFixed(0)}ms for ${projectionLength} points`);
 
         // create spec
         const spec: any = {
@@ -447,26 +596,28 @@ export const ChartComponent = memo(() => {
         };
 
         // create or update vchart
+        // Keep using updateSpec for now - updateDataSync doesn't update axes ranges
+        // The caching optimization still speeds up data processing significantly
+        
         if (!vchartRef.current) {
+            // First time initialization
             const vchart = new VChart(spec, { dom: chartRef.current });
             vchartRef.current = vchart;
+            isChartInitialized.current = true;
 
             // Debounced hover handler for better performance
             vchartRef.current.on('pointerover', { id: 'point-series' }, (e) => {
                 const pointId = e.datum?.pointId;
-                // Clear any pending hover timeout
                 if (hoverTimeoutRef.current) {
                     clearTimeout(hoverTimeoutRef.current);
                 }
-                // Set new hover state with small delay to debounce rapid movements
                 hoverTimeoutRef.current = setTimeout(() => {
                     setHoveredIndex(pointId);
                     notifyHoveredIndexSwitch(pointId);
-                }, 50); // 50ms debounce
+                }, 30); // Reduced debounce for responsiveness
             });
             
             vchartRef.current.on('pointerout', { id: 'point-series' }, () => {
-                // Clear pending hover timeout
                 if (hoverTimeoutRef.current) {
                     clearTimeout(hoverTimeoutRef.current);
                     hoverTimeoutRef.current = null;
@@ -479,13 +630,28 @@ export const ChartComponent = memo(() => {
                 const pointId = e.datum?.pointId;
                 selectedListener.switchSelected(pointId);
             });
+            
+            // Initial render
+            const chartRenderStart = performance.now();
+            vchartRef.current.renderSync();
+            const chartRenderTime = performance.now() - chartRenderStart;
+            console.log(`[Initial Render] ${chartRenderTime.toFixed(0)}ms for ${projectionLength} points`);
         }
         else {
+            // Update spec and render
+            // Use requestAnimationFrame to avoid blocking UI
+            const specUpdateStart = performance.now();
             vchartRef.current.updateSpec(spec);
+            vchartRef.current.renderSync();
+            const specUpdateTime = performance.now() - specUpdateStart;
+            console.log(`[Spec Update] ${specUpdateTime.toFixed(0)}ms for epoch ${epoch}`);
         }
-        vchartRef.current.renderSync();
         
-        console.log('[Main Render] Epoch:', epoch, 'Selected:', selectedIndices, 'Hovered:', hoveredIndex);
+        lastRenderedEpochRef.current = epoch;
+        const totalRenderTime = performance.now() - renderStartTime;
+        renderTimeRef.current = totalRenderTime;
+        
+        console.log(`[Performance] Total: ${totalRenderTime.toFixed(0)}ms for ${projectionLength} points`);
         
         // CRITICAL: Immediately restore selected state after renderSync()
         // renderSync() clears all chart states including 'locked', so we must restore synchronously

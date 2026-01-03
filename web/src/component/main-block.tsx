@@ -3,6 +3,117 @@ import { useDefaultStore } from '../state/state.unified';
 import ChartComponent from './vchart';
 import { notifyEpochSwitch } from '../communication/extension';
 
+// Loading stats display component
+function LoadingStatsPanel({ loadingStats, progress, totalEpochs }: { 
+    loadingStats: any; 
+    progress: number; 
+    totalEpochs: number;
+}) {
+    if (!loadingStats.isLoading && progress >= totalEpochs) {
+        return null;
+    }
+    
+    const formatTime = (ms: number) => {
+        if (ms < 1000) return `${ms.toFixed(0)}ms`;
+        return `${(ms / 1000).toFixed(2)}s`;
+    };
+    
+    const progressPercent = totalEpochs > 0 ? (progress / totalEpochs * 100).toFixed(1) : 0;
+    
+    return (
+        <div style={{
+            position: 'absolute',
+            top: '10px',
+            left: '10px',
+            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            border: '1px solid #ddd',
+            borderRadius: '8px',
+            padding: '12px 16px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+            zIndex: 1000,
+            minWidth: '260px',
+            fontSize: '13px',
+        }}>
+            <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#333' }}>
+                Loading Data...
+            </div>
+            
+            {/* Progress bar */}
+            <div style={{
+                width: '100%',
+                height: '8px',
+                backgroundColor: '#e0e0e0',
+                borderRadius: '4px',
+                overflow: 'hidden',
+                marginBottom: '8px'
+            }}>
+                <div style={{
+                    width: `${progressPercent}%`,
+                    height: '100%',
+                    backgroundColor: '#3278F0',
+                    transition: 'width 0.3s ease',
+                    borderRadius: '4px'
+                }} />
+            </div>
+            
+            <div style={{ color: '#666', marginBottom: '4px' }}>
+                <span style={{ fontWeight: 500 }}>Progress: </span>
+                {progress}/{totalEpochs} epochs ({progressPercent}%)
+            </div>
+            
+            {/* Show epochs currently being loaded in parallel */}
+            {loadingStats.currentBatchEpochs && loadingStats.currentBatchEpochs.length > 0 && (
+                <div style={{ color: '#666', marginBottom: '4px' }}>
+                    <span style={{ fontWeight: 500 }}>Loading: </span>
+                    {loadingStats.currentBatchEpochs.map((ep: number, idx: number) => (
+                        <span key={ep} style={{ 
+                            display: 'inline-block',
+                            backgroundColor: '#e6f4ff',
+                            color: '#1890ff',
+                            padding: '1px 6px',
+                            borderRadius: '4px',
+                            marginRight: '4px',
+                            fontSize: '12px',
+                            fontFamily: 'monospace'
+                        }}>
+                            epoch {ep}
+                        </span>
+                    ))}
+                </div>
+            )}
+            
+            {loadingStats.avgEpochTime > 0 && (
+                <div style={{ color: '#666', marginBottom: '4px' }}>
+                    <span style={{ fontWeight: 500 }}>Avg: </span>
+                    {formatTime(loadingStats.avgEpochTime)}/epoch
+                    {loadingStats.totalEpochs > progress && (
+                        <span style={{ color: '#999', marginLeft: '8px' }}>
+                            ~{formatTime((loadingStats.totalEpochs - progress) * loadingStats.avgEpochTime)} remaining
+                        </span>
+                    )}
+                </div>
+            )}
+            
+            {loadingStats.totalFetchTime > 0 && (
+                <div style={{ color: '#666', marginBottom: '4px' }}>
+                    <span style={{ fontWeight: 500 }}>Total: </span>
+                    {formatTime(loadingStats.totalFetchTime)}
+                </div>
+            )}
+            
+            {loadingStats.currentPhase !== 'idle' && (
+                <div style={{ 
+                    color: '#1890ff',
+                    marginTop: '4px',
+                    fontStyle: 'italic'
+                }}>
+                    Fetching {loadingStats.currentBatchEpochs?.length || 0} epochs in parallel...
+                </div>
+            )}
+        </div>
+    );
+}
+
 // https://stackoverflow.com/questions/54095994/react-useeffect-comparing-objects
 // FIXME use a library for all object/array nested comparison
 function deepCompareEquals(a: Array<number>, b: Array<number>){
@@ -238,10 +349,16 @@ export function MainBlock() {
     const { epoch, setEpoch } = useDefaultStore(['epoch', 'setEpoch']);
     const { availableEpochs } = useDefaultStore(['availableEpochs']);
     const { progress } = useDefaultStore(['progress']);
+    const { loadingStats } = useDefaultStore(['loadingStats']);
 
     // only consider single container for now
     return (
-        <div className="canvas-column">
+        <div className="canvas-column" style={{ position: 'relative' }}>
+            <LoadingStatsPanel 
+                loadingStats={loadingStats} 
+                progress={progress} 
+                totalEpochs={availableEpochs.length} 
+            />
             <div id="canvas-wrapper" style={{ height: "100%", width: "100%" }}>
                 <ChartComponent/>
             </div>
