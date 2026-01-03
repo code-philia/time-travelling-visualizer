@@ -1,161 +1,83 @@
 import { Edge } from "./types";
 
-// Fast argmax - O(n) single pass, no array allocation
-export function argmax(arr: number[]): number {
-    const len = arr.length;
-    if (len === 0) return 0;
-    let maxIdx = 0;
-    let maxVal = arr[0];
-    for (let i = 1; i < len; i++) {
-        if (arr[i] > maxVal) {
-            maxVal = arr[i];
-            maxIdx = i;
-        }
-    }
-    return maxIdx;
-}
-
-// Optimized softmax: avoid creating intermediate arrays
 export function softmax(arr: number[]): number[] {
-    const len = arr.length;
-    if (len === 0) return [];
-    
-    // Find max for numerical stability
-    let maxVal = arr[0];
-    for (let i = 1; i < len; i++) {
-        if (arr[i] > maxVal) maxVal = arr[i];
-    }
-    
-    // Compute exp and sum in one pass
-    const result = new Array(len);
-    let sum = 0;
-    for (let i = 0; i < len; i++) {
-        result[i] = Math.exp(arr[i] - maxVal); // Subtract max for stability
-        sum += result[i];
-    }
-    
-    // Normalize
-    const invSum = 1 / sum;
-    for (let i = 0; i < len; i++) {
-        result[i] *= invSum;
-    }
-    
-    return result;
+    const expValues = arr.map(val => Math.exp(val));
+    const sumExpValues = expValues.reduce((acc, val) => acc + val, 0);
+    return expValues.map(val => val / sumExpValues);
 }
 
-// Fast softmax that returns max value and its index directly
-export function softmaxWithMax(arr: number[]): { maxValue: number; maxIndex: number } {
-    const len = arr.length;
-    if (len === 0) return { maxValue: 1, maxIndex: 0 };
-    
-    // Find max for numerical stability
-    let maxVal = arr[0];
-    for (let i = 1; i < len; i++) {
-        if (arr[i] > maxVal) maxVal = arr[i];
-    }
-    
-    // Compute exp and sum, track max
-    let sum = 0;
-    let expMax = 0;
-    let maxIndex = 0;
-    
-    for (let i = 0; i < len; i++) {
-        const exp = Math.exp(arr[i] - maxVal);
-        sum += exp;
-        if (exp > expMax) {
-            expMax = exp;
-            maxIndex = i;
-        }
-    }
-    
-    return { maxValue: expMax / sum, maxIndex };
-}
-
-// Optimized createEdges: Use typed arrays and minimal allocations
-// Returns edges array and pre-built neighbor map for O(1) lookups
-export function createEdgesWithMaps(
-    currentSameType: number[][],
-    currentCrossType: number[][]
-): { 
-    edges: Edge[]; 
-    neighborMap: Map<number, number[]>; 
-    edgeMap: Map<string, Edge>;
-} {
-    // Estimate capacity to avoid resizing
-    let totalEdges = 0;
-    for (let i = 0; i < currentSameType.length; i++) {
-        if (currentSameType[i]) totalEdges += currentSameType[i].length;
-    }
-    for (let i = 0; i < currentCrossType.length; i++) {
-        if (currentCrossType[i]) totalEdges += currentCrossType[i].length;
-    }
-    
-    const edges: Edge[] = new Array(totalEdges);
-    const neighborMap = new Map<number, number[]>();
-    const edgeMap = new Map<string, Edge>();
-    let edgeIdx = 0;
-    
-    // Process highDim edges (original space neighbors)
-    const len1 = currentSameType.length;
-    for (let node = 0; node < len1; node++) {
-        const neighbors = currentSameType[node];
-        if (!neighbors || neighbors.length === 0) continue;
-        
-        // Build neighbor list for this node
-        let nodeNeighbors = neighborMap.get(node);
-        if (!nodeNeighbors) {
-            nodeNeighbors = [];
-            neighborMap.set(node, nodeNeighbors);
-        }
-        
-        for (let j = 0; j < neighbors.length; j++) {
-            const neighbor = neighbors[j];
-            if (node === neighbor) continue;
-            
-            const edge: Edge = { from: node, to: neighbor, type: 'highDim', status: 'connect' };
-            edges[edgeIdx++] = edge;
-            edgeMap.set(`${node}-${neighbor}`, edge);
-            nodeNeighbors.push(neighbor);
-        }
-    }
-    
-    // Process lowDim edges (projection space neighbors)
-    const len2 = currentCrossType.length;
-    for (let node = 0; node < len2; node++) {
-        const neighbors = currentCrossType[node];
-        if (!neighbors || neighbors.length === 0) continue;
-        
-        let nodeNeighbors = neighborMap.get(node);
-        if (!nodeNeighbors) {
-            nodeNeighbors = [];
-            neighborMap.set(node, nodeNeighbors);
-        }
-        
-        for (let j = 0; j < neighbors.length; j++) {
-            const neighbor = neighbors[j];
-            if (node === neighbor) continue;
-            
-            const edge: Edge = { from: node, to: neighbor, type: 'lowDim', status: 'connect' };
-            edges[edgeIdx++] = edge;
-            edgeMap.set(`${node}-${neighbor}`, edge);
-            nodeNeighbors.push(neighbor);
-        }
-    }
-    
-    // Trim to actual size
-    edges.length = edgeIdx;
-    
-    return { edges, neighborMap, edgeMap };
-}
-
-// Legacy function for backward compatibility
 export function createEdges(
     currentSameType: number[][],
     currentCrossType: number[][],
     previousSameType: number[][],
     previousCrossType: number[][]
 ): Edge[] {
-    return createEdgesWithMaps(currentSameType, currentCrossType).edges;
+    const edges: Edge[] = [];
+    const allNodes = new Set<number>();
+
+    if(currentSameType.length === 0 && currentCrossType.length === 0 &&
+       previousSameType.length === 0 && previousCrossType.length === 0) {
+        return edges;
+    }
+
+    // Collect all nodes
+    [currentSameType, currentCrossType, previousSameType, previousCrossType].forEach(matrix => {
+        matrix.forEach((neighbors, node) => {
+            allNodes.add(node);
+            neighbors.forEach(neighbor => allNodes.add(neighbor));
+        });
+    });
+
+    allNodes.forEach(node => {
+        const currentNeighborsSameType = new Set(currentSameType[node] || []);
+        const currentNeighborsCrossType = new Set(currentCrossType[node] || []);
+        const previousNeighborsSameType = new Set(previousSameType[node] || []);
+        const previousNeighborsCrossType = new Set(previousCrossType[node] || []);
+
+        // Check sameType neighbors
+        currentNeighborsSameType.forEach(neighbor => {
+            if (previousNeighborsSameType.has(neighbor)) {
+                if (node != neighbor) {
+                    edges.push({ from: node, to: neighbor, type: 'higDim', status: 'maintain' });
+                }
+            } else {
+                if (node != neighbor) {
+                    edges.push({ from: node, to: neighbor, type: 'highDim', status: 'connect' });
+                }
+            }
+        });
+
+        previousNeighborsSameType.forEach(neighbor => {
+            if (!currentNeighborsSameType.has(neighbor)) {
+                if (node != neighbor) {
+                    edges.push({ from: node, to: neighbor, type: 'highDim', status: 'disconnect' });
+                }
+            }
+        });
+
+        // Check crossType neighbors
+        currentNeighborsCrossType.forEach(neighbor => {
+            if (previousNeighborsCrossType.has(neighbor)) {
+                if (node != neighbor) {
+                    edges.push({ from: node, to: neighbor, type: 'lowDim', status: 'maintain' });
+                }
+            } else {
+                if (node != neighbor) {
+                    edges.push({ from: node, to: neighbor, type: 'lowDim', status: 'connect' });
+                }
+            }
+        });
+
+        previousNeighborsCrossType.forEach(neighbor => {
+            if (!currentNeighborsCrossType.has(neighbor)) {
+                if (node != neighbor) {
+                    edges.push({ from: node, to: neighbor, type: 'lowDim', status: 'disconnect' });
+                }
+            }
+        });
+    });
+
+    return edges;
 }
 
 // Calculate Euclidean distance between two points

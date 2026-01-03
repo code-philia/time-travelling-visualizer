@@ -1,10 +1,12 @@
 import styled from 'styled-components';
-import { Tag, Form, Button, Collapse, Select } from 'antd';
+import { Tag, Form, Button, Collapse, Select, message } from 'antd';
 import { useEffect, useState } from 'react';
 import { FunctionalBlock } from './custom/basic-components';
 import { useDefaultStore } from '../state/state.unified';
-import { notifyCalculateEvents, notifyFocusModeSwitch, notifyTracingInfluence, notifyTrainingEventClicked } from '../communication/extension';
+import { notifyFocusModeSwitch, notifyTracingInfluence } from '../communication/extension';
 import { TrainingEvent, InconsistentMovementEvent, PredictionFlipEvent, ConfidenceChangeEvent, SignificantMovementEvent } from './types';
+import { calculateTrainingEvents } from '../communication/backend';
+
 
 const { Panel } = Collapse;
 
@@ -77,7 +79,7 @@ const ResultContainer = styled.div`
   border: 1px solid #d9d9d9;
   border-radius: 4px;
   padding: 10px;
-  height: 400px; /* 固定高度 */
+  height: 100%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -342,13 +344,26 @@ export function TrainingEventPanel() {
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [groupedEvents, setGroupedEvents] = useState<Record<string, TrainingEvent[]>>({});
 
-  const { epoch, trainingEvents } = useDefaultStore(["epoch", "trainingEvents"]);
+  const { contentPath, epoch, trainingEvents, setTrainingEvents } = useDefaultStore(["contentPath", "epoch", "trainingEvents", "setTrainingEvents"]);
 
-  const handleFormSubmit = () => {
-    const newTypes = tempSelectedTypes.filter(type => !selectedTypes.includes(type));
+  const handleFormSubmit = async () => {
+    if (tempSelectedTypes.length === 0) {
+      message.warning('Please select a training event type');
+      return;
+    }
+
     setSelectedTypes(tempSelectedTypes);
-    if (newTypes.length > 0) {
-      notifyCalculateEvents(epoch, newTypes);
+
+    const hide = message.loading('Computing training events...', 0);
+    try {
+      const resp = await calculateTrainingEvents(contentPath, epoch, tempSelectedTypes);
+      const events = Array.isArray(resp?.training_events) ? resp.training_events : [];
+      setTrainingEvents(events as TrainingEvent[]);
+      message.success(`Computed ${events.length} event(s)`);
+    } catch (e) {
+      message.error('Failed to compute training events');
+    } finally {
+      hide();
     }
   };
 
@@ -384,13 +399,7 @@ export function TrainingEventPanel() {
   }, [isFocusMode, trainingEvents]);
 
   useEffect(() => {
-    // Re-compute events when epoch changes
-    if (selectedTypes.length > 0) {
-      notifyCalculateEvents(epoch, selectedTypes);
-    }
-    // Reset selected training events when epoch changes
     setSelectedTrainingEvents([]);
-    notifyTrainingEventClicked([]);
   }, [epoch]);
 
   const handleTracingClick = (event: React.MouseEvent, item: TrainingEvent) => {
@@ -404,7 +413,6 @@ export function TrainingEventPanel() {
       : [...selectedTrainingEvents, item];
     
     setSelectedTrainingEvents(newSelectedEvents);
-    notifyTrainingEventClicked(newSelectedEvents);
   };
 
   // Function to render events by type
@@ -484,8 +492,7 @@ export function TrainingEventPanel() {
   return (
     <div className="info-column" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <FunctionalBlock label="Training Events">
-        <CompactForm>
-          <FormHeader>Please select training events to show</FormHeader>
+        <CompactForm style={{ marginBottom: 8 }}>
           <Form.Item style={{ marginBottom: 10 }}>
             <CompactSelect
               placeholder="Select a training event type"
@@ -516,41 +523,43 @@ export function TrainingEventPanel() {
           </div>
         </CompactForm>
         
-        <ResultContainer>
-          <ResultHeader>
-            Detected Training Events
-            <EventsCount>{eventsCount} events</EventsCount>
-          </ResultHeader>
-          <EventsContainer>
-            {selectedTypes.length === 0 ? (
-              <EmptyState>Click "Compute" to see results</EmptyState>
-            ) : activeEvents.length === 0 ? (
-              <EmptyState>No events detected with current filters</EmptyState>
-            ) : subGroups.length === 0 ? (
-              <EmptyState>No events detected with current filters</EmptyState>
-            ) : (
-              <Collapse
-                defaultActiveKey={collapseDefaultKeys}
-                bordered={false}
-                style={{ background: 'transparent' }}
-              >
-                {subGroups.map(group => (
-                  <CompactEventTypePanel
-                    key={group.key}
-                    header={
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '11px' }}>
-                        <span>{group.title}</span>
-                        <span style={{ color: '#888' }}>({group.events.length})</span>
-                      </div>
-                    }
-                  >
-                    {group.events.map(item => renderEventItem(item))}
-                  </CompactEventTypePanel>
-                ))}
-              </Collapse>
-            )}
-          </EventsContainer>
-        </ResultContainer>
+        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+          <ResultContainer style={{ flex: 1, minHeight: 0 }}>
+            <ResultHeader>
+              Detected Training Events
+              <EventsCount>{eventsCount} events</EventsCount>
+            </ResultHeader>
+            <EventsContainer>
+              {selectedTypes.length === 0 ? (
+                <EmptyState>Click "Compute" to see results</EmptyState>
+              ) : activeEvents.length === 0 ? (
+                <EmptyState>No events detected with current filters</EmptyState>
+              ) : subGroups.length === 0 ? (
+                <EmptyState>No events detected with current filters</EmptyState>
+              ) : (
+                <Collapse
+                  defaultActiveKey={collapseDefaultKeys}
+                  bordered={false}
+                  style={{ background: 'transparent' }}
+                >
+                  {subGroups.map(group => (
+                    <CompactEventTypePanel
+                      key={group.key}
+                      header={
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '11px' }}>
+                          <span>{group.title}</span>
+                          <span style={{ color: '#888' }}>({group.events.length})</span>
+                        </div>
+                      }
+                    >
+                      {group.events.map(item => renderEventItem(item))}
+                    </CompactEventTypePanel>
+                  ))}
+                </Collapse>
+              )}
+            </EventsContainer>
+          </ResultContainer>
+        </div>
       </FunctionalBlock>
     </div>
   );

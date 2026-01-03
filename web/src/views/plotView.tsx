@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Button, message } from 'antd';
+import { message, Tabs } from 'antd';
 import { MainBlock } from '../component/main-block';
 import { FunctionPanel } from '../component/function-panel';
-import { SamplePanel } from '../component/sample-panel';
 import { TrainingEventPanel } from '../component/training-event-panel';
 import InfluenceAnalysisPanel from '../component/influence-panel';
 import { TokenPanel } from '../component/token-panel';
@@ -12,10 +11,9 @@ import { createRoot } from "react-dom/client";
 import { StrictMode } from "react";
 
 import "../index.css";
+import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 
-import FunctionIcon from '../../assets/settings_applications_24dp_5F6368_FILL0_wght300_GRAD0_opsz24.svg';
-import SampleIcon from '../../assets/frame_inspect_24dp_5F6368_FILL0_wght300_GRAD0_opsz24.svg';
-import VisAnalysisIcon from '../../assets/analytics_24dp_5F6368_FILL0_wght300_GRAD0_opsz24.svg';
+
 import { acquireSettings } from '../communication/extension';
 
 createRoot(document.getElementById("root")!).render(
@@ -28,15 +26,13 @@ createRoot(document.getElementById("root")!).render(
 function MessageHandler() {
     // State from unified store
     const { 
-        setAvailableEpochs, setDataType, setTaskType,
+        setContentPath, setAvailableEpochs, setDataType, setTaskType,
         setTextData, setTokenList, setInherentLabelData,
-        setColorDict, setLabelDict, setProgress, setValue,
-        setLoadingStats, clear, setEpoch
+        setColorDict, setLabelDict, setProgress, setValue
     } = useDefaultStore([
-        'setAvailableEpochs', 'setDataType', 'setTaskType',
+        'setContentPath', 'setAvailableEpochs', 'setDataType', 'setTaskType',
         'setTextData', 'setTokenList', 'setInherentLabelData',
-        'setColorDict', 'setLabelDict', 'setProgress', 'setValue',
-        'setLoadingStats', 'clear', 'setEpoch'
+        'setColorDict', 'setLabelDict', 'setProgress', 'setValue'
     ]);
 
     // Update settings in the store
@@ -50,197 +46,6 @@ function MessageHandler() {
         setValue('showBackground', settings.showBackground);
     }
 
-    // Helper function to load a single epoch's data with timing
-    // Uses optimized single API with fallback to legacy multiple requests
-    const loadEpochData = async (
-        contentPath: string, 
-        visualizationID: string, 
-        epochNum: number, 
-        taskType: string
-    ): Promise<{ data: any; fetchTime: number }> => {
-        const fetchStart = performance.now();
-        
-        try {
-            // Try optimized single API that returns all data in one request
-            const response = await BackendAPI.getEpochData(
-                contentPath, 
-                visualizationID, 
-                epochNum, 
-                taskType,
-                true // include background
-            );
-            
-            // Build epoch data object - data is already in the right format
-            const epochData: any = {
-                projection: response.projection || [],
-                scope: response.scope || [],
-                originalNeighbors: response.original_neighbors || [],
-                projectionNeighbors: response.projection_neighbors || [],
-            };
-            
-            if (taskType === 'Classification') {
-                const predProb = response.prediction || [];
-                epochData.predProbability = predProb;
-                
-                // Optimized prediction calculation - inline argmax
-                const predLen = predProb.length;
-                const predictions = new Array(predLen);
-                for (let i = 0; i < predLen; i++) {
-                    const prob = predProb[i];
-                    const pLen = prob.length;
-                    let maxIdx = 0;
-                    let maxVal = prob[0];
-                    for (let j = 1; j < pLen; j++) {
-                        if (prob[j] > maxVal) {
-                            maxVal = prob[j];
-                            maxIdx = j;
-                        }
-                    }
-                    predictions[i] = maxIdx;
-                }
-                epochData.prediction = predictions;
-                epochData.background = response.background || '';
-            }
-            
-            const fetchEnd = performance.now();
-            return { data: epochData, fetchTime: fetchEnd - fetchStart };
-        } catch (error) {
-            // Fallback: use legacy multiple API calls
-            console.warn(`[getEpochData] API failed for epoch ${epochNum}, using legacy APIs:`, error);
-            
-            // Parallel fetch all data for this epoch using legacy APIs
-            const requests: Promise<any>[] = [
-                BackendAPI.fetchEpochProjection(contentPath, visualizationID, epochNum),
-                BackendAPI.getOriginalNeighbors(contentPath, epochNum),
-                BackendAPI.getProjectionNeighbors(contentPath, visualizationID, epochNum)
-            ];
-            
-            if (taskType === 'Classification') {
-                requests.push(BackendAPI.getAttributeResource(contentPath, epochNum, 'prediction'));
-                requests.push(BackendAPI.getBackground(contentPath, visualizationID, epochNum).catch(() => ''));
-            }
-            
-            const results = await Promise.all(requests);
-            const [projection, originalNeighbors, projectionNeighbors, ...optionalData] = results;
-            
-            const epochData: any = {
-                projection: projection.projection || [],
-                scope: projection.scope || [],
-                originalNeighbors: originalNeighbors.neighbors || [],
-                projectionNeighbors: projectionNeighbors.neighbors || []
-            };
-            
-            if (taskType === 'Classification' && optionalData.length >= 1) {
-                const predictionResponse = optionalData[0];
-                const predProb = predictionResponse.prediction || [];
-                epochData.predProbability = predProb;
-                
-                const predLen = predProb.length;
-                const predictions = new Array(predLen);
-                for (let i = 0; i < predLen; i++) {
-                    const prob = predProb[i];
-                    const pLen = prob.length;
-                    let maxIdx = 0;
-                    let maxVal = prob[0];
-                    for (let j = 1; j < pLen; j++) {
-                        if (prob[j] > maxVal) {
-                            maxVal = prob[j];
-                            maxIdx = j;
-                        }
-                    }
-                    predictions[i] = maxIdx;
-                }
-                epochData.prediction = predictions;
-                epochData.background = optionalData[1] || '';
-            }
-            
-            const fetchEnd = performance.now();
-            return { data: epochData, fetchTime: fetchEnd - fetchStart };
-        }
-    };
-    
-    // Batch load multiple epochs using optimized batch API
-    // Falls back to parallel single requests if batch API fails
-    const loadBatchEpochData = async (
-        contentPath: string,
-        visualizationID: string,
-        epochs: number[],
-        taskType: string
-    ): Promise<{ results: Record<number, any>; fetchTime: number }> => {
-        const fetchStart = performance.now();
-        
-        try {
-            // Try batch API first - one request for all epochs
-            const response = await BackendAPI.getBatchEpochData(
-                contentPath,
-                visualizationID,
-                epochs,
-                taskType,
-                false // skip background in batch for speed
-            );
-            
-            const epochsData = response.epochs_data || {};
-            const results: Record<number, any> = {};
-            
-            // Process each epoch's data
-            for (const epochNum of epochs) {
-                const rawData = epochsData[epochNum];
-                if (!rawData) continue;
-                
-                const epochData: any = {
-                    projection: rawData.projection || [],
-                    scope: rawData.scope || [],
-                    originalNeighbors: rawData.original_neighbors || [],
-                    projectionNeighbors: rawData.projection_neighbors || [],
-                };
-                
-                if (taskType === 'Classification') {
-                    const predProb = rawData.prediction || [];
-                    epochData.predProbability = predProb;
-                    
-                    // Inline argmax calculation
-                    const predLen = predProb.length;
-                    const predictions = new Array(predLen);
-                    for (let i = 0; i < predLen; i++) {
-                        const prob = predProb[i];
-                        const pLen = prob.length;
-                        let maxIdx = 0;
-                        let maxVal = prob[0];
-                        for (let j = 1; j < pLen; j++) {
-                            if (prob[j] > maxVal) {
-                                maxVal = prob[j];
-                                maxIdx = j;
-                            }
-                        }
-                        predictions[i] = maxIdx;
-                    }
-                    epochData.prediction = predictions;
-                    epochData.background = rawData.background || '';
-                }
-                
-                results[epochNum] = epochData;
-            }
-            
-            const fetchEnd = performance.now();
-            return { results, fetchTime: fetchEnd - fetchStart };
-        } catch (error) {
-            // Fallback: use parallel single-epoch requests
-            console.warn('[Batch API] Failed, falling back to parallel requests:', error);
-            
-            const batchResults = await Promise.all(
-                epochs.map((epochNum: number) => loadEpochData(contentPath, visualizationID, epochNum, taskType))
-            );
-            
-            const results: Record<number, any> = {};
-            for (let i = 0; i < epochs.length; i++) {
-                results[epochs[i]] = batchResults[i].data;
-            }
-            
-            const fetchEnd = performance.now();
-            return { results, fetchTime: fetchEnd - fetchStart };
-        }
-    };
-
     // Load visualization data from backend with configuration
     const handleLoadVisualization = async (config: any) => {
         try {
@@ -248,30 +53,8 @@ function MessageHandler() {
             
             console.log('Loading visualization with config:', config);
             
-            // IMPORTANT: Clear all previous state immediately before loading new data
-            clear();
-            setProgress(0);
-            setAvailableEpochs([]);
-            setValue('allEpochData', {});
-            setEpoch(1);
-            
-            // Show loading state immediately
-            setLoadingStats({
-                currentEpoch: null,
-                currentBatchEpochs: [],
-                currentBatch: 0,
-                totalBatches: 0,
-                totalEpochs: 0,
-                epochLoadTimes: {},
-                totalFetchTime: 0,
-                totalRenderTime: 0,
-                isLoading: true,
-                currentPhase: 'fetching' as const,
-                lastBatchTime: 0,
-                avgEpochTime: 0,
-            });
-            
             // Set basic configuration
+            setContentPath(contentPath);
             setDataType(dataType);
             setTaskType(taskType);
             
@@ -300,100 +83,49 @@ function MessageHandler() {
                 setTokenList(textResponse.token_list || []);
             }
 
-            // Initialize loading stats
-            // Use batch API for maximum efficiency - one request per batch
-            const BATCH_SIZE = 10;  // 10 epochs per batch request
-            const totalBatches = Math.ceil(epochs.length / BATCH_SIZE);
-            const initialLoadingStats = {
-                currentEpoch: null as number | null,
-                currentBatchEpochs: [] as number[],
-                currentBatch: 0,
-                totalBatches,
-                totalEpochs: epochs.length,
-                epochLoadTimes: {} as Record<number, { fetchTime: number; renderTime: number }>,
-                totalFetchTime: 0,
-                totalRenderTime: 0,
-                isLoading: true,
-                currentPhase: 'fetching' as const,
-                lastBatchTime: 0,
-                avgEpochTime: 0,
-            };
-            setLoadingStats(initialLoadingStats);
-
-            // Load epoch data using batch API for maximum efficiency
-            // This reduces N*5 HTTP requests to N/BATCH_SIZE requests
+            // Load epoch data for all available epochs
             let allEpochDataTemp: Record<number, any> = {};
-            let totalFetchTime = 0;
 
-            for (let batchStart = 0; batchStart < epochs.length; batchStart += BATCH_SIZE) {
-                const batchEnd = Math.min(batchStart + BATCH_SIZE, epochs.length);
-                const batchEpochs = epochs.slice(batchStart, batchEnd);
-                const batchNum = Math.floor(batchStart / BATCH_SIZE) + 1;
-                
-                // Update UI immediately BEFORE starting to load this batch
-                setLoadingStats({
-                    ...initialLoadingStats,
-                    currentBatchEpochs: batchEpochs,
-                    currentBatch: batchNum,
-                    currentPhase: 'fetching' as const,
-                });
-                
-                console.log(`[Batch API] Loading epochs ${batchEpochs.join(', ')} in single request...`);
-                
-                // Use batch API - ONE request for all epochs in this batch
-                const { results, fetchTime } = await loadBatchEpochData(
-                    contentPath, visualizationID, batchEpochs, taskType
-                );
-                
-                // Merge batch results
-                for (const epochNum of batchEpochs) {
-                    if (results[epochNum]) {
-                        allEpochDataTemp[epochNum] = results[epochNum];
-                        initialLoadingStats.epochLoadTimes[epochNum] = { fetchTime: fetchTime / batchEpochs.length, renderTime: 0 };
+            for (const epochNum of epochs) {
+                setProgress((epochNum / epochs.length) * 100);
+
+                allEpochDataTemp = { ...allEpochDataTemp, [epochNum]: {} };
+
+                // Load main plot data
+                const projection = await BackendAPI.fetchEpochProjection(contentPath, visualizationID, epochNum);
+                allEpochDataTemp[epochNum]['projection'] = projection.projection || [];
+                allEpochDataTemp[epochNum]['scope'] = projection.scope || [];
+
+                // Load neighbors data
+                const originalNeighbors = await BackendAPI.getOriginalNeighbors(contentPath, epochNum);
+                const projectionNeighbors = await BackendAPI.getProjectionNeighbors(contentPath, visualizationID, epochNum);
+                allEpochDataTemp[epochNum]['originalNeighbors'] = originalNeighbors.neighbors || [];
+                allEpochDataTemp[epochNum]['projectionNeighbors'] = projectionNeighbors.neighbors || [];
+
+                if (taskType === 'Classification') {
+                    const predictionResponse = await BackendAPI.getAttributeResource(contentPath, epochNum, 'prediction');
+                    allEpochDataTemp[epochNum]['predProbability'] = predictionResponse.prediction || [];
+
+                    let predictions: number[] = [];
+                    for (const prob of allEpochDataTemp[epochNum]['predProbability']) {
+                        const predClass = prob.indexOf(Math.max(...prob));
+                        predictions.push(predClass);
                     }
+                    allEpochDataTemp[epochNum]['prediction'] = predictions;
+
+                    const background = await BackendAPI.getBackground(contentPath, visualizationID, epochNum);
+                    allEpochDataTemp[epochNum]['background'] = background || '';
                 }
-                
-                totalFetchTime += fetchTime;
-                initialLoadingStats.totalFetchTime = totalFetchTime;
-                initialLoadingStats.avgEpochTime = totalFetchTime / batchEnd;
-                
-                console.log(`[Batch API] Epochs ${batchEpochs.join(', ')} loaded in ${fetchTime.toFixed(0)}ms (${(fetchTime/batchEpochs.length).toFixed(0)}ms/epoch)`);
-                
-                // Update state with batch data
+
                 setValue('allEpochData', { ...allEpochDataTemp });
-                setProgress(batchEnd);
             }
             
-            // Mark loading complete
-            setLoadingStats({
-                ...initialLoadingStats,
-                currentEpoch: null,
-                isLoading: false,
-                currentPhase: 'idle' as const,
-                totalFetchTime,
-            });
-            
-            setProgress(epochs.length);
-            console.log(`All epochs loaded. Total fetch time: ${totalFetchTime.toFixed(0)}ms`);
-            message.success(`Visualization loaded! (${(totalFetchTime / 1000).toFixed(2)}s)`);
+            setProgress(100);
+            message.success('Visualization loaded successfully!');
             
         } catch (error) {
             console.error('Error loading visualization:', error);
             message.error('Failed to load visualization');
-            setLoadingStats({
-                currentEpoch: null,
-                currentBatchEpochs: [],
-                currentBatch: 0,
-                totalBatches: 0,
-                totalEpochs: 0,
-                epochLoadTimes: {},
-                totalFetchTime: 0,
-                totalRenderTime: 0,
-                isLoading: false,
-                currentPhase: 'idle' as const,
-                lastBatchTime: 0,
-                avgEpochTime: 0,
-            });
         }
     };
 
@@ -423,118 +155,84 @@ function MessageHandler() {
     return <></>;
 }
 
-function AppCombinedView() {
+export function AppCombinedView() {
     return (
-        <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column" }}>            
-            <div style={{ flex: 1, display: "flex" }}>
-                {/* Main plot area (center) */}
-                <div style={{ flex: 1, display: "flex" }}>
-                    <MainBlock />
-                </div>
-                
-                {/* Function view panels (right side) */}
-                <div style={{ width: "300px", borderLeft: "1px solid #ccc" }}>
-                    <FunctionViewPanels />
-                </div>
-            </div>
-            
-            {/* <div style={{ height: "200px", borderTop: "1px solid #ccc", display: "flex", justifyContent: "center" }}>
-                <div style={{ width: "100%", height: "100%" }}>
-                    <InfluenceAnalysisPanel />
-                </div>
-            </div>
-            
-            <div style={{ borderTop: "1px solid #ccc" }}>
-                <TokenPanel />
-            </div> */}
+        <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column" }}>
+            <PanelGroup direction="vertical" style={{ flex: 1, display: "flex" }} autoSaveId="plot-view-root">
+                <Panel defaultSize={76} minSize={40}>
+                    <PanelGroup direction="horizontal" style={{ height: "100%", display: "flex" }} autoSaveId="plot-view-layout">
+                        <Panel defaultSize={70} minSize={20}>
+                            <div style={{ display: "flex", width: "100%", height: "100%" }}>
+                                <MainBlock />
+                            </div>
+                        </Panel>
+                        <PanelResizeHandle className="subtle-resize-handle" hitAreaMargins={{ coarse: 12, fine: 6 }} />
+                        <Panel defaultSize={30} minSize={8} maxSize={60} collapsible collapsedSize={0}>
+                            <div style={{ width: '100%', height: '100%', borderLeft: '1px solid #ccc' }}>
+                                <FunctionViewPanels />
+                            </div>
+                        </Panel>
+                    </PanelGroup>
+                </Panel>
+                <PanelResizeHandle className="subtle-resize-handle-horizontal" />
+                <Panel defaultSize={24} minSize={8} maxSize={50} collapsible collapsedSize={0}>
+                    <div style={{ width: '100%', height: '100%', borderTop: '1px solid #ccc' }}>
+                        <BottomDock />
+                    </div>
+                </Panel>
+            </PanelGroup>
             <MessageHandler />
         </div>
     );
 }
 
 function FunctionViewPanels() {
-    const [activePanel, setActivePanel] = useState<'FunctionPanel' | 'SamplePanel' | 'TrainingEventPanel'>('FunctionPanel');
+    const [activeKey, setActiveKey] = useState<'FunctionPanel' | 'TrainingEventPanel'>('FunctionPanel');
 
-    const buttonStyle = (isActive: boolean): React.CSSProperties => ({
-        width: '20px',
-        height: '20px',
-        margin: '0 2px',
-        borderRadius: '25%',
-        backgroundColor: isActive ? '#9fd4fc' : '#ffffff',
-        border: `2px solid ${isActive ? '#007bff' : '#cccccc'}`,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        cursor: 'pointer',
-        position: 'relative',
-        transition: 'all 0.3s ease',
-    });
-
-    const tooltipStyle: React.CSSProperties = {
-        position: 'absolute',
-        bottom: '-25px',
-        left: '50%',
-        transform: 'translateX(-75%)',
-        padding: '5px 5px',
-        borderRadius: '4px',
-        backgroundColor: '#333',
-        color: '#fff',
-        fontSize: '10px',
-        whiteSpace: 'nowrap',
-        opacity: 0,
-        visibility: 'hidden',
-        transition: 'opacity 0.3s ease, visibility 0.3s ease',
-        zIndex: 9999,
-    };
-
-    const buttonContainerStyle: React.CSSProperties = {
-        position: 'absolute',
-        top: '10px',
-        right: '10px',
-        display: 'flex',
-        flexDirection: 'row',
-        alignItems: 'center',
-    };
+    const items = [
+        { key: 'FunctionPanel', label: <span style={{ fontSize: 12 }}>Functions</span> },
+        { key: 'TrainingEventPanel', label: <span style={{ fontSize: 12 }}>Training Events</span> },
+    ];
 
     return (
-        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-            <div style={buttonContainerStyle}>
-                {[
-                    { panel: 'FunctionPanel', icon: FunctionIcon, tooltip: 'Function Panel' },
-                    { panel: 'SamplePanel', icon: SampleIcon, tooltip: 'Sample Panel' },
-                    { panel: 'TrainingEventPanel', icon: VisAnalysisIcon, tooltip: 'Training Event Panel' },
-                ].map(({ panel, icon, tooltip }) => (
-                    <div
-                        key={panel}
-                        style={buttonStyle(activePanel === panel)}
-                        onClick={() => setActivePanel(panel as typeof activePanel)}
-                        onMouseEnter={(e) => {
-                            const tooltipDiv = e.currentTarget.querySelector('.tooltip') as HTMLDivElement;
-                            tooltipDiv.style.opacity = '1';
-                            tooltipDiv.style.visibility = 'visible';
-                        }}
-                        onMouseLeave={(e) => {
-                            const tooltipDiv = e.currentTarget.querySelector('.tooltip') as HTMLDivElement;
-                            tooltipDiv.style.opacity = '0';
-                            tooltipDiv.style.visibility = 'hidden';
-                        }}
-                    >
-                        <img src={icon} alt={`${panel} icon`} style={{ width: '20px', height: '20px' }} />
-                        <div className="tooltip" style={tooltipStyle}>
-                            {tooltip}
-                        </div>
-                    </div>
-                ))}
-            </div>
-            <div style={{ flex: 1, display: 'flex' }}>
-                {activePanel === 'FunctionPanel' && <FunctionPanel />}
-                {activePanel === 'SamplePanel' && <SamplePanel />}
-                {activePanel === 'TrainingEventPanel' && <TrainingEventPanel />}
+        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <Tabs
+                className="function-tabs"
+                activeKey={activeKey}
+                onChange={(key) => setActiveKey(key as typeof activeKey)}
+                size="small"
+                tabBarStyle={{ marginBottom: 0 }}
+                tabBarGutter={0}
+                items={items}
+            />
+            <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
+                {activeKey === 'FunctionPanel' && <FunctionPanel />}
+                {activeKey === 'TrainingEventPanel' && <TrainingEventPanel />}
             </div>
         </div>
     );
 }
 
+function BottomDock() {
+    const [activeKey, setActiveKey] = useState<'Influence' | 'Tokens'>('Influence');
+    const items = [
+        { key: 'Influence', label: <span style={{ fontSize: 12 }}>Influence</span>, children: <InfluenceAnalysisPanel /> },
+        { key: 'Tokens', label: <span style={{ fontSize: 12 }}>Tokens</span>, children: <TokenPanel /> },
+    ];
 
+    return (
+        <Tabs
+            className="bottom-dock-tabs"
+            tabPosition="right"
+            size="small"
+            tabBarGutter={0}
+            tabBarStyle={{ marginLeft: 0 }}
+            style={{ height: '100%' }}
+            items={items}
+            activeKey={activeKey}
+            onChange={(key) => setActiveKey(key as typeof activeKey)}
+        />
+    );
+}
 
 window.vscode?.postMessage({ state: 'load' }, '*');
