@@ -1,0 +1,142 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master, dev, 'refactor/combine-web' ]
+  pull_request:
+    branches: [ main, master, dev, 'refactor/combine-web' ]
+  workflow_dispatch:
+
+# Use the pre-built Docker image for all jobs to ensure consistency
+# This avoids installing dependencies every time
+env:
+  DOCKER_IMAGE: ygbnju/time-travelling-visualizer:amd64
+
+jobs:
+  check-extension:
+    runs-on: ubuntu-22.04
+    container:
+      image: ygbnju/time-travelling-visualizer:amd64
+      options: --platform linux/amd64
+    defaults:
+      run:
+        working-directory: ./extension
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: false
+
+      # pnpm is already installed in the image
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Run linter
+        run: pnpm run lint
+        continue-on-error: true
+
+      - name: Run tests
+        run: pnpm run test
+
+  check-web:
+    runs-on: ubuntu-22.04
+    container:
+      image: ygbnju/time-travelling-visualizer:amd64
+      options: --platform linux/amd64
+    defaults:
+      run:
+        working-directory: ./web
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: false
+
+      # pnpm and Node are already installed in the image
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Run linter
+        run: pnpm run lint
+
+      - name: Build project
+        run: pnpm run build
+
+  check-backend-and-test:
+    runs-on: ubuntu-22.04
+    container:
+      image: ygbnju/time-travelling-visualizer:amd64
+      options: --platform linux/amd64
+      ports:
+        - 5050:5050
+    env:
+      LOCUST_CONTENT_PATH: ${{ github.workspace }}/tool/server/test_data/Classification-mini-mini
+    defaults:
+      run:
+        working-directory: ./
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: false
+
+      # Python dependencies are already installed in the image!
+      # We skip 'setup-python', 'cache', and 'pip install' steps.
+
+      - name: Download Hugging Face test dataset
+        run: |
+          pip install --no-cache-dir "huggingface_hub>=0.23.0"
+          huggingface-cli download --repo-type dataset ygbnju/time_visualizer --local-dir ./tool/server/
+          ls -R ./tool/server/test_data
+          if [ ! -d "./tool/server/test_data/Classification-mini-mini" ]; then
+            echo "Expected dataset folder ./tool/server/test_data/Classification-mini-mini not found"
+            exit 1
+          fi
+
+      - name: Lint with flake8
+        run: flake8 tool --count --select=E9,F63,F7,F82 --show-source --statistics
+        
+      - name: Check formatting with black
+        run: black tool --check
+        continue-on-error: true
+
+      - name: Start server in background
+        run: |
+          ROOT_DIR=$(pwd)
+          # Use absolute path for test data
+          ABS_DATA_PATH="${LOCUST_CONTENT_PATH}"
+          echo "Using dataset at ${ABS_DATA_PATH}"
+          if [ ! -d "${ABS_DATA_PATH}" ]; then
+            echo "Dataset not found at ${ABS_DATA_PATH}"
+            exit 1
+          fi
+          
+          # Add tool directory to PYTHONPATH
+          export PYTHONPATH=$PYTHONPATH:${ROOT_DIR}/tool
+          
+          # Start the server in the background from its own directory
+          cd tool/server
+          python server.py &
+          
+          echo "Waiting for server to start..."
+          # Wait for the server to be ready
+          timeout 30s bash -c 'until curl -s http://localhost:5050 > /dev/null; do sleep 1; done' || echo "Server did not start in time"
+          curl -v http://localhost:5050/ || true
+      
+      - name: Run Locust performance test
+        id: locust_test
+        run: |
+          TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
+          REPORT_NAME="locust_report_${TIMESTAMP}.html"
+          echo "report_name=${REPORT_NAME}" >> $GITHUB_OUTPUT
+          
+          export PYTHONPATH=$PYTHONPATH:$(pwd)/tool
+          
+          # Run locust test
+          locust -f tool/server/locustfile.py --headless --users 50 --spawn-rate 5 --run-time 1m --host http://localhost:5050 --html ${REPORT_NAME} --exit-code-on-error 1
+          
+      - name: Upload Locust test report
+        uses: actions/upload-artifact@v4
+        with:
+          name: locust-report-${{ steps.locust_test.outputs.report_name }}
+          path: ${{ steps.locust_test.outputs.report_name }}
