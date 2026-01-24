@@ -12,27 +12,37 @@ export type EpochData = {
     projection: number[][];
     prediction: number[];
     predProbability: number[][];
-    originalNeighbors: number[][];
-    projectionNeighbors: number[][];
     background: string;
+
+    originalNeighbors?: number[][];
+    projectionNeighbors?: number[][];
+
+    neighborsLoaded?: boolean;
+    neighborsLoading?: boolean; // Added Optionality
 };
 
 // Unified state interface combining all views
 export type BaseMutableGlobalStore = {
     // Basic configuration
     contentPath: string;
-    dataType: 'Image' | 'Text';
+    dataType: "Image" | "Text";
     taskType: string;
-    
+    visualizationID: string;
+
     // Epoch and time-related data
     epoch: number;
     availableEpochs: number[];
-    globalBounds: { minX:number; maxX:number; minY:number; maxY:number } | null;
-    
+    globalBounds: {
+        minX: number;
+        maxX: number;
+        minY: number;
+        maxY: number;
+    } | null;
+
     // Color and label mappings
     colorDict: Map<number, [number, number, number]>;
     labelDict: Map<number, string>;
-    
+
     // Text and token data
     textData: string[];
     tokenList: string[];
@@ -40,13 +50,13 @@ export type BaseMutableGlobalStore = {
     originalTextData: Record<string, string>;
     inherentLabelData: number[];
     alignment: number[][];
-    
+
     // Epoch data
     allEpochData: Record<number, EpochData>;
     progress: number;
-    
+
     // Display settings
-    mode: 'points' | 'density';
+    mode: "points" | "density";
     pointSize: number;
     showIndex: boolean;
     showLabel: boolean;
@@ -54,26 +64,26 @@ export type BaseMutableGlobalStore = {
     revealOriginalNeighbors: boolean;
     revealProjectionNeighbors: boolean;
     showBackground: boolean;
-    
+
     // Filter and display data
     index: Record<string, number[]>;
     shownData: string[];
     highlightData: string[];
-    
+
     // Interaction state
     hoveredIndex: number | undefined;
     selectedIndices: number[];
     selectedListener: SelectedListener;
-    
+
     // Focus mode
     isFocusMode: boolean;
     focusIndices: number[];
-    
+
     // Training events and influence
     trainingEvents: TrainingEvent[];
     trainingEvent: TrainingEvent | null; // Current training event for influence view
     influenceSamples: InfluenceSample[];
-    
+
     // Raw data for detail views
     rawData: string;
     shownDoc: string;
@@ -82,19 +92,21 @@ export type BaseMutableGlobalStore = {
 
 export let initMutableGlobalStore: BaseMutableGlobalStore = {
     // Basic configuration
-    contentPath: '',
-    dataType: 'Image',
-    taskType: '',
-    
+    contentPath: "",
+    dataType: "Image",
+    taskType: "",
+
+    visualizationID: "",
+
     // Epoch and time-related data
     epoch: 1,
     availableEpochs: [],
     globalBounds: null,
-    
+
     // Color and label mappings
     colorDict: new Map(),
     labelDict: new Map(),
-    
+
     // Text and token data
     textData: [],
     tokenList: [],
@@ -102,13 +114,13 @@ export let initMutableGlobalStore: BaseMutableGlobalStore = {
     originalTextData: {},
     inherentLabelData: [],
     alignment: [],
-    
+
     // Epoch data for different views
     allEpochData: {},
     progress: 0,
-    
+
     // Display settings
-    mode: 'points',
+    mode: "points",
     pointSize: 2,
     showIndex: true,
     showLabel: true,
@@ -116,30 +128,30 @@ export let initMutableGlobalStore: BaseMutableGlobalStore = {
     revealOriginalNeighbors: true,
     revealProjectionNeighbors: true,
     showBackground: false,
-    
+
     // Filter and display data
     index: {},
     shownData: ["train", "test"],
     highlightData: [],
-    
+
     // Interaction state
     hoveredIndex: undefined,
     selectedIndices: [],
     selectedListener: new SelectedListener(),
-    
+
     // Focus mode
     isFocusMode: false,
     focusIndices: [],
-    
+
     // Training events and influence
     trainingEvents: [],
     trainingEvent: null,
     influenceSamples: [],
-    
+
     // Raw data for detail views
     rawData: "",
-    shownDoc: '',
-    shownCode: ''
+    shownDoc: "",
+    shownCode: "",
 };
 
 type SetFunction<T> = (setState: (state: T) => T | Partial<T>) => void;
@@ -150,13 +162,17 @@ type SettersOnAttr<T> = {
 
 type WithSettersOnAttr<T> = T & SettersOnAttr<T>;
 
-function createMutableTypes<T>(initialState: T, set: SetFunction<object>): WithSettersOnAttr<T> {
+function createMutableTypes<T>(
+    initialState: T,
+    set: SetFunction<object>,
+): WithSettersOnAttr<T> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const setters: any = {};
 
     for (const key in initialState) {
         const setterName = `set${key.charAt(0).toUpperCase()}${key.slice(1)}`;
-        setters[setterName] = (value: typeof key) => set(() => ({ [key]: value }));
+        setters[setterName] = (value: typeof key) =>
+            set(() => ({ [key]: value }));
     }
     return {
         ...initialState,
@@ -180,38 +196,43 @@ const configuredMutableGlobalStore = initMutableGlobalStore;
 type MutableGlobalStore = WithSettersOnAttr<BaseMutableGlobalStore>;
 
 type DefaultValueSetter<T> = <K extends keyof T>(key: K, value: T[K]) => void;
-function createDefaultValueSetter(set: SetFunction<GlobalStore>): DefaultValueSetter<GlobalStore> {
+function createDefaultValueSetter(
+    set: SetFunction<GlobalStore>,
+): DefaultValueSetter<GlobalStore> {
     return (key, value) => set(() => ({ [key]: value }));
 }
 
 type WithDefaultValueSetter = {
-    setValue: DefaultValueSetter<GlobalStore>
+    setValue: DefaultValueSetter<GlobalStore>;
 };
 
 type WithClear = {
-  clear: () => void;
+    clear: () => void;
 };
 
 type GlobalStore = MutableGlobalStore & WithDefaultValueSetter & WithClear;
 
-const useGlobalStore = create<GlobalStore>()(subscribeWithSelector((set) => ({
-    setValue: createDefaultValueSetter(set),
-    ...createMutableTypes(configuredMutableGlobalStore, set),
-    clear: () => {
-        const newInitialState = { 
-            ...initMutableGlobalStore,
-            colorDict: new Map(),
-            labelDict: new Map(),
-            selectedListener: new SelectedListener()
-        };
-        set(newInitialState);
-    },
-})));
+// Added Export to this function
+export const useGlobalStore = create<GlobalStore>()(
+    subscribeWithSelector((set) => ({
+        setValue: createDefaultValueSetter(set),
+        ...createMutableTypes(configuredMutableGlobalStore, set),
+        clear: () => {
+            const newInitialState = {
+                ...initMutableGlobalStore,
+                colorDict: new Map(),
+                labelDict: new Map(),
+                selectedListener: new SelectedListener(),
+            };
+            set(newInitialState);
+        },
+    })),
+);
 
 // Utility functions for shallow comparison
 export function useShallow<T, K extends keyof T>(
     store: UseBoundStore<StoreApi<T>>,
-    keys: K[]
+    keys: K[],
 ): Pick<T, K> {
     return useStoreWithEqualityFn(
         store,
@@ -222,17 +243,17 @@ export function useShallow<T, K extends keyof T>(
             }
             return result;
         },
-        shallow
+        shallow,
     );
-};
+}
 
 export function useShallowAll<T>(store: UseBoundStore<StoreApi<T>>): T {
     return useStoreWithEqualityFn(store, (state) => state, shallow);
-};
+}
 
 export function useOnSetOperation<T, K extends keyof T>(
     store: UseBoundStore<StoreApi<T>>,
-    keys: K[]
+    keys: K[],
 ): Pick<T, K> {
     return useStoreWithEqualityFn(
         store,
@@ -243,7 +264,7 @@ export function useOnSetOperation<T, K extends keyof T>(
             }
             return result;
         },
-        shallow
+        shallow,
     );
 }
 
@@ -253,4 +274,4 @@ export const useDefaultStore = <K extends keyof GlobalStore>(keys: K[]) => {
 
 export const useDefaultStoreAll = () => {
     return useShallowAll(useGlobalStore);
-}
+};
