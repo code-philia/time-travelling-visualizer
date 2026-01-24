@@ -1,6 +1,6 @@
-import { defineConfig, UserConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import { resolve } from 'path';
+import { defineConfig, UserConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import { resolve } from "path";
 
 // const VIEW_TYPE_PANEL_VIEW = 'extension-panel-view';
 // const VIEW_TYPE_PLOT_VIEW = 'extension-plot-view';
@@ -32,11 +32,11 @@ import { resolve } from 'path';
 export default defineConfig({
     plugins: [react()],
     build: {
-        outDir: 'dist',
+        outDir: "dist",
         rollupOptions: {
             input: {
-                plotView: resolve(__dirname, './configs/plotView/index.html'),
-            }
+                plotView: resolve(__dirname, "./configs/plotView/index.html"),
+            },
         },
-    }
-})
+    },
+});
