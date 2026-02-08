@@ -47,6 +47,25 @@ async function basicPostWithJsonResponse(path: string, data: any, options?: Netw
     }
 }
 
+// code-philia/time-travelling-visualizer/time-travelling-visualizer-feat-embedding-atlas/web/src/communication/backend.ts
+
+/**
+ * Notify backend of current focus indices and chosen precision mode
+ */
+export function updateFocusContext(
+    contentPath: string, 
+    selectedIndices: number[], 
+    focusMode: string, 
+    options?: NetworkOptions
+) {
+    const data = {
+        "content_path": contentPath,
+        "selected_indices": selectedIndices,
+        "focus_mode": focusMode
+    };
+    return basicPostWithJsonResponse('/updateFocusContext', data, options); //
+}
+
 /**
  * Backend API functions
  */

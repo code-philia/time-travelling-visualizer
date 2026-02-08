@@ -3,6 +3,7 @@ import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { EmbeddingView, type EmbeddingViewProps, type DataPoint, type ViewportState } from 'embedding-atlas/react';
 import { useDefaultStore } from "../state/state.unified";
 import { transferArray2Color } from './utils';
+import * as BackendAPI from '../communication/backend'; 
 
 type EmbeddingData = NonNullable<EmbeddingViewProps['data']>;
 
@@ -25,13 +26,29 @@ export const ChartComponent = memo(() => {
     const { pointSize } = useDefaultStore(["pointSize"]);
     const { revealOriginalNeighbors, revealProjectionNeighbors } = useDefaultStore(["revealOriginalNeighbors", "revealProjectionNeighbors"]);
     const { showLabel, showIndex } = useDefaultStore(["showLabel", "showIndex"]);
-    const { selectedIndices } = useDefaultStore(["selectedIndices"]);
     const { availableEpochs } = useDefaultStore(["availableEpochs"]);
     const { showTrail } = useDefaultStore(["showTrail"]);
     const { setSelectedIndices } = useDefaultStore(["setSelectedIndices"]);
-
+    const { 
+        focusMode, 
+        contentPath, 
+        selectedIndices 
+    } = useDefaultStore(['focusMode', 'contentPath', 'selectedIndices']);
     const epochData = allEpochData[epoch];
-
+// 放置在这里：每当选中点或精度模式改变时，向后端同步上下文
+    useEffect(() => {
+        // 只有当存在选中点时才触发后端更新，避免无效请求
+        if (selectedIndices && selectedIndices.length > 0) {
+            // 调用 BackendAPI 中新定义的 updateFocusContext 接口
+            BackendAPI.updateFocusContext(contentPath, selectedIndices, focusMode)
+                .then(response => {
+                    console.log('[TTAV] Focus context updated successfully:', response);
+                })
+                .catch(err => {
+                    console.error('[TTAV] Failed to update focus context:', err);
+                });
+        }
+    }, [selectedIndices, focusMode, contentPath]);
     // plot view helpers
     let [tooltip, setTooltip] = useState<DataPoint | null>(null);
     // selection can be added later when needed

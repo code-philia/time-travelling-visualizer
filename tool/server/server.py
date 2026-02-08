@@ -21,6 +21,35 @@ app.config['CORS_HEADERS'] = 'Content-Type'
 # Check for "--dev" argument
 is_dev_mode = "--dev" in sys.argv
 
+# tool/server/server.py
+
+# 全局交互上下文，用于存储 Step 3 的接收状态 [cite: 13, 14]
+ttav_context = {
+    "focus_mode": "coarse",
+    "selected_indices": None,
+    "mask": None # Step 3: 向量化布尔掩码
+}
+
+@app.route('/updateFocusContext', methods=['POST'])
+@cross_origin()
+def update_focus_context():
+    data = request.get_json()
+    ttav_context["focus_mode"] = data.get("focus_mode", "coarse")
+    indices = data.get("selected_indices", [])
+    ttav_context["selected_indices"] = indices
+    
+    # Step 3: 预构建向量化布尔掩码 (Boolean Masking) 
+    # 假设总数据量为 N，在这里提前生成显存掩码，降低 train_step 比对开销
+    if indices:
+        import torch
+        # 这里的 N 需要根据实际数据集大小获取
+        N = get_total_dataset_size() 
+        mask = torch.zeros(N, dtype=torch.bool)
+        mask[indices] = True
+        ttav_context["mask"] = mask.to(device) # 移至 GPU
+        
+    return jsonify({"status": "success"})
+    
 @app.route("/", methods=["GET", "POST"])
 def GUI():
     return send_from_directory('../frontend', 'index.html')

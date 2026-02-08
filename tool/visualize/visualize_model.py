@@ -195,3 +195,46 @@ class tfModel(keras.Model):
                 "regularization": regularization_loss}
 
 
+import torch
+import torch.nn as nn
+import math
+
+# [TTAV] Step 6: Define a LoRA wrapper for Linear layers
+class LoRALinear(nn.Module):
+    def __init__(self, original_layer, rank=4, alpha=1.0):
+        super(LoRALinear, self).__init__()
+        self.original_layer = original_layer
+        self.rank = rank
+        self.scaling = alpha / rank
+        
+        in_features = original_layer.in_features
+        out_features = original_layer.out_features
+
+        # Lora low-rank matrices
+        # Initialize A with Kaiming uniform and B with zeros
+        self.lora_A = nn.Parameter(torch.zeros(in_features, rank))
+        self.lora_B = nn.Parameter(torch.zeros(rank, out_features))
+        nn.init.kaiming_uniform_(self.lora_A, a=math.sqrt(5))
+
+    def forward(self, x):
+        # Result = (Original Path) + (LoRA Path: x * A * B * scaling)
+        return self.original_layer(x) + (x @ self.lora_A @ self.lora_B) * self.scaling
+
+def inject_lora(model, target_layer_names=["decoder"], rank=4):
+    """
+    [TTAV] Helper function to inject LoRA layers into the model dynamically.
+    :param model: The SingleVisModel instance.
+    :param target_layer_names: List of keywords to identify layers to wrap.
+    """
+    for name, module in model.named_modules():
+        for target in target_layer_names:
+            # Target specific layers, usually in the decoder or late encoder
+            if target in name and isinstance(module, nn.Linear):
+                # Get the parent module
+                parent_name = ".".join(name.split(".")[:-1])
+                child_name = name.split(".")[-1]
+                parent = dict(model.named_modules())[parent_name]
+                
+                # Replace the original Linear layer with LoRALinear
+                setattr(parent, child_name, LoRALinear(module, rank=rank))
+                print(f"[TTAV] LoRA injected into: {name}")

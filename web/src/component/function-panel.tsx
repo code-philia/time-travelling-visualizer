@@ -1,5 +1,5 @@
 import { AutoComplete, Input, List, Tag, RefSelectProps, Checkbox, Switch, Select, Slider } from 'antd';
-import { useDefaultStore } from '../state/state.unified';
+import { useDefaultStore,FocusMode } from '../state/state.unified';
 import { useEffect, useRef, useState } from 'react';
 import { ComponentBlock, FunctionalBlock } from './custom/basic-components';
 import { styled } from 'styled-components';
@@ -107,7 +107,9 @@ export function FunctionPanel() {
         useDefaultStore(["revealOriginalNeighbors", "revealProjectionNeighbors", "setRevealOriginalNeighbors", "setRevealProjectionNeighbors"]);
     const { showIndex, showLabel, showBackground, showTrail, setShowIndex, setShowLabel, setShowBackground, setShowTrail } =
         useDefaultStore(["showIndex","showLabel","showBackground","showTrail","setShowIndex","setShowLabel","setShowBackground","setShowTrail"]);
-
+// Get focusMode and its auto-generated setter
+    const { focusMode, setFocusMode } = useDefaultStore(['focusMode', 'setFocusMode']);
+    
     useEffect(() => {
         if (pointSize < 1) {
             setPointSize(1);
@@ -290,6 +292,27 @@ export function FunctionPanel() {
                         }
                     </ComponentBlock>
                 }
+            </FunctionalBlock>
+            <FunctionalBlock label="Precision Control">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '12px' }}>Focus Mode</span>
+                    <Select
+                        size="small"
+                        value={focusMode}
+                        style={{ width: '120px' }}
+                        onChange={(value: FocusMode) => setFocusMode(value)}
+                        options={[
+                            { value: 'coarse', label: 'Coarse' },
+                            { value: 'balanced', label: 'Balanced' },
+                            { value: 'fine', label: 'Fine' },
+                        ]}
+                    />
+                </div>
+                <div className='alt-text' style={{ fontSize: '10px', lineHeight: '1.2' }}>
+                    {focusMode === 'coarse' && 'Visual highlight only.'}
+                    {focusMode === 'balanced' && 'Increase sampling weight.'}
+                    {focusMode === 'fine' && 'Enable LoRA local adaptation.'}
+                </div>
             </FunctionalBlock>
             <FunctionalBlock label="Categories">
                 <ComponentBlock>

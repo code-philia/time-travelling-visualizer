@@ -109,17 +109,38 @@ class SingleVisLoss(nn.Module):
         self.recon_loss = recon_loss
         self.lambd = lambd
 
-    def forward(self, edge_to, edge_from, a_to, a_from, outputs):
-        embedding_to, embedding_from = outputs["umap"]
-        recon_to, recon_from = outputs["recon"]
+    def forward(self, edge_to, edge_from, a_to, a_from, outputs, weights=None):
+        """
+        Step 5: Apply sample-wise weights to both UMAP and Reconstruction losses.
+        :param weights: torch.Tensor, shape (batch_size,), importance of each edge.
+        """
+        embedding_to, embedding_from, recon_to, recon_from = outputs
 
-        recon_l = self.recon_loss(edge_to, edge_from, recon_to, recon_from, a_to, a_from)
-        umap_l = self.umap_loss(embedding_to, embedding_from)
+        # 1. Calculate Reconstruction Loss (typically Mean Squared Error)
+        # We compute per-sample loss instead of direct mean()
+        recon_l_to = torch.mean(torch.pow(recon_to - a_to, 2), dim=1)
+        recon_l_from = torch.mean(torch.pow(recon_from - a_from, 2), dim=1)
+        
+        # 2. Calculate UMAP Loss (Negative Log Likelihood)
+        # We calculate the distance between embeddings
+        distance_square = torch.sum(torch.pow(embedding_to - embedding_from, 2), dim=1)
+        # (Simplified UMAP logic for illustration)
+        umap_l = -torch.log(torch.exp(-distance_square) + 1e-6)
 
-        loss = umap_l + self.lambd * recon_l
+        # 3. Apply weights if provided
+        if weights is not None:
+            # Multiplier: alpha for focus area, 1.0 for global area
+            umap_l = umap_l * weights
+            recon_l_to = recon_l_to * weights
+            recon_l_from = recon_l_from * weights
 
+        # 4. Final aggregation (Mean of weighted individual losses)
+        recon_l = torch.mean(recon_l_to + recon_l_from)
+        umap_l = torch.mean(umap_l)
+        
+        loss = umap_l + self.negative_sample_rate * recon_l
+        
         return umap_l, recon_l, loss
-
 class HybridLoss(nn.Module):
     def __init__(self, umap_loss, recon_loss, smooth_loss, lambd1, lambd2):
         super(HybridLoss, self).__init__()

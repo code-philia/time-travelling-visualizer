@@ -30,22 +30,38 @@ class DataHandler(Dataset):
         self.attention = attention
         self.transform = transform
 
+    # def __getitem__(self, item):
+
+    #     edge_to_idx = self.edge_to[item]
+    #     edge_from_idx = self.edge_from[item]
+    #     edge_to = self.data[edge_to_idx]
+    #     edge_from = self.data[edge_from_idx]
+    #     a_to = self.attention[edge_to_idx]
+    #     a_from = self.attention[edge_from_idx]
+    #     if self.transform is not None:
+    #         # TODO correct or not?
+    #         edge_to = Image.fromarray(edge_to)
+    #         edge_to = self.transform(edge_to)
+    #         edge_from = Image.fromarray(edge_from)
+    #         edge_from = self.transform(edge_from)
+    #     return edge_to, edge_from, a_to, a_from
     def __getitem__(self, item):
-
-        edge_to_idx = self.edge_to[item]
-        edge_from_idx = self.edge_from[item]
-        edge_to = self.data[edge_to_idx]
-        edge_from = self.data[edge_from_idx]
-        a_to = self.attention[edge_to_idx]
-        a_from = self.attention[edge_from_idx]
-        if self.transform is not None:
-            # TODO correct or not?
-            edge_to = Image.fromarray(edge_to)
-            edge_to = self.transform(edge_to)
-            edge_from = Image.fromarray(edge_from)
-            edge_from = self.transform(edge_from)
-        return edge_to, edge_from, a_to, a_from
-
+        """
+        Step 5: Enhanced to return global indices for TTAV focus logic.
+        """
+        # Get the global indices for this specific edge
+        idx_to = self.edge_to[item]
+        idx_from = self.edge_from[item]
+        
+        # Get the corresponding features/attributes
+        # In your case, a_to and a_from might be the same as edge features
+        edge_to_data = self.feature_to[item]
+        edge_from_data = self.feature_from[item]
+        
+        # [TTAV] Return 6 elements instead of 4:
+        # edge_to, edge_from, a_to, a_from, idx_to, idx_from
+        return edge_to_data, edge_from_data, edge_to_data, edge_from_data, idx_to, idx_from
+        
     def __len__(self):
         # return the number of all edges
         return len(self.edge_to)

@@ -6,7 +6,8 @@ import { BUILD_CONSTANTS } from "../constants";
 import { subscribeWithSelector } from "zustand/middleware";
 import { SelectedListener } from "../state/types";
 import { TrainingEvent, InfluenceSample } from "../component/types";
-
+// 1. Define FocusMode type
+export type FocusMode = "coarse" | "balanced" | "fine";
 // Types from plotView
 export type EpochData = {
     projection: number[][];
@@ -68,7 +69,8 @@ export type BaseMutableGlobalStore = {
     // Focus mode
     isFocusMode: boolean;
     focusIndices: number[];
-    
+    focusMode: FocusMode; // Added focusMode field
+
     // Training events and influence
     trainingEvents: TrainingEvent[];
     trainingEvent: TrainingEvent | null; // Current training event for influence view
@@ -130,6 +132,7 @@ export let initMutableGlobalStore: BaseMutableGlobalStore = {
     // Focus mode
     isFocusMode: false,
     focusIndices: [],
+    focusMode: "coarse", // Initializing with "coarse"
     
     // Training events and influence
     trainingEvents: [],
