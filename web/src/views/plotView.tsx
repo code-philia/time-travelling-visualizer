@@ -14,7 +14,7 @@ import "../index.css";
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 
 const LOG_PREFIX = '[TTVisualizer]';
-const BATCH_SIZE = 5;
+const BATCH_SIZE = Number(import.meta.env.VITE_BATCH_SIZE) || 5;
 
 
 function logWithTimestamp(message: string): void {
@@ -69,8 +69,9 @@ function MessageHandler() {
             // Set basic configuration
             setContentPath(contentPath);
 
-            // saving visId globally so it can be used for all backend calls that require it without having to pass it around
+            // saving visid globally so it can be used for all backend calls that require it without having to pass it around
             setValue('visId', visualizationID);
+            console.log("visid ", visualizationID)
             setDataType(dataType);
             setTaskType(taskType);
             
@@ -129,6 +130,7 @@ function MessageHandler() {
 
                 // wait for all requests to complete and then process results
                 const results = await Promise.all(requests);
+                console.log("requests worked")
 
                 epochData['projection'] = results[0].projection || [];
 
@@ -161,6 +163,7 @@ function MessageHandler() {
                     }
                     completedCount++;
                 }
+
 
                 // update store after each batch
                 setValue('globalBounds', {

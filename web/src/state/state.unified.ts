@@ -25,7 +25,7 @@ export type BaseMutableGlobalStore = {
     // Basic configuration
     contentPath: string;
 
-    // added globally so chart.tsx can make calls to the backend after loading
+    // added globally so chart can make calls to the backend after loading
     visId: string;
 
     dataType: 'Image' | 'Text';

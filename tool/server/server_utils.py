@@ -330,6 +330,8 @@ def calculate_projection_neighbors_for_point(content_path, vis_id, epoch, point_
     Returns:
         list: list of neighbor indices
     """
+    
+    # TODO: maybe use pydantic
     projection_ls = load_projection(content_path, vis_id, epoch)
     projection = np.array(projection_ls)
     neighbors = NearestNeighbors(n_neighbors=max_neighbors + 1, algorithm='auto').fit(projection)

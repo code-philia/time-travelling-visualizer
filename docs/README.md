@@ -13,12 +13,11 @@ When a user clicked "Load Result", the system loaded data for every epoch sequen
 4. **Computed k-nearest neighbors (k-NN) for ALL points in high-dimensional space**
 5. **Computed k-nearest neighbors for ALL points in projection space**
 
-Steps 4 and 5 were the bottleneck. For a dataset with N=5000 points and 20 epochs:
-- Each k-NN call computes distances between all pairs of points — O(N²) per epoch
-- This ran sequentially: 20 epochs × 2 neighbor types × O(N²) = extremely slow
-- Most of this work was wasted — users typically only hover over a handful of points
+Steps 4 and 5 were the problem. For a dataset with N=5000 points and 20 epochs:
 
-Additionally, the epochs loaded one at a time (sequential), meaning each epoch had to finish before the next could start.
+- Each kNN call computes distances between all pairs of points — O(N²) per epoch. This ran sequentially: 20 epochs × 2 neighbor types × O(N²) = extremely slow
+
+- The epochs loaded one at a time (sequential), meaning each epoch had to finish before the next could start.
 
 ---
 
@@ -27,15 +26,22 @@ Additionally, the epochs loaded one at a time (sequential), meaning each epoch h
 The project has three layers:
 
 1. **Extension** (`extension/src/`): Hosts the webview, sends commands like `loadVisualization`
+
 2. **Web Frontend** (`web/src/`): React app that renders the scatter plot, handles user interaction
-3. **Backend** (`tool/server/`): Flask API that reads data from disk and performs computations like k-NN
+
+3. **Backend** (`tool/server/`): Flask API that reads data from disk and performs computations like KNN
 
 The "Load Visualization" flow:
-1. User clicks "Load Result" in VS Code
-2. Extension sends `loadVisualization` message to the webview
-3. `plotView.tsx` receives it, makes HTTP calls to the Flask backend for each epoch
-4. Data is stored in the Zustand global store (`state.unified.ts`)
-5. `chart.tsx` renders the scatter plot from the store data
+
+1. User clicks "Load Result" in  vscode
+
+2. Extension sends `loadVisualization` message to the web view
+
+3. `plotView.tsx` receives it, makes http calls to the flask backend for each epoch
+
+4. Data is stored in the Zustand global store (`state.unified.ts`).
+
+5. `chart.tsx` renders the plot from the store data.
 
 ---
 
@@ -43,24 +49,13 @@ The "Load Visualization" flow:
 
 ### Approach 1: Lazy Neighbor Loading
 
-**Concept**: Previously the neighbors where calculated for every point of every epoch before the visualization started. The lazy loading approach calculates the neighbors only when a point is hovered
+**Concept**: Previously the neighbors where calculated for every point of every epoch before the visualization started. The lazy loading approach calculates the neighbors only when a point is hovered.
 
 #### 1.1 — Removed neighbors from EpochData type
 
 **File**: `web/src/state/state.unified.ts`
 
 The `EpochData` type originally contained `originalNeighbors` and `projectionNeighbors` arrays (one entry per point per epoch). These were commented out since neighbors are no longer loaded per epoch:
-
-```typescript
-export type EpochData = {
-    projection: number[][];
-    prediction: number[];
-    predProbability: number[][];
-    // originalNeighbors: number[][];     ← removed
-    // projectionNeighbors: number[][];   ← removed
-    background: string;
-};
-```
 
 #### 1.2 — Added `neighborCache` and `visId` to global store
 
@@ -99,23 +94,18 @@ The `neighborOverlayProps` useMemo was also updated to read from `neighborCache[
 
 **File**: `web/src/component/sample-panel.tsx`
 
-The neighbor lists in the detail panel (shown when hovering a point) were updated from:
-```
-allEpochData[epoch]?.originalNeighbors[hoveredIndex]?.map(...)
-```
-to:
-```
-neighborCache[`${epoch}-${hoveredIndex}`]?.originalNeighbors?.map(...)
-```
+The neighbor lists in the detail panel (shown when hovering a point) were updated from allEpochData to neighborCache
+
 
 This applies to three places:
+
 - The HIGH-DIM neighbor list
 
 - The PROJECTION neighbor list
 
 - The `isCorrect` check (highlights projection neighbors that are also high-dim neighbors)
 
-The `?.` optional chaining is important because the cache entry doesn't exist yet when the user first hovers — it appears after the async fetch completes and triggers a re-render.
+** The `?.` is because the cache entry doesn't exist yet when the user first hovers — it appears after the async fetch completes and triggers a re-render.
 
 #### 1.5 — New frontend API function
 
@@ -141,43 +131,40 @@ Added `POST /getNeighborsForSample` endpoint:
 
 Two new functions:
 
-**`calculate_neighbors_for_point(content_path, vis_id, epoch, point_index, max_neighbors=10)`**
+**`calculate_neighbors_for_point`**
+
 - Loads high-dimensional embeddings from `epochs/epoch_N/embeddings.npy`
+
 - Builds a k-NN index with sklearn's `NearestNeighbors`
+
 - Queries **only the single point** at `point_index`
+
 - Returns up to 10 neighbor indices
 
-**`calculate_projection_neighbors_for_point(content_path, vis_id, epoch, point_index, max_neighbors=10)`**
+**`calculate_projection_neighbors_for_point`**
+
 - Same approach but uses 2D projection coordinates from `visualize/{vis_id}/epochs/epoch_N/projection.npy`
 
-Note: `calculate_neighbors_for_point` takes `vis_id` as a parameter for API consistency but doesn't use it — high-dimensional embeddings don't depend on the visualization method. `calculate_projection_neighbors_for_point` does use `vis_id` because different visualization methods produce different projections.
 
-**Why this is fast**: Building the k-NN index (.fit()) on 5000 points takes ~5–20ms. Querying 1 point is nearly instant. The old approach queried all 5000 points, which was the actual bottleneck.
+
+**Why this is fast**: Building the knn index on 5000 points takes ~5–20ms. Querying 1 point is nearly instant. The old approach queried all 5000 points, which was the actual bottleneck.
 
 ---
 
-### Strategy 2: Parallel Epoch Batching
+### Strategy 2: Parallel epoch in batches
 
-**Concept**: Instead of loading epochs sequentially, load them in parallel batches.
+**Concept**: Instead of loading epochs in sequence, load them in parallel batches.
 
 #### 2.1 — Batch loading loop in plotView.tsx
 
 **File**: `web/src/views/plotView.tsx`
 
-The old sequential loop:
-```
-for each epoch:
-    await fetchProjection(epoch)
-    await fetchPrediction(epoch)
-    await fetchBackground(epoch)
-    await fetchOriginalNeighbors(epoch)      ← removed
-    await fetchProjectionNeighbors(epoch)     ← removed
-```
+The old code made a loop in which calculated the neighbors and projection neighbors for each point of each epoch.
+This was replaced by a parallel batch approach in which a function loadSingleEpoch was created to get the epoch projection, attribute resource and background. Then this function was called in epoch batches and excecuted with Promise.all for parallelism.
 
-Was replaced with a parallel batched approach:
 
 ```typescript
-const BATCH_SIZE = 5;
+const BATCH_SIZE = Number(import.meta.env.VITE_BATCH_SIZE) || 5;
 
 const loadSingleEpoch = async (epochNum) => {
     // All requests for one epoch fire in parallel
@@ -200,8 +187,11 @@ for (let i = 0; i < epochs.length; i += BATCH_SIZE) {
 ```
 
 This means:
+
 - Within each epoch: projection + prediction + background fire simultaneously
+
 - Across epochs: 5 epochs load at the same time per batch
+
 - After each batch: the store updates so the UI can show partial results immediately
 
 #### 2.2 — Enabled threaded Flask server
@@ -213,7 +203,7 @@ Added `threaded=True` to `app.run()`:
 app.run(host=host, port=port, threaded=True)
 ```
 
-Without this, Flask processes requests one at a time, negating the benefit of parallel frontend requests. With `threaded=True`, each request gets its own thread and multiple requests are handled concurrently.
+Without this, flask processes the requests in sequence. With threaded=True the requests can be solved simultaniously.
 
 #### 2.3 — `visId` stored during load
 
@@ -221,13 +211,19 @@ Without this, Flask processes requests one at a time, negating the benefit of pa
 
 Added `setValue('visId', visualizationID)` at the start of `handleLoadVisualization` so the visualization ID is available globally for lazy neighbor fetching later.
 
+#### 2.4 — .env variable
+
+I used a .env to handle the BATCH_SIZE in case it propagates. The .env goes in the root folder and the env variable is 
+```
+VITE_BATCH_SIZE=5
+```
 ---
 
 ### Extra: Loading Progress Overlay
 
 **File**: `web/src/component/main-block.tsx`
 
-A new `LoadingOverlay` component was added that renders on top of the chart during loading:
+I added a `LoadingOverlay` component that renders on top of the chart during loading like a progress bar:
 
 ```typescript
 function LoadingOverlay({ progress, totalEpochs }) {
@@ -244,16 +240,14 @@ function LoadingOverlay({ progress, totalEpochs }) {
 ```
 
 It shows:
+
 - **"Loading epoch 5 / 20"** — text counter
+
 - **A blue progress bar** — fills left-to-right with CSS transition
+
 - **Percentage** — e.g. "25%"
 
-It automatically appears when `progress > 0` and disappears when `progress >= 100`. The existing timeline node coloring (which turns nodes blue as they load) continues to work alongside this overlay.
-
-The `progress` state is updated in `plotView.tsx` after each batch completes:
-```typescript
-setProgress((completedCount / epochs.length) * 100);
-```
+It automatically appears when `progress > 0` and disappears when `progress >= 100`.
 
 ---
 
@@ -261,7 +255,7 @@ setProgress((completedCount / epochs.length) * 100);
 
 **File**: `tool/benchmark.py`
 
-A standalone Python script that measures the old vs new approach by making actual HTTP calls to the Flask backend.
+I created a script that compares the old approach to the new lazy loading and parallel approach to see the improvement in time.
 
 **Usage**:
 ```bash
@@ -272,62 +266,9 @@ python tool/benchmark.py --content_path /path/to/dataset --vis_id TimeVis_1
 - `--hover_points N` — number of hover events to simulate (default: 5)
 - `--max_epochs N` — limit epochs to benchmark (default: all)
 
-**What it measures**:
-
-| Phase | OLD approach | NEW approach |
-|---|---|---|
-| Loading | Sequential: projection + prediction + background + ALL-point neighbors × each epoch | Parallel batches of 5: projection + prediction + background only |
-| Neighbors | Included in load time (all points, all epochs) | On-demand: single-point fetch per hover event |
-
-**Output**: Prints per-epoch/batch times, then a summary:
-```
-SUMMARY
-  OLD total load:     45.23s
-  NEW total load:      4.12s
-  ⚡ Loading speedup:  11.0x faster
-  ⚡ Time saved:       41.1s
-  ⚡ Hover latency:    85ms (imperceptible to user)
-```
-
 The script requires the Flask backend to be running (`python tool/server/server.py`).
 
----
-
-### Bug Fix: Extension Development Path
-
-**File**: `.vscode/launch.json`
-
-Changed:
-```
---extensionDevelopmentPath=${workspaceFolder}
-```
-to:
-```
---extensionDevelopmentPath=${workspaceFolder}/extension
-```
-
-The old path pointed to the workspace root, causing VS Code to scan all subfolders and find `web/package.json` — which it tried to load as a VS Code extension, failing because it lacked the required `engines` field. The fix points directly to the `extension/` folder.
-
----
-
-## File-by-File Reference
-
-| File | Changes | Strategy |
-|---|---|---|
-| `web/src/state/state.unified.ts` | Commented out neighbors from `EpochData`, added `visId`, `neighborCache` | Lazy neighbors |
-| `web/src/views/plotView.tsx` | Stored `visId`, replaced sequential loop with parallel batches of 5, removed neighbor calls | Parallel + Lazy |
-| `web/src/component/chart.tsx` | Added on-demand neighbor fetch `useEffect`, reads from `neighborCache` | Lazy neighbors |
-| `web/src/component/sample-panel.tsx` | Reads neighbor lists from `neighborCache` instead of `allEpochData` | Lazy neighbors |
-| `web/src/communication/backend.ts` | Added `getNeighborsForSample()` API function | Lazy neighbors |
-| `tool/server/server.py` | Added `/getNeighborsForSample` endpoint, `threaded=True` | Lazy + Parallel |
-| `tool/server/server_utils.py` | Added `calculate_neighbors_for_point()`, `calculate_projection_neighbors_for_point()` | Lazy neighbors |
-| `web/src/component/main-block.tsx` | Added `LoadingOverlay` component | Progress bar |
-| `tool/benchmark.py` | New benchmark script comparing old vs new approach | Benchmark |
-| `.vscode/launch.json` | Fixed `extensionDevelopmentPath` to point to `extension/` | Bug fix |
-
----
-
-## How to Run the Benchmark
+**How to run it:**
 
 1. Start the backend server:
    ```bash
@@ -349,32 +290,3 @@ To find your `vis_id`, look at the folder names inside your dataset's `visualize
 ```bash
 ls /path/to/your/dataset/visualize/
 ```
-
----
-
-## Concepts and Foundations
-
-### Embeddings
-High-dimensional vectors (e.g., 128 or 512 dimensions) that a neural network produces for each data point. Points that the model considers similar have embeddings that are close together in this space.
-
-### Epochs
-Each epoch is one full pass through the training data. The model's embeddings change at each epoch as it learns. The visualizer shows how these embeddings evolve over time.
-
-### Dimensionality Reduction (Projection)
-Algorithms like DVI, TimeVis, or UMAP reduce high-dimensional embeddings (e.g., 128D) down to 2D coordinates so they can be plotted on a scatter chart. Each visualization method (`vis_id`) produces a different 2D layout.
-
-### k-Nearest Neighbors (k-NN)
-For any given point, k-NN finds the k closest points by distance. The visualizer uses two types:
-- **Original neighbors**: k-NN in the high-dimensional embedding space (the "true" neighbors)
-- **Projection neighbors**: k-NN in the 2D projected space
-
-Comparing these two reveals whether the 2D projection preserves the true neighborhood structure. Projection neighbors shown in green are also original neighbors (good projection); those in red are not (distortion).
-
-### Lazy Loading
-A pattern where data is only fetched when it's actually needed, rather than upfront. In this case, neighbors are fetched only when the user hovers a point, not for all points at load time.
-
-### Parallel Batching
-Instead of processing items one at a time (sequential), multiple items are processed simultaneously (parallel). `Promise.all` in JavaScript and `ThreadPoolExecutor` in Python are used to achieve this. The batch size (5) balances parallelism with not overwhelming the server.
-
-### Caching
-Storing previously computed results so they don't need to be recomputed. The `neighborCache` stores neighbors keyed by `"epoch-pointIndex"`. If the user hovers the same point again, the cached result is returned instantly without any API call.
