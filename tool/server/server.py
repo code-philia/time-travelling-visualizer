@@ -1,29 +1,33 @@
 import os
 import sys
+import numpy as np
+
+from flask import Flask, jsonify, make_response, request, send_file, send_from_directory
+from flask_cors import CORS, cross_origin
+
 # from llm_agent import call_llm_agent
 from run_visualization import visualize_run
 
-from flask import request, Flask, jsonify, make_response, send_file,send_from_directory
-from flask_cors import CORS, cross_origin
+sys.path.append(".")
+sys.path.append("..")
+sys.path.append("../..")
+sys.path.append("../visualize")
 
-sys.path.append('.')
-sys.path.append('..')
-sys.path.append('../..')
-sys.path.append('../visualize')
-
-from server_utils import *
+import server_utils
+#from server_utils import *
 
 # flask for API server
 app = Flask(__name__)
 cors = CORS(app, supports_credentials=True)
-app.config['CORS_HEADERS'] = 'Content-Type'
+app.config["CORS_HEADERS"] = "Content-Type"
 
 # Check for "--dev" argument
 is_dev_mode = "--dev" in sys.argv
 
+
 @app.route("/", methods=["GET", "POST"])
 def GUI():
-    return send_from_directory('../frontend', 'index.html')
+    return send_from_directory("../frontend", "index.html")
 
 
 """
@@ -35,47 +39,51 @@ Response:
     color_list (list): list of colors
     label_text_list (list): list of label text
 """
-@app.route('/getTrainingProcessInfo', methods=["GET"])
+
+
+@app.route("/getTrainingProcessInfo", methods=["GET"])
 @cross_origin()
 def get_training_process_info():
-    content_path = request.args.get('content_path')
-    
-    epochs_dir = os.path.join(content_path, 'epochs')
+    content_path = request.args.get("content_path")
+
+    epochs_dir = os.path.join(content_path, "epochs")
     available_epochs = []
 
     if os.path.exists(epochs_dir) and os.path.isdir(epochs_dir):
         try:
             for item in os.listdir(epochs_dir):
-                if item.startswith('epoch_'):
+                if item.startswith("epoch_"):
                     full_path = os.path.join(epochs_dir, item)
                     if os.path.isdir(full_path):
-                        epoch_num_str = item[len('epoch_'):]
+                        epoch_num_str = item[len("epoch_") :]
                         if epoch_num_str.isdigit():
                             available_epochs.append(int(epoch_num_str))
-            
+
             available_epochs.sort()
         except Exception as e:
             print(f"Error scanning epochs directory: {e}")
             available_epochs = []
 
-    config = read_file_as_json(os.path.join(content_path, 'dataset', 'info.json'))
-    
-    if config == None or 'classes' not in config:
+    config = server_utils.read_file_as_json(os.path.join(content_path, "dataset", "info.json"))
+
+    if config == None or "classes" not in config:
         # infer from labels.npy
-        label_file = os.path.join(content_path, 'dataset', 'labels.npy')
+        label_file = os.path.join(content_path, "dataset", "labels.npy")
         labels = np.load(label_file, allow_pickle=True)
         class_num = len(np.unique(labels))
-        color_list  = get_coloring_list(class_num)
+        color_list = server_utils.get_coloring_list(class_num)
         label_text_list = [str(i) for i in range(class_num)]
     else:
-        color_list  = get_coloring_list(len(config['classes']))
-        label_text_list = config['classes']
-    
-    result = jsonify({
-        'color_list': color_list,
-        'label_text_list': label_text_list,
-        'available_epochs': available_epochs
-    })
+        color_list = server_utils.get_coloring_list(len(config["classes"]))
+        label_text_list = config["classes"]
+
+    result = jsonify(
+        {
+            "color_list": color_list,
+            "label_text_list": label_text_list,
+            "available_epochs": available_epochs,
+        }
+    )
     return make_response(result, 200)
 
 
@@ -91,19 +99,23 @@ Response:
     project (list)
     label_list (list): label list of samples in projection
 """
-@app.route('/updateProjection', methods = ["POST"])
+
+
+@app.route("/updateProjection", methods=["POST"])
 @cross_origin()
 def update_projection():
     req = request.get_json()
-    content_path = req['content_path']
-    vis_id = req['vis_id']
-    epoch = int(req['epoch'])
+    content_path = req["content_path"]
+    vis_id = req["vis_id"]
+    epoch = int(req["epoch"])
 
-    projection = load_projection(content_path, vis_id, epoch)
+    projection = server_utils.load_projection(content_path, vis_id, epoch)
 
-    result = jsonify({
-        'projection': projection,
-    })
+    result = jsonify(
+        {
+            "projection": projection,
+        }
+    )
     return make_response(result, 200)
 
 
@@ -118,19 +130,22 @@ Request:
 Response:
     None
 """
-@app.route('/startVisualizing', methods = ["POST"])
+
+
+@app.route("/startVisualizing", methods=["POST"])
 def start_visualizing():
     req = request.get_json()
-    content_path = req['content_path']
-    vis_method = req['vis_method']
-    vis_id = req['vis_id']
-    data_type = req['data_type']
-    task_type = req['task_type']
-    vis_config = req['vis_config']
-    
+    content_path = req["content_path"]
+    vis_method = req["vis_method"]
+    vis_id = req["vis_id"]
+    data_type = req["data_type"]
+    task_type = req["task_type"]
+    vis_config = req["vis_config"]
+
     visualize_run(content_path, vis_method, vis_id, data_type, task_type, vis_config)
-    
+
     return make_response({}, 200)
+
 
 """
 Api: get text data of all samples
@@ -140,35 +155,39 @@ Request:
 Response:
     text_list (lsit of str)
 """
-@app.route('/getAllText', methods = ["POST"])
+
+
+@app.route("/getAllText", methods=["POST"])
 def get_all_text():
     req = request.get_json()
-    content_path = req['content_path']
+    content_path = req["content_path"]
 
-    text_list = get_all_texts(content_path)
+    text_list = server_utils.get_all_texts(content_path)
 
     if text_list is None:
-        return make_response(jsonify({'error_message': "getting all texts failed"}), 400)
+        return make_response(
+            jsonify({"error_message": "getting all texts failed"}), 400
+        )
 
-    result = jsonify({
-        'text_list': text_list
-    })
+    result = jsonify({"text_list": text_list})
     return make_response(result, 200)
 
-@app.route('/getAlignment', methods = ["POST"])
+
+@app.route("/getAlignment", methods=["POST"])
 def get_alignment():
     req = request.get_json()
-    content_path = req['content_path']
+    content_path = req["content_path"]
 
-    alignment = get_alignment_data(content_path)
+    alignment = server_utils.get_alignment_data(content_path)
 
     if alignment is None:
-        return make_response(jsonify({'error_message': "getting alignment failed"}), 400)
+        return make_response(
+            jsonify({"error_message": "getting alignment failed"}), 400
+        )
 
-    result = jsonify({
-        'alignment': alignment
-    })
+    result = jsonify({"alignment": alignment})
     return make_response(result, 200)
+
 
 """
 Api: get selected attributes of the dataset
@@ -182,17 +201,19 @@ Response:
     attribute2 (object)
     ...
 """
-@app.route('/getAttributes', methods = ["POST"])
+
+
+@app.route("/getAttributes", methods=["POST"])
 @cross_origin()
 def get_attributes():
     req = request.get_json()
-    content_path = req['content_path']
-    epoch = req['epoch']
-    attributes = req['attributes']
+    content_path = req["content_path"]
+    epoch = req["epoch"]
+    attributes = req["attributes"]
 
     result = {}
     for attribute in attributes:
-        result[attribute] = load_single_attribute(content_path, epoch, attribute)
+        result[attribute] = server_utils.load_single_attribute(content_path, epoch, attribute)
 
     result = jsonify(result)
     return make_response(result, 200)
@@ -209,23 +230,23 @@ Request:
 Response:
     indices (list of int): indeices of samples that satisfy the filter
 """
-@app.route('/getSimpleFilterResult', methods = ["POST"])
+
+
+@app.route("/getSimpleFilterResult", methods=["POST"])
 @cross_origin()
 def get_simple_filter_result():
     req = request.get_json()
-    content_path = req['content_path']
-    epoch = int(req['epoch'])
-    filters = req['filters']
+    content_path = req["content_path"]
+    epoch = int(req["epoch"])
+    filters = req["filters"]
 
-    config = read_file_as_json(os.path.join(content_path, 'config.json'))
-    indices, error_message = get_filter_result(config, content_path, epoch, filters)
+    config = server_utils.read_file_as_json(os.path.join(content_path, "config.json"))
+    indices, error_message = server_utils.get_filter_result(config, content_path, epoch, filters)
 
     if indices is None:
-        return make_response(jsonify({'error_message': error_message}), 400)
+        return make_response(jsonify({"error_message": error_message}), 400)
 
-    result = jsonify({
-        'indices': indices
-    })
+    result = jsonify({"indices": indices})
     return make_response(result, 200)
 
 
@@ -240,23 +261,26 @@ Request:
     scale (list of float)
 Response:
     background_image_base64 (str): base64 encoded im
-"""    
-@app.route('/getBackground', methods = ["POST"])
+"""
+
+
+@app.route("/getBackground", methods=["POST"])
 @cross_origin()
 def get_background():
     req = request.get_json()
-    content_path = req['content_path']
-    vis_id = req['vis_id']
-    epoch = int(req['epoch'])
-    
+    content_path = req["content_path"]
+    vis_id = req["vis_id"]
+    epoch = int(req["epoch"])
+
     try:
-        base64_image = load_background(content_path, vis_id, epoch)
-        result = jsonify({
-            'background_image_base64': base64_image
-        })
+        base64_image = server_utils.load_background(content_path, vis_id, epoch)
+        result = jsonify({"background_image_base64": base64_image})
         return make_response(result, 200)
     except Exception as e:
-        return make_response(jsonify({'error_message': 'Error in loading background'}), 400)
+        return make_response(
+            jsonify({"error_message": "Error in loading background"}), 400
+        )
+
 
 """
 Api: get image data of one sample
@@ -267,26 +291,24 @@ Request:
 Response:
     image_base64 (str): base64 encoded image
 """
-@app.route('/getImageData', methods = ["POST"])
+
+
+@app.route("/getImageData", methods=["POST"])
 @cross_origin()
 def get_image_data():
     req = request.get_json()
-    content_path = req['content_path']
-    if('index' not in req):
-        return make_response(jsonify({'image_base64': ''}), 200)
-    
-    index = req['index']
+    content_path = req["content_path"]
+    if "index" not in req:
+        return make_response(jsonify({"image_base64": ""}), 200)
+
+    index = req["index"]
 
     try:
-        base64_image = load_one_image(content_path, index)
-        result = jsonify({
-            'image_base64': base64_image
-        })
+        base64_image = server_utils.load_one_image(content_path, index)
+        result = jsonify({"image_base64": base64_image})
         return make_response(result, 200)
     except Exception as e:
-        result = jsonify({
-            'image_base64': ''
-        })
+        result = jsonify({"image_base64": ""})
         return make_response(result, 200)
 
 
@@ -299,26 +321,24 @@ Request:
 Response:
     text (str): text data
 """
-@app.route('/getTextData', methods = ["POST"])
+
+
+@app.route("/getTextData", methods=["POST"])
 @cross_origin()
 def get_text_data():
     req = request.get_json()
-    content_path = req['content_path']
-    if('index' not in req):
-        return make_response(jsonify({'text': ''}), 200)
-    
-    index = req['index']
+    content_path = req["content_path"]
+    if "index" not in req:
+        return make_response(jsonify({"text": ""}), 200)
+
+    index = req["index"]
 
     try:
-        text = load_one_text(content_path, index)
-        result = jsonify({
-            'text': text
-        })
+        text = server_utils.load_one_text(content_path, index)
+        result = jsonify({"text": text})
         return make_response(result, 200)
     except Exception as e:
-        result = jsonify({
-            'text': ''
-        })
+        result = jsonify({"text": ""})
         return make_response(result, 200)
 
 
@@ -331,22 +351,29 @@ Request:
 Response:
     neighbors (array[][])
 """
-@app.route('/getOriginalNeighbors', methods = ["POST"])
+
+
+@app.route("/getOriginalNeighbors", methods=["POST"])
 @cross_origin()
 def get_original_neighbors():
     req = request.get_json()
-    content_path = req['content_path']
-    epoch = int(req['epoch'])
-    
+    content_path = req["content_path"]
+    epoch = int(req["epoch"])
+
     try:
-        neighbors = calculate_high_dimensional_neighbors(content_path, epoch)
-        result = jsonify({
-            'neighbors': neighbors,
-        })
+        neighbors = server_utils.calculate_high_dimensional_neighbors(content_path, epoch)
+        result = jsonify(
+            {
+                "neighbors": neighbors,
+            }
+        )
         return make_response(result, 200)
     except Exception as e:
         print(e)
-        return make_response(jsonify({'error_message': 'Error in calculating neighbors'}), 400)
+        return make_response(
+            jsonify({"error_message": "Error in calculating neighbors"}), 400
+        )
+
 
 """
 Api: get projection neighbors of one sample
@@ -358,87 +385,146 @@ Request:
 Response:
     neighbors (array[][])
 """
-@app.route('/getProjectionNeighbors', methods = ["POST"])
+
+
+@app.route("/getProjectionNeighbors", methods=["POST"])
 @cross_origin()
 def get_projection_neighbors():
     req = request.get_json()
-    content_path = req['content_path']
-    vis_id = req['vis_id']
-    epoch = int(req['epoch'])
-    
+    content_path = req["content_path"]
+    vis_id = req["vis_id"]
+    epoch = int(req["epoch"])
+
     try:
-        neighbors = calculate_projection_neighbors(content_path, vis_id, epoch)
-        result = jsonify({
-            'neighbors': neighbors,
-        })
+        neighbors = server_utils.calculate_projection_neighbors(content_path, vis_id, epoch)
+        result = jsonify(
+            {
+                "neighbors": neighbors,
+            }
+        )
         return make_response(result, 200)
     except Exception as e:
         print(e)
-        return make_response(jsonify({'error_message': 'Error in calculating neighbors'}), 400)
+        return make_response(
+            jsonify({"error_message": "Error in calculating neighbors"}), 400
+        )
 
-    
-@app.route('/getVisualizeMetrics', methods = ["POST"])
+
+    """
+    Api: get projection neighbors of one point
+
+Request:
+    content_path (str)
+    vis_id (str)
+    epoch (str)
+Response:
+    neighbors (array[][])
+    projection_neighbors (array[][])
+    """
+
+@app.route("/getNeighborsForSample", methods=["POST"])
+@cross_origin()
+def get_neighbors_for_sample():
+    req = request.get_json()
+    content_path = req["content_path"]
+    vis_id = req["vis_id"]
+    epoch = int(req["epoch"])
+    sample_index = int(req["sample_index"])
+
+    try:
+        original_neighbors = server_utils.calculate_neighbors_for_point(
+            content_path, vis_id, epoch, sample_index
+        )
+        projection_neighbors = server_utils.calculate_projection_neighbors_for_point(
+            content_path, vis_id, epoch, sample_index
+        )
+        result = jsonify(
+            {"originalNeighbors": original_neighbors, "projectionNeighbors": projection_neighbors}
+        )
+        return make_response(result, 200)
+    except Exception as e:
+        print(e)
+        return make_response(
+            jsonify({"error_message": "Error in calculating neighbors for sample"}), 400
+        )
+
+
+@app.route("/getVisualizeMetrics", methods=["POST"])
 @cross_origin()
 def get_visualize_metrics():
     req = request.get_json()
-    content_path = req['content_path']
-    vis_id = req['vis_id']
-    epoch = int(req['epoch'])
-    
+    content_path = req["content_path"]
+    vis_id = req["vis_id"]
+    epoch = int(req["epoch"])
+
     try:
-        metrics = calculate_visualize_metrics(content_path, vis_id, epoch)
+        metrics = server_utils.calculate_visualize_metrics(content_path, vis_id, epoch)
         result = jsonify(metrics)
         return make_response(result, 200)
     except Exception as e:
         print(e)
-        return make_response(jsonify({'error_message': 'Error in calculating metrics'}), 400)
+        return make_response(
+            jsonify({"error_message": "Error in calculating metrics"}), 400
+        )
 
 
-@app.route('/getInfluenceSamples', methods=["POST"])
+@app.route("/getInfluenceSamples", methods=["POST"])
 @cross_origin()
 def get_influence_samples():
     req = request.get_json()
-    content_path = req['content_path']
-    epoch = int(req['epoch'])
-    training_event = req['training_event']
-    num_samples = int(req['num_samples'])
+    content_path = req["content_path"]
+    epoch = int(req["epoch"])
+    training_event = req["training_event"]
+    num_samples = int(req["num_samples"])
 
     try:
-        if training_event['type'] == 'InconsistentMovement': 
+        if training_event["type"] == "InconsistentMovement":
             # attribution of closeness or separation between a pair of samples
             print("Tracing InconsistentMovement")
-            influence_samples = movement_attribution(content_path, epoch, training_event, num_samples)
-        else: 
+            influence_samples = server_utils.movement_attribution(
+                content_path, epoch, training_event, num_samples
+            )
+        else:
             # atribution of a particular prediction
             print("Tracing PredictionError")
-            influence_samples = prediction_attribution(content_path, epoch, training_event, num_samples)
-        
-        result = jsonify({
-            "influence_samples": influence_samples,
-        })
+            influence_samples = server_utils.prediction_attribution(
+                content_path, epoch, training_event, num_samples
+            )
+
+        result = jsonify(
+            {
+                "influence_samples": influence_samples,
+            }
+        )
         return make_response(result, 200)
     except Exception as e:
         print(e)
-        return make_response(jsonify({'error_message': 'Error in calculating influence samples'}), 400)
+        return make_response(
+            jsonify({"error_message": "Error in calculating influence samples"}), 400
+        )
 
 
-@app.route('/calculateTrainingEvents', methods=["POST"])
+@app.route("/calculateTrainingEvents", methods=["POST"])
 @cross_origin()
 def calculate_training_events():
     req = request.get_json()
-    content_path = req['content_path']
-    epoch = int(req['epoch'])
-    event_types = req['event_types']
+    content_path = req["content_path"]
+    epoch = int(req["epoch"])
+    event_types = req["event_types"]
 
     try:
-        training_events = compute_training_events(content_path, epoch, event_types)
-        result = jsonify({
-            "training_events": training_events,
-        })
+        training_events = server_utils.compute_training_events(content_path, epoch, event_types)
+        result = jsonify(
+            {
+                "training_events": training_events,
+            }
+        )
         return make_response(result, 200)
     except Exception as e:
         print(e)
-        return make_response(jsonify({'error_message': 'Error in calculating training events'}), 400)
+        return make_response(
+            jsonify({"error_message": "Error in calculating training events"}), 400
+        )
 
 
 def check_port_inuse(port, host):
@@ -455,26 +541,28 @@ def check_port_inuse(port, host):
         if s:
             s.close()
 
+
 # for contrast
 if __name__ == "__main__":
-    host = '0.0.0.0'
+    host = "0.0.0.0"
     port = 5050
     while check_port_inuse(port, host):
         port = port + 1
 
     if not is_dev_mode:
-        app.run(host=host, port=port)
+        # added threaded=True to handle multiple requests to the backend (for the batches)
+        app.run(host=host, port=port, threaded=True)
     else:
-        from livereload import Server
         from flask_debugtoolbar import DebugToolbarExtension
+        from livereload import Server
 
         app.debug = True
-        app.config['SECRET_KEY'] = 'a-random-secret-key'
+        app.config["SECRET_KEY"] = "a-random-secret-key"
         toolbar = DebugToolbarExtension(app)
 
         server = Server(app.wsgi_app)
 
-        server.watch('../frontend/**/*.css')
-        server.watch('../frontend/**/*.html')
-        server.watch('../frontend/**/*.js')
+        server.watch("../frontend/**/*.css")
+        server.watch("../frontend/**/*.html")
+        server.watch("../frontend/**/*.js")
         server.serve(host=host, port=port)

@@ -14,6 +14,8 @@ import "../index.css";
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 
 const LOG_PREFIX = '[TTVisualizer]';
+const BATCH_SIZE = 5;
+
 
 function logWithTimestamp(message: string): void {
     console.log(`${LOG_PREFIX}[${new Date().toISOString()}] ${message}`);
@@ -66,6 +68,9 @@ function MessageHandler() {
             
             // Set basic configuration
             setContentPath(contentPath);
+
+            // saving visId globally so it can be used for all backend calls that require it without having to pass it around
+            setValue('visId', visualizationID);
             setDataType(dataType);
             setTaskType(taskType);
             
@@ -97,86 +102,78 @@ function MessageHandler() {
                 setTokenList(textResponse.token_list || []);
             }
 
-            // Load epoch data for all available epochs
+            // Load epoch data for all available epochs in parallel batches
             let allEpochDataTemp: Record<number, any> = {};
-            let firstEpochRequestTimestamp: Date | undefined;
-            let lastEpochReceiveTimestamp: Date | undefined;
             const totalEpochCount = epochs.length;
+            const loadStartTimestamp = new Date();
+            logWithTimestamp(`Starting parallel epoch loading. totalEpochs=${totalEpochCount}`);
 
             let globalMinX = Infinity, globalMaxX = -Infinity;
             let globalMinY = Infinity, globalMaxY = -Infinity;
 
-            for (const epochNum of epochs) {
-                const epochRequestStart = new Date();
-                if (!firstEpochRequestTimestamp) {
-                    firstEpochRequestTimestamp = epochRequestStart;
-                    logWithTimestamp(`First epoch request sent. epoch=${epochNum} at ${epochRequestStart.toISOString()}`);
-                } else {
-                    logWithTimestamp(`Epoch request sent. epoch=${epochNum} at ${epochRequestStart.toISOString()}`);
+            // helper to load all data for a single epoch
+            const loadSingleEpoch = async (epochNum: number) => {
+                const epochData: Record<string, any> = {};
+
+                // send all requests for this epoch in parallel
+                const requests: Promise<any>[] = [
+                    BackendAPI.fetchEpochProjection(contentPath, visualizationID, epochNum),
+                ];
+                if (taskType === 'Classification') {
+                    requests.push(
+                        BackendAPI.getAttributeResource(contentPath, epochNum, 'prediction'),
+                        BackendAPI.getBackground(contentPath, visualizationID, epochNum),
+                    );
                 }
 
-                allEpochDataTemp = { ...allEpochDataTemp, [epochNum]: {} };
 
-                // Load main plot data
-                const projection = await BackendAPI.fetchEpochProjection(contentPath, visualizationID, epochNum);
-                allEpochDataTemp[epochNum]['projection'] = projection.projection || [];
+                // wait for all requests to complete and then process results
+                const results = await Promise.all(requests);
 
-                // Load neighbors data
-                const originalNeighbors = await BackendAPI.getOriginalNeighbors(contentPath, epochNum);
-                const projectionNeighbors = await BackendAPI.getProjectionNeighbors(contentPath, visualizationID, epochNum);
-                allEpochDataTemp[epochNum]['originalNeighbors'] = originalNeighbors.neighbors || [];
-                allEpochDataTemp[epochNum]['projectionNeighbors'] = projectionNeighbors.neighbors || [];
+                epochData['projection'] = results[0].projection || [];
 
                 if (taskType === 'Classification') {
-                    const predictionResponse = await BackendAPI.getAttributeResource(contentPath, epochNum, 'prediction');
-                    allEpochDataTemp[epochNum]['predProbability'] = predictionResponse.prediction || [];
-
-                    let predictions: number[] = [];
-                    for (const prob of allEpochDataTemp[epochNum]['predProbability']) {
-                        const predClass = prob.indexOf(Math.max(...prob));
-                        predictions.push(predClass);
-                    }
-                    allEpochDataTemp[epochNum]['prediction'] = predictions;
-
-                    const background = await BackendAPI.getBackground(contentPath, visualizationID, epochNum);
-                    allEpochDataTemp[epochNum]['background'] = background || '';
+                    epochData['predProbability'] = results[1].prediction || [];
+                    epochData['prediction'] = epochData['predProbability'].map(
+                        (prob: number[]) => prob.indexOf(Math.max(...prob))
+                    );
+                    epochData['background'] = results[2] || '';
                 }
 
-                let minX = allEpochDataTemp[epochNum]['projection'].reduce((min: number, p: number[]) => p[0] < min ? p[0] : min, Infinity);
-                let maxX = allEpochDataTemp[epochNum]['projection'].reduce((max: number, p: number[]) => p[0] > max ? p[0] : max, -Infinity);
-                let minY = allEpochDataTemp[epochNum]['projection'].reduce((min: number, p: number[]) => p[1] < min ? p[1] : min, Infinity);
-                let maxY = allEpochDataTemp[epochNum]['projection'].reduce((max: number, p: number[]) => p[1] > max ? p[1] : max, -Infinity);
+                return { epochNum, epochData };
+            };
 
-                globalMinX = Math.min(globalMinX, minX);
-                globalMaxX = Math.max(globalMaxX, maxX);
-                globalMinY = Math.min(globalMinY, minY);
-                globalMaxY = Math.max(globalMaxY, maxY);
+            // process epochs in parallel batches of 5
+            let completedCount = 0;
+            for (let i = 0; i < epochs.length; i += BATCH_SIZE) {
+                const batch = epochs.slice(i, i + BATCH_SIZE);
+                const batchResults = await Promise.all(batch.map(loadSingleEpoch));
 
-                // Update store with new epoch data
+                for (const { epochNum, epochData } of batchResults) {
+                    allEpochDataTemp[epochNum] = epochData;
+
+                    // update global bounds
+                    for (const p of epochData['projection']) {
+                        if (p[0] < globalMinX) globalMinX = p[0];
+                        if (p[0] > globalMaxX) globalMaxX = p[0];
+                        if (p[1] < globalMinY) globalMinY = p[1];
+                        if (p[1] > globalMaxY) globalMaxY = p[1];
+                    }
+                    completedCount++;
+                }
+
+                // update store after each batch
                 setValue('globalBounds', {
-                    minX: globalMinX,
-                    maxX: globalMaxX,
-                    minY: globalMinY,
-                    maxY: globalMaxY
+                    minX: globalMinX, maxX: globalMaxX,
+                    minY: globalMinY, maxY: globalMaxY
                 });
                 setValue('allEpochData', { ...allEpochDataTemp });
-                
-                // Calculate progress based on the number of processed epochs
-                // We use index + 1 because epochs array is 0-indexed in the loop, but we want to show progress for the current epoch
-                const currentEpochIndex = epochs.indexOf(epochNum);
-                setProgress(((currentEpochIndex + 1) / epochs.length) * 100);
-
-                lastEpochReceiveTimestamp = new Date();
-                const latencyMs = lastEpochReceiveTimestamp.getTime() - epochRequestStart.getTime();
-                logWithTimestamp(`Epoch data received. epoch=${epochNum} at ${lastEpochReceiveTimestamp.toISOString()} duration=${latencyMs} ms`);
+                setProgress((completedCount / epochs.length) * 100);
+                logWithTimestamp(`Batch complete. loaded=${completedCount}/${totalEpochCount}`);
             }
 
-            if (firstEpochRequestTimestamp) {
-                logWithTimestamp(`First epoch request timestamp recorded at ${firstEpochRequestTimestamp.toISOString()}.`);
-            }
-            if (lastEpochReceiveTimestamp) {
-                logWithTimestamp(`Last epoch data received at ${lastEpochReceiveTimestamp.toISOString()} after processing ${totalEpochCount} epoch(s).`);
-            }
+            const loadEndTimestamp = new Date();
+            logWithTimestamp(`All epochs loaded in ${loadEndTimestamp.getTime() - loadStartTimestamp.getTime()}ms for ${totalEpochCount} epoch(s).`);
             
             setProgress(100);
             message.success('Visualization loaded successfully!');

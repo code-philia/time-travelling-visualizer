@@ -225,3 +225,22 @@ export function testConnection(message: string, options?: NetworkOptions) {
     const data = { message };
     return basicPostWithJsonResponse('/testConnection', data, options);
 }
+
+// new function to fetch all necessary data for a specific epoch in one request
+export function getNeighborsForSample(
+    contentPath: string,
+    visId: string,
+    epoch: number,
+    sampleIndex: number,
+    options?: NetworkOptions
+) {
+    const data = {
+        "content_path": contentPath,
+        "vis_id": visId,
+        "epoch": epoch,
+        "sample_index": sampleIndex
+    };
+
+    // request to the backend to fetch both original and projection neighbors for the hovered sample
+    return basicPostWithJsonResponse('/getNeighborsForSample', data, options);
+}

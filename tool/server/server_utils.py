@@ -289,6 +289,61 @@ def calculate_projection_neighbors(content_path, vis_id, epoch, max_neighbors=10
     
     return neighbors
 
+def calculate_neighbors_for_point(content_path, vis_id, epoch, point_index, max_neighbors=10):
+    """ calculate knn for a specific point, return the neighbor indices
+
+    Args:
+        content_path (str): path to the content directory
+        vis_id (str): visualization ID
+        epoch (int): epoch number
+        point_index (int): index of the point
+        max_neighbors (int, optional): max number of neighbors, defaults to 10.
+    Returns:
+        list: list of neighbor indices
+    """
+    feature_ls = load_single_attribute(content_path, epoch, 'representation')
+    features = np.array(feature_ls)
+    neighbors = NearestNeighbors(n_neighbors=max_neighbors + 1, algorithm='auto').fit(features)
+    
+    sample_feature = features[point_index].reshape(1, -1)
+    distances, indices = neighbors.kneighbors(sample_feature)
+    
+    neighbors_ls = list()
+    
+    for nbr in range(1, max_neighbors + 1):
+        neighbor_idx = indices[0][nbr]  
+        neighbors_ls.append(int(neighbor_idx))
+    
+    return neighbors_ls
+
+def calculate_projection_neighbors_for_point(content_path, vis_id, epoch, point_index, max_neighbors=10):
+    """
+    calculate knn for a specific point in the projection space, return the neighbor indices.
+
+    Args:
+        content_path (str): path to the content directory
+        vis_id (str): visualization ID
+        epoch (int): epoch number
+        point_index (int): index of the point
+        max_neighbors (int, optional): max number of neighbors, defaults to 10.
+
+    Returns:
+        list: list of neighbor indices
+    """
+    projection_ls = load_projection(content_path, vis_id, epoch)
+    projection = np.array(projection_ls)
+    neighbors = NearestNeighbors(n_neighbors=max_neighbors + 1, algorithm='auto').fit(projection)
+    
+    sample_projection = projection[point_index].reshape(1, -1)
+    distances, indices = neighbors.kneighbors(sample_projection)
+    
+    neighbors_ls = list()
+    
+    for nbr in range(1, max_neighbors + 1):
+        neighbor_idx = indices[0][nbr]  
+        neighbors_ls.append(int(neighbor_idx))
+    
+    return neighbors_ls
 
 # Func: Load a single attribute from a file based on the configuration and epoch
 def load_single_attribute(content_path, epoch, attribute):
