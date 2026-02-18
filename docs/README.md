@@ -19,7 +19,6 @@ Steps 4 and 5 were the problem. For a dataset with N=5000 points and 20 epochs:
 
 - The epochs loaded one at a time (sequential), meaning each epoch had to finish before the next could start.
 
----
 
 ## Architecture Context
 
@@ -43,7 +42,6 @@ The "Load Visualization" flow:
 
 5. `chart.tsx` renders the plot from the store data.
 
----
 
 ## Solution
 
@@ -268,6 +266,19 @@ python tool/benchmark.py --content_path /path/to/dataset --vis_id TimeVis_1
 
 The script requires the Flask backend to be running (`python tool/server/server.py`).
 
+### Extra: Draggable and collapsable blocks
+
+I saw a TODO in the basic-component.tsx file that said  add resize/drag/dock-to mouse interaction so i did it as an extra. I only did the draggable and i wanted to do the collapse so it looks more organized.
+
+**File**: `web/src/component/custom/basic-component.tsx`
+
+**File**: `web/src/component/function-panel.tsx`
+
+I created a DraggableBlock component and used it to wrap the FunctionalBlock that was already done. I also added the Collapse component so every block is collapsable.
+
+I also changed the color legend panel a bit so it looks more organized.
+
+
 **How to run it:**
 
 1. Start the backend server:
@@ -287,6 +298,4 @@ The script requires the Flask backend to be running (`python tool/server/server.
    ```
 
 To find your `vis_id`, look at the folder names inside your dataset's `visualize/` directory:
-```bash
-ls /path/to/your/dataset/visualize/
-```
+ `ls /path/to/your/dataset/visualize/`

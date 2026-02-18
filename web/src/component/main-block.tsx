@@ -128,7 +128,7 @@ function Timeline({ epoch, epochs, progress, onSwitchEpoch }: { epoch: number, e
 
     // Render nodes and links (simple lines between nodes)
     return (
-        <div style={{ position: 'relative' }}>
+        <div style={{ position: 'relative', padding: '25px 0 10px 0' }}>
             <svg
             width={svgDimensions.width}
             height={svgDimensions.height}
@@ -273,7 +273,7 @@ export function MainBlock() {
                 <LoadingOverlay progress={progress} totalEpochs={availableEpochs.length} />
             </div>
             <div id="footer">
-                <div style={{ display: 'flex', alignItems: 'center', height: '100%', width: '100%', overflowX: 'auto', overflowY: 'hidden' }}>
+                <div style={{ display: 'flex', alignItems: 'center', height: '100%', width: '100%', overflowX: 'auto', overflowY: 'hidden', padding: '0 12px' }}>
                     <Timeline epoch={epoch} epochs={availableEpochs} progress={ progress} onSwitchEpoch={(e) => {
                         setEpoch(e);
                         notifyEpochSwitch(e);

@@ -214,7 +214,7 @@ function MessageHandler() {
 
 export function AppCombinedView() {
     return (
-        <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column" }}>
+        <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", backgroundColor: "#fff" }}>
             <PanelGroup direction="vertical" style={{ flex: 1, display: "flex" }} autoSaveId="plot-view-root">
                 <Panel defaultSize={76} minSize={40}>
                     <PanelGroup direction="horizontal" style={{ height: "100%", display: "flex" }} autoSaveId="plot-view-layout">
@@ -252,7 +252,7 @@ function FunctionViewPanels() {
     ];
 
     return (
-        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: '#fff' }}>
             <Tabs
                 className="function-tabs"
                 activeKey={activeKey}
@@ -284,7 +284,7 @@ function BottomDock() {
             size="small"
             tabBarGutter={0}
             tabBarStyle={{ marginLeft: 0 }}
-            style={{ height: '100%' }}
+            style={{ height: '100%', backgroundColor: '#fff' }}
             items={items}
             activeKey={activeKey}
             onChange={(key) => setActiveKey(key as typeof activeKey)}

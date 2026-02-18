@@ -165,38 +165,55 @@ export function FunctionPanel() {
                 searchBlock={
                     <>
                         <AutoComplete
-                            style={{ width: "100%", paddingRight: "0.4em" }}
+                            style={{ width: '100%', paddingRight: '0.4em' }} // Set width to 100% for responsiveness
                             ref={searchElementRef}
                             options={searchHistoryRender(searchHistoryFiltered)}
                             value={searchValue}
                             open={searchHistoryOpen}
                             onChange={(value: string) => { handleSearch(value) }}
                             onBlur={() => {
-                                addHistory(searchValue);
+                                addHistory(searchValue);    // TODO only add successful history
                                 setSearchHistoryOpen(false);
                             }}
                             onFocus={() => handleSearch(searchValue)}
                             onKeyDown={(e: { key: string; }) => {
-                                if (e.key === "Enter") {
+                                if (e.key === 'Enter') {
                                     handleSearch(searchValue, true);
                                     setSearchHistoryOpen(false);
-                                } else if (e.key === "Escape") {
+                                } else if (e.key === 'Escape') {
                                     searchElementRef.current?.blur();
                                 }
                             }}
-                            onSelect={() => { searchElementRef.current?.blur(); }}
-                            onClear={() => { setSearchHistoryOpen(false); }}
+                            onSelect={() => {
+                                searchElementRef.current?.blur();
+                            }}
+                            onClear={() => {
+                                setSearchHistoryOpen(false);
+                            }}
                             defaultActiveFirstOption={false}
-                            notFoundContent={<div className="alt-text placeholder-block">No item found</div>}
+                            notFoundContent={<div className='alt-text placeholder-block'>No item found</div>}
                             allowClear
                         >
-                            <Input onClick={() => { setSearchHistoryOpen(true); }} />
+                            <Input onClick={() => {
+                                setSearchHistoryOpen(true);
+                            }} />
                         </AutoComplete>
-                        {(allSearchResult.length > 0 || searchValue !== "") &&
+                        {(allSearchResult.length > 0 || searchValue !== "")
+                            &&
                             <ComponentBlock label="Search Result">
-                                {allSearchResult.length > 0
-                                    ? <List className="search-result" size="small" bordered dataSource={allSearchResult} renderItem={searchResultRender} />
-                                    : (searchValue && <div className="alt-text placeholder-block">No item found</div>)
+                                {
+                                    allSearchResult.length > 0
+                                        ?
+                                        <List
+                                            className="search-result"
+                                            size="small"
+                                            bordered
+                                            dataSource={allSearchResult}
+                                            renderItem={searchResultRender}
+                                        />
+                                        :
+                                        (
+                                            searchValue && <div className="alt-text placeholder-block">No item found</div>)
                                 }
                             </ComponentBlock>
                         }
@@ -205,17 +222,27 @@ export function FunctionPanel() {
                 selectedBlock={
                     <ComponentBlock>
                         <div className="tag-list">
-                            {selectedItems.length
-                                ? selectedItems.map((item) => (
-                                    <Tag className="sample-tag" closeIcon
-                                        onClick={(e: { preventDefault: () => void; }) => { e.preventDefault(); handleClose(item); }}
-                                        onClose={(e: { preventDefault: () => void; }) => { e.preventDefault(); handleClose(item); }}
-                                        key={item.num}
-                                    >
-                                        {item.num}. {item.title}
-                                    </Tag>
-                                ))
-                                : <div className="alt-text placeholder-block">No selected item</div>
+                            {
+                                selectedItems.length
+                                    ?
+                                    selectedItems.map((item) => (
+                                        <Tag className='sample-tag'
+                                            closeIcon
+                                            onClick={(e: { preventDefault: () => void; }) => {
+                                                e.preventDefault();
+                                                handleClose(item);
+                                            }}
+                                            onClose={(e: { preventDefault: () => void; }) => {
+                                                e.preventDefault();
+                                                handleClose(item);
+                                            }}
+                                            key={item.num}
+                                        >
+                                            {item.num}. {item.title}
+                                        </Tag>
+                                    ))
+                                    :
+                                    <div className='alt-text placeholder-block'>No selected item</div>
                             }
                         </div>
                     </ComponentBlock>
@@ -228,31 +255,75 @@ export function FunctionPanel() {
                         <div className="settings-rows">
                             <div className="settings-row">
                                 <span className="settings-label">Point Size</span>
-                                <Slider min={1} max={5} step={1} dots marks={pointSizeMarks} value={pointSize} onChange={(v) => setPointSize(v as number)} style={{ minWidth: 80, flex: 1 }} />
+                                <Slider
+                                    min={1} max={5}
+                                    step={1}
+                                    dots
+                                    marks={pointSizeMarks}
+                                    value={pointSize}
+                                    onChange={(v) => setPointSize(v as number)}
+                                    style={{ minWidth: 80, flex: 1 }} />
                             </div>
                             <div className="settings-row">
                                 <span className="settings-label">Mode</span>
-                                <Select size="small" style={{ width: 240 }} value={mode} onChange={(v) => setMode(v)}
+                                <Select
+                                    size="small"
+                                    style={{ width: 240 }}
+                                    value={mode}
+                                    onChange={(v) => setMode(v)}
                                     options={[{ label: "Points", value: "points" }, { label: "Density", value: "density" }]} />
                             </div>
                             <div className="settings-row">
                                 <span className="settings-label">Neighbors</span>
-                                <Select size="small" style={{ width: 240 }}
-                                    value={revealOriginalNeighbors && revealProjectionNeighbors ? "both" : (revealOriginalNeighbors ? "original" : (revealProjectionNeighbors ? "projection" : "none"))}
+                                <Select
+                                    size="small"
+                                    style={{ width: 240 }}
+                                    value={revealOriginalNeighbors && revealProjectionNeighbors ? "both"
+                                        : (revealOriginalNeighbors ? "original"
+                                            : (revealProjectionNeighbors ? "projection"
+                                                : "none"))}
                                     onChange={(v) => {
-                                        setRevealOriginalNeighbors(v === "original" || v === "both");
-                                        setRevealProjectionNeighbors(v === "projection" || v === "both");
+                                        if (v === 'none') {
+                                            setRevealOriginalNeighbors(false);
+                                            setRevealProjectionNeighbors(false);
+                                        } else if (v === 'original') {
+                                            setRevealOriginalNeighbors(true);
+                                            setRevealProjectionNeighbors(false);
+                                        } else if (v === 'projection') {
+                                            setRevealOriginalNeighbors(false);
+                                            setRevealProjectionNeighbors(true);
+                                        } else if (v === 'both') {
+                                            setRevealOriginalNeighbors(true);
+                                            setRevealProjectionNeighbors(true);
+                                        }
                                     }}
-                                    options={[{ label: "None", value: "none" }, { label: "Original", value: "original" }, { label: "Projection", value: "projection" }, { label: "Both", value: "both" }]} />
+                                    options={[
+                                        { label: 'None', value: 'none' },
+                                        { label: 'Original', value: 'original' },
+                                        { label: 'Projection', value: 'projection' },
+                                        { label: 'Both', value: 'both' },
+                                    ]} />
                             </div>
                             <div className="settings-row" style={{ alignItems: "flex-start" }}>
                                 <span className="settings-label">Display</span>
                                 <div style={{ border: "1px solid #d9d9d9", borderRadius: 6, padding: 8, background: "#fff", width: 240 }}>
                                     <div className="settings-rows">
-                                        <div className="settings-row-between"><span style={{ fontSize: 12 }}>Show Label</span><Switch size="small" checked={showLabel} onChange={(v) => setShowLabel(v)} /></div>
-                                        <div className="settings-row-between"><span style={{ fontSize: 12 }}>Show Index</span><Switch size="small" checked={showIndex} onChange={(v) => setShowIndex(v)} /></div>
-                                        <div className="settings-row-between"><span style={{ fontSize: 12 }}>Show Trail</span><Switch size="small" checked={showTrail} onChange={(v) => setShowTrail(v)} /></div>
-                                        <div className="settings-row-between"><span style={{ fontSize: 12 }}>Show Background</span><Switch size="small" checked={showBackground} onChange={(v) => setShowBackground(v)} /></div>
+                                        <div className="settings-row-between">
+                                            <span style={{ fontSize: 12 }}>Show Label</span>
+                                            <Switch size="small" checked={showLabel} onChange={(v) => setShowLabel(v)} />
+                                        </div>
+                                        <div className="settings-row-between">
+                                            <span style={{ fontSize: 12 }}>Show Index</span>
+                                            <Switch size="small" checked={showIndex} onChange={(v) => setShowIndex(v)} />
+                                        </div>
+                                        <div className="settings-row-between">
+                                            <span style={{ fontSize: 12 }}>Show Trail</span>
+                                            <Switch size="small" checked={showTrail} onChange={(v) => setShowTrail(v)} />
+                                        </div>
+                                        <div className="settings-row-between">
+                                            <span style={{ fontSize: 12 }}>Show Background</span>
+                                            <Switch size="small" checked={showBackground} onChange={(v) => setShowBackground(v)} />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -263,7 +334,10 @@ export function FunctionPanel() {
                     <ComponentBlock>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                             <CompactCheckboxGroup
-                                options={[{ label: "Train Data", value: "train" }, { label: "Test Data", value: "test" }]}
+                                options={[
+                                    { label: 'Train Data', value: 'train' },
+                                    { label: 'Test Data', value: 'test' },
+                                ]}
                                 defaultValue={["train", "test"]}
                                 onChange={(checkedValues) => { setShownData(checkedValues as string[]); }}
                             />
@@ -280,39 +354,74 @@ export default FunctionPanel;
 
 
 function HighlightOptionBlock() {
-    const { setHighlightData } = useDefaultStore(["highlightData", "setHighlightData"]);
-    const [errorOn, setErrorOn] = useState(false);
-    const [flipOn, setFlipOn] = useState(false);
+    const { highlightData, setHighlightData } = useDefaultStore(["highlightData", "setHighlightData"]);
 
-    const update = (err: boolean, flip: boolean) => {
-        setErrorOn(err);
-        setFlipOn(flip);
-        const types = [];
-        if (err) types.push("prediction_error");
-        if (flip) types.push("prediction_flip");
-        setHighlightData(types);
+    const [highlightTypes, setHighlightTypes] = useState([
+        { type: 'prediction_error', label: 'Prediction Error', enabled: false, icon: '❌', description: 'Samples with wrong prediction at current epoch.' },
+        { type: 'prediction_flip', label: 'Prediction Flip', enabled: false, icon: '🔄', description: 'Samples with prediction flip at current epoch.' }
+    ]);
+
+    const handleToggleHighlightType = (type: string) => {
+        const updatedhighlightTypes = highlightTypes.map(highlight => highlight.type === type ? { ...highlight, enabled: !highlight.enabled } : highlight);
+        setHighlightTypes(updatedhighlightTypes);
+
+        const enabledTypes = updatedhighlightTypes
+            .filter(highlight => highlight.enabled)
+            .map(highlight => highlight.type);
+
+        setHighlightData(enabledTypes);
+    };
+
+    const renderHighlightTypeItem = (highlight: { type: string, label: string, enabled: boolean, icon: string, description: string }) => {
+        return (
+            <List.Item
+                className={`highlight-type-item ${highlight.enabled ? 'enabled' : 'disabled'}`}
+                style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'flex-start',
+                    width: '100%',
+                    paddingLeft: '4px',
+                }}
+            >
+                <div
+                    className="highlight-header"
+                    style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}
+                >
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <div className="highlight-icon" style={{ marginRight: '8px', fontSize: '12px' }}>
+                            {highlight.icon}
+                        </div>
+                        <div className="highlight-label" style={{ fontSize: '12px' }} >
+                            {highlight.label}
+                        </div>
+                    </div>
+                    <div className="highlight-toggle" style={{ marginRight: '10px' }}>
+                        <Switch
+                            size="small"
+                            checked={highlight.enabled}
+                            onChange={() => handleToggleHighlightType(highlight.type)}
+                        />
+                    </div>
+                </div>
+            </List.Item>
+        );
     };
 
     return (
-        <div className="highlight-detection-container">
-            <List size="small" bordered={false}>
-                <List.Item className={`highlight-type-item ${errorOn ? "enabled" : "disabled"}`} style={{ paddingLeft: 4 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
-                        <span style={{ fontSize: 12 }}>❌ Prediction Error</span>
-                        <Switch size="small" checked={errorOn} onChange={(v) => update(v, flipOn)} style={{ marginRight: 10 }} />
-                    </div>
-                </List.Item>
-                <List.Item className={`highlight-type-item ${flipOn ? "enabled" : "disabled"}`} style={{ paddingLeft: 4 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
-                        <span style={{ fontSize: 12 }}>🔄 Prediction Flip</span>
-                        <Switch size="small" checked={flipOn} onChange={(v) => update(errorOn, v)} style={{ marginRight: 10 }} />
-                    </div>
-                </List.Item>
-            </List>
+        <div
+            className="highlight-detection-container"
+        >
+            <List
+                size="small"
+                bordered={false}
+                dataSource={highlightTypes}
+                renderItem={renderHighlightTypeItem}
+                locale={{ emptyText: 'No highlight types configured' }}
+            />
         </div>
     );
 }
-
 function ColorLegendPanel({ colorDict, labelDict, inherentLabelData }: {
     colorDict: Map<number, [number, number, number]>,
     labelDict: Map<number, string>,
@@ -367,12 +476,12 @@ function DraggableBlockList(props: {
     const dragOverItem = useRef<BlockId | null>(null)
 
     const blocks: Record<BlockId, { label: string; content: React.ReactNode }> = {
-        search:    { label: "Search",       content: props.searchBlock },
-        selected:  { label: "Selected",     content: props.selectedBlock },
-        legend:    { label: "Color Legend", content: props.legendBlock },
-        settings:  { label: "Settings",     content: props.settingsBlock },
-        filter:    { label: "Filter",       content: props.filterBlock },
-        highlight: { label: "Highlight",    content: props.highlightBlock },
+        search: { label: "Search", content: props.searchBlock },
+        selected: { label: "Selected", content: props.selectedBlock },
+        legend: { label: "Color Legend", content: props.legendBlock },
+        settings: { label: "Settings", content: props.settingsBlock },
+        filter: { label: "Filter", content: props.filterBlock },
+        highlight: { label: "Highlight", content: props.highlightBlock },
     };
 
     const onDragEnd = () => {
