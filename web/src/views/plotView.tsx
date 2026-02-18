@@ -103,7 +103,7 @@ function MessageHandler() {
                 setTokenList(textResponse.token_list || []);
             }
 
-            // Load epoch data for all available epochs in parallel batches
+            // load epoch data for all available epochs in parallel batches
             let allEpochDataTemp: Record<number, any> = {};
             const totalEpochCount = epochs.length;
             const loadStartTimestamp = new Date();
@@ -112,11 +112,11 @@ function MessageHandler() {
             let globalMinX = Infinity, globalMaxX = -Infinity;
             let globalMinY = Infinity, globalMaxY = -Infinity;
 
-            // helper to load all data for a single epoch
+            //  load all data for only one epoch
             const loadSingleEpoch = async (epochNum: number) => {
                 const epochData: Record<string, any> = {};
 
-                // send all requests for this epoch in parallel
+                // send all requests for the epoch in parallel
                 const requests: Promise<any>[] = [
                     BackendAPI.fetchEpochProjection(contentPath, visualizationID, epochNum),
                 ];
@@ -145,7 +145,7 @@ function MessageHandler() {
                 return { epochNum, epochData };
             };
 
-            // process epochs in parallel batches of 5
+            // process epochs in parallel batches (defined in .env for now)
             let completedCount = 0;
             for (let i = 0; i < epochs.length; i += BATCH_SIZE) {
                 const batch = epochs.slice(i, i + BATCH_SIZE);

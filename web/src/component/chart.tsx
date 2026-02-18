@@ -1,5 +1,5 @@
 // ChartComponent.tsx
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { EmbeddingView, type EmbeddingViewProps, type DataPoint, type ViewportState } from 'embedding-atlas/react';
 import { useDefaultStore } from "../state/state.unified";
 import { transferArray2Color } from './utils';
@@ -32,9 +32,6 @@ export const ChartComponent = memo(() => {
     const { setSelectedIndices } = useDefaultStore(["setSelectedIndices"]);
     // added for on demand calls and cache
     const { contentPath, visId, neighborCache, setValue } = useDefaultStore(["contentPath", "visId", "neighborCache", "setValue"]);
-   
-    // for on demand neighbor fetching
-    const { hoveredIndex } = useDefaultStore(["hoveredIndex"]);
 
     const epochData = allEpochData[epoch];
 
@@ -43,20 +40,23 @@ export const ChartComponent = memo(() => {
     // selection can be added later when needed
     let [viewportState, setViewportState] = useState<ViewportState | null>(null);
 
-    // fetch on demand when user hovers a point
+    // define hoveredIndex so it doesnt trigger the call to get neighbors when i hover on a point
     useEffect(() => {
-        if (hoveredIndex === undefined || !contentPath || !visId || !epoch) return;
-        if (!revealOriginalNeighbors && !revealProjectionNeighbors) return;
+        setHoveredIndex(undefined);
+    }, [epochData, contentPath]);
 
-        const cacheKey = `${epoch}-${hoveredIndex}`;
-        if (neighborCache[cacheKey]) return; // already in cache
+    // fetch neighbors when user clicks on a hovered point and not when i just hoiver over it
+    const handleChartClick = useCallback(() => {
+        if (!tooltip) return
+        if (!contentPath || !visId || epoch == null) return
+        if (!revealOriginalNeighbors && !revealProjectionNeighbors) return
 
-        let cancelled = false;
+        const clickedIndex = tooltip.identifier as number
+        const cacheKey = `${epoch}-${clickedIndex}`
+        if (neighborCache[cacheKey]) return
 
-        // fetch neighbors for hovered point
-        BackendAPI.getNeighborsForSample(contentPath, visId, epoch, hoveredIndex)
+        BackendAPI.getNeighborsForSample(contentPath, visId, epoch, clickedIndex)
             .then((result: any) => {
-                if (cancelled) return;
                 setValue('neighborCache', {
                     ...neighborCache,
                     [cacheKey]: {
@@ -65,11 +65,8 @@ export const ChartComponent = memo(() => {
                     }
                 });
             })
-            .catch((err: any) => console.warn('Failed to fetch neighbors:', err));
-
-            // cleanup function to cancel if hoveredIndex changes before fetch completes
-        return () => { cancelled = true; };
-    }, [hoveredIndex, epoch, contentPath, visId, revealOriginalNeighbors, revealProjectionNeighbors]);
+            .catch((err: any) => console.warn('Failed to fetch neighbors:', err))
+    }, [tooltip, epoch, contentPath, visId, revealOriginalNeighbors, revealProjectionNeighbors, neighborCache, setValue]);
 
     // observe container size change
     useEffect(() => {
@@ -580,6 +577,7 @@ export const ChartComponent = memo(() => {
                 width: '100%',
                 height: '100%',
             }}
+            onClick={handleChartClick}
         >
             <div style={{ position: 'relative', flex: 1 }}>
                 {content ?? <div style={{ width: '100%', height: '100%' }} />}

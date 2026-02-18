@@ -410,18 +410,8 @@ def get_projection_neighbors():
         )
 
 
-    """
-    Api: get projection neighbors of one point
 
-Request:
-    content_path (str)
-    vis_id (str)
-    epoch (str)
-Response:
-    neighbors (array[][])
-    projection_neighbors (array[][])
-    """
-
+# get neighbors and projection for only one point
 @app.route("/getNeighborsForSample", methods=["POST"])
 @cross_origin()
 def get_neighbors_for_sample():
