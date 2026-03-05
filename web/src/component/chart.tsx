@@ -1,8 +1,9 @@
 // ChartComponent.tsx
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { EmbeddingView, type EmbeddingViewProps, type DataPoint, type ViewportState } from 'embedding-atlas/react';
 import { useDefaultStore } from "../state/state.unified";
 import { transferArray2Color } from './utils';
+import * as BackendAPI from '../communication/backend';
 
 type EmbeddingData = NonNullable<EmbeddingViewProps['data']>;
 
@@ -29,6 +30,10 @@ export const ChartComponent = memo(() => {
     const { availableEpochs } = useDefaultStore(["availableEpochs"]);
     const { showTrail } = useDefaultStore(["showTrail"]);
     const { setSelectedIndices } = useDefaultStore(["setSelectedIndices"]);
+    // added for on demand calls and cache
+    const { contentPath, visId, neighborCache, setValue } = useDefaultStore(["contentPath", "visId", "neighborCache", "setValue"]);
+
+    const [isFetchingNeighbors, setIsFetchingNeighbors] = useState(false);
 
     const epochData = allEpochData[epoch];
 
@@ -36,6 +41,36 @@ export const ChartComponent = memo(() => {
     let [tooltip, setTooltip] = useState<DataPoint | null>(null);
     // selection can be added later when needed
     let [viewportState, setViewportState] = useState<ViewportState | null>(null);
+
+    // define hoveredIndex so it doesnt trigger the call to get neighbors when i hover on a point
+    useEffect(() => {
+        setHoveredIndex(undefined);
+    }, [epochData, contentPath]);
+
+    // fetch neighbors when user clicks on a hovered point and not when i just hoiver over it
+    const handleChartClick = useCallback(() => {
+        if (!tooltip) return
+        if (!contentPath || !visId || epoch == null) return
+        if (!revealOriginalNeighbors && !revealProjectionNeighbors) return
+
+        const clickedIndex = tooltip.identifier as number
+        const cacheKey = `${epoch}-${clickedIndex}`
+        if (neighborCache[cacheKey]) return
+
+        setIsFetchingNeighbors(true)
+        BackendAPI.getNeighborsForSample(contentPath, visId, epoch, clickedIndex)
+            .then((result: any) => {
+                setValue('neighborCache', {
+                    ...neighborCache,
+                    [cacheKey]: {
+                        originalNeighbors: result.originalNeighbors || result.neighbors || [],
+                        projectionNeighbors: result.projectionNeighbors || result.projection_neighbors || [],
+                    }
+                });
+            })
+            .catch((err: any) => console.warn('Failed to fetch neighbors:', err))
+            .finally(() => setIsFetchingNeighbors(false))
+    }, [tooltip, epoch, contentPath, visId, revealOriginalNeighbors, revealProjectionNeighbors, neighborCache, setValue]);
 
     // observe container size change
     useEffect(() => {
@@ -193,9 +228,12 @@ export const ChartComponent = memo(() => {
         if (!prepared || !epochData) return { center: null, original: [], projection: [], dataX: new Float32Array(0), dataY: new Float32Array(0), pointSize, revealOriginalNeighbors, revealProjectionNeighbors } as any;
         const idsByPos = prepared.dataPoints.map((p) => p.identifier as number);
         if (!tooltip) return { center: null, original: [], projection: [], dataX: prepared.simpleData.x as Float32Array, dataY: prepared.simpleData.y as Float32Array, pointSize, revealOriginalNeighbors, revealProjectionNeighbors, idsByPos, showLabel, showIndex, labelDict, textData, inherentLabelData, viewportState, showTrail, availableEpochs, allEpochData, currentEpoch: epoch, setSelectedIndices, selectedIndices } as any;
+        // now read from cache
         const hoverId = tooltip.identifier as number;
-        const orig = (epochData.originalNeighbors?.[hoverId] ?? []).filter((nid) => posMap.has(nid));
-        const proj = (epochData.projectionNeighbors?.[hoverId] ?? []).filter((nid) => posMap.has(nid));
+        const cacheKey = `${epoch}-${hoverId}`;
+        const cached = neighborCache[cacheKey];
+        const orig = (cached?.originalNeighbors ?? []).filter((nid: number) => posMap.has(nid));
+        const proj = (cached?.projectionNeighbors ?? []).filter((nid: number) => posMap.has(nid));
         return {
             center: tooltip,
             original: orig,
@@ -219,7 +257,7 @@ export const ChartComponent = memo(() => {
             setSelectedIndices,
             selectedIndices,
         };
-    }, [prepared, epochData, tooltip, posMap, pointSize, revealOriginalNeighbors, revealProjectionNeighbors, showLabel, showIndex, labelDict, textData, inherentLabelData, viewportState, showTrail, availableEpochs, allEpochData, epoch, trailRefresh, selectedIndices]);
+    }, [prepared, epochData, tooltip, posMap, pointSize, revealOriginalNeighbors, revealProjectionNeighbors, showLabel, showIndex, labelDict, textData, inherentLabelData, viewportState, showTrail, availableEpochs, allEpochData, epoch, trailRefresh, selectedIndices, neighborCache]);
 
     class NeighborOverlay {
         private el: HTMLDivElement | null = null;
@@ -543,9 +581,20 @@ export const ChartComponent = memo(() => {
                 width: '100%',
                 height: '100%',
             }}
+            onClick={handleChartClick}
         >
             <div style={{ position: 'relative', flex: 1 }}>
                 {content ?? <div style={{ width: '100%', height: '100%' }} />}
+
+               {/* show loading bar when click point and fetch neighbors */}
+                {isFetchingNeighbors && (
+                    <div className="neighbor-loading-container">
+                        <span className="neighbor-loading-text">Loading neighbors...</span>
+                        <div className="neighbor-loading-bar-container">
+                            <div className="neighbor-loading-bar" />
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

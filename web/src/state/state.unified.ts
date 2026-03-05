@@ -12,8 +12,11 @@ export type EpochData = {
     projection: number[][];
     prediction: number[];
     predProbability: number[][];
-    originalNeighbors: number[][];
-    projectionNeighbors: number[][];
+
+    // commented because the were for load neighbors for every epoch
+    // originalNeighbors: number[][];
+    // projectionNeighbors: number[][];
+
     background: string;
 };
 
@@ -21,6 +24,10 @@ export type EpochData = {
 export type BaseMutableGlobalStore = {
     // Basic configuration
     contentPath: string;
+
+    // added globally so chart can make calls to the backend after loading
+    visId: string;
+
     dataType: 'Image' | 'Text';
     taskType: string;
     
@@ -69,6 +76,9 @@ export type BaseMutableGlobalStore = {
     isFocusMode: boolean;
     focusIndices: number[];
     
+    // this stores neighbors already fetched on demand so they don't have to be fetched again
+    neighborCache: Record<string, { originalNeighbors: number[]; projectionNeighbors: number[] }>;
+    
     // Training events and influence
     trainingEvents: TrainingEvent[];
     trainingEvent: TrainingEvent | null; // Current training event for influence view
@@ -83,6 +93,7 @@ export type BaseMutableGlobalStore = {
 export let initMutableGlobalStore: BaseMutableGlobalStore = {
     // Basic configuration
     contentPath: '',
+    visId: '',
     dataType: 'Image',
     taskType: '',
     
@@ -130,7 +141,7 @@ export let initMutableGlobalStore: BaseMutableGlobalStore = {
     // Focus mode
     isFocusMode: false,
     focusIndices: [],
-    
+    neighborCache: {},
     // Training events and influence
     trainingEvents: [],
     trainingEvent: null,
