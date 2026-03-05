@@ -1,3 +1,4 @@
+
 html {
   width: 100%;
   height: 100%;
@@ -745,4 +746,50 @@ input[type="color"] {
 
 .flex-space {
     flex: 1 0 auto;
+}
+
+/*load neighbors bar*/
+
+@keyframes neighbor-slide {
+  0%   { transform: translateX(-100%); }
+  50%  { transform: translateX(150%); }
+  100% { transform: translateX(-100%); }
+}
+
+.neighbor_loading_container {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background-color: rgba(255, 255, 255, 0.92);
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.neighbor_loading_text {
+  font-size: 11px;
+  color: #555;
+  white-space: nowrap;
+}
+
+.neighbor_loading_bar_container {
+  width: 60px;
+  height: 4px;
+  border-radius: 2px;
+  background-color: #e0e0e0;
+  overflow: hidden;
+}
+
+.neighbor_loading_bar {
+  width: 40%;
+  height: 100%;
+  border-radius: 2px;
+  background-color: #3278F0;
+  animation: neighbor-slide 1s ease-in-out infinite;
 }

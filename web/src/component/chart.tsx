@@ -33,6 +33,8 @@ export const ChartComponent = memo(() => {
     // added for on demand calls and cache
     const { contentPath, visId, neighborCache, setValue } = useDefaultStore(["contentPath", "visId", "neighborCache", "setValue"]);
 
+    const [isFetchingNeighbors, setIsFetchingNeighbors] = useState(false);
+
     const epochData = allEpochData[epoch];
 
     // plot view helpers
@@ -55,6 +57,7 @@ export const ChartComponent = memo(() => {
         const cacheKey = `${epoch}-${clickedIndex}`
         if (neighborCache[cacheKey]) return
 
+        setIsFetchingNeighbors(true)
         BackendAPI.getNeighborsForSample(contentPath, visId, epoch, clickedIndex)
             .then((result: any) => {
                 setValue('neighborCache', {
@@ -66,6 +69,7 @@ export const ChartComponent = memo(() => {
                 });
             })
             .catch((err: any) => console.warn('Failed to fetch neighbors:', err))
+            .finally(() => setIsFetchingNeighbors(false))
     }, [tooltip, epoch, contentPath, visId, revealOriginalNeighbors, revealProjectionNeighbors, neighborCache, setValue]);
 
     // observe container size change
@@ -581,6 +585,16 @@ export const ChartComponent = memo(() => {
         >
             <div style={{ position: 'relative', flex: 1 }}>
                 {content ?? <div style={{ width: '100%', height: '100%' }} />}
+
+               {/* show loading bar when click point and fetch neighbors */}
+                {isFetchingNeighbors && (
+                    <div className="neighbor_loading_container">
+                        <span className="neighbor_loading_text">Loading neighbors...</span>
+                        <div className="neighbor_loading_bar_container">
+                            <div className="neighbor_loading_bar" />
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
