@@ -588,10 +588,10 @@ export const ChartComponent = memo(() => {
 
                {/* show loading bar when click point and fetch neighbors */}
                 {isFetchingNeighbors && (
-                    <div className="neighbor_loading_container">
-                        <span className="neighbor_loading_text">Loading neighbors...</span>
-                        <div className="neighbor_loading_bar_container">
-                            <div className="neighbor_loading_bar" />
+                    <div className="neighbor-loading_container">
+                        <span className="neighbor-loading-text">Loading neighbors...</span>
+                        <div className="neighbor-loading-bar-container">
+                            <div className="neighbor-loading-bar" />
                         </div>
                     </div>
                 )}

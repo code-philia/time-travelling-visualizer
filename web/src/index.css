@@ -756,7 +756,7 @@ input[type="color"] {
   100% { transform: translateX(-100%); }
 }
 
-.neighbor_loading_container {
+.neighbor-loading-container {
   position: absolute;
   bottom: 12px;
   right: 12px;
@@ -772,13 +772,13 @@ input[type="color"] {
   pointer-events: none;
 }
 
-.neighbor_loading_text {
+.neighbor-loading-text {
   font-size: 11px;
   color: #555;
   white-space: nowrap;
 }
 
-.neighbor_loading_bar_container {
+.neighbor-loading-bar-container {
   width: 60px;
   height: 4px;
   border-radius: 2px;
@@ -786,7 +786,7 @@ input[type="color"] {
   overflow: hidden;
 }
 
-.neighbor_loading_bar {
+.neighbor-loading-bar {
   width: 40%;
   height: 100%;
   border-radius: 2px;
