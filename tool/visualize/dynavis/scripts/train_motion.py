@@ -358,3 +358,68 @@ def main(h: HParams) -> None:
     # 建议统一命名为 vis_model.pth
     torch.save(checkpoint, os.path.join(h.ckpt_dir, "vis_model.pth"))
     print("DynaVis model saved successfully.")
+
+
+
+def train_refined(h: HParams, ttav_mask=None) -> None:
+    """
+    增量微调 Pipeline:
+      1) 从 Checkpoint 加载模型权重与 Stats
+      2) 跳过 AE 阶段，直接执行 Joint 阶段微调
+      3) 仅在内存中更新结果或导出
+    """
+    seed_all(0)
+    model_path = os.path.join(h.ckpt_dir, "vis_model.pth")
+    
+    if not os.path.exists(model_path):
+        raise FileNotFoundError(f"Base model not found at {model_path}. Please run full training first.")
+
+    # 1) 加载 Checkpoint
+    checkpoint = torch.load(model_path, map_location=h.device)
+    stats = checkpoint["stats"]
+    
+    # 2) 准备数据 (直接使用已有的 stats，不重新计算)
+    X_raw, t_raw, epoch_ids = load_epoch_stack_from_dir(h.data_path)
+    X, t = apply_normalization_with_stats(X_raw, t_raw, stats)
+    
+    ds = SequenceDataset(X, t)
+    dl = DataLoader(ds, batch_size=h.bs, shuffle=True, collate_fn=collate_sequences)
+
+    # 3) 初始化并恢复模型
+    f = Encoder(h.D, h.d).to(h.device)
+    g = Decoder(h.d, h.D).to(h.device)
+    f.load_state_dict(checkpoint["encoder_state_dict"])
+    g.load_state_dict(checkpoint["decoder_state_dict"])
+
+    # ---------------------------------------------------------
+    # [模型演进关键点]：在这里可以进行 LoRA 注入或层冻结
+    # 例如：for p in f.parameters(): p.requires_grad = False
+    # ---------------------------------------------------------
+
+    print(f"[TTAV] Starting Refined Training for {h.epochs_joint} epochs...")
+
+    # 4) 跳过 Stage 1，直接进行 Stage 2 Joint 训练
+    # 这里的 h.epochs_joint 应该是你设置的较小值（如 2-5）
+    stage2_joint(
+        f=f,
+        g=g,
+        dl=dl,
+        device=h.device,
+        h=h,
+        lambda_reg=1e-4,
+        # ttav_mask=ttav_mask # 如果你修改了 stage2_joint 的接口，这里可以传入
+    )
+
+    # 5) 导出结果 (导出到内存 buffer 或临时目录，不覆盖原始物理数据)
+    export_2d_per_epoch(
+        f=f,
+        X_raw=X_raw,
+        t_raw=t_raw,
+        stats=stats,
+        device=h.device,
+        out_root=h.ckpt_dir, # 注意：如果你不想覆盖，可以指定一个新的 temp 目录
+        batch_n=2048,
+        epoch_ids=epoch_ids,
+    )
+    
+    print("[TTAV] Refined training complete.")

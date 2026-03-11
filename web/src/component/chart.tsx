@@ -3,7 +3,6 @@ import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { EmbeddingView, type EmbeddingViewProps, type DataPoint, type ViewportState } from 'embedding-atlas/react';
 import { useDefaultStore } from "../state/state.unified";
 import { transferArray2Color } from './utils';
-import * as BackendAPI from '../communication/backend'; 
 
 type EmbeddingData = NonNullable<EmbeddingViewProps['data']>;
 
@@ -26,40 +25,13 @@ export const ChartComponent = memo(() => {
     const { pointSize } = useDefaultStore(["pointSize"]);
     const { revealOriginalNeighbors, revealProjectionNeighbors } = useDefaultStore(["revealOriginalNeighbors", "revealProjectionNeighbors"]);
     const { showLabel, showIndex } = useDefaultStore(["showLabel", "showIndex"]);
+    const { selectedIndices } = useDefaultStore(["selectedIndices"]);
     const { availableEpochs } = useDefaultStore(["availableEpochs"]);
     const { showTrail } = useDefaultStore(["showTrail"]);
     const { setSelectedIndices } = useDefaultStore(["setSelectedIndices"]);
-    const { 
-        focusMode, 
-        contentPath, 
-        selectedIndices 
-    } = useDefaultStore(['focusMode', 'contentPath', 'selectedIndices']);
-    const epochData = allEpochData[epoch];
-    const { refinedProjection } = useDefaultStore([ 'refinedProjection']);
 
-    // [确定性逻辑 1]：计算当前显示的投影源
-    const currentProjection = useMemo(() => {
-        // 优先使用实时优化的局部投影，如果没有则回退到静态的 epoch 投影
-        if (refinedProjection) {
-            console.log("[TTAV] Rendering using Refined Projection Layer");
-            return refinedProjection;
-        }
-        return allEpochData[epoch]?.projection || [];
-    }, [allEpochData, epoch, refinedProjection]);
-// 放置在这里：每当选中点或精度模式改变时，向后端同步上下文
-    // useEffect(() => {
-    //     // 只有当存在选中点时才触发后端更新，避免无效请求
-    //     if (selectedIndices && selectedIndices.length > 0) {
-    //         // 调用 BackendAPI 中新定义的 updateFocusContext 接口
-    //         BackendAPI.updateFocusContext(contentPath, selectedIndices, focusMode)
-    //             .then(response => {
-    //                 console.log('[TTAV] Focus context updated successfully:', response);
-    //             })
-    //             .catch(err => {
-    //                 console.error('[TTAV] Failed to update focus context:', err);
-    //             });
-    //     }
-    // }, [selectedIndices, focusMode, contentPath]);
+    const epochData = allEpochData[epoch];
+
     // plot view helpers
     let [tooltip, setTooltip] = useState<DataPoint | null>(null);
     // selection can be added later when needed
@@ -153,11 +125,10 @@ export const ChartComponent = memo(() => {
 
     // convert data for embedding view
     const prepared = useMemo<PreparedEmbedding | null>(() => {
-        if (currentProjection.length === 0 || filteredIndices.length === 0) {
+        if (!epochData || filteredIndices.length === 0) {
             return null;
         }
 
-        const currentCoords = refinedProjection || epochData.projection;
         const x = new Float32Array(filteredIndices.length);
         const y = new Float32Array(filteredIndices.length);
         const category = new Uint8Array(filteredIndices.length);
@@ -167,7 +138,7 @@ export const ChartComponent = memo(() => {
         let dataPoints : DataPoint[] = []
 
         filteredIndices.forEach((originalIndex, position) => {
-            const [px, py] = currentCoords[originalIndex] ?? [0, 0];
+            const [px, py] = epochData.projection[originalIndex] ?? [0, 0];
             x[position] = px;
             y[position] = py;
 
@@ -203,7 +174,7 @@ export const ChartComponent = memo(() => {
             dataPoints,
             categoryColors: categoryColorList.length > 0 ? categoryColorList : null,
         };
-    }, [colorDict, currentProjection, filteredIndices, inherentLabelData]);
+    }, [colorDict, epochData, filteredIndices, inherentLabelData]);
 
     const posMap = useMemo(() => {
         const m = new Map<number, number>();

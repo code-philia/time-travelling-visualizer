@@ -29,7 +29,6 @@ is_dev_mode = "--dev" in sys.argv
 # }
 
 
-
 # Global session to keep objects alive for the single active scene
 active_session = {
     "strategy": None,
@@ -95,7 +94,7 @@ def update_focus_context():
 
     # Check if a session is active and matches the current data path
     if active_session["strategy"] is None or active_session["content_path"] != content_path:
-        print("No active session, strategy: ",active_session["strategy"],", path: ",active_session["content_path"])
+        print("No active session, strategy: ",active_session["strategy"],", path: ",active_session["content_path"], content_path)
         return jsonify({"status": "error", "message": "No active session"}), 400
     
 
@@ -118,7 +117,7 @@ def update_focus_context():
         refine_epochs = 5 if focus_mode == "fine" else 2
         vis_method = active_session["vis_method"]
         if vis_method == "DynaVis":
-            strategy.run(epochs=refine_epochs)
+            strategy.refine_train(focus_mode=focus_mode)
         else:
             # step 3: generate visualization results
             if vis_method == "DVI" or vis_method == "TimeVis":

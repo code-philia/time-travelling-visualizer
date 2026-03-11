@@ -25,13 +25,81 @@ function logWithTimestamp(message: string): void {
 interface FunctionViewPanelsProps {
     onUpdateProjection: () => Promise<void>;
 }
+
+
+  const loadSingleEpoch = async (contentPath: string, method: string, visID: string, epochNum: number, taskType: string) => {
+        // 1. 获取投影坐标 (最核心)
+        const projection = await BackendAPI.fetchEpochProjection(contentPath, method, visID, epochNum);
+        
+        // 2. 获取邻居数据 (用于对比微调前后的流形保持)
+        const originalNeighbors = await BackendAPI.getOriginalNeighbors(contentPath, epochNum);
+        const projectionNeighbors = await BackendAPI.getProjectionNeighbors(contentPath, method, visID, epochNum);
+
+        const data: any = {
+            projection: projection.projection || [],
+            originalNeighbors: originalNeighbors.neighbors || [],
+            projectionNeighbors: projectionNeighbors.neighbors || [],
+        };
+
+        // 3. 分类任务额外数据
+        if (taskType === 'Classification') {
+            const predictionResponse = await BackendAPI.getAttributeResource(contentPath, epochNum, 'prediction');
+            const prob = predictionResponse.prediction || [];
+            data['predProbability'] = prob;
+            data['prediction'] = prob.map((p: number[]) => p.indexOf(Math.max(...p)));
+            
+            const background = await BackendAPI.getBackground(contentPath, method, visID, epochNum);
+            data['background'] = background || '';
+        }
+        return data;
+    };
+
+const initStaticContext = async (contentPath: string, dataType: string) => {
+    // 1. 获取训练进程的基础信息
+    const processInfo = await BackendAPI.fetchTrainingProcessInfo(contentPath);
+    
+    // 2. 构造颜色和标签字典 (用于点的着色)
+    const colorMap = new Map();
+    const labelMap = new Map();
+    if (processInfo.color_list) {
+        processInfo.color_list.forEach((color: number[], i: number) => {
+            colorMap.set(i, [color[0], color[1], color[2]]);
+            labelMap.set(i, processInfo.label_text_list[i]);
+        });
+    }
+
+    // 3. 【关键修复】加载点的固有类别标签 (Inherent Labels)
+    const labelsResponse = await BackendAPI.getAttributeResource(contentPath, processInfo.available_epochs[0], 'label');
+    const inherentLabelData = labelsResponse.label || [];
+
+    // 4. 【关键修复】加载文本数据和 Token (不能传空！)
+    let textData: any[] = [];
+    let tokenList: any[] = [];
+    if (dataType === 'Text') {
+        console.log("[TTAV] Fetching full text data and tokens...");
+        const textResponse = await BackendAPI.getText(contentPath);
+        textData = textResponse.text_data || [];
+        tokenList = textResponse.token_list || [];
+    }
+
+    return { 
+        processInfo, 
+        colorMap, 
+        labelMap, 
+        inherentLabelData,
+        textInfo: { 
+            data: textData, 
+            tokens: tokenList 
+        } 
+    };
+};
 // MessageHandler component for handling extension communication and backend requests
 function MessageHandler() {
     // State from unified store
     const {
         setContentPath, setAvailableEpochs, setDataType, setTaskType,
         setTextData, setTokenList, setInherentLabelData,
-        setColorDict, setLabelDict, setProgress, setValue
+        setColorDict, setLabelDict, setProgress, setValue,
     } = useDefaultStore([
         'setContentPath', 'setAvailableEpochs', 'setDataType', 'setTaskType',
         'setTextData', 'setTokenList', 'setInherentLabelData',
@@ -89,6 +157,7 @@ function MessageHandler() {
             // 更新当前路径等基础状态，确保后续 Update 正常
             setContentPath(contentPath);
             setValue('visID', visualizationID);
+            setValue('vis_method', visualizationMethod);
         } else {
             throw new Error(response.message);
         }
@@ -97,7 +166,6 @@ function MessageHandler() {
         message.error({ content: `Sync failed: ${error.message}`, key: 'sync_task' });
     }
 };
-    // Load visualization data from backend with configuration
     const handleLoadVisualization = async (
         contentPath: string, 
         visualizationMethod: string, 
@@ -107,152 +175,53 @@ function MessageHandler() {
         visConfig: any
     ) => {
         try {
-            // 每次重新 load 都要清空旧的精细化结果
+            logWithTimestamp(`[TTAV] Start loading visualization: ${visualizationID}`);
+            
+            const staticCtx = await initStaticContext(contentPath, dataType);
 
-            console.log("[TTAV] Loading visualization with ID:", visualizationID);
-            setValue('refinedProjection', null);
-            setValue('visID', visualizationID);
-            logWithTimestamp(`Web plot view start loading visualization. config=${JSON.stringify({ contentPath, visualizationMethod, visualizationID, dataType, taskType })}`);
+            // 同步所有静态上下文
+            setColorDict(staticCtx.colorMap);
+            setLabelDict(staticCtx.labelMap);
+            setInherentLabelData(staticCtx.inherentLabelData); // 修复颜色变色
+            setTextData(staticCtx.textInfo.data);              // 修复文本丢失
+            setTokenList(staticCtx.textInfo.tokens);            // 修复 Token 丢失
             
-            // Set basic configuration
-            setContentPath(contentPath);
-            setDataType(dataType as 'Image' | 'Text');
-            setTaskType(taskType);
-            
-            // Get training process info
-            const processInfo = await BackendAPI.fetchTrainingProcessInfo(contentPath);
-            const epochs = processInfo.available_epochs || [];
+            const epochs = staticCtx.processInfo.available_epochs || [];
             setAvailableEpochs(epochs);
-            if (!epochs.length) {
-                logWithTimestamp('No epochs available from backend.');
-            }
-
-            const colorMap = new Map();
-            const labelMap = new Map();
-            for(let i = 0; i < processInfo.color_list.length; i++) {
-                colorMap.set(i, [processInfo.color_list[i][0], processInfo.color_list[i][1], processInfo.color_list[i][2]]);
-                labelMap.set(i, processInfo.label_text_list[i]);
-            }
-
-            setColorDict(colorMap);
-            setLabelDict(labelMap);
-
-            const labelsResponse = await BackendAPI.getAttributeResource(contentPath, epochs[0], 'label');
-            setInherentLabelData(labelsResponse.label || []);
-
-            // Load text data if text type
-            if (dataType === 'Text') {
-                const textResponse = await BackendAPI.getText(contentPath);
-                setTextData(textResponse.text_data || []);
-                setTokenList(textResponse.token_list || []);
-            }
-
-            // Load epoch data for all available epochs
+           
+            // 2. 准备状态容器
             let allEpochDataTemp: Record<number, any> = {};
-            let firstEpochRequestTimestamp: Date | undefined;
-            let lastEpochReceiveTimestamp: Date | undefined;
-            const totalEpochCount = epochs.length;
+            let gMinX = Infinity, gMaxX = -Infinity, gMinY = Infinity, gMaxY = -Infinity;
 
-            let globalMinX = Infinity, globalMaxX = -Infinity;
-            let globalMinY = Infinity, globalMaxY = -Infinity;
-
+            // 3. 循环加载 Epoch 数据 (可以指定范围或全量)
             for (const epochNum of epochs) {
-                const epochRequestStart = new Date();
-                if (!firstEpochRequestTimestamp) {
-                    firstEpochRequestTimestamp = epochRequestStart;
-                    logWithTimestamp(`First epoch request sent. epoch=${epochNum} at ${epochRequestStart.toISOString()}`);
-                } else {
-                    logWithTimestamp(`Epoch request sent. epoch=${epochNum} at ${epochRequestStart.toISOString()}`);
-                }
+                const epochData = await loadSingleEpoch(contentPath, visualizationMethod, visualizationID, epochNum, taskType);
+                
+                // 更新全局边界 (Bounds)
+                const curP = epochData.projection;
+                const minX = Math.min(...curP.map((p: any) => p[0])), maxX = Math.max(...curP.map((p: any) => p[0]));
+                const minY = Math.min(...curP.map((p: any) => p[1])), maxY = Math.max(...curP.map((p: any) => p[1]));
+                
+                gMinX = Math.min(gMinX, minX); gMaxX = Math.max(gMaxX, maxX);
+                gMinY = Math.min(gMinY, minY); gMaxY = Math.max(gMaxY, maxY);
 
-                allEpochDataTemp = { ...allEpochDataTemp, [epochNum]: {} };
-
-                // Load main plot data
-                const projection = await BackendAPI.fetchEpochProjection(contentPath, visualizationMethod, visualizationID, epochNum);
-                allEpochDataTemp[epochNum]['projection'] = projection.projection || [];
-
-                // Load neighbors data
-                const originalNeighbors = await BackendAPI.getOriginalNeighbors(contentPath, epochNum);
-                const projectionNeighbors = await BackendAPI.getProjectionNeighbors(contentPath,visualizationMethod, visualizationID, epochNum);
-                allEpochDataTemp[epochNum]['originalNeighbors'] = originalNeighbors.neighbors || [];
-                allEpochDataTemp[epochNum]['projectionNeighbors'] = projectionNeighbors.neighbors || [];
-
-                if (taskType === 'Classification') {
-                    const predictionResponse = await BackendAPI.getAttributeResource(contentPath, epochNum, 'prediction');
-                    allEpochDataTemp[epochNum]['predProbability'] = predictionResponse.prediction || [];
-
-                    let predictions: number[] = [];
-                    for (const prob of allEpochDataTemp[epochNum]['predProbability']) {
-                        const predClass = prob.indexOf(Math.max(...prob));
-                        predictions.push(predClass);
-                    }
-                    allEpochDataTemp[epochNum]['prediction'] = predictions;
-                   // console.log("Epoch",epochNum);
-                    const background = await BackendAPI.getBackground(contentPath,visualizationMethod, visualizationID, epochNum);
-                    allEpochDataTemp[epochNum]['background'] = background || '';
-                }
-
-                let minX = allEpochDataTemp[epochNum]['projection'].reduce((min: number, p: number[]) => p[0] < min ? p[0] : min, Infinity);
-                let maxX = allEpochDataTemp[epochNum]['projection'].reduce((max: number, p: number[]) => p[0] > max ? p[0] : max, -Infinity);
-                let minY = allEpochDataTemp[epochNum]['projection'].reduce((min: number, p: number[]) => p[1] < min ? p[1] : min, Infinity);
-                let maxY = allEpochDataTemp[epochNum]['projection'].reduce((max: number, p: number[]) => p[1] > max ? p[1] : max, -Infinity);
-
-                globalMinX = Math.min(globalMinX, minX);
-                globalMaxX = Math.max(globalMaxX, maxX);
-                globalMinY = Math.min(globalMinY, minY);
-                globalMaxY = Math.max(globalMaxY, maxY);
-
-                // Update store with new epoch data
-                setValue('globalBounds', {
-                    minX: globalMinX,
-                    maxX: globalMaxX,
-                    minY: globalMinY,
-                    maxY: globalMaxY
-                });
+                allEpochDataTemp[epochNum] = epochData;
+                
+                // 更新进度条和 Store
+                setProgress(((epochs.indexOf(epochNum) + 1) / epochs.length) * 100);
                 setValue('allEpochData', { ...allEpochDataTemp });
-
-                // Calculate progress based on the number of processed epochs
-                // We use index + 1 because epochs array is 0-indexed in the loop, but we want to show progress for the current epoch
-                const currentEpochIndex = epochs.indexOf(epochNum);
-                setProgress(((currentEpochIndex + 1) / epochs.length) * 100);
-
-                lastEpochReceiveTimestamp = new Date();
-                const latencyMs = lastEpochReceiveTimestamp.getTime() - epochRequestStart.getTime();
-                logWithTimestamp(`Epoch data received. epoch=${epochNum} at ${lastEpochReceiveTimestamp.toISOString()} duration=${latencyMs} ms`);
+                setValue('globalBounds', { minX: gMinX, maxX: gMaxX, minY: gMinY, maxY: gMaxY });
             }
 
-            if (firstEpochRequestTimestamp) {
-                logWithTimestamp(`First epoch request timestamp recorded at ${firstEpochRequestTimestamp.toISOString()}.`);
-            }
-            if (lastEpochReceiveTimestamp) {
-                logWithTimestamp(`Last epoch data received at ${lastEpochReceiveTimestamp.toISOString()} after processing ${totalEpochCount} epoch(s).`);
-            }
+            // 4. 同步后端 Session
+            await BackendAPI.syncSession({
+                content_path: contentPath, vis_method: visualizationMethod, vis_id: visualizationID,
+                data_type: dataType, task_type: taskType, vis_config: visConfig
+            });
 
-            setProgress(100);
             message.success('Visualization loaded successfully!');
-
-            // [新增代码] 同步后端 Session，确保 active_session 被正确初始化
-            try {
-                console.log("[TTAV] Syncing active_session with server...");
-                // 构造一个完整的配置传给后端接口
-                const syncConfig = {
-                    content_path: contentPath,
-                    vis_method: visualizationMethod,
-                    vis_id: visualizationID,
-                    data_type: dataType,
-                    task_type: taskType,
-                    vis_config: visConfig
-                };
-                // 调用后端同步接口
-                await BackendAPI.syncSession(syncConfig);
-                console.log("[TTAV] Server session synchronized successfully.");
-            } catch (syncError) {
-                console.error("[TTAV] Failed to sync session with server:", syncError);
-                // 这里不弹出 message.error，以免干扰正常加载，仅在控制台记录
-            }
-
         } catch (error) {
-            console.error('Error loading visualization:', error);
+            console.error('Error:', error);
             message.error('Failed to load visualization');
         }
     };
@@ -310,7 +279,7 @@ export function AppCombinedView() {
         visID,
         epoch,
         setValue,
-        focusMode
+        focusMode,
     } = useDefaultStore([
         'contentPath',
         'selectedIndices',
@@ -319,6 +288,12 @@ export function AppCombinedView() {
         'setValue',
         'focusMode'
     ]);
+    const { 
+        epoch: targetEpoch, 
+        vis_method, 
+        taskType, 
+        visID: currentVisID 
+    } = useDefaultStore(["epoch", "vis_method", "taskType", "visID"]);
 // 用于 Canvas 实时绘制的坐标（这是真正传给 Canvas 组件的数据）
     const [currentDrawingCoords, setCurrentDrawingCoords] = useState<number[][] | null>(null);
     const animationRef = useRef<number>();
@@ -359,32 +334,60 @@ export function AppCombinedView() {
 
         if (animationRef.current) cancelAnimationFrame(animationRef.current);
         animationRef.current = requestAnimationFrame(step);
-    };
-  const handleUpdate = async () => {
-    // 基础校验
-    if (!selectedIndices || selectedIndices.length === 0) {
-        message.warning("Please select points on the canvas first.");
-        return;
-    }
+        };
 
-    try {
-        const hide = message.loading('Refining layout...', 0);
-        
-        // 1. 发起请求：此时不需要知道旧坐标
-        const response = await BackendAPI.updateFocusContext(contentPath, selectedIndices, focusMode);
-        hide();
+         
 
-        if (response && response.status === "success") {
-            // 2. 直接覆盖：Store 会通知 Canvas 重新渲染
-            // 因为不需要动画，这里完全没有用到 allEpochData，性能最优
-            setValue('refinedProjection', response.projection);
-            message.success('Projection updated!');
+    const handleUpdate = async () => {
+        if (!selectedIndices || selectedIndices.length === 0) {
+            message.warning("Please select points on the canvas first.");
+            return;
         }
-    } catch (error) {
-        console.error("Update failed:", error);
-        message.error('Failed to update projection.');
-    }
-};
+
+        try {
+            const hide = message.loading('Refining layout...', 0);
+            
+            // 1. 发起请求：后端执行 train_refined
+            const response = await BackendAPI.updateFocusContext(contentPath, selectedIndices, focusMode);
+            hide();
+
+            if (response && response.status === "success") {
+                
+                // 2. 确定新的 visID：优先使用后端返回的，否则使用当前 Store 里的
+                const newVisID = response.new_vis_id || currentVisID;
+                // setValue('visID', newVisID);
+
+                console.log(`[TTAV] Refine success. Fetching new projection for epoch ${targetEpoch}...`);
+
+                // 3. 调用原子加载函数
+                // 此时所有参数类型（string, string, string, number, string）均已正确匹配
+                const epochData = await loadSingleEpoch(
+                    contentPath,
+                    vis_method,
+                    newVisID, 
+                    targetEpoch,
+                    taskType 
+                );
+
+                // 4. 覆盖 allEpochData，触发原有的 Canvas 渲染逻辑
+                // 注意：prevAllData 依然需要从 react-hook-form 的 getValues 获取最新的内存状态
+                // const prevAllData = getValues('allEpochData') || {};
+                // setValue('allEpochData', {
+                //     ...prevAllData,
+                //     [targetEpoch]: epochData
+                // });
+                setValue('allEpochData', { ...epochData });
+
+                // 备份微调结果
+                setValue('refinedProjection', response.projection);
+
+                message.success('Projection refined and reloaded!');
+            }
+        } catch (error) {
+            console.error("Update failed:", error);
+            message.error('Failed to update projection.');
+        }
+    };
     // 1. 监听全局选点，确保 selectedIndices 响应
     useEffect(() => {
     // 只要这个打印了，说明选点通了

@@ -3,6 +3,7 @@ import torch
 import os
 from .scripts.hparams import HParams
 from .scripts.train_motion import main as train_motion_main
+import train_refined from .scripts.train_motion_main
 
 class DynaVisRunner:
     def __init__(self, content_path: str, vis_id: str, data_type: str, task_type: str, vis_config: Optional[Dict[str, Any]] = None):
@@ -95,7 +96,7 @@ class DynaVisRunner:
         self.hparams.epochs_joint = refine_epochs
         
         # 执行训练
-        self.train() 
+        self.train_refined(self.hparams) 
         
         # 恢复原始设置（防止影响下次 full train）
         self.hparams.epochs_ae = original_ae

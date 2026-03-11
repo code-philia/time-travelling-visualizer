@@ -25,7 +25,7 @@ export type BaseMutableGlobalStore = {
     dataType: 'Image' | 'Text';
     taskType: string;
     visID: string;
-    //vismethod??
+    vis_method: string;
 
     // Epoch and time-related data
     epoch: number;
@@ -91,7 +91,8 @@ export let initMutableGlobalStore: BaseMutableGlobalStore = {
     dataType: 'Image',
     taskType: '',
     visID: '',
-    
+    vis_method: '',
+
     // Epoch and time-related data
     epoch: 1,
     availableEpochs: [],
