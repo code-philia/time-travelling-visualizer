@@ -82,7 +82,7 @@ class ResultGenerator(ResultGeneratorAbstractClass):
 
         image = Image.fromarray(pixel_color.astype('uint8'), 'RGB')
         
-        file_path = os.path.join(self.config['content_path'], 'visualize',self.config['vis_id'],'epochs', f'epoch_{epoch}','background.png')
+        file_path = os.path.join(self.config['content_path'], 'visualize',f"{self.config['vis_method']}_{self.config['vis_id']}",'epochs', f'epoch_{epoch}','background.png')
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         image.save(file_path, 'PNG')
         
