@@ -52,7 +52,7 @@ class ResultGenerator(ResultGeneratorAbstractClass):
             # get and save projection
             all_data_representation = self.data_provider.get_representation(epochs[i])
             projection = self.projector.batch_project(epochs[i],all_data_representation)
-            projection_path = os.path.join(self.config['content_path'], "visualize", self.config["vis_id"], "epochs", f"epoch_{epochs[i]}")
+            projection_path = os.path.join(self.config['content_path'], "visualize",f"{self.config['vis_method']}_{self.config['vis_id']}", "epochs", f"epoch_{epochs[i]}")
             if not os.path.exists(projection_path):
                 os.makedirs(projection_path)
             np.save(os.path.join(projection_path, "projection.npy"), projection)
@@ -90,7 +90,7 @@ class ResultGenerator(ResultGeneratorAbstractClass):
     
     def get_epoch_plot_measures(self, epoch):
         """get plot measure for visualization"""
-        projection_path = os.path.join(self.config['content_path'], "visualize", self.config["vis_id"], "epochs", f"epoch_{epoch}", "projection.npy")
+        projection_path = os.path.join(self.config['content_path'], "visualize", f"{self.config['vis_method']}_{self.config['vis_id']}", "epochs", f"epoch_{epoch}", "projection.npy")
         projection = np.load(projection_path, allow_pickle=True)
 
         x_min = float(np.min(projection[:, 0]))
@@ -170,7 +170,7 @@ class UmapResultGenerator():
             # get and save projection
             all_data_representation = self.data_provider.get_representation(epochs[i])
             projection = self.projector.batch_project(all_data_representation)
-            projection_path = os.path.join(self.config['content_path'], "visualize", self.config["vis_id"], "epochs", f"epoch_{epochs[i]}")
+            projection_path = os.path.join(self.config['content_path'], "visualize", f"{self.config['vis_method']}_{self.config['vis_id']}", "epochs", f"epoch_{epochs[i]}")
             if not os.path.exists(projection_path):
                 os.makedirs(projection_path)
             np.save(os.path.join(projection_path, "projection.npy"), projection)

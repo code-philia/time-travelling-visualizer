@@ -1,11 +1,11 @@
 import os
 import sys
 # from llm_agent import call_llm_agent
-from run_visualization import visualize_run
+from run_visualization import visualize_run, init_visualize_component
 
 from flask import request, Flask, jsonify, make_response, send_file,send_from_directory
 from flask_cors import CORS, cross_origin
-
+from run_visualization import initialize_config
 sys.path.append('.')
 sys.path.append('..')
 sys.path.append('../..')
@@ -21,34 +21,164 @@ app.config['CORS_HEADERS'] = 'Content-Type'
 # Check for "--dev" argument
 is_dev_mode = "--dev" in sys.argv
 
-# tool/server/server.py
 
-# 全局交互上下文，用于存储 Step 3 的接收状态 [cite: 13, 14]
-ttav_context = {
-    "focus_mode": "coarse",
-    "selected_indices": None,
-    "mask": None # Step 3: 向量化布尔掩码
+# ttav_context = {
+#     "focus_mode": "coarse",
+#     "selected_indices": None,
+#     "mask": None # Step 3: 向量化布尔掩码
+# }
+
+
+
+# Global session to keep objects alive for the single active scene
+active_session = {
+    "strategy": None,
+    "visualizer": None,
+    "content_path": None,
+    "vis_id": None,
+    "vis_method": None,
+    "vis_config": {}
 }
 
+def update_active_session(config, visualizer, strategy):
+    """统一更新 Session 的工具函数"""
+    global active_session
+    active_session.update({
+        "strategy": strategy,
+        "visualizer": visualizer,
+        "content_path": config.get("content_path"),
+        "vis_id": config.get("visualizationID") or config.get("vis_id"),
+        "vis_method": config.get("vis_method"),
+        "vis_config": config.get("vis_config", {})
+    })
+
+@app.route('/syncSession', methods=['POST'])
+def sync_session():
+    """新接口：允许前端 Load 时同步 Session"""
+    req = request.get_json()
+    try:
+        config = initialize_config(
+            req['content_path'], 
+            req['vis_method'], 
+            req.get('vis_id', "0"),
+            req['data_type'], 
+            req['task_type'], 
+            req['vis_config']
+        )
+        
+        # 即使是 Load，我们也调用 init 来准备好 strategy 对象（比如加载模型）
+        visualizer, strategy = init_visualize_component(config)
+        update_active_session(config, visualizer, strategy)
+        return jsonify({"status": "success", "message": "Session synced on server"})
+    except Exception as e:
+        import traceback
+        traceback.print_exc() 
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+        
+import threading
+
+# 1. 在全局定义这把锁
+computation_lock = threading.Lock()
 @app.route('/updateFocusContext', methods=['POST'])
 @cross_origin()
 def update_focus_context():
+    """
+    Endpoint to receive user selection and trigger dynamic refinement.
+    """
     data = request.get_json()
-    ttav_context["focus_mode"] = data.get("focus_mode", "coarse")
-    indices = data.get("selected_indices", [])
-    ttav_context["selected_indices"] = indices
+    content_path = data.get("content_path")
+    selected_indices = data.get("selected_indices", [])
+    focus_mode = data.get("focus_mode", "coarse")
     
-    # Step 3: 预构建向量化布尔掩码 (Boolean Masking) 
-    # 假设总数据量为 N，在这里提前生成显存掩码，降低 train_step 比对开销
-    if indices:
-        import torch
-        # 这里的 N 需要根据实际数据集大小获取
-        N = get_total_dataset_size() 
-        mask = torch.zeros(N, dtype=torch.bool)
-        mask[indices] = True
-        ttav_context["mask"] = mask.to(device) # 移至 GPU
+    req = request.get_json()
+
+    # Check if a session is active and matches the current data path
+    if active_session["strategy"] is None or active_session["content_path"] != content_path:
+        print("No active session, strategy: ",active_session["strategy"],", path: ",active_session["content_path"])
+        return jsonify({"status": "error", "message": "No active session"}), 400
+    
+
+    strategy = active_session["strategy"]
+    visualizer = active_session["visualizer"]
+    
+    try:
+        # 1. 提取前端参数
+        selected_indices = req.get("selected_indices", [])
+        focus_mode = req.get("focus_mode", "balanced")
         
-    return jsonify({"status": "success"})
+        print(f"Starting refinement: mode={focus_mode}, selected_points={len(selected_indices)}")
+
+        mask = strategy.get_focus_mask(selected_indices)
+        # 3. 将参数注入到 Trainer 状态中
+        # 这一步确保了下一步 strategy.train() 会看到这些焦点信息
+        strategy.update_ttav_context(selected_indices, focus_mode, mask)
+
+        # 4. 执行训练 (根据模式决定轮次)
+        refine_epochs = 5 if focus_mode == "fine" else 2
+        vis_method = active_session["vis_method"]
+        if vis_method == "DynaVis":
+            strategy.run(epochs=refine_epochs)
+        else:
+            # step 3: generate visualization results
+            if vis_method == "DVI" or vis_method == "TimeVis":
+                # now we assume that all the metries are already saved to train visualization model
+                print("Start training visualization model...")
+                strategy.train_vis_model()
+                print("Train visualization model finished.")
+                
+        # generate visualization results
+        print("Start generating visualization results...")
+        visualizer.visualize_all_epochs()
+        print("Generate visualization results finished, visualization process completed successfully!")
+       
+        # # 定位刚才保存的最新坐标文件
+        # # 注意：这里需要根据你的文件结构拼接路径
+        # latest_proj_path = os.path.join(strategy.data_provider.content_path, "Model", "Iteration_1", "dvi_json", f"index_1.npy")
+        # new_coords = np.load(latest_proj_path)
+
+        return jsonify({
+            "status": "success", 
+            "projection": "new_projection" # new_coords.tolist()
+        })
+
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+    
+    
+
+@app.route('/startVisualizing', methods = ["POST"])
+def start_visualizing():
+    """
+    Modified start endpoint to register the active session.
+    """
+    req = request.get_json()
+    content_path = req['content_path']
+    # ... other params ...
+    vis_method = req['vis_method']
+    vis_id = req['vis_id'] or "0"
+    data_type = req['data_type']
+    task_type = req['task_type']
+    vis_config = req['vis_config']
+    
+    # 构造预期的文件夹名称
+    folder_name = f"{vis_method}_{vis_id}"
+    target_dir = os.path.join(content_path, "visualize", folder_name)
+
+    if os.path.exists(target_dir):
+        # 409 Conflict 是处理此类逻辑的标准 HTTP 状态码
+        return jsonify({
+            "status": "error",
+            "message": f"Session ID '{vis_id}' already exists for {vis_method}. Please use a different ID or delete the old folder."
+        }), 409
+    
+    visualizer, strategy = visualize_run(content_path, vis_method, vis_id, data_type, task_type, vis_config)
+    
+     # Store in global session for subsequent refinement calls
+    # 同步更新 Session
+    update_active_session(req, visualizer, strategy)
+    
+    return make_response(jsonify({"status": "initialized"}), 200)
     
 @app.route("/", methods=["GET", "POST"])
 def GUI():
@@ -127,8 +257,9 @@ def update_projection():
     content_path = req['content_path']
     vis_id = req['vis_id']
     epoch = int(req['epoch'])
+    vis_method = req['vis_method']
 
-    projection = load_projection(content_path, vis_id, epoch)
+    projection = load_projection(content_path, vis_method, vis_id, epoch)
 
     result = jsonify({
         'projection': projection,
@@ -146,20 +277,7 @@ Request:
     vis_config (dict): visualization config
 Response:
     None
-"""
-@app.route('/startVisualizing', methods = ["POST"])
-def start_visualizing():
-    req = request.get_json()
-    content_path = req['content_path']
-    vis_method = req['vis_method']
-    vis_id = req['vis_id']
-    data_type = req['data_type']
-    task_type = req['task_type']
-    vis_config = req['vis_config']
-    
-    visualize_run(content_path, vis_method, vis_id, data_type, task_type, vis_config)
-    
-    return make_response({}, 200)
+# """
 
 """
 Api: get text data of all samples
@@ -277,9 +395,10 @@ def get_background():
     content_path = req['content_path']
     vis_id = req['vis_id']
     epoch = int(req['epoch'])
-    
+    vis_method = req['vis_method']
+
     try:
-        base64_image = load_background(content_path, vis_id, epoch)
+        base64_image = load_background(content_path,vis_method, vis_id, epoch)
         result = jsonify({
             'background_image_base64': base64_image
         })
@@ -394,9 +513,10 @@ def get_projection_neighbors():
     content_path = req['content_path']
     vis_id = req['vis_id']
     epoch = int(req['epoch'])
+    vis_method = req['vis_method']
     
     try:
-        neighbors = calculate_projection_neighbors(content_path, vis_id, epoch)
+        neighbors = calculate_projection_neighbors(content_path, vis_method, vis_id, epoch)
         result = jsonify({
             'neighbors': neighbors,
         })
@@ -413,9 +533,9 @@ def get_visualize_metrics():
     content_path = req['content_path']
     vis_id = req['vis_id']
     epoch = int(req['epoch'])
-    
+    vis_method = req['vis_method']
     try:
-        metrics = calculate_visualize_metrics(content_path, vis_id, epoch)
+        metrics = calculate_visualize_metrics(content_path, vis_method, vis_id, epoch)
         result = jsonify(metrics)
         return make_response(result, 200)
     except Exception as e:
@@ -492,12 +612,13 @@ if __name__ == "__main__":
         port = port + 1
 
     if not is_dev_mode:
-        app.run(host=host, port=port)
+        app.run(host=host, port=port, threaded=True)
     else:
         from livereload import Server
         from flask_debugtoolbar import DebugToolbarExtension
 
         app.debug = True
+        app.threaded = True
         app.config['SECRET_KEY'] = 'a-random-secret-key'
         toolbar = DebugToolbarExtension(app)
 

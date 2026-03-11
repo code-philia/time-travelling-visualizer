@@ -35,20 +35,31 @@ export const ChartComponent = memo(() => {
         selectedIndices 
     } = useDefaultStore(['focusMode', 'contentPath', 'selectedIndices']);
     const epochData = allEpochData[epoch];
-// 放置在这里：每当选中点或精度模式改变时，向后端同步上下文
-    useEffect(() => {
-        // 只有当存在选中点时才触发后端更新，避免无效请求
-        if (selectedIndices && selectedIndices.length > 0) {
-            // 调用 BackendAPI 中新定义的 updateFocusContext 接口
-            BackendAPI.updateFocusContext(contentPath, selectedIndices, focusMode)
-                .then(response => {
-                    console.log('[TTAV] Focus context updated successfully:', response);
-                })
-                .catch(err => {
-                    console.error('[TTAV] Failed to update focus context:', err);
-                });
+    const { refinedProjection } = useDefaultStore([ 'refinedProjection']);
+
+    // [确定性逻辑 1]：计算当前显示的投影源
+    const currentProjection = useMemo(() => {
+        // 优先使用实时优化的局部投影，如果没有则回退到静态的 epoch 投影
+        if (refinedProjection) {
+            console.log("[TTAV] Rendering using Refined Projection Layer");
+            return refinedProjection;
         }
-    }, [selectedIndices, focusMode, contentPath]);
+        return allEpochData[epoch]?.projection || [];
+    }, [allEpochData, epoch, refinedProjection]);
+// 放置在这里：每当选中点或精度模式改变时，向后端同步上下文
+    // useEffect(() => {
+    //     // 只有当存在选中点时才触发后端更新，避免无效请求
+    //     if (selectedIndices && selectedIndices.length > 0) {
+    //         // 调用 BackendAPI 中新定义的 updateFocusContext 接口
+    //         BackendAPI.updateFocusContext(contentPath, selectedIndices, focusMode)
+    //             .then(response => {
+    //                 console.log('[TTAV] Focus context updated successfully:', response);
+    //             })
+    //             .catch(err => {
+    //                 console.error('[TTAV] Failed to update focus context:', err);
+    //             });
+    //     }
+    // }, [selectedIndices, focusMode, contentPath]);
     // plot view helpers
     let [tooltip, setTooltip] = useState<DataPoint | null>(null);
     // selection can be added later when needed
@@ -142,10 +153,11 @@ export const ChartComponent = memo(() => {
 
     // convert data for embedding view
     const prepared = useMemo<PreparedEmbedding | null>(() => {
-        if (!epochData || filteredIndices.length === 0) {
+        if (currentProjection.length === 0 || filteredIndices.length === 0) {
             return null;
         }
 
+        const currentCoords = refinedProjection || epochData.projection;
         const x = new Float32Array(filteredIndices.length);
         const y = new Float32Array(filteredIndices.length);
         const category = new Uint8Array(filteredIndices.length);
@@ -155,7 +167,7 @@ export const ChartComponent = memo(() => {
         let dataPoints : DataPoint[] = []
 
         filteredIndices.forEach((originalIndex, position) => {
-            const [px, py] = epochData.projection[originalIndex] ?? [0, 0];
+            const [px, py] = currentCoords[originalIndex] ?? [0, 0];
             x[position] = px;
             y[position] = py;
 
@@ -191,7 +203,7 @@ export const ChartComponent = memo(() => {
             dataPoints,
             categoryColors: categoryColorList.length > 0 ? categoryColorList : null,
         };
-    }, [colorDict, epochData, filteredIndices, inherentLabelData]);
+    }, [colorDict, currentProjection, filteredIndices, inherentLabelData]);
 
     const posMap = useMemo(() => {
         const m = new Map<number, number>();
@@ -547,6 +559,17 @@ export const ChartComponent = memo(() => {
             customOverlay={{
                 class: NeighborOverlay as any,
                 props: { ...neighborOverlayProps, posMap }
+            }}
+            // [确定性逻辑 3]：确保 EmbeddingView 的选中事件同步到全局 Store
+            onSelection={(points) => {
+                if (points && points.length > 0) {
+                    // 从 DataPoint 对象中提取出我们之前存入的 identifier (即原始索引)
+                    const ids = points.map(p => p.identifier as number);
+                    console.log("[TTAV] Selection Sync to Store:", ids);
+                    setSelectedIndices(ids);
+                } else {
+                    setSelectedIndices([]);
+                }
             }}
         />
     ) : null;

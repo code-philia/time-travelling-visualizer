@@ -228,21 +228,37 @@ class DVILoss(nn.Module):
         self.lambd2 = lambd2
         self.device = device
 
-    def forward(self, edge_to, edge_from, a_to, a_from, curr_model):
+    def forward(self, edge_to, edge_from, a_to, a_from, curr_model, weights=None):
+        """
+        [TTAV] Weighted DVI loss for real-time local refinement.
+        """
         curr_model = curr_model.to(self.device)
-        outputs = curr_model( edge_to, edge_from)
+        outputs = curr_model(edge_to, edge_from)
         embedding_to, embedding_from = outputs["umap"]
         recon_to, recon_from = outputs["recon"]
-        # TODO stop gradient edge_to_ng = edge_to.detach().clone()
 
-        recon_l = self.recon_loss(edge_to, edge_from, recon_to, recon_from, a_to, a_from).to(self.device)
-        umap_l = self.umap_loss(embedding_to, embedding_from).to(self.device)
+        # 1. Calculate basic losses (UMAP & Reconstruction)
+        # Note: We need per-sample loss for weighting
+        recon_l_to = torch.mean(torch.pow(edge_to - recon_to, 2), dim=1)
+        recon_l_from = torch.mean(torch.pow(edge_from - recon_from, 2), dim=1)
+        recon_l = (recon_l_to + recon_l_from) / 2
+        
+        umap_l = self.umap_loss(embedding_to, embedding_from) # This returns a scalar
+        # For UMAP, we apply the weight to the mean directly as a simplification 
+        # unless you modify compute_cross_entropy to return per-sample loss.
+        
         temporal_l = self.temporal_loss(curr_model).to(self.device)
 
-        loss = umap_l + self.lambd1 * recon_l + self.lambd2 * temporal_l
+        # 2. Apply TTAV weights
+        if weights is not None:
+            # recon_l is (batch_size,), weights is (batch_size,)
+            weighted_recon = (recon_l * weights).mean()
+            weighted_umap = umap_l * weights.mean() # Approximate weighting
+            loss = weighted_umap + self.lambd1 * weighted_recon + self.lambd2 * temporal_l
+        else:
+            loss = umap_l + self.lambd1 * recon_l.mean() + self.lambd2 * temporal_l
         
-        return umap_l, self.lambd1 *recon_l, self.lambd2 *temporal_l, loss
-
+        return umap_l, self.lambd1 * recon_l.mean(), self.lambd2 * temporal_l, loss
 
 def convert_distance_to_probability(distances, a=1.0, b=1.0):
     """convert distance to student-t distribution probability in low-dimensional space"""

@@ -35,6 +35,10 @@ class TimeVis(StrategyAbstractClass):
         self.recon_fn = ReconstructionLoss(beta=1.0)
         self.criterion = SingleVisLoss(self.umap_fn, self.recon_fn, lambd=self.config['vis_config']['lambda'])
     
+    def train(self):
+        self.train_vis_model()
+
+        
     def train_vis_model(self):
         # parameters
         N_NEIGHBORS = self.config['vis_config']["n_neighbors"]
@@ -87,5 +91,41 @@ class TimeVis(StrategyAbstractClass):
             "state_dict": model.state_dict(),
             "optimizer": optimizer.state_dict()
         }
-        os.makedirs(os.path.join(self.config["content_path"],"visualize", self.config["vis_id"]), exist_ok=True)
-        torch.save(save_model, os.path.join(self.config["content_path"],"visualize", self.config["vis_id"], "vis_model.pth"))
+        # path：Dataset/backdoor/visualize/DynaVis-0/
+        target_path = os.path.join(self.config["content_path"], "visualize", 
+            f"{self.config.get('vis_method')}_{self.config.get('vis_id')}")
+        os.makedirs(target_path, exist_ok=True)
+        # os.makedirs(os.path.join(self.config["content_path"],"visualize", self.config["vis_id"]), exist_ok=True)
+        torch.save(save_model, target_path, "vis_model.pth")
+    
+    def get_focus_mask(self, selected_indices):
+        import numpy as np
+        import torch
+        
+        # 1. 尝试从最可靠的地方获取总点数
+        total_count = 0
+        try:
+            # 方法 A: 检查 data_provider 是否有已加载的数据
+            if hasattr(self.data_provider, 'train_data'):
+                total_count = len(self.data_provider.train_data)
+            # 方法 B: 这里的 TimeVis 实例应该能通过 data_provider 获取数据
+            else:
+                # 这里的 0 代表获取第 0 个 epoch 的数据来计算总数
+                test_data = self.data_provider.get_train_data(0)
+                total_count = len(test_data)
+        except Exception as e:
+            # 方法 C: 如果上述都失败，读取硬盘 index.npy（这是最稳妥的）
+            try:
+                index_path = os.path.join(self.config["content_path"], "epochs", "index.npy")
+                total_count = len(np.load(index_path))
+            except:
+                # 最后的保底
+                total_count = max(selected_indices) + 1 if selected_indices else 10000
+
+        # 2. 确保使用 self.device (initialize_model 中已定义)
+        mask = torch.zeros(total_count, dtype=torch.bool).to(self.device)
+        
+        if selected_indices:
+            mask[selected_indices] = True
+            
+        return mask

@@ -345,3 +345,16 @@ def main(h: HParams) -> None:
         batch_n=2048,
         epoch_ids=epoch_ids,
     )
+
+    # 7) 保存模型权重，供后续交互式 Refine (LoRA) 使用
+    print(f"Saving DynaVis models to {h.ckpt_dir}...")
+    checkpoint = {
+        "encoder_state_dict": f.state_dict(),
+        "decoder_state_dict": g.state_dict(),
+        "hparams": h.__dict__, # 保存参数以便后续重建模型
+        "stats": stats         # 同时保存归一化参数，方便一键加载
+    }
+    
+    # 建议统一命名为 vis_model.pth
+    torch.save(checkpoint, os.path.join(h.ckpt_dir, "vis_model.pth"))
+    print("DynaVis model saved successfully.")

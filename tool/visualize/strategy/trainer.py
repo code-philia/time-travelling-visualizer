@@ -5,7 +5,7 @@ import gc
 import json
 from tqdm import tqdm
 import torch
-
+import threading
 
 """
 1. construct a spatio-temporal complex
@@ -81,7 +81,8 @@ class SingleVisTrainer(TrainerAbstractClass):
         self._loss = 100.0
         self.ttav_indices = []
         self.ttav_mode = "coarse"
-
+        self.ttav_mask = None # Store the boolean tensor here
+        self.interrupt_event = threading.Event()
 
     @property
     def loss(self):
@@ -108,130 +109,97 @@ class SingleVisTrainer(TrainerAbstractClass):
 
     def train_step(self):
         """
-        Step 4 & 5: Enhanced train_step with TTAV focus-based weighting and dynamic sampling.
-        This replaces the original train_step to support Balanced and Fine modes.
+        Step 4 & 5: 基于焦点增强的训练步，支持实时局部微调。
         """
         self.model.to(device=self.DEVICE)
         self.model.train()
+        
         all_loss = []
         umap_losses = []
         recon_losses = []
 
-        # [TTAV] Use tqdm for tracking, consistent with original implementation
+        # 使用 tqdm 追踪进度
         t = tqdm(self.edge_loader, leave=True, total=len(self.edge_loader))
 
         for data in t:
-            # [TTAV] Destructure data from edge_dataset. 
-            # Expecting: (edge_to, edge_from, a_to, a_from, idx_to, idx_from)
-            # Note: Ensure edge_dataset.py __getitem__ returns these 6 elements.
+            # 解构含索引的 6 元素数据
             edge_to, edge_from, a_to, a_from, idx_to, idx_from = data
 
-            # Move tensors to the configured device (GPU/CPU)
             edge_to = edge_to.to(device=self.DEVICE, dtype=torch.float32)
             edge_from = edge_from.to(device=self.DEVICE, dtype=torch.float32)
-            a_to = a_to.to(device=self.DEVICE, dtype=torch.float32)
-            a_from = a_from.to(device=self.DEVICE, dtype=torch.float32)
             
-            # [TTAV] Step 5: Construct sample-wise importance weights for the current batch
+            # 1. 动态权重计算：向量化掩码检索 (O(1) 性能)
             batch_weights = torch.ones(edge_to.shape[0]).to(device=self.DEVICE)
             
-            # Only apply weighting if we are NOT in coarse mode and have selected indices
-            if self.ttav_mode != "coarse" and self.ttav_indices:
-                # Alpha controls the intensity of focus: 2.0 for Balanced, 5.0 for Fine
-                alpha = 2.0 if self.ttav_mode == "balanced" else 5.0
-                
-                # Efficiently create a mask for samples within the user's selected focus area
-                # We boost the loss if either end of the training edge is in the focus set
-                focus_mask = torch.tensor(
-                    [(i.item() in self.ttav_indices or j.item() in self.ttav_indices) 
-                    for i, j in zip(idx_to, idx_from)],
-                    dtype=torch.bool
-                ).to(device=self.DEVICE)
-                
-                # Amplify the loss for focus area samples
+            if self.ttav_mode != "coarse" and self.ttav_mask is not None:
+                alpha = 5.0 if self.ttav_mode == "fine" else 2.0
+                # 只要边的一端在焦点内，即增强该边的梯度
+                focus_mask = self.ttav_mask[idx_to] | self.ttav_mask[idx_from]
                 batch_weights[focus_mask] *= alpha
 
-            # Forward pass through the visualization model
+            # 2. 前向传播与加权 Loss
             outputs = self.model(edge_to, edge_from)
             
-            # [TTAV] Step 5: Pass the batch_weights to the loss function (criterion)
-            # Ensure your criterion.forward in losses.py supports the 'weights' argument
+            # 传入 weights 引导梯度向焦点区域倾斜
             umap_l, recon_l, loss = self.criterion(
                 edge_to, edge_from, a_to, a_from, outputs, weights=batch_weights
             )
 
-            all_loss.append(loss.item())
-            umap_losses.append(umap_l.item())
-            recon_losses.append(recon_l.item())
-
-            # =================== backward ====================
+            # 3. 反向传播
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
 
-        # Calculate average epoch loss
+            # 记录各分量损失
+            all_loss.append(loss.item())
+            umap_losses.append(umap_l.item())
+            recon_losses.append(recon_l.item())
+
         self._loss = sum(all_loss) / len(all_loss)
         self.model.eval()
         
-        # Keeping the original logging format
+        # 监控日志：观察 Fine 模式下 recon_l 的显著变化
         print('umap:{:.4f}\trecon_l:{:.4f}\tloss:{:.4f}'.format(
             sum(umap_losses) / len(umap_losses),
             sum(recon_losses) / len(recon_losses),
             sum(all_loss) / len(all_loss)
         ))
         
-        return self.loss 
-
-         # # tool/visualize/strategy/trainer.py
-
-    # def train(self, PATIENT, MAX_EPOCH_NUMS):
-    #     patient = PATIENT
-    #     time_start = time.time()
-    #     for epoch in range(MAX_EPOCH_NUMS):
-    #         print("====================\nepoch:{}\n===================".format(epoch+1))
-    #         prev_loss = self.loss
-    #         loss = self.train_step()
-    #         self.lr_scheduler.step()
-    #         # early stop, check whether converge or not
-    #         if prev_loss - loss < 5E-3:
-    #             if patient == 0:
-    #                 break
-    #             else:
-    #                 patient -= 1
-    #         else:
-    #             patient = PATIENT
-
-    #     time_end = time.time()
-    #     time_spend = time_end - time_start
-    #     print("Time spend: {:.2f} for training vis model...".format(time_spend))
+        return self.loss
     def train(self, epochs):
         """
-        Step 6: LoRA-based local fine-tuning logic.
+        Unified training loop for both initial training and incremental refinement.
         """
-        # 1. Inject LoRA layers if not already present (only for Fine mode)
+        # 每次开始训练前，重置信号量
+        self.interrupt_event.clear()
+
+        # LoRA Injection: Only inject if mode is 'fine' and not already present
         if self.ttav_mode == "fine" and not hasattr(self, "lora_injected"):
             from tool.visualize.visualize_model import inject_lora
-            # We target the decoder as it's responsible for the final 2D layout
-            inject_lora(self.model, target_layer_names=["decoder"])
+            # Adhering to your existing signature
+            inject_lora(self.model, target_layer_names=["decoder"], rank=4)
             self.lora_injected = True
             
             # Re-initialize optimizer to include new LoRA parameters
-            self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
+            self.optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-3)
 
         for epoch in range(epochs):
+            # 检查用户是否发出了“中断”指令
+            if self.interrupt_event.is_set():
+                print(f"Training interrupted at epoch {epoch}")
+                # 提前跳出训练循环
+                break
             if self.ttav_mode == "fine":
-                # 2. Freeze base weights, unfreeze ONLY LoRA parameters
+                # Freeze base weights, train ONLY LoRA layers
                 for name, param in self.model.named_parameters():
                     param.requires_grad = "lora_" in name
             else:
-                # Standard mode: ensure everything is trainable
+                # Standard mode: everything trainable
                 for param in self.model.parameters():
                     param.requires_grad = True
 
             self.train_step()
-
-            # tool/visualize/strategy/trainer.py
-
+            
     def load(self, file_path):
         """
         save all parameters...
@@ -290,40 +258,13 @@ class SingleVisTrainer(TrainerAbstractClass):
             
         self.sampler.weights = weights
 
-    # def train_step(self, data, target, indices):
-    #     """
-    #     Step 5: Loss 策略：基于强度的局部增强 [cite: 35]
-    #     """
-    #     output = self.model(data)
-    #     loss_elements = self.criterion(output, target) # 假设返回的是样本级 loss
-        
-    #     # 获取当前 Batch 的掩码
-    #     batch_mask = ttav_context["mask"][indices]
-        
-    #     # Step 5: 对焦点区域应用 alpha 权重因子 [cite: 36, 38]
-    #     alpha = 5.0 if ttav_context["focus_mode"] == "fine" else 2.0
-    #     weights = torch.where(batch_mask, torch.tensor(alpha).to(device), torch.tensor(1.0).to(device))
-        
-    #     loss = (loss_elements * weights).mean() # 显著提升局部误差梯度强度 [cite: 38]
-    #     # ... 反向传播 ...
-    
-    def update_ttav_context(self, indices, mode):
-            """
-            [TTAV] Unified entry point to update trainer state from the server.
-            This method will be inherited by all specific trainers (DVI, TimeVis, etc.).
-            """
-            self.ttav_indices = indices
-            self.ttav_mode = mode
-            
-            # Relate the update to the data loader's sampler
-            # Most strategies use an edge_loader containing a custom sampler
-            if hasattr(self, "edge_loader") and self.edge_loader is not None:
-                # Check if the sampler supports dynamic weight updates
-                sampler = getattr(self.edge_loader, "sampler", None)
-                if sampler and hasattr(sampler, "update_weights"):
-                    sampler.update_weights(indices, mode)
-                    print(f"[TTAV] SingleVisTrainer: Weights updated for {len(indices)} points (Mode: {mode})")
-
+    def update_ttav_context(self, indices, mode, mask):
+        """
+        Update trainer state. Called by the server before incremental training.
+        """
+        self.ttav_indices = indices
+        self.ttav_mode = mode
+        self.ttav_mask = mask # Boolean mask on GPU
                     
 class HybridVisTrainer(SingleVisTrainer):
     def __init__(self, model, criterion, optimizer, lr_scheduler, edge_loader, DEVICE):

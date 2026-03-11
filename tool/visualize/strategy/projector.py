@@ -256,13 +256,50 @@ class DynaVisProjector(Projector):
             device = self.device
         )
     
+    
     def load(self, iteration):
-        file_path = os.path.join(self.content_path, 'visualize', self.vis_id, 'vis_model.pth')
-        save_model = torch.load(file_path, map_location="cpu")
-        self.vis_model.load_state_dict(save_model["state_dict"])
+        """
+        专门适配 DynaVis 格式的加载逻辑：包含分体式权重、归一化统计量及超参数
+        """
+        # 1. 路径定位
+        # 路径：content_path/visualize/DynaVis_ID/vis_model.pth
+        file_path = os.path.join(
+            self.content_path, 
+            'visualize', 
+            f"{self.config['vis_method']}_{self.config['vis_id']}", 
+            'vis_model.pth'
+        )
+
+        if not os.path.exists(file_path):
+            print(f"[Error] DynaVis model not found at: {file_path}")
+            return
+
+        # 2. 加载字典
+        try:
+            checkpoint = torch.load(file_path, map_location="cpu")
+            
+            # 3. 核心加载逻辑：识别 DynaVis 专属 Key
+            if "encoder_state_dict" in checkpoint and "decoder_state_dict" in checkpoint:
+                # 恢复 Encoder 和 Decoder 权重
+                # 使用 strict=False 是为了兼容后续可能注入的 LoRA 层
+                self.vis_model.encoder.load_state_dict(checkpoint["encoder_state_dict"], strict=False)
+                self.vis_model.decoder.load_state_dict(checkpoint["decoder_state_dict"], strict=False)
+                
+                # 4. 恢复环境上下文 (Stats & HParams)
+                # 这是为了确保 batch_project 时的归一化空间与训练时完全一致
+                self.stats = checkpoint.get("stats", None)
+                self.hparams_checkpoint = checkpoint.get("hparams", None)
+                
+                print(f"[TTAV] DynaVis Model & Stats successfully restored for iteration {iteration}")
+            else:
+                print("[Warning] File found but it's not in DynaVis complex format. Check your save_vis_model logic.")
+
+        except Exception as e:
+            print(f"[Fatal] Failed to load DynaVis model: {e}")
+
+        # 5. 设备同步与推理模式
         self.vis_model.to(self.device)
         self.vis_model.eval()
-
 class UmapProjector():
     def __init__(self, config):
         """

@@ -66,6 +66,10 @@ export function updateFocusContext(
     return basicPostWithJsonResponse('/updateFocusContext', data, options); //
 }
 
+export async function syncSession(config: any): Promise<any> {
+    // 这里的路由名需要和 Python server 中的 @app.route('/syncSession') 对应
+    return basicPostWithJsonResponse('/syncSession', config);
+}
 /**
  * Backend API functions
  */
@@ -95,14 +99,17 @@ export function fetchTrainingProcessInfo(contentPath: string, options?: NetworkO
 
 export async function fetchEpochProjection(
     contentPath: string, 
+    vis_method: string,
     visID: string, 
     epoch: number, 
+    
     options?: NetworkOptions
 ) {
     const data = {
         "content_path": contentPath,
+        "vis_method":vis_method,
         "vis_id": visID,
-        "epoch": `${epoch}`,
+        "epoch": `${epoch}`
     };
     return basicPostWithJsonResponse('/updateProjection', data, options);
 }
@@ -145,12 +152,14 @@ export function getOriginalNeighbors(contentPath: string, epoch: number, options
 
 export function getProjectionNeighbors(
     contentPath: string, 
+    vis_method: string,
     vis_id: string, 
     epoch: number, 
     options?: NetworkOptions
 ) {
     const data = {
         "content_path": contentPath,
+        "vis_method":vis_method,
         "vis_id": vis_id,
         "epoch": epoch
     };
@@ -159,12 +168,14 @@ export function getProjectionNeighbors(
 
 export function getBackground(
     contentPath: string, 
+    vis_method: string,
     visID: string, 
     epoch: number | undefined, 
     options?: NetworkOptions
 ) {
     const data = {
         "content_path": contentPath,
+        "vis_method": vis_method,
         "vis_id": visID,
         "epoch": `${epoch}`
     };
@@ -198,12 +209,14 @@ export function getTextData(contentPath: string, index: number, options?: Networ
 
 export function getVisualizeMetrics(
     contentPath: string, 
+    vis_method: string,
     visID: string, 
     epoch: number, 
     options?: NetworkOptions
 ) {
     const data = {
         "content_path": contentPath,
+        "vis_method": vis_method,
         "vis_id": visID,
         "epoch": `${epoch}`
     };

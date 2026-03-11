@@ -42,7 +42,7 @@ class DynaVisRunner:
 
         cfg = {**defaults, **self.vis_config}
         data_dir = os.path.join(self.content_path, "epochs")
-        out_root = os.path.join(self.content_path, "visualize", self.vis_id)
+        out_root = os.path.join(self.content_path, "visualize", f"DynaVis_{self.vis_id}")
 
         self.hparams = HParams(
             D=cfg["D"],
@@ -77,3 +77,64 @@ class DynaVisRunner:
 
     def run(self):
         train_motion_main(self.hparams)
+    
+    def train(self):
+        self.run()
+
+    # 在 DynaVisRunner 内部处理 refine 逻辑
+    def refine_train(self, focus_mode="fine"):
+        # 根据交互模式决定微调轮次
+        refine_epochs = 5 if focus_mode == "fine" else 2
+        
+        # 临时修改 hparams
+        original_ae = self.hparams.epochs_ae
+        original_joint = self.hparams.epochs_joint
+        
+        # 关键设置：跳过 AE 预训练，只进行少量的联合优化
+        self.hparams.epochs_ae = 0 
+        self.hparams.epochs_joint = refine_epochs
+        
+        # 执行训练
+        self.train() 
+        
+        # 恢复原始设置（防止影响下次 full train）
+        self.hparams.epochs_ae = original_ae
+        self.hparams.epochs_joint = original_joint
+
+    def get_focus_mask(self, selected_indices):
+        """
+        根据选中的索引生成布尔 Mask。
+        避开了对 self.data_provider 的直接依赖，转而通过读取数据目录获取总数。
+        """
+        import numpy as np
+        import torch
+        
+        # 1. 自动获取数据集总大小
+        # 假设你的数据目录下有 index.npy 或类似文件记录了所有点的索引
+        try:
+            # 路径对应你 __init__ 里的 data_dir
+            data_info_path = os.path.join(self.hparams.data_path, "index.npy") 
+            if os.path.exists(data_info_path):
+                total_count = len(np.load(data_info_path))
+            else:
+                # 如果找不到文件，尝试从 selected_indices 推断（兜底方案）
+                total_count = max(selected_indices) + 1 if selected_indices else 1000
+        except Exception as e:
+            print(f"Warning: Could not determine dataset size, using default. {e}")
+            total_count = 10000 
+
+        # 2. 生成 Mask
+        mask = torch.zeros(total_count, dtype=torch.bool).to(self.hparams.device)
+        if selected_indices:
+            mask[selected_indices] = True
+            
+        return mask
+    
+    def update_ttav_context(self, indices, mode, mask):
+        """
+        Update trainer state. Called by the server before incremental training.
+        """
+        self.ttav_indices = indices
+        self.ttav_mode = mode
+        self.ttav_mask = mask # Boolean mask on GPU
+                    

@@ -10,7 +10,7 @@ const methodOptions = [
 ];
 
 export default function WebSideBar() {
-  const [contentPath, setContentPath] = useState('');
+  const [contentPath, setContentPath] = useState('/home/shinan/Dataset/backdoor');
   const [visualizationID, setVisualizationID] = useState('');
   const [visualizationMethod, setVisualizationMethod] = useState('DynaVis');
   const [dataType, setDataType] = useState<'Image' | 'Text'>('Image');
@@ -37,20 +37,51 @@ export default function WebSideBar() {
     window.postMessage(
       {
         command: 'loadVisualization',
+        // data: {
+        //   visualizationID,
+        //   config: {
+        //     contentPath,
+        //     visualizationMethod,
+        //     dataType,
+        //     taskType,
+        //   },
         data: {
+          contentPath,
+          visualizationMethod,
           visualizationID,
-          config: {
-            contentPath,
-            visualizationMethod,
-            dataType,
-            taskType,
-          },
+          dataType,
+          taskType,
+          visConfig: {},
         },
       },
       '*'
     );
   };
-
+  
+  const syncSession = () => {
+    window.postMessage(
+      {
+        command: 'syncSession',
+        // data: {
+        //   visualizationID,
+        //   config: {
+        //     contentPath,
+        //     visualizationMethod,
+        //     dataType,
+        //     taskType,
+        //   },
+        data: {
+          contentPath,
+          visualizationMethod,
+          visualizationID,
+          dataType,
+          taskType,
+          visConfig: {},
+        },
+      },
+      '*'
+    );
+  };
   return (
     <div style={{ width: '100%', height: '100%', padding: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -87,7 +118,11 @@ export default function WebSideBar() {
       <div style={{ display: 'flex', gap: 8 }}>
         <Button type="primary" onClick={startVisualizing} style={{ flex: 1 }}>Start Visualizing</Button>
         <Button onClick={loadVisualization} style={{ flex: 1 }}>Load Visualization</Button>
-      </div>
+         </div>
+        <Button onClick={syncSession} style={{ width: '100%', borderStyle: 'dashed' }}>
+    Sync Backend Session
+  </Button>
+     
     </div>
   );
 }

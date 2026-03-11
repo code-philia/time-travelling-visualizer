@@ -435,7 +435,12 @@ body {
 #canvas-wrapper {
   flex: 1;
   overflow: hidden;
-  background-color: white;
+  /* 使用深色径向渐变，模拟深度学习可视化的“深度”感 */
+  background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%); 
+  position: relative;
+  border-radius: 8px; /* 增加圆角让 Canvas 看起来像一个独立组件 */
+  margin: 8px;
+  box-shadow: inset 0 0 40px rgba(0,0,0,0.4); /* 内阴影增加沉浸感 */
 }
 
 .sprite-canvas {

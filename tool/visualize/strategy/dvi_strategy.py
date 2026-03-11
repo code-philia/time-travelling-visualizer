@@ -33,6 +33,9 @@ class DeepVisualInsight(StrategyAbstractClass):
         self.umap_fn = UmapLoss(negative_sample_rate, self.device, _a, _b, repulsion_strength=1.0)
         self.recon_fn = ReconstructionLoss(beta=1.0)
     
+    def train(self):
+        self.train_vis_model()
+
     def train_vis_model(self):
         # parameters    
         LAMBDA1 = self.config['vis_config']['lambda1']

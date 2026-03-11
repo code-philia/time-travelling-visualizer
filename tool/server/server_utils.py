@@ -50,8 +50,8 @@ def get_coloring_list(class_num):
     return color_255.tolist()
 
 # Func: load projection of certain epoch
-def load_projection(content_path, vis_id, epoch):
-    projection_path = os.path.join(content_path, "visualize", vis_id, "epochs", f"epoch_{epoch}", "projection.npy")
+def load_projection(content_path, vis_method, vis_id, epoch):
+    projection_path = os.path.join(content_path, "visualize", f"{vis_method}_{vis_id}", "epochs", f"epoch_{epoch}", "projection.npy")
     projection = np.load(projection_path)
     projection_list = projection.tolist()
 
@@ -232,8 +232,8 @@ def get_filter_result(config, content_path, epoch, filters):
 
     return result,''
 
-def load_background(content_path, vis_id, epoch):
-    file_path = os.path.join(content_path, 'visualize',vis_id,'epochs',f'epoch_{epoch}', 'background.png')
+def load_background(content_path, vis_method,vis_id, epoch):
+    file_path = os.path.join(content_path, 'visualize',f"{vis_method}_{vis_id}",'epochs',f'epoch_{epoch}', 'background.png')
     if os.path.exists(file_path):
         return convert_to_base64(file_path)
     return ""
@@ -273,8 +273,8 @@ def calculate_high_dimensional_neighbors(content_path, epoch, max_neighbors=10):
     
     return neighbors
 
-def calculate_projection_neighbors(content_path, vis_id, epoch, max_neighbors=10):
-    projection_list = load_projection(content_path, vis_id, epoch)
+def calculate_projection_neighbors(content_path, vis_method, vis_id, epoch, max_neighbors=10):
+    projection_list = load_projection(content_path, vis_method,  vis_id, epoch)
     projection = np.array(projection_list)
     num_samples = len(projection)
     
@@ -397,9 +397,9 @@ def generate_dimension_array(dimension):
     decoder_dims = encoder_dims[::-1]
     return encoder_dims, decoder_dims
 
-def calculate_visualize_metrics(content_path, vis_id, epoch):
+def calculate_visualize_metrics(content_path, vis_method, vis_id, epoch):
     high_dimensional_neighbors = calculate_high_dimensional_neighbors(content_path, epoch)
-    projection_neighbors = calculate_projection_neighbors(content_path, vis_id, epoch)
+    projection_neighbors = calculate_projection_neighbors(content_path, vis_method, vis_id, epoch)
 
     # Neighbor trustworthiness and continuity
     K = min(len(high_dimensional_neighbors[0]), len(projection_neighbors[0]))

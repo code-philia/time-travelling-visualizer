@@ -13,6 +13,10 @@ class StrategyAbstractClass(ABC):
         # define your visualize model here
         # e.g. self.model = tfModel(...)
         pass
+    
+    @abstractmethod
+    def train(self):
+        pass
 
     @abstractmethod
     def train_vis_model(self):
@@ -30,5 +34,6 @@ class StrategyAbstractClass(ABC):
             "state_dict": model.state_dict(),
             "optimizer": optimizer.state_dict()
         }
-        os.makedirs(os.path.join(self.config["content_path"],"visualize", self.config["vis_id"], "epochs", f"epoch_{epoch}"), exist_ok=True)
-        torch.save(save_model, os.path.join(self.config["content_path"],"visualize", self.config["vis_id"], "epochs", f"epoch_{epoch}", "vis_model.pth"))
+        target_dir = os.path.join(self.config["content_path"],"visualize", f"{self.config['vis_method']}_{self.config['vis_id']}", "epochs", f"epoch_{epoch}")
+        os.makedirs(target_dir, exist_ok=True)
+        torch.save(save_model, target_dir, "vis_model.pth")

@@ -24,7 +24,9 @@ export type BaseMutableGlobalStore = {
     contentPath: string;
     dataType: 'Image' | 'Text';
     taskType: string;
-    
+    visID: string;
+    //vismethod??
+
     // Epoch and time-related data
     epoch: number;
     availableEpochs: number[];
@@ -45,6 +47,7 @@ export type BaseMutableGlobalStore = {
     // Epoch data
     allEpochData: Record<number, EpochData>;
     progress: number;
+    refinedProjection: number[][] | null; // 专门用于存储实时计算的结果，初始为空
     
     // Display settings
     mode: 'points' | 'density';
@@ -87,6 +90,7 @@ export let initMutableGlobalStore: BaseMutableGlobalStore = {
     contentPath: '',
     dataType: 'Image',
     taskType: '',
+    visID: '',
     
     // Epoch and time-related data
     epoch: 1,
@@ -108,6 +112,7 @@ export let initMutableGlobalStore: BaseMutableGlobalStore = {
     // Epoch data for different views
     allEpochData: {},
     progress: 0,
+    refinedProjection: null,
     
     // Display settings
     mode: 'points',

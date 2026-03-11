@@ -1,9 +1,9 @@
-import { AutoComplete, Input, List, Tag, RefSelectProps, Checkbox, Switch, Select, Slider } from 'antd';
+import { AutoComplete, Input, List, Tag, RefSelectProps, Checkbox, Switch, Select, Slider, Button } from 'antd';
 import { useDefaultStore,FocusMode } from '../state/state.unified';
 import { useEffect, useRef, useState } from 'react';
 import { ComponentBlock, FunctionalBlock } from './custom/basic-components';
 import { styled } from 'styled-components';
-
+import { SyncOutlined } from '@ant-design/icons';
 type SampleTag = {
     num: number;
     title: string;
@@ -15,6 +15,9 @@ interface LabelProps {
     onColorChange: (newColor: [number, number, number]) => void;
 }
 
+interface FunctionPanelProps {
+    onUpdateProjection: () => Promise<void>;
+}
 const CompactCheckboxGroup = styled(Checkbox.Group)`
   display: flex;
   flex-wrap: wrap;
@@ -100,7 +103,7 @@ function hexToRgbArray(hex: string): [number, number, number] {
     return [r, g, b];
 }
 
-export function FunctionPanel() {
+export function FunctionPanel({ onUpdateProjection }: FunctionPanelProps) {
     const { tokenList, labelDict, colorDict, setColorDict, selectedIndices, setSelectedIndices, setShownData, pointSize, setPointSize, mode, setMode } =
         useDefaultStore(["tokenList","labelDict", "colorDict", "setColorDict", "selectedIndices", "setSelectedIndices", "setShownData", "pointSize", "setPointSize", "mode", "setMode"]);
     const { revealOriginalNeighbors, revealProjectionNeighbors, setRevealOriginalNeighbors, setRevealProjectionNeighbors } =
@@ -293,27 +296,48 @@ export function FunctionPanel() {
                     </ComponentBlock>
                 }
             </FunctionalBlock>
-            <FunctionalBlock label="Precision Control">
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                    <span style={{ fontSize: '12px' }}>Focus Mode</span>
-                    <Select
-                        size="small"
-                        value={focusMode}
-                        style={{ width: '120px' }}
-                        onChange={(value: FocusMode) => setFocusMode(value)}
-                        options={[
-                            { value: 'coarse', label: 'Coarse' },
-                            { value: 'balanced', label: 'Balanced' },
-                            { value: 'fine', label: 'Fine' },
-                        ]}
-                    />
-                </div>
-                <div className='alt-text' style={{ fontSize: '10px', lineHeight: '1.2' }}>
-                    {focusMode === 'coarse' && 'Visual highlight only.'}
-                    {focusMode === 'balanced' && 'Increase sampling weight.'}
-                    {focusMode === 'fine' && 'Enable LoRA local adaptation.'}
-                </div>
-            </FunctionalBlock>
+<FunctionalBlock label="Precision Control">
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+        <span style={{ fontSize: '12px' }}>Focus Mode</span>
+        <Select
+            size="small"
+            value={focusMode}
+            style={{ width: '120px' }}
+            onChange={(value: FocusMode) => {
+                setFocusMode(value);
+                // 注意：这里不再自动触发异步重训，只改 UI 状态
+            }}
+            options={[
+                { value: 'coarse', label: 'Coarse' },
+                { value: 'balanced', label: 'Balanced' },
+                { value: 'fine', label: 'Fine' },
+            ]}
+        />
+    </div>
+    
+    <div className='alt-text' style={{ fontSize: '11px', lineHeight: '1.4', marginBottom: '12px', color: '#888' }}>
+        {focusMode === 'coarse' && 'Visual highlight only.'}
+        {focusMode === 'balanced' && 'Increase sampling weight.'}
+        {focusMode === 'fine' && 'Enable LoRA local adaptation.'}
+    </div>
+
+    {/* 显式 Update 按钮 */}
+    <Button 
+        type="primary" 
+        block 
+        size="small"
+        icon={<SyncOutlined />}
+        // 调用从父组件 AppCombinedView 传下来的异步处理函数
+        onClick={onUpdateProjection}
+        style={{ 
+            marginTop: '8px', 
+            borderRadius: '4px',
+            fontWeight: 500 
+        }}
+    >
+        Update Projection
+    </Button>
+</FunctionalBlock>
             <FunctionalBlock label="Categories">
                 <ComponentBlock>
                     <div className="class-list">

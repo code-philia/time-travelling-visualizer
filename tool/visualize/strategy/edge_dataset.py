@@ -119,18 +119,22 @@ class DVIDataHandler(Dataset):
 
         # label = self.labels[item]
 
-        if self.transform is not None:
-            # TODO correct or not?
-            edge_to = Image.fromarray(edge_to)
-            edge_to = self.transform(edge_to)
-            edge_from = Image.fromarray(edge_from)
-            edge_from = self.transform(edge_from)
+        # if self.transform is not None:
+        #     # TODO correct or not?
+        #     edge_to = Image.fromarray(edge_to)
+        #     edge_to = self.transform(edge_to)
+        #     edge_from = Image.fromarray(edge_from)
+        #     edge_from = self.transform(edge_from)
             
-        if self.labels is None:
-            return edge_to, edge_from, a_to, a_from
-        else:
-            label = self.labels[item]
-            return edge_to, edge_from, a_to, a_from, label
+        # if self.labels is None:
+        #     return edge_to, edge_from, a_to, a_from
+        # else:
+        #     label = self.labels[item]
+        #     return edge_to, edge_from, a_to, a_from, label
+
+        # [TTAV] Return 6 elements to be consistent with Focus Mode logic:
+        # data_to, data_from, attr_to, attr_from, index_to, index_from
+        return edge_to, edge_from, a_to, a_from, edge_to_idx, edge_from_idx
 
     def __len__(self):
         # return the number of all edges

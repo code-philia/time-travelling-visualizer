@@ -35,7 +35,15 @@ def initialize_config(content_path, vis_method, vis_id, data_type, task_type, vi
     
     available_epochs.sort()
     config["available_epochs"] = available_epochs
-    
+    # 2. 为不同方法提供默认的 resolution 字符串
+    if 'resolution' not in config['vis_config']:
+        if vis_method in ["DVI", "DynaVis"]:
+            config['vis_config']['resolution'] = [200,200]
+        elif vis_method == "TimeVis":
+            config['vis_config']['resolution'] = [300,300]
+        else:
+            config['vis_config']['resolution'] = [200,200] 
+            
     # vis_model dims
     if vis_method == "DVI" or vis_method == "TimeVis" or vis_method == "DynaVis":
         epoch_0 = available_epochs[0]
@@ -46,9 +54,9 @@ def initialize_config(content_path, vis_method, vis_id, data_type, task_type, vi
         config['vis_config']['encoder_dims'] = encoder_dims
         config['vis_config']['decoder_dims'] = decoder_dims
         
-        resolution_str = config['vis_config']['resolution']
-        r = resolution_str.split(",")
-        config['vis_config']['resolution'] = [int(i) for i in r]
+        # resolution_str = config['vis_config']['resolution']
+        # r = resolution_str.split(",")
+        # config['vis_config']['resolution'] = [int(i) for i in r]
     
     return config
 
@@ -57,15 +65,27 @@ def init_visualize_component(config):
     from visualize.strategy.projector import DVIProjector, TimeVisProjector, UmapProjector, DynaVisProjector
     from visualize.strategy.dvi_strategy import DeepVisualInsight
     from visualize.strategy.timevis_strategy import TimeVis
-    from visualize.strategy.dynavis_strategy import DynaVis
+    # [修改点 1]：删除不存在的 dynavis_strategy 导入，改为导入 Runner
+    from visualize.dynavis.runner import DynaVisRunner
     from visualize.data_provider import DataProvider
     from visualize.result_generator import ResultGenerator, UmapResultGenerator
-    
-    if 'gpu_id' not in config['vis_config'] or config['vis_config']['gpu_id'] == -1:
+    # 做一些操作
+    if 'gpu_id' not in config['vis_config']:
+        config['vis_config']['gpu_id'] = -1
+    if  config['vis_config']['gpu_id'] == -1:    
         device = torch.device("cpu")
     else:
         device = torch.device("cuda:{}".format(config['vis_config']['gpu_id']) if torch.cuda.is_available() else "cpu")
     
+    if config.get('vis_method') == "TimeVis":
+        # 确保 vis_config 字典存在
+        if 'vis_config' not in config:
+            config['vis_config'] = {}
+        
+        # 补全 TimeVis 强依赖的参数
+        if 'lambda' not in config['vis_config']:
+            config['vis_config']['lambda'] = 1.0
+            
     if config['vis_method'] == "DVI":
         data_provider = DataProvider(config, device)  
         projector = DVIProjector(config)
@@ -77,15 +97,22 @@ def init_visualize_component(config):
         visualizer = ResultGenerator(config, data_provider, projector)
         strategy = TimeVis(config, data_provider)
     elif config['vis_method'] == "DynaVis":
+        # [修改点 2]：重写 DynaVis 分支逻辑
         if 'selected_idxs' in config['vis_config']:
             selected_idxs = config['vis_config']['selected_idxs']
         else:
+            # 默认值逻辑保持不变
             selected_idxs = list(range(100))
-        data_provider = DataProvider(config, device, selected_idxs)
-        data_provider = DataProvider(config, device)  
+        
+        # DynaVis 通常需要自己的数据提供者和投影器
+        data_provider = DataProvider(config, device)   
         projector = DynaVisProjector(config)
         visualizer = ResultGenerator(config, data_provider, projector)
-        strategy = DynaVis(config, data_provider, selected_idxs)
+      
+        from visualize.dynavis.runner import DynaVisRunner
+        runner = DynaVisRunner( config["content_path"], config["vis_id"], config["data_type"], config["task_type"], config["vis_config"])
+        strategy = runner
+        
     elif config['vis_method'] == "UMAP":
         data_provider = DataProvider(config, device)  
         projector = UmapProjector(config)
@@ -100,14 +127,13 @@ def visualize_run(content_path, vis_method, vis_id, data_type, task_type, vis_co
     # step 1: initialize config
     config = initialize_config(content_path, vis_method, vis_id, data_type, task_type, vis_config)
 
+    visualizer, strategy = init_visualize_component(config)
+
     if vis_method == "DynaVis":
-        from visualize.dynavis.runner import DynaVisRunner
-        runner = DynaVisRunner(content_path, vis_id, data_type, task_type, vis_config)
+        runner = strategy
         runner.run()
-    else:
-        # step 2: initialize data provider, visualizer, and strategy
-        visualizer, strategy = init_visualize_component(config)
         
+    else:
         # step 3: generate visualization results
         if vis_method == "DVI" or vis_method == "TimeVis":
             # now we assume that all the metries are already saved to train visualization model
@@ -116,13 +142,15 @@ def visualize_run(content_path, vis_method, vis_id, data_type, task_type, vis_co
             strategy.train_vis_model()
             print("Train visualization model finished.")
             
-        # 3.2 generate visualization results
-        print("Start generating visualization results...")
-        visualizer.visualize_all_epochs()
-        print("Generate visualization results finished, visualization process completed successfully!")
-        
-        # step 4: save config
-        os.makedirs(os.path.join(content_path, 'visualize', vis_id), exist_ok=True)
-        
+    # 3.2 generate visualization results
+    print("Start generating visualization results...")
+    visualizer.visualize_all_epochs()
+    print("Generate visualization results finished, visualization process completed successfully!")
+    
+    # step 4: save config
+    os.makedirs(os.path.join(content_path, 'visualize', f"{vis_method}_{vis_id}"), exist_ok=True)
+
+
     json.dump(config, open(os.path.join(content_path, 'visualize', vis_id, 'info.json'), 'w'), indent=2)
+    return visualizer, strategy 
         
