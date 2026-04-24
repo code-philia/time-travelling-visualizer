@@ -21,9 +21,12 @@ from transformers import RobertaTokenizer
 sys.path.append("..")
 sys.path.append("../visualize")
 from visualize.data_provider import DataProvider
+from visualize.strategy.losses import SingleVisLoss, UmapLoss, ReconstructionLoss
 from visualize.training_event import TrainingEventDetector
 from influence_function.IF import EmpiricalIF, PairWiseEmpiricalIF
 from influence_function.CustomEncoderModel import CustomEncoderModel
+from umap.umap_ import find_ab_params
+from visualize.visualize_model import VisModel
 
 # Func: infer available epochs files, return a list of available epochs
 def infer_epoch_structure(content_path):
@@ -627,3 +630,92 @@ def compute_training_events(content_path, epoch, event_types):
     detector = TrainingEventDetector(content_path, epoch, data_provider)
     events = detector.detect_events(event_types)
     return events
+
+
+def local_refine(content_path, epoch, sample_index, vis_id, k=10):
+    learning_rate = 0.0001
+    steps = 10
+    # load embeddings
+    epoch_path = os.path.join(content_path, "epochs", f"epoch_{epoch}", "embeddings.npy")
+    embeddings = np.load(epoch_path)
+    
+    # find local neigbors
+    nbrs = NearestNeighbors(n_neighbors=k + 1).fit(embeddings)
+    _, indices = nbrs.kneighbors([embeddings[sample_index]])
+    local_indices = indices[0]                                                                                                                          
+    local_embeddings = embeddings[local_indices]
+    
+    
+    #initialize timevis model
+    device = torch.device("cpu")
+    checkpoint_path = os.path.join(content_path, "visualize", vis_id, "vis_model.pth")                                                                  
+    checkpoint = torch.load(checkpoint_path, map_location=device)      
+    state_dict = checkpoint["state_dict"]                           
+    
+    # tried to pass it from the frontend but couldnt make it work so i get it from the state                                                      
+    encoder_keys = sorted([k for k in state_dict if k.startswith("encoder") and "weight" in k])
+    decoder_keys = sorted([k for k in state_dict if k.startswith("decoder") and "weight" in k])
+
+    encoder_dims = [state_dict[encoder_keys[0]].shape[1]] + [state_dict[k].shape[0] for k in encoder_keys]
+    decoder_dims = [state_dict[decoder_keys[0]].shape[1]] + [state_dict[k].shape[0] for k in decoder_keys]
+
+    model = VisModel(encoder_dims, decoder_dims).to(device)
+    model.load_state_dict(state_dict)
+        
+    
+    # build knn again but for the selected point
+    n_neighbors = min(5, len(local_embeddings) - 1)                                                                                                     
+    local_neighbors = NearestNeighbors(n_neighbors=n_neighbors + 1).fit(local_embeddings)
+    _, local_knn = local_neighbors.kneighbors(local_embeddings) 
+    
+    # connectios to re train UMAP
+    edge_to_ls, edge_from_ls = [], []                                                                                                               
+    for i, neighbors in enumerate(local_knn):                                                                                                           
+        for j in neighbors[1:]:                                                                                                                         
+            edge_to_ls.append(i)
+            edge_from_ls.append(j)
+    
+    edge_to_index = np.array(edge_to_ls)
+    edge_from_index = np.array(edge_from_ls)
+    
+    # define losses, copypaste from timevis_strategy.py
+    negative_sample_rate = 5
+    min_dist = 0.1
+    _a, _b = find_ab_params(1.0, min_dist)
+    umap_fn = UmapLoss(negative_sample_rate, device, _a, _b, repulsion_strength=1.0)
+    recon_fn = ReconstructionLoss(beta=1.0)
+    criterion = SingleVisLoss(umap_fn, recon_fn, lambd=1)
+    
+    local_tensor = torch.tensor(local_embeddings, dtype=torch.float32).to(device)
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    model.train() 
+
+    # loop for fine tuning
+    for i in range(steps):
+        optimizer.zero_grad()
+        edge_to_feat = local_tensor[edge_to_index]
+        edge_from_feat = local_tensor[edge_from_index]                                                                                                    
+        a_to = torch.zeros(len(edge_to_index), 1, dtype=torch.float32).to(device)
+        a_from = torch.zeros(len(edge_from_index), 1, dtype=torch.float32).to(device)                                                                        
+        outputs = model(edge_to_feat, edge_from_feat)
+        umao_loss, recon_loss, loss = criterion(edge_to_feat, edge_from_feat, a_to, a_from, outputs)                                                                     
+        loss.backward()
+        optimizer.step() 
+    
+    model.eval()
+    with torch.no_grad():
+        outputs = model(local_tensor, local_tensor)
+        refined_2d = outputs["umap"][0].cpu().numpy()              
+                
+                                                                                                                                  
+    updated_coords = {}                                                                                                                                 
+    for local_pos, global_idx in enumerate(local_indices):                                                                                              
+        updated_coords[str(int(global_idx))] = refined_2d[local_pos].tolist()
+                                                                                                                                                        
+    return updated_coords
+    
+    
+    
+    
+    
+    

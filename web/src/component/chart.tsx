@@ -54,6 +54,7 @@ export const ChartComponent = memo(() => {
         if (!revealOriginalNeighbors && !revealProjectionNeighbors) return
 
         const clickedIndex = tooltip.identifier as number
+        setSelectedIndices([clickedIndex])
         const cacheKey = `${epoch}-${clickedIndex}`
         if (neighborCache[cacheKey]) return
 

@@ -119,6 +119,27 @@ def update_projection():
     return make_response(result, 200)
 
 
+@app.route("/refineProjection", methods=["POST"])
+@cross_origin()
+def refine_projection():
+    req = request.get_json()
+    content_path = req["content_path"]
+    vis_id = req["vis_id"]
+    epoch = int(req["epoch"])
+    sample_index = int(req["sample_index"])
+    
+    updated_coord = server_utils.local_refine(epoch=epoch, 
+                                              content_path=content_path, 
+                                              vis_id=vis_id, 
+                                              sample_index=sample_index)
+
+    result = jsonify(
+        {
+            "updated_coords": updated_coord,
+        }
+    )
+    return make_response(result, 200)
+
 """
 Api: start training visualization model and get visualization result
 

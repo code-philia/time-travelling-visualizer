@@ -1,9 +1,9 @@
-import { AutoComplete, Input, List, Tag, RefSelectProps, Checkbox, Switch, Select, Slider, Collapse } from "antd";
+import { AutoComplete, Input, List, Tag, RefSelectProps, Checkbox, Switch, Select, Slider, Collapse, Button } from "antd";
 import { useDefaultStore } from "../state/state.unified";
 import { useEffect, useRef, useState } from "react";
 import { ComponentBlock, FunctionalBlock } from "./custom/basic-components";
 import { styled } from "styled-components";
-
+import { refineProjection } from '../communication/backend';
 type SampleTag = {
     num: number;
     title: string;
@@ -51,6 +51,10 @@ function rgbArrToHex(rgbArray: number[]) {
 }
 
 export function FunctionPanel() {
+
+
+
+
     const { tokenList, labelDict, colorDict, selectedIndices, setSelectedIndices, setShownData, pointSize, setPointSize, mode, setMode } =
         useDefaultStore(["tokenList", "labelDict", "colorDict", "selectedIndices", "setSelectedIndices", "setShownData", "pointSize", "setPointSize", "mode", "setMode"]);
     const { revealOriginalNeighbors, revealProjectionNeighbors, setRevealOriginalNeighbors, setRevealProjectionNeighbors } =
@@ -58,6 +62,7 @@ export function FunctionPanel() {
     const { showIndex, showLabel, showBackground, showTrail, setShowIndex, setShowLabel, setShowBackground, setShowTrail } =
         useDefaultStore(["showIndex", "showLabel", "showBackground", "showTrail", "setShowIndex", "setShowLabel", "setShowBackground", "setShowTrail"]);
     const { inherentLabelData } = useDefaultStore(["inherentLabelData"]);
+
 
     useEffect(() => {
         if (pointSize < 1) {
@@ -77,6 +82,25 @@ export function FunctionPanel() {
     const searchElementRef = useRef<RefSelectProps>(null);
     const [allSearchResult, setAllSearchResult] = useState<SampleTag[]>([]);
 
+    const { visConfig, contentPath, visId, epoch, patchEpochProjection } = useDefaultStore(["visConfig", "contentPath", "visId", "epoch", "patchEpochProjection"]);
+    const [isRefining, setIsRefining] = useState(false);
+
+
+
+    const handleRefine = async () => {
+        if (selectedIndices.length === 0) return;
+        const sampleIndex = selectedIndices[0];
+        console.log(contentPath, visId, epoch, sampleIndex, visConfig)
+        try {
+            setIsRefining(true);
+            const { updated_coords } = await refineProjection(
+                contentPath, visId, epoch, sampleIndex, visConfig
+            );
+            patchEpochProjection(epoch, updated_coords);
+        } finally {
+            setIsRefining(false);
+        }
+    };
     const searchFrom = (text: string, items: SampleTag[], limit: number | null = 3) => {
         const lower = text.toLowerCase();
         const results: SampleTag[] = [];
@@ -153,6 +177,7 @@ export function FunctionPanel() {
     };
 
     useEffect(() => {
+        console.log(selectedIndices)
         setSelectedItems(Array.from(selectedIndices).map((num) => ({
             num,
             title: tokenList ? tokenList[num] ?? "" : ""
@@ -245,6 +270,16 @@ export function FunctionPanel() {
                                     <div className='alt-text placeholder-block'>No selected item</div>
                             }
                         </div>
+                        <Button
+                            size="small"
+                            type="primary"
+                            disabled={selectedIndices.length === 0 || isRefining}
+                            title={selectedIndices.length === 0 ? "Select a point first" : "Refine local neighborhood"}
+                            onClick={handleRefine}
+                            style={{ marginTop: 8, width: '100%' }}
+                        >
+                            {isRefining ? "Refining..." : "Refine"}
+                        </Button>
                     </ComponentBlock>
                 }
                 legendBlock={

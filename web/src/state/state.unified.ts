@@ -24,9 +24,11 @@ export type EpochData = {
 export type BaseMutableGlobalStore = {
     // Basic configuration
     contentPath: string;
+    
 
     // added globally so chart can make calls to the backend after loading
     visId: string;
+    visConfig: string;
 
     dataType: 'Image' | 'Text';
     taskType: string;
@@ -88,6 +90,7 @@ export type BaseMutableGlobalStore = {
     rawData: string;
     shownDoc: string;
     shownCode: string;
+    
 };
 
 export let initMutableGlobalStore: BaseMutableGlobalStore = {
@@ -96,6 +99,7 @@ export let initMutableGlobalStore: BaseMutableGlobalStore = {
     visId: '',
     dataType: 'Image',
     taskType: '',
+    visConfig: '',
     
     // Epoch and time-related data
     epoch: 1,
@@ -203,7 +207,11 @@ type WithClear = {
   clear: () => void;
 };
 
-type GlobalStore = MutableGlobalStore & WithDefaultValueSetter & WithClear;
+type WithPatchEpochProjection = {                                                                                                                                                                
+      patchEpochProjection: (epoch: number, updated: Record<string, [number, number]>) => void;
+  };
+
+type GlobalStore = MutableGlobalStore & WithDefaultValueSetter & WithClear & WithPatchEpochProjection;
 
 const useGlobalStore = create<GlobalStore>()(subscribeWithSelector((set) => ({
     setValue: createDefaultValueSetter(set),
@@ -217,6 +225,29 @@ const useGlobalStore = create<GlobalStore>()(subscribeWithSelector((set) => ({
         };
         set(newInitialState);
     },
+    patchEpochProjection: (
+    epoch: number,
+    updated: Record<string, [number, number]>
+) => set((state) => {
+    const current = state.allEpochData[epoch];
+    // console.log(current)
+    if (!current) return state;
+
+    const newProjection = current.projection.map(row => row.slice());
+    for (const [indexStr, xy] of Object.entries(updated)) {
+        const i = Number(indexStr);
+        if (i >= 0 && i < newProjection.length) {
+            newProjection[i] = xy;
+        }
+    }
+
+    return {
+        allEpochData: {
+            ...state.allEpochData,
+            [epoch]: { ...current, projection: newProjection },
+        },
+    };
+}),
 })));
 
 // Utility functions for shallow comparison

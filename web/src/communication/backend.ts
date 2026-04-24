@@ -88,6 +88,26 @@ export async function fetchEpochProjection(
     return basicPostWithJsonResponse('/updateProjection', data, options);
 }
 
+
+export async function refineProjection(
+    contentPath: string,
+    visId: string,
+    epoch: number,
+    sampleIndex: number,
+    visConfig: any,
+    options?: NetworkOptions
+) {
+    const data = {
+        "content_path": contentPath,
+        "vis_id": visId,
+        "sample_index": sampleIndex,
+        "vis_config": visConfig,
+        "epoch": `${epoch}`,
+    };
+    console.log(data)
+    return basicPostWithJsonResponse('/refineProjection', data, options);
+}
+
 export function getText(contentPath: string, options?: NetworkOptions) {
     const data = {
         "content_path": contentPath
