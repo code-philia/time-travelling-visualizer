@@ -90,7 +90,6 @@ export function FunctionPanel() {
     const handleRefine = async () => {
         if (selectedIndices.length === 0) return;
         const sampleIndex = selectedIndices[0];
-        console.log(contentPath, visId, epoch, sampleIndex, visConfig)
         try {
             setIsRefining(true);
             const { updated_coords } = await refineProjection(
@@ -177,7 +176,6 @@ export function FunctionPanel() {
     };
 
     useEffect(() => {
-        console.log(selectedIndices)
         setSelectedItems(Array.from(selectedIndices).map((num) => ({
             num,
             title: tokenList ? tokenList[num] ?? "" : ""

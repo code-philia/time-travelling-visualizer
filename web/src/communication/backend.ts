@@ -104,7 +104,6 @@ export async function refineProjection(
         "vis_config": visConfig,
         "epoch": `${epoch}`,
     };
-    console.log(data)
     return basicPostWithJsonResponse('/refineProjection', data, options);
 }
 

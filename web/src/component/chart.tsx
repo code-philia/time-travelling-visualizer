@@ -332,7 +332,6 @@ export const ChartComponent = memo(() => {
             if (minIdx >= 0 && minD2 <= threshold) {
                 const id = this.props.idsByPos[minIdx];
                 if (this.props.setSelectedIndices) {
-                    console.log(`Click on id ${id}`);
                     this.props.setSelectedIndices([id]);
                 }
             }

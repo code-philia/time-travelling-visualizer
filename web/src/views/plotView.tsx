@@ -52,7 +52,6 @@ function MessageHandler() {
         try {
             let startTime = Date.now();
             await BackendAPI.triggerStartVisualizing(contentPath, visualizationMethod, visualizationID, dataType, taskType, visConfig);
-            console.log("visConfig", visConfig)
             setValue('visConfig', visConfig);
             logWithTimestamp(`Visualization process started in backend. timeCost=${Date.now() - startTime}ms`);
         } catch (error) {
