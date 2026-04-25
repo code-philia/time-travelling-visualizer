@@ -653,13 +653,13 @@ def local_refine(content_path, epoch, sample_index, vis_id, k=10):
     state_dict = checkpoint["state_dict"]                           
     
     # tried to pass it from the frontend but couldnt make it work so i get it from the state                                                      
-    encoder_keys = sorted([k for k in state_dict if k.startswith("encoder") and "weight" in k])
-    decoder_keys = sorted([k for k in state_dict if k.startswith("decoder") and "weight" in k])
+    encoder_keys_ls = sorted([k for k in state_dict if k.startswith("encoder") and "weight" in k])
+    decoder_keys_ls = sorted([k for k in state_dict if k.startswith("decoder") and "weight" in k])
 
-    encoder_dims = [state_dict[encoder_keys[0]].shape[1]] + [state_dict[k].shape[0] for k in encoder_keys]
-    decoder_dims = [state_dict[decoder_keys[0]].shape[1]] + [state_dict[k].shape[0] for k in decoder_keys]
+    encoder_dims_ls = [state_dict[encoder_keys_ls[0]].shape[1]] + [state_dict[k].shape[0] for k in encoder_keys_ls]
+    decoder_dims_ls = [state_dict[decoder_keys_ls[0]].shape[1]] + [state_dict[k].shape[0] for k in decoder_keys_ls]
 
-    model = VisModel(encoder_dims, decoder_dims).to(device)
+    model = VisModel(encoder_dims_ls, decoder_dims_ls).to(device)
     model.load_state_dict(state_dict)
         
     
@@ -675,8 +675,8 @@ def local_refine(content_path, epoch, sample_index, vis_id, k=10):
             edge_to_ls.append(i)
             edge_from_ls.append(j)
     
-    edge_to_index = np.array(edge_to_ls)
-    edge_from_index = np.array(edge_from_ls)
+    edge_to_index_ls = np.array(edge_to_ls)
+    edge_from_index_ls = np.array(edge_from_ls)
     
     # define losses, copypaste from timevis_strategy.py
     negative_sample_rate = 5
@@ -693,10 +693,10 @@ def local_refine(content_path, epoch, sample_index, vis_id, k=10):
     # loop for fine tuning
     for i in range(steps):
         optimizer.zero_grad()
-        edge_to_feat = local_tensor[edge_to_index]
-        edge_from_feat = local_tensor[edge_from_index]                                                                                                    
-        a_to = torch.zeros(len(edge_to_index), 1, dtype=torch.float32).to(device)
-        a_from = torch.zeros(len(edge_from_index), 1, dtype=torch.float32).to(device)                                                                        
+        edge_to_feat = local_tensor[edge_to_index_ls]
+        edge_from_feat = local_tensor[edge_from_index_ls]                                                                                                    
+        a_to = torch.zeros(len(edge_to_index_ls), 1, dtype=torch.float32).to(device)
+        a_from = torch.zeros(len(edge_from_index_ls), 1, dtype=torch.float32).to(device)                                                                        
         outputs = model(edge_to_feat, edge_from_feat)
         umao_loss, recon_loss, loss = criterion(edge_to_feat, edge_from_feat, a_to, a_from, outputs)                                                                     
         loss.backward()
@@ -708,11 +708,11 @@ def local_refine(content_path, epoch, sample_index, vis_id, k=10):
         refined_2d = outputs["umap"][0].cpu().numpy()              
                 
                                                                                                                                   
-    updated_coords = {}                                                                                                                                 
+    updated_coords_dd = {}                                                                                                                                 
     for local_pos, global_idx in enumerate(local_indices):                                                                                              
-        updated_coords[str(int(global_idx))] = refined_2d[local_pos].tolist()
+        updated_coords_dd[str(int(global_idx))] = refined_2d[local_pos].tolist()
                                                                                                                                                         
-    return updated_coords
+    return updated_coords_dd
     
     
     
