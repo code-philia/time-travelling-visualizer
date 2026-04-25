@@ -18,16 +18,19 @@ import torchvision.transforms as transforms
 from torch.utils.data import Dataset, DataLoader
 from transformers import RobertaTokenizer
 
-sys.path.append('..')
-sys.path.append('../visualize')
+sys.path.append("..")
+sys.path.append("../visualize")
 from visualize.data_provider import DataProvider
+from visualize.strategy.losses import SingleVisLoss, UmapLoss, ReconstructionLoss
 from visualize.training_event import TrainingEventDetector
 from influence_function.IF import EmpiricalIF, PairWiseEmpiricalIF
 from influence_function.CustomEncoderModel import CustomEncoderModel
+from umap.umap_ import find_ab_params
+from visualize.visualize_model import VisModel
 
 # Func: infer available epochs files, return a list of available epochs
 def infer_epoch_structure(content_path):
-    epochs_dir = os.path.join(content_path, 'epochs')
+    epochs_dir = os.path.join(content_path, "epochs")
     available_epochs = []
     if os.path.exists(epochs_dir) and os.path.isdir(epochs_dir):
         for folder_name in os.listdir(epochs_dir):
@@ -44,7 +47,7 @@ def infer_epoch_structure(content_path):
 # Func: get coloring list
 def get_coloring_list(class_num):
     # color = get_standard_classes_color(class_num) * 255
-    color_map = plt.get_cmap('tab10')
+    color_map = plt.get_cmap("tab10")
     color = color_map(range(class_num))
     color_255 = (color[:, :3] * 255).astype(np.uint8)
     return color_255.tolist()
@@ -56,40 +59,40 @@ def load_projection(content_path, vis_id, epoch):
     projection_list = projection.tolist()
 
     index_dict = load_or_create_index(content_path)
-    all_indices = index_dict['train'] + index_dict['test']
+    all_indices = index_dict["train"] + index_dict["test"]
     projection_list = [projection_list[i] for i in all_indices]
 
     return projection_list
 
 # Func: load one sample from content_path
 def load_one_sample(config, content_path, index):
-    attributes = config['dataset']['attributes']
-    if 'sample' not in attributes:
+    attributes = config["dataset"]["attributes"]
+    if "sample" not in attributes:
         raise NotImplementedError("sample is not in attributes")
 
-    file_path_pattern = attributes['sample']['source']['pattern']
-    file_path = file_path_pattern.replace('${index}', str(index))
+    file_path_pattern = attributes["sample"]["source"]["pattern"]
+    file_path = file_path_pattern.replace("${index}", str(index))
     file_path = os.path.join(content_path, file_path)
 
     _, file_extension = os.path.splitext(file_path)
-    if file_extension == '.txt':
+    if file_extension == ".txt":
         sample = ""
-        single_file = attributes['sample']['source']['type']=='folder'
+        single_file = attributes["sample"]["source"]["type"]=="folder"
         if single_file: # this indicates that all the text samples are saved in one file
-            with open(file_path, 'r') as f:
+            with open(file_path, "r") as f:
                 all_sample = f.readlines()
                 sample = all_sample[index]
         else:
-            with open(file_path, 'r') as f:
+            with open(file_path, "r") as f:
                 sample = f.readline()
-        return 'text',sample
+        return "text",sample
 
-    elif file_extension == '.png' or file_extension == '.jpg':
+    elif file_extension == ".png" or file_extension == ".jpg":
         img_stream = ""
-        with open(file_path, 'rb') as img_f:
+        with open(file_path, "rb") as img_f:
             img_stream = img_f.read()
             img_stream = base64.b64encode(img_stream).decode()
-        return 'image','data:image/png;base64,' + img_stream
+        return "image","data:image/png;base64," + img_stream
     else:
         raise NotImplementedError("Unsupported file extension: {}".format(file_extension))
 
@@ -99,21 +102,21 @@ def get_all_texts(content_path, from_file=True):
     text_list = []
     
     if from_file:
-        file_path = os.path.join(content_path, 'dataset', 'text.txt')
-        with open(file_path, 'r') as f:
+        file_path = os.path.join(content_path, "dataset", "text.txt")
+        with open(file_path, "r") as f:
             content = f.read()
         lines = content.splitlines()
         text_list = lines    
     else:
-        parent_directory = os.path.join(content_path, 'dataset', 'text')
+        parent_directory = os.path.join(content_path, "dataset", "text")
 
         files_and_folders = os.listdir(parent_directory)
-        numbered_files = [f for f in files_and_folders if f.endswith('.txt') and f[-5].isdigit()]
-        numbered_files.sort(key=lambda f: int(re.search(r'[0-9]+', f)[0]))
+        numbered_files = [f for f in files_and_folders if f.endswith(".txt") and f[-5].isdigit()]
+        numbered_files.sort(key=lambda f: int(re.search(r"[0-9]+", f)[0]))
 
         for file_name in numbered_files:
             file_path = os.path.join(parent_directory, file_name)
-            with open(file_path, 'r') as file:
+            with open(file_path, "r") as file:
                 content = file.read()
                 text_list.append(content)
             
@@ -165,10 +168,10 @@ def get_alignment_data(content_path):
 def read_label_file(file_path):
     _, file_extension = os.path.splitext(file_path)
 
-    if file_extension == '.npy':
+    if file_extension == ".npy":
         data = np.load(file_path)
         label_list = data.tolist()
-    elif file_extension == '.pth':
+    elif file_extension == ".pth":
         data = torch.load(file_path)
         if isinstance(data, torch.Tensor):
             label_list = data.tolist()
@@ -182,74 +185,74 @@ def read_label_file(file_path):
 
 # Func: get simple filtered indices
 def get_filter_result(config, content_path, epoch, filters):
-    index_file_path = os.path.join(content_path, 'index.json')
+    index_file_path = os.path.join(content_path, "index.json")
     if not os.path.exists(index_file_path):
-        return None, 'index.json not found'
+        return None, "index.json not found"
 
     indice_obj = read_file_as_json(index_file_path)
 
-    all_indices = indice_obj['train'] + indice_obj['test']
+    all_indices = indice_obj["train"] + indice_obj["test"]
     result = all_indices
 
     for filter in filters:
-        filter_type = filter['filter_type']
-        label_text_list = config['dataset']['classes']
+        filter_type = filter["filter_type"]
+        label_text_list = config["dataset"]["classes"]
 
-        if filter_type == 'label':
-            filter_data = filter['filter_data']
+        if filter_type == "label":
+            filter_data = filter["filter_data"]
 
-            attributes = config['dataset']['attributes']
-            file_path_pattern = attributes['label']['source']['pattern']
+            attributes = config["dataset"]["attributes"]
+            file_path_pattern = attributes["label"]["source"]["pattern"]
             file_path = os.path.join(content_path, file_path_pattern)
             if not os.path.exists(file_path):
-                return None, 'label file not found'
+                return None, "label file not found"
 
             label_list = read_label_file(file_path)
 
             filtered_indices = [index for index, label in zip(all_indices, label_list) if label_text_list[label] == filter_data]
             result = list(set(result) & set(filtered_indices))
 
-        elif filter_type == 'prediction':
-            filter_data = filter['filter_data']
+        elif filter_type == "prediction":
+            filter_data = filter["filter_data"]
 
-            attributes = config['dataset']['attributes']
-            file_path_pattern = attributes['prediction']['source']['pattern']
-            file_path_pattern = file_path_pattern.replace('${epoch}', str(epoch))
+            attributes = config["dataset"]["attributes"]
+            file_path_pattern = attributes["prediction"]["source"]["pattern"]
+            file_path_pattern = file_path_pattern.replace("${epoch}", str(epoch))
             file_path = os.path.join(content_path, file_path_pattern)
             if not os.path.exists(file_path):
-                return None, 'prediction file not found'
+                return None, "prediction file not found"
 
             prediction_list = read_label_file(file_path)
 
             filtered_indices = [index for index, label in zip(all_indices, prediction_list) if label_text_list[label] == filter_data]
             result = list(set(result) & set(filtered_indices))
 
-        elif filter_type == 'train':
-            result = list(set(result) & set(indice_obj['train']))
+        elif filter_type == "train":
+            result = list(set(result) & set(indice_obj["train"]))
 
-        elif filter_type == 'test':
-            result = list(set(result) & set(indice_obj['test']))
+        elif filter_type == "test":
+            result = list(set(result) & set(indice_obj["test"]))
 
-    return result,''
+    return result,""
 
 def load_background(content_path, vis_id, epoch):
-    file_path = os.path.join(content_path, 'visualize',vis_id,'epochs',f'epoch_{epoch}', 'background.png')
+    file_path = os.path.join(content_path, "visualize",vis_id,"epochs",f"epoch_{epoch}", "background.png")
     if os.path.exists(file_path):
         return convert_to_base64(file_path)
     return ""
 
 def convert_to_base64(image_path):
     with open(image_path, "rb") as image_file:
-        base64_image = base64.b64encode(image_file.read()).decode('utf-8')
+        base64_image = base64.b64encode(image_file.read()).decode("utf-8")
     return base64_image
 
 def load_one_image(content_path, index):
-    file_path = os.path.join(content_path, 'dataset', 'image', f'{index}.png')
+    file_path = os.path.join(content_path, "dataset", "image", f"{index}.png")
     return convert_to_base64(file_path)
 
 def load_one_text(content_path, index):
-    file_path = os.path.join(content_path, 'dataset', 'text.txt')
-    with open(file_path, 'r') as f:
+    file_path = os.path.join(content_path, "dataset", "text.txt")
+    with open(file_path, "r") as f:
         content = f.read()
     lines = content.splitlines()
     if index < len(lines):
@@ -258,11 +261,11 @@ def load_one_text(content_path, index):
         return ""
 
 def calculate_high_dimensional_neighbors(content_path, epoch, max_neighbors=10):
-    featrue_list = load_single_attribute(content_path, epoch, 'representation')
+    featrue_list = load_single_attribute(content_path, epoch, "representation")
 
     features = np.array(featrue_list)
     num_samples = len(features)
-    nbrs = NearestNeighbors(n_neighbors=max_neighbors + 1, algorithm='auto').fit(features)
+    nbrs = NearestNeighbors(n_neighbors=max_neighbors + 1, algorithm="auto").fit(features)
     distances, indices = nbrs.kneighbors(features)
     
     neighbors = [[] for _ in range(num_samples)]
@@ -278,7 +281,7 @@ def calculate_projection_neighbors(content_path, vis_id, epoch, max_neighbors=10
     projection = np.array(projection_list)
     num_samples = len(projection)
     
-    nbrs = NearestNeighbors(n_neighbors=max_neighbors + 1, algorithm='auto').fit(projection)
+    nbrs = NearestNeighbors(n_neighbors=max_neighbors + 1, algorithm="auto").fit(projection)
     distances, indices = nbrs.kneighbors(projection)
     
     neighbors = [[] for _ in range(num_samples)]
@@ -289,32 +292,65 @@ def calculate_projection_neighbors(content_path, vis_id, epoch, max_neighbors=10
     
     return neighbors
 
+def calculate_neighbors_for_point(content_path, vis_id, epoch, point_index, max_neighbors=10):
+    feature_ls = load_single_attribute(content_path, epoch, "representation")
+    features = np.array(feature_ls)
+    neighbors = NearestNeighbors(n_neighbors=max_neighbors + 1, algorithm="auto").fit(features)
+    
+    sample_feature = features[point_index].reshape(1, -1)
+    distances, indices = neighbors.kneighbors(sample_feature)
+    
+    neighbors_ls = list()
+    
+    for nbr in range(1, max_neighbors + 1):
+        neighbor_idx = indices[0][nbr]  
+        neighbors_ls.append(int(neighbor_idx))
+    
+    return neighbors_ls
+
+def calculate_projection_neighbors_for_point(content_path, vis_id, epoch, point_index, max_neighbors=10):
+    
+    # TODO: maybe use PyNNDescent so its faster (?)
+    projection_ls = load_projection(content_path, vis_id, epoch)
+    projection = np.array(projection_ls)
+    neighbors = NearestNeighbors(n_neighbors=max_neighbors + 1, algorithm="auto").fit(projection)
+    
+    sample_projection = projection[point_index].reshape(1, -1)
+    distances, indices = neighbors.kneighbors(sample_projection)
+    
+    neighbors_ls = list()
+    
+    for nbr in range(1, max_neighbors + 1):
+        neighbor_idx = indices[0][nbr]  
+        neighbors_ls.append(int(neighbor_idx))
+    
+    return neighbors_ls
 
 # Func: Load a single attribute from a file based on the configuration and epoch
 def load_single_attribute(content_path, epoch, attribute):
-    if attribute == 'label':
-        file_path = os.path.join(content_path, 'dataset', 'labels.npy')
+    if attribute == "label":
+        file_path = os.path.join(content_path, "dataset", "labels.npy")
         attr_data = read_label_file(file_path)
-    elif attribute == 'intra_similarity':
-        file_path = os.path.join(content_path, 'epochs', f'epoch_{epoch}', 'intra_similarity.npy')
+    elif attribute == "intra_similarity":
+        file_path = os.path.join(content_path, "epochs", f"epoch_{epoch}", "intra_similarity.npy")
         attr_data = read_from_file(file_path)
-    elif attribute == 'inter_similarity':
-        file_path = os.path.join(content_path, 'epochs', f'epoch_{epoch}', 'inter_similarity.npy')
+    elif attribute == "inter_similarity":
+        file_path = os.path.join(content_path, "epochs", f"epoch_{epoch}", "inter_similarity.npy")
         attr_data = read_from_file(file_path)
-    elif attribute == 'representation':
-        file_path = os.path.join(content_path, 'epochs', f'epoch_{epoch}', 'embeddings.npy')
+    elif attribute == "representation":
+        file_path = os.path.join(content_path, "epochs", f"epoch_{epoch}", "embeddings.npy")
         attr_data = read_from_file(file_path)
-    elif attribute == 'prediction':
-        file_path = os.path.join(content_path, 'epochs', f'epoch_{epoch}', 'predictions.npy')
+    elif attribute == "prediction":
+        file_path = os.path.join(content_path, "epochs", f"epoch_{epoch}", "predictions.npy")
         attr_data = read_from_file(file_path)
-    elif attribute == 'index':
+    elif attribute == "index":
         attr_data = load_or_create_index(content_path)
     else:
         raise NotImplementedError(f"Unknown attribute: {attribute}")
     
     index_dict = load_or_create_index(content_path)
-    all_indices = index_dict['train'] + index_dict['test']
-    if attribute != 'index':
+    all_indices = index_dict["train"] + index_dict["test"]
+    if attribute != "index":
         attr_data = [attr_data[i] for i in all_indices]
     
     return attr_data
@@ -322,10 +358,10 @@ def load_single_attribute(content_path, epoch, attribute):
 def read_from_file(file_path):
     _, file_extension = os.path.splitext(file_path)
 
-    if file_extension == '.npy':
+    if file_extension == ".npy":
         data = np.load(file_path)
         result = data.tolist()
-    elif file_extension == '.pth':
+    elif file_extension == ".pth":
         data = torch.load(file_path)
         if isinstance(data, torch.Tensor):
             result = data.tolist()
@@ -333,9 +369,9 @@ def read_from_file(file_path):
             result = data
         else:
             raise ValueError(f"Unsupported data type in .pth file: {type(data)}")
-    elif file_extension == '.json':
+    elif file_extension == ".json":
         try:
-            with open(file_path, 'r') as f:
+            with open(file_path, "r") as f:
                 result = json.load(f)
         except Exception as e:
             raise ValueError(f"Error in reading json file from {file_path}: {e}")
@@ -352,24 +388,24 @@ def read_file_as_json(file_path: str):
         return json.load(f)
 
 def load_or_create_index(content_path):
-    index_file_path = os.path.join(content_path, 'dataset', 'index.json')
+    index_file_path = os.path.join(content_path, "dataset", "index.json")
     if os.path.exists(index_file_path):
-        with open(index_file_path, 'r') as f:
+        with open(index_file_path, "r") as f:
             index_data = json.load(f)
         return index_data
 
     # If index.json does not exist, create it
-    file_path = os.path.join(content_path, 'dataset', 'labels.npy')
+    file_path = os.path.join(content_path, "dataset", "labels.npy")
     labels = read_label_file(file_path)
     num_samples = len(labels)
 
     index_data = {
-        'train': list(range(num_samples)),
-        'test': []
+        "train": list(range(num_samples)),
+        "test": []
     }
     
     # Save the index data to a file
-    with open(index_file_path, 'w') as f:
+    with open(index_file_path, "w") as f:
         json.dump(index_data, f)
 
     return index_data
@@ -456,8 +492,8 @@ def prediction_attribution(content_path, epoch, training_event, num_samples=10):
     import model as subject_model
     
     info = read_file_as_json(os.path.join(content_path, "dataset", "info.json"))
-    model = eval("subject_model.{}()".format(info['model']))
-    classes = info['classes']
+    model = eval("subject_model.{}()".format(info["model"]))
+    classes = info["classes"]
     subject_model_location = os.path.join(content_path, "epochs", f"epoch_{epoch}", "model.pth")
     device = torch.device("cuda:3" if torch.cuda.is_available() else "cpu")
     model.load_state_dict(torch.load(subject_model_location, map_location=torch.device("cpu")))
@@ -466,7 +502,7 @@ def prediction_attribution(content_path, epoch, training_event, num_samples=10):
     
     # construct dataloader
     dataset_path = os.path.join(content_path, "dataset")
-    cifar_path = os.path.join(dataset_path, 'cifar-10-batches-py')
+    cifar_path = os.path.join(dataset_path, "cifar-10-batches-py")
     download = not os.path.exists(cifar_path) or not os.listdir(cifar_path)
     
     transform_train = transforms.Compose([
@@ -487,19 +523,19 @@ def prediction_attribution(content_path, epoch, training_event, num_samples=10):
     
     IF = EmpiricalIF(dl_train=trainloader,
                                model=model,
-                               param_filter_fn=lambda name, param: 'classifier' in name,
+                               param_filter_fn=lambda name, param: "classifier" in name,
                                criterion=torch.nn.CrossEntropyLoss(reduction="none"))
 
-    test_sample = trainloader.dataset[training_event['index']]
+    test_sample = trainloader.dataset[training_event["index"]]
     test_input, _ = test_sample
     test_input = test_input.unsqueeze(0)  # Add batch dimension
-    test_target = torch.tensor([classes.index(training_event['influenceTarget'])]).to(device)  # Add batch dimension
+    test_target = torch.tensor([classes.index(training_event["influenceTarget"])]).to(device)  # Add batch dimension
     IF_scores = IF.query_influence(test_input, test_target)
     
     # Get the indices of the top num_samples maximum and minimum scores
     max_indices = np.argsort(IF_scores)[-num_samples:][::-1]
 
-    labels = load_single_attribute(content_path, epoch, 'label')
+    labels = load_single_attribute(content_path, epoch, "label")
 
     influence_samples = []
     for index in max_indices.tolist():
@@ -516,11 +552,11 @@ class CodeSearchNetDataset(Dataset):
     def __init__(self, file_path, tokenizer, sample_limit=None):
         self.samples = []
         count = 0
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             for line in tqdm(f, desc="读取数据集"):
                 line_data = json.loads(line)
-                docstring_tensor = tokenizer(line_data['docstring'], padding='max_length', truncation=True, max_length=256, return_tensors='pt')['input_ids'].squeeze(0)
-                code_tensor = tokenizer(line_data['code'], padding='max_length', truncation=True, max_length=256, return_tensors='pt')['input_ids'].squeeze(0)
+                docstring_tensor = tokenizer(line_data["docstring"], padding="max_length", truncation=True, max_length=256, return_tensors="pt")["input_ids"].squeeze(0)
+                code_tensor = tokenizer(line_data["code"], padding="max_length", truncation=True, max_length=256, return_tensors="pt")["input_ids"].squeeze(0)
                 self.samples.append((docstring_tensor, code_tensor))
                 count += 1
                 if sample_limit and count > sample_limit:
@@ -536,7 +572,7 @@ class CodeSearchNetDataset(Dataset):
 def movement_attribution(content_path, epoch, training_event, num_samples=10):
     # define and load subject model
     device = torch.device("cuda:3" if torch.cuda.is_available() else "cpu")
-    tokenizer = RobertaTokenizer.from_pretrained('/home/kwy/models/codebert-base')  
+    tokenizer = RobertaTokenizer.from_pretrained("/home/kwy/models/codebert-base")  
     subject_model_location = os.path.join(content_path, "epochs", f"epoch_{epoch}", "model.pth")
     
     model = CustomEncoderModel(
@@ -553,8 +589,8 @@ def movement_attribution(content_path, epoch, training_event, num_samples=10):
     trainloader = DataLoader(train_dataset, batch_size=128, shuffle=False)    
         
     # sub-sample (code or doc) index
-    index = training_event['index']
-    index1 = training_event['index1']
+    index = training_event["index"]
+    index1 = training_event["index1"]
 
     # convert to original sampel index
     ori_index = int(index / 2)
@@ -571,7 +607,7 @@ def movement_attribution(content_path, epoch, training_event, num_samples=10):
     query_input_part2 = ori_sample1[tp1] # code_tensor
     
     # init IF
-    pairwise_if = PairWiseEmpiricalIF(dl_train=trainloader,model=model,param_filter_fn=lambda name, param: 'transformer_encoder' in name)
+    pairwise_if = PairWiseEmpiricalIF(dl_train=trainloader,model=model,param_filter_fn=lambda name, param: "transformer_encoder" in name)
     influences_case = pairwise_if.query_influence(query_input_part1, query_input_part2, query_is_positive=(ori_index == ori_index1))
     print("Influence case:", influences_case[:3])
     
@@ -594,3 +630,92 @@ def compute_training_events(content_path, epoch, event_types):
     detector = TrainingEventDetector(content_path, epoch, data_provider)
     events = detector.detect_events(event_types)
     return events
+
+
+def local_refine(content_path, epoch, sample_index, vis_id, k=10):
+    learning_rate = 0.0001
+    steps = 10
+    # load embeddings
+    epoch_path = os.path.join(content_path, "epochs", f"epoch_{epoch}", "embeddings.npy")
+    embeddings = np.load(epoch_path)
+    
+    # find local neigbors
+    nbrs = NearestNeighbors(n_neighbors=k + 1).fit(embeddings)
+    _, indices = nbrs.kneighbors([embeddings[sample_index]])
+    local_indices = indices[0]                                                                                                                          
+    local_embeddings = embeddings[local_indices]
+    
+    
+    #initialize timevis model
+    device = torch.device("cpu")
+    checkpoint_path = os.path.join(content_path, "visualize", vis_id, "vis_model.pth")                                                                  
+    checkpoint = torch.load(checkpoint_path, map_location=device)      
+    state_dict = checkpoint["state_dict"]                           
+    
+    # tried to pass it from the frontend but couldnt make it work so i get it from the state                                                      
+    encoder_keys_ls = sorted([k for k in state_dict if k.startswith("encoder") and "weight" in k])
+    decoder_keys_ls = sorted([k for k in state_dict if k.startswith("decoder") and "weight" in k])
+
+    encoder_dims_ls = [state_dict[encoder_keys_ls[0]].shape[1]] + [state_dict[k].shape[0] for k in encoder_keys_ls]
+    decoder_dims_ls = [state_dict[decoder_keys_ls[0]].shape[1]] + [state_dict[k].shape[0] for k in decoder_keys_ls]
+
+    model = VisModel(encoder_dims_ls, decoder_dims_ls).to(device)
+    model.load_state_dict(state_dict)
+        
+    
+    # build knn again but for the selected point
+    n_neighbors = min(5, len(local_embeddings) - 1)                                                                                                     
+    local_neighbors = NearestNeighbors(n_neighbors=n_neighbors + 1).fit(local_embeddings)
+    _, local_knn = local_neighbors.kneighbors(local_embeddings) 
+    
+    # connectios to re train UMAP
+    edge_to_ls, edge_from_ls = [], []                                                                                                               
+    for i, neighbors in enumerate(local_knn):                                                                                                           
+        for j in neighbors[1:]:                                                                                                                         
+            edge_to_ls.append(i)
+            edge_from_ls.append(j)
+    
+    edge_to_index_ls = np.array(edge_to_ls)
+    edge_from_index_ls = np.array(edge_from_ls)
+    
+    # define losses, copypaste from timevis_strategy.py
+    negative_sample_rate = 5
+    min_dist = 0.1
+    _a, _b = find_ab_params(1.0, min_dist)
+    umap_fn = UmapLoss(negative_sample_rate, device, _a, _b, repulsion_strength=1.0)
+    recon_fn = ReconstructionLoss(beta=1.0)
+    criterion = SingleVisLoss(umap_fn, recon_fn, lambd=1)
+    
+    local_tensor = torch.tensor(local_embeddings, dtype=torch.float32).to(device)
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    model.train() 
+
+    # loop for fine tuning
+    for i in range(steps):
+        optimizer.zero_grad()
+        edge_to_feat = local_tensor[edge_to_index_ls]
+        edge_from_feat = local_tensor[edge_from_index_ls]                                                                                                    
+        a_to = torch.zeros(len(edge_to_index_ls), 1, dtype=torch.float32).to(device)
+        a_from = torch.zeros(len(edge_from_index_ls), 1, dtype=torch.float32).to(device)                                                                        
+        outputs = model(edge_to_feat, edge_from_feat)
+        umao_loss, recon_loss, loss = criterion(edge_to_feat, edge_from_feat, a_to, a_from, outputs)                                                                     
+        loss.backward()
+        optimizer.step() 
+    
+    model.eval()
+    with torch.no_grad():
+        outputs = model(local_tensor, local_tensor)
+        refined_2d = outputs["umap"][0].cpu().numpy()              
+                
+                                                                                                                                  
+    updated_coords_dd = {}                                                                                                                                 
+    for local_pos, global_idx in enumerate(local_indices):                                                                                              
+        updated_coords_dd[str(int(global_idx))] = refined_2d[local_pos].tolist()
+                                                                                                                                                        
+    return updated_coords_dd
+    
+    
+    
+    
+    
+    

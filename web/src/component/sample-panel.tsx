@@ -5,8 +5,8 @@ import { useDefaultStore } from '../state/state.unified';
 import { FunctionalBlock } from './custom/basic-components';
 
 export function SamplePanel() {
-    const { availableEpochs, hoveredIndex, inherentLabelData, epoch, allEpochData, labelDict, dataType, rawData, tokenList } =
-        useDefaultStore(['availableEpochs', 'hoveredIndex', 'inherentLabelData', 'epoch', 'allEpochData', 'labelDict', 'dataType', 'rawData', 'tokenList']);
+    const { availableEpochs, hoveredIndex, inherentLabelData, epoch, allEpochData, labelDict, dataType, rawData, tokenList, neighborCache } =
+        useDefaultStore(['availableEpochs', 'hoveredIndex', 'inherentLabelData', 'epoch', 'allEpochData', 'labelDict', 'dataType', 'rawData', 'tokenList', 'neighborCache']);
 
     const [data, setData] = useState<string>('');
     const [predictions, setPredictions] = useState<{ value: number, confidence: number, correct: boolean }[]>([]);
@@ -129,7 +129,8 @@ export function SamplePanel() {
                 <CompactSection>
                     <CompactSectionLabel>HIGH-DIM</CompactSectionLabel>
                     <CompactNeighborList>
-                        {hoveredIndex !== undefined && allEpochData[epoch]?.originalNeighbors[hoveredIndex]?.map((neighbor, index) => (
+                        {/* reads from cache */}
+                        {hoveredIndex !== undefined && neighborCache[`${epoch}-${hoveredIndex}`]?.originalNeighbors?.map((neighbor: number, index: number) => (
                             <HighDimNeighborItem key={index}>
                                 {neighbor}.{getDisplayLabel(neighbor)}
                             </HighDimNeighborItem>
@@ -140,8 +141,9 @@ export function SamplePanel() {
                 <CompactSection>
                     <CompactSectionLabel>PROJECTION</CompactSectionLabel>
                     <CompactNeighborList>
-                        {hoveredIndex !== undefined && allEpochData[epoch]?.projectionNeighbors[hoveredIndex]?.map((neighbor, index) => {
-                            const isCorrect = allEpochData[epoch].originalNeighbors[hoveredIndex]?.includes(neighbor);
+                        {/* reads from cache */}
+                        {hoveredIndex !== undefined && neighborCache[`${epoch}-${hoveredIndex}`]?.projectionNeighbors?.map((neighbor: number, index: number) => {
+                            const isCorrect = neighborCache[`${epoch}-${hoveredIndex}`]?.originalNeighbors?.includes(neighbor);
                             return (
                                 <ProjectionNeighborItem key={index} $correct={isCorrect}>
                                     {neighbor}.{getDisplayLabel(neighbor)}

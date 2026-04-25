@@ -128,7 +128,7 @@ function Timeline({ epoch, epochs, progress, onSwitchEpoch }: { epoch: number, e
 
     // Render nodes and links (simple lines between nodes)
     return (
-        <div style={{ position: 'relative' }}>
+        <div style={{ position: 'relative', padding: '25px 0 10px 0' }}>
             <svg
             width={svgDimensions.width}
             height={svgDimensions.height}
@@ -229,6 +229,37 @@ function Timeline({ epoch, epochs, progress, onSwitchEpoch }: { epoch: number, e
     );
 };
 
+function LoadingOverlay({ progress, totalEpochs }: { progress: number; totalEpochs: number }) {
+    if (progress <= 0 || progress >= 100) return null;
+
+    const loadedEpochs = Math.round((progress / 100) * totalEpochs);
+
+    return (
+        <div style={{
+            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            backgroundColor: 'rgba(255, 255, 255, 0.85)', zIndex: 10, pointerEvents: 'none',
+        }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: '#3278F0', marginBottom: 8 }}>
+                Loading epoch {loadedEpochs} / {totalEpochs}
+            </div>
+            <div style={{
+                width: 200, height: 6, borderRadius: 3,
+                backgroundColor: '#e0e0e0', overflow: 'hidden',
+            }}>
+                <div style={{
+                    width: `${progress}%`, height: '100%', borderRadius: 3,
+                    backgroundColor: '#3278F0',
+                    transition: 'width 0.3s ease',
+                }} />
+            </div>
+            <div style={{ fontSize: 11, color: '#888', marginTop: 6 }}>
+                {Math.round(progress)}%
+            </div>
+        </div>
+    );
+}
+
 export function MainBlock() {
     const { epoch, setEpoch } = useDefaultStore(['epoch', 'setEpoch']);
     const { availableEpochs } = useDefaultStore(['availableEpochs']);
@@ -237,9 +268,12 @@ export function MainBlock() {
     // only consider single container for now
     return (
         <div className="canvas-column">
-            <ChartComponent/>
+            <div style={{ position: 'relative', flex: 1, minHeight: 0 }}>
+                <ChartComponent/>
+                <LoadingOverlay progress={progress} totalEpochs={availableEpochs.length} />
+            </div>
             <div id="footer">
-                <div style={{ display: 'flex', alignItems: 'center', height: '100%', width: '100%', overflowX: 'auto', overflowY: 'hidden' }}>
+                <div style={{ display: 'flex', alignItems: 'center', height: '100%', width: '100%', overflowX: 'auto', overflowY: 'hidden', padding: '0 12px' }}>
                     <Timeline epoch={epoch} epochs={availableEpochs} progress={ progress} onSwitchEpoch={(e) => {
                         setEpoch(e);
                         notifyEpochSwitch(e);
